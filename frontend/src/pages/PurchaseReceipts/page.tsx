@@ -450,15 +450,15 @@ export const PurchaseReceiptsPage: React.FC = () => {
       </div>
 
       {/* Filter Bar */}
-      <SystemFilter>
+      <SystemFilter className="p-2.5 sm:p-3 flex-col sm:flex-row items-stretch sm:items-center">
         <SystemFilterSearch
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Tìm mã phiếu, SKU, ghi chú..."
-          className="w-56 sm:w-64"
+          className="w-full sm:w-64"
         />
 
-        <div className="w-52">
+        <div className="w-full sm:w-52">
           <Select
             value={selectedSupplierId}
             onChange={(val) => {
@@ -474,7 +474,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
           />
         </div>
 
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             value={filterPaymentStatus}
             onChange={(val) => {
@@ -492,7 +492,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
           />
         </div>
 
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             value={filterReceivingStatus}
             onChange={(val) => {
@@ -510,7 +510,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
           />
         </div>
 
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select
             value={filterDueStatus}
             onChange={(val) => {

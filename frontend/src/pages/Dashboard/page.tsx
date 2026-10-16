@@ -187,7 +187,7 @@ export const DashboardPage: React.FC = () => {
             </button>
 
             {isStatusDropdownOpen && (
-              <div className="absolute right-0 top-full mt-1.5 z-50 min-w-[320px] max-w-[360px] rounded-lg bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 shadow-xl p-2.5 text-xs animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute right-0 top-full mt-1.5 z-50 w-[calc(100vw-32px)] sm:w-auto min-w-[280px] sm:min-w-[320px] max-w-[360px] rounded-lg bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 shadow-xl p-2.5 text-xs animate-in fade-in zoom-in-95 duration-150">
                 {/* Header */}
                 <div className="pb-2 mb-2 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                   <span className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">

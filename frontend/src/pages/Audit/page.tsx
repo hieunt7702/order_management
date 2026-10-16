@@ -243,7 +243,7 @@ export const AuditPage: React.FC = () => {
       </div>
 
       {/* Filter / Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded shrink-0">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded shrink-0">
         <div className="relative flex-1 max-w-md w-full">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <input
@@ -255,7 +255,7 @@ export const AuditPage: React.FC = () => {
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 shrink-0">
             Thực thể:
           </span>
@@ -274,7 +274,7 @@ export const AuditPage: React.FC = () => {
               { value: 'SETTLEMENT', label: 'Đối soát sàn (Settlement)' },
             ]}
             size="sm"
-            className="w-52"
+            className="w-full sm:w-52"
             menuWidth="w-56"
           />
         </div>

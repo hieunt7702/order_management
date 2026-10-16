@@ -133,35 +133,35 @@ export const ImportsPage: React.FC = () => {
       )}
 
       {/* Step Indicator */}
-      <div className="grid grid-cols-3 gap-2.5 text-center text-xs font-medium">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5 text-center text-[11px] sm:text-xs font-medium">
         <div
-          className={`p-2.5 rounded border transition-colors ${
+          className={`p-2 sm:p-2.5 rounded border transition-colors ${
             step >= 1
               ? 'bg-[#5865f2]/10 border-[#5865f2] text-[#5865f2] font-semibold'
               : 'bg-white dark:bg-[#14151a] text-gray-400 border-gray-200 dark:border-gray-800'
           }`}
         >
-          1. Chọn Shop & Tải File
+          1. Chọn Shop & File
         </div>
 
         <div
-          className={`p-2.5 rounded border transition-colors ${
+          className={`p-2 sm:p-2.5 rounded border transition-colors ${
             step >= 2
               ? 'bg-[#5865f2]/10 border-[#5865f2] text-[#5865f2] font-semibold'
               : 'bg-white dark:bg-[#14151a] text-gray-400 border-gray-200 dark:border-gray-800'
           }`}
         >
-          2. Xem Trước & Kiểm Tra SKU
+          2. Kiểm Tra SKU
         </div>
 
         <div
-          className={`p-2.5 rounded border transition-colors ${
+          className={`p-2 sm:p-2.5 rounded border transition-colors ${
             step >= 3
               ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-semibold'
               : 'bg-white dark:bg-[#14151a] text-gray-400 border-gray-200 dark:border-gray-800'
           }`}
         >
-          3. Hoàn Tất Áp Dụng
+          3. Hoàn Tất
         </div>
       </div>
 

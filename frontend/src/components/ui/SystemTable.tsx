@@ -237,6 +237,7 @@ export interface SystemPaginationProps {
   itemsPerPage?: number;
   setItemsPerPage?: (limit: number) => void;
   onLimitChange?: (limit: number) => void;
+  className?: string;
 }
 
 export const SystemPagination: React.FC<SystemPaginationProps> = ({
@@ -249,6 +250,7 @@ export const SystemPagination: React.FC<SystemPaginationProps> = ({
   itemsPerPage = 20,
   setItemsPerPage,
   onLimitChange,
+  className = '',
 }) => {
   // Normalize: support both (page/setPage) and (currentPage/onPageChange) API styles
   // Internal page is always 0-indexed
@@ -280,7 +282,12 @@ export const SystemPagination: React.FC<SystemPaginationProps> = ({
   if (effectiveTotalPages <= 0 && totalItems <= 0) return null;
 
   return (
-    <div className="mt-auto flex-shrink-0 flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-t border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-[#1a1b23]/50">
+    <div
+      className={cn(
+        'mt-auto flex-shrink-0 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 px-3.5 sm:px-5 py-2.5 sm:py-3 border-t border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-[#1a1b23]/50',
+        className,
+      )}
+    >
       <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 font-normal">
         Trang {page + 1} / {effectiveTotalPages || 1} ·{' '}
         <span className="font-medium text-gray-700 dark:text-gray-300">

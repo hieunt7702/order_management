@@ -266,7 +266,7 @@ export const ShopsPage: React.FC = () => {
       </div>
 
       {/* Filters Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded shrink-0">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded shrink-0">
         <div className="relative flex-1 max-w-md w-full">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <input
@@ -278,7 +278,7 @@ export const ShopsPage: React.FC = () => {
           />
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-between sm:justify-start gap-2.5 w-full sm:w-auto">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 shrink-0">
               Trạng thái:
@@ -292,7 +292,7 @@ export const ShopsPage: React.FC = () => {
                 { value: 'INACTIVE', label: 'Tạm dừng' },
               ]}
               size="sm"
-              className="w-40"
+              className="w-36 sm:w-40"
               menuWidth="w-44"
             />
           </div>
@@ -332,7 +332,7 @@ export const ShopsPage: React.FC = () => {
       {/* Main Content: Grid or Table View */}
       {viewMode === 'grid' ? (
         <div className="flex-1 flex flex-col min-h-0 justify-between">
-          <div className="flex-1 overflow-y-auto pr-0.5 custom-scrollbar pb-3">
+          <div className="flex-1 md:overflow-y-auto pr-0.5 custom-scrollbar pb-3">
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
               {Array.from({ length: 8 }).map((_, i) => (

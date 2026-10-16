@@ -960,10 +960,10 @@ export const ProductsPage: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 p-1 bg-gray-100/80 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded w-fit shrink-0">
+      <div className="flex items-center gap-1 p-1 bg-gray-100/80 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded w-full sm:w-fit shrink-0 max-w-full overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab('PRODUCTS')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 ${
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
             activeTab === 'PRODUCTS'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
@@ -974,7 +974,7 @@ export const ProductsPage: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('MAPPINGS')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 ${
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
             activeTab === 'MAPPINGS'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
@@ -991,7 +991,7 @@ export const ProductsPage: React.FC = () => {
           /* TAB 1: INTERNAL PRODUCTS */
           <div className="flex-1 flex flex-col min-h-0 space-y-3">
             {/* Search filter & Mapping status toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 shrink-0 p-3 bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0 p-3 bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded">
               <div className="relative flex-1 max-w-md w-full">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                 <input
@@ -1003,11 +1003,11 @@ export const ProductsPage: React.FC = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center justify-between sm:justify-start gap-2 flex-wrap w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={handleToggleExpandAllShopee}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold border transition-all cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold border transition-all cursor-pointer shrink-0 ${
                     isAllShopeeVariantsExpanded
                       ? 'bg-[#5865f2] text-white border-[#5865f2] shadow-xs'
                       : 'bg-gray-50 dark:bg-[#1a1b23] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#5865f2]/40'
@@ -1018,21 +1018,23 @@ export const ProductsPage: React.FC = () => {
                   <span>{isAllShopeeVariantsExpanded ? 'Thu gọn SKU Shopee' : 'Xem đầy đủ SKU Shopee'}</span>
                 </button>
 
-                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 shrink-0 ml-1">
-                  Liên kết Shopee:
-                </span>
-                <Select
-                  value={mappingStatusFilter}
-                  onChange={(val: any) => setMappingStatusFilter(val)}
-                  options={[
-                    { value: 'ALL', label: 'Tất cả trạng thái' },
-                    { value: 'MAPPED', label: 'Đã liên kết SKU Shopee' },
-                    { value: 'UNMAPPED', label: 'Chưa liên kết SKU Shopee' },
-                  ]}
-                  size="sm"
-                  className="w-52"
-                  menuWidth="w-56"
-                />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 shrink-0">
+                    Shopee:
+                  </span>
+                  <Select
+                    value={mappingStatusFilter}
+                    onChange={(val: any) => setMappingStatusFilter(val)}
+                    options={[
+                      { value: 'ALL', label: 'Tất cả trạng thái' },
+                      { value: 'MAPPED', label: 'Đã liên kết SKU Shopee' },
+                      { value: 'UNMAPPED', label: 'Chưa liên kết SKU Shopee' },
+                    ]}
+                    size="sm"
+                    className="w-44 sm:w-52"
+                    menuWidth="w-56"
+                  />
+                </div>
               </div>
             </div>
 

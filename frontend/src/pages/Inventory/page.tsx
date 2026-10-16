@@ -340,7 +340,7 @@ export const InventoryPage: React.FC = () => {
       </div>
 
       {/* KPI Summary Metric Cards matching pawn-system */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3 shrink-0">
         <SystemMetricCard
           title="Tổng mặt hàng"
           value={balances.length}
@@ -389,14 +389,15 @@ export const InventoryPage: React.FC = () => {
           subtitle="cần nhập thêm"
           icon={AlertTriangle}
           colorScheme="red"
+          className="col-span-2 lg:col-span-1"
         />
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 p-1 bg-gray-100/80 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded w-fit shrink-0">
+      <div className="flex items-center gap-1 p-1 bg-gray-100/80 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded w-full sm:w-fit shrink-0 max-w-full overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab('BALANCES')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 ${
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
             activeTab === 'BALANCES'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
@@ -460,7 +461,7 @@ export const InventoryPage: React.FC = () => {
             return (
               <div className="flex-1 flex flex-col min-h-0 gap-3">
                 {/* Warehouse and Search Filter */}
-                <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded shrink-0">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded shrink-0">
                   <div className="relative flex-1 max-w-md w-full">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                     <input
@@ -472,8 +473,8 @@ export const InventoryPage: React.FC = () => {
                     />
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 shrink-0">
                       Kho hàng:
                     </span>
                     <Select
@@ -490,7 +491,7 @@ export const InventoryPage: React.FC = () => {
                       placeholder="Tất cả kho"
                       icon={Warehouse}
                       size="sm"
-                      className="w-52"
+                      className="w-full sm:w-52"
                       menuWidth="w-60"
                     />
                   </div>

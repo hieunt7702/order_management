@@ -822,7 +822,7 @@ export const OrdersPage: React.FC = () => {
       </div>
 
       {/* Summary KPI Cards Row matching pawn-system */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3 shrink-0">
         <SystemMetricCard
           title="Tất cả đơn"
           value={totalCount}
@@ -867,13 +867,14 @@ export const OrdersPage: React.FC = () => {
           colorScheme="red"
           isActive={activeTab === 'NEEDS_ATTENTION'}
           onClick={() => handleKpiFilter('NEEDS_ATTENTION')}
+          className="col-span-2 lg:col-span-1"
         />
       </div>
 
       {/* Filter Bar */}
-      <SystemFilter>
-        <SystemFilterItem icon={Activity} label="Trạng thái:">
-          <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar py-0.5">
+      <SystemFilter className="p-2.5 sm:p-3 flex-col sm:flex-row items-stretch sm:items-center">
+        <SystemFilterItem icon={Activity} label="Trạng thái:" className="w-full sm:w-auto">
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 max-w-full">
             {PRESET_TABS.map((tab) => (
               <button
                 key={tab.id}
@@ -881,9 +882,9 @@ export const OrdersPage: React.FC = () => {
                   setActiveTab(tab.id);
                   setPage(1);
                 }}
-                className={`px-2.5 py-1 rounded text-xs whitespace-nowrap transition-colors cursor-pointer border-0 ${
+                className={`px-2.5 py-1 rounded text-xs whitespace-nowrap transition-colors cursor-pointer border-0 shrink-0 ${
                   activeTab === tab.id
-                    ? 'bg-[#5865f2] text-white font-medium'
+                    ? 'bg-[#5865f2] text-white font-medium shadow-xs'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1a1b23] font-normal'
                 }`}
               >
@@ -893,7 +894,7 @@ export const OrdersPage: React.FC = () => {
           </div>
         </SystemFilterItem>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto sm:ml-auto">
           <SystemFilterSearch
             value={searchTerm}
             onChange={(e) => {
@@ -901,11 +902,11 @@ export const OrdersPage: React.FC = () => {
               setPage(1);
             }}
             placeholder="Tìm mã đơn, MVD, người mua..."
-            className="w-56 sm:w-64"
+            className="w-full sm:w-60"
           />
 
-          <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 h-8 text-xs">
-            <Calendar size={13} className="text-gray-400" />
+          <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 h-8 text-xs w-full sm:w-auto">
+            <Calendar size={13} className="text-gray-400 shrink-0" />
             <input
               type="date"
               value={fromDate}
@@ -913,9 +914,9 @@ export const OrdersPage: React.FC = () => {
                 setFromDate(e.target.value);
                 setPage(1);
               }}
-              className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none font-normal"
+              className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none font-normal min-w-0"
             />
-            <span className="text-gray-400 font-normal">-</span>
+            <span className="text-gray-400 font-normal shrink-0">-</span>
             <input
               type="date"
               value={toDate}
@@ -923,12 +924,16 @@ export const OrdersPage: React.FC = () => {
                 setToDate(e.target.value);
                 setPage(1);
               }}
-              className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none font-normal"
+              className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none font-normal min-w-0"
             />
           </div>
         </div>
 
-        {hasActiveFilter && <SystemFilterReset onClick={resetAllFilters} />}
+        {hasActiveFilter && (
+          <div className="w-full sm:w-auto flex justify-end">
+            <SystemFilterReset onClick={resetAllFilters} />
+          </div>
+        )}
       </SystemFilter>
 
       {/* Error alert */}
@@ -1252,17 +1257,20 @@ export const OrdersPage: React.FC = () => {
         )}
 
         {/* Mobile Pagination */}
-        <SystemPagination
-          page={page - 1}
-          totalPages={totalPages}
-          totalItems={totalCount}
-          setPage={(p) => setPage(p + 1)}
-          itemsPerPage={limit}
-          setItemsPerPage={(newLimit) => {
-            setLimit(newLimit);
-            setPage(1);
-          }}
-        />
+        <div className="rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+          <SystemPagination
+            page={page - 1}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            setPage={(p) => setPage(p + 1)}
+            itemsPerPage={limit}
+            setItemsPerPage={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+            className="border-t-0"
+          />
+        </div>
       </div>
 
       {/* Order Detail Drawer */}
