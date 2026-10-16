@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   Wallet,
@@ -23,6 +24,7 @@ import { formatCurrency } from '../../utils';
 import { Button } from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
 import { useClickOutside } from '../../hooks/useClickOutside';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import {
   Card,
   CardHeader,
@@ -96,6 +98,7 @@ const SHOPEE_STATUS_OPTIONS = [
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const selectedShopId = useWorkspaceStore((s) => s.selectedShopId);
+  const isMobile = useIsMobile();
 
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -152,172 +155,344 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Filter Controls: Shopee Status Multi-select, Date Filter & Refresh */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           {/* Shopee Status Multi-Select Dropdown */}
-          <div ref={statusDropdownRef} className="relative">
+          <div ref={statusDropdownRef} className="relative w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-              className={`flex items-center gap-2 bg-white dark:bg-[#181b22] border rounded px-2.5 h-8 text-xs font-medium transition-colors cursor-pointer ${
+              className={`w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 bg-white dark:bg-[#181b22] border rounded px-2.5 h-8 text-xs font-medium transition-colors cursor-pointer ${
                 selectedStatuses.length > 0
                   ? 'border-[#5865f2] text-[#5865f2] dark:text-indigo-400 bg-indigo-50/20'
                   : 'border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700'
               }`}
             >
-              <Filter
-                size={13}
-                className={selectedStatuses.length > 0 ? 'text-[#5865f2]' : 'text-gray-400'}
-              />
-              <span className="truncate max-w-[190px]">
-                {selectedStatuses.length === 0
-                  ? 'Trạng thái Shopee: Tất cả'
-                  : selectedStatuses.length === 1
-                  ? SHOPEE_STATUS_OPTIONS.find((s) => s.id === selectedStatuses[0])?.label
-                  : `${selectedStatuses.length} trạng thái Shopee`}
-              </span>
-              {selectedStatuses.length > 0 && (
-                <span className="px-1.5 py-0.2 bg-[#5865f2] text-white text-[10px] font-bold rounded-full">
-                  {selectedStatuses.length}
+              <div className="flex items-center gap-2 truncate min-w-0">
+                <Filter
+                  size={13}
+                  className={selectedStatuses.length > 0 ? 'text-[#5865f2]' : 'text-gray-400 shrink-0'}
+                />
+                <span className="truncate">
+                  {selectedStatuses.length === 0
+                    ? 'Trạng thái Shopee: Tất cả'
+                    : selectedStatuses.length === 1
+                    ? SHOPEE_STATUS_OPTIONS.find((s) => s.id === selectedStatuses[0])?.label
+                    : `${selectedStatuses.length} trạng thái Shopee`}
                 </span>
-              )}
-              <ChevronDown
-                size={13}
-                className={`text-gray-400 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`}
-              />
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {selectedStatuses.length > 0 && (
+                  <span className="px-1.5 py-0.2 bg-[#5865f2] text-white text-[10px] font-bold rounded-full">
+                    {selectedStatuses.length}
+                  </span>
+                )}
+                <ChevronDown
+                  size={13}
+                  className={`text-gray-400 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`}
+                />
+              </div>
             </button>
 
-            {isStatusDropdownOpen && (
-              <div className="absolute right-0 top-full mt-1.5 z-50 w-[calc(100vw-32px)] sm:w-auto min-w-[280px] sm:min-w-[320px] max-w-[360px] rounded-lg bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 shadow-xl p-2.5 text-xs animate-in fade-in zoom-in-95 duration-150">
-                {/* Header */}
-                <div className="pb-2 mb-2 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                  <span className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
-                    <ListFilter size={14} className="text-[#5865f2]" />
-                    Lọc theo trạng thái Shopee
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedStatuses(SHOPEE_STATUS_OPTIONS.map((s) => s.id))}
-                      className="text-[11px] text-[#5865f2] hover:underline cursor-pointer font-medium"
-                    >
-                      Chọn tất cả
-                    </button>
-                    <span className="text-gray-300 dark:text-gray-700">|</span>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedStatuses([])}
-                      className="text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer font-medium"
-                    >
-                      Bỏ chọn
-                    </button>
-                  </div>
-                </div>
-
-                {/* Quick Presets */}
-                <div className="flex flex-wrap gap-1.5 mb-2.5 pb-2 border-b border-gray-100 dark:border-gray-800">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedStatuses(['COMPLETED', 'TO_CONFIRM_RECEIVE'])}
-                    className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 hover:bg-emerald-100 transition-colors cursor-pointer border border-emerald-200/60 dark:border-emerald-800/40"
-                  >
-                    ✓ Thành công
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedStatuses(['READY_TO_SHIP', 'SHIPPED', 'RETRY_SHIP'])}
-                    className="px-2 py-0.5 rounded text-[11px] font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 hover:bg-indigo-100 transition-colors cursor-pointer border border-indigo-200/60 dark:border-indigo-800/40"
-                  >
-                    ⏱ Đang giao
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedStatuses(['CANCELLED', 'TO_RETURN', 'RETURN_REFUND', 'IN_CANCEL'])}
-                    className="px-2 py-0.5 rounded text-[11px] font-medium bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 hover:bg-rose-100 transition-colors cursor-pointer border border-rose-200/60 dark:border-rose-800/40"
-                  >
-                    ✕ Hủy & Hoàn
-                  </button>
-                </div>
-
-                {/* Status Options with Checkbox */}
-                <div className="max-h-[260px] overflow-y-auto space-y-1 custom-scrollbar pr-1">
-                  {SHOPEE_STATUS_OPTIONS.map((st) => {
-                    const isSelected = selectedStatuses.includes(st.id);
-                    return (
+            {isStatusDropdownOpen &&
+              (isMobile
+                ? createPortal(
+                    <div className="fixed inset-0 z-[100] flex flex-col justify-end select-none pointer-events-auto">
+                      {/* Dark Backdrop */}
                       <div
-                        key={st.id}
-                        onClick={() => toggleStatus(st.id)}
-                        className={`flex items-center justify-between p-2 rounded transition-colors cursor-pointer select-none ${
-                          isSelected
-                            ? 'bg-gray-100/80 dark:bg-white/5'
-                            : 'hover:bg-gray-50 dark:hover:bg-white/[0.02]'
-                        }`}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200 cursor-pointer animate-in fade-in"
+                        onClick={() => setIsStatusDropdownOpen(false)}
+                      />
+
+                      {/* Bottom Sheet Drawer */}
+                      <div
+                        className="relative z-10 w-full max-h-[85vh] bg-white dark:bg-[#161b26] border-t border-gray-200 dark:border-gray-800 rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200"
+                        style={{
+                          paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
+                        }}
                       >
-                        <div className="flex items-center gap-2.5">
-                          <Checkbox
-                            checked={isSelected}
-                            onChange={() => toggleStatus(st.id)}
-                            size="sm"
-                          />
-                          <span className={`w-2 h-2 rounded-full ${st.dotColor} shrink-0`} />
-                          <span className="font-medium text-gray-800 dark:text-gray-200 text-xs">
-                            {st.label}
-                          </span>
+                        {/* Drag Handle & Header */}
+                        <div className="w-full pt-3 pb-2.5 px-4 flex flex-col border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-[#121620]">
+                          <div className="w-12 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-2.5" />
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-sm text-gray-900 dark:text-white flex items-center gap-1.5">
+                              <ListFilter size={15} className="text-[#5865f2]" />
+                              Lọc theo trạng thái Shopee
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedStatuses(SHOPEE_STATUS_OPTIONS.map((s) => s.id))
+                                }
+                                className="text-xs text-[#5865f2] hover:underline cursor-pointer font-medium"
+                              >
+                                Chọn tất cả
+                              </button>
+                              <span className="text-gray-300 dark:text-gray-700">|</span>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedStatuses([])}
+                                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer font-medium"
+                              >
+                                Bỏ chọn
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setIsStatusDropdownOpen(false)}
+                                className="p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 ml-1 cursor-pointer"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <span className="font-mono text-[10px] text-gray-400">
-                          {st.id}
-                        </span>
+
+                        {/* Quick Presets */}
+                        <div className="px-4 py-2.5 flex flex-wrap gap-1.5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#161b26]">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedStatuses(['COMPLETED', 'TO_CONFIRM_RECEIVE'])
+                            }
+                            className="px-2.5 py-1 rounded text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 hover:bg-emerald-100 transition-colors cursor-pointer border border-emerald-200/60 dark:border-emerald-800/40"
+                          >
+                            ✓ Thành công
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedStatuses(['READY_TO_SHIP', 'SHIPPED', 'RETRY_SHIP'])
+                            }
+                            className="px-2.5 py-1 rounded text-xs font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 hover:bg-indigo-100 transition-colors cursor-pointer border border-indigo-200/60 dark:border-indigo-800/40"
+                          >
+                            ⏱ Đang giao
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedStatuses([
+                                'CANCELLED',
+                                'TO_RETURN',
+                                'RETURN_REFUND',
+                                'IN_CANCEL',
+                              ])
+                            }
+                            className="px-2.5 py-1 rounded text-xs font-medium bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 hover:bg-rose-100 transition-colors cursor-pointer border border-rose-200/60 dark:border-rose-800/40"
+                          >
+                            ✕ Hủy & Hoàn
+                          </button>
+                        </div>
+
+                        {/* Status Options with Checkbox */}
+                        <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+                          {SHOPEE_STATUS_OPTIONS.map((st) => {
+                            const isSelected = selectedStatuses.includes(st.id);
+                            return (
+                              <div
+                                key={st.id}
+                                onClick={() => toggleStatus(st.id)}
+                                className={`flex items-center justify-between p-2.5 rounded-lg transition-colors cursor-pointer select-none ${
+                                  isSelected
+                                    ? 'bg-indigo-50/70 dark:bg-[#5865f2]/10 border border-[#5865f2]/30'
+                                    : 'hover:bg-gray-50 dark:hover:bg-white/[0.03] border border-transparent'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onChange={() => toggleStatus(st.id)}
+                                    size="sm"
+                                  />
+                                  <span
+                                    className={`w-2 h-2 rounded-full ${st.dotColor} shrink-0`}
+                                  />
+                                  <span className="font-medium text-gray-800 dark:text-gray-200 text-xs">
+                                    {st.label}
+                                  </span>
+                                </div>
+                                <span className="font-mono text-[10px] text-gray-400">
+                                  {st.id}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-[#121620]">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {selectedStatuses.length === 0
+                              ? 'Đang tính cho tất cả đơn hàng'
+                              : `Đang chọn ${selectedStatuses.length} trạng thái`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setIsStatusDropdownOpen(false)}
+                            className="px-4 py-2 rounded-lg bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold cursor-pointer shadow-sm active:scale-95 transition-all"
+                          >
+                            Áp dụng
+                          </button>
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>,
+                    document.body,
+                  )
+                : (
+                    /* Desktop Dropdown Popover */
+                    <div className="absolute right-0 top-full mt-1.5 z-50 w-[340px] rounded-lg bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 shadow-xl p-2.5 text-xs animate-in fade-in zoom-in-95 duration-150">
+                      {/* Header */}
+                      <div className="pb-2 mb-2 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                        <span className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
+                          <ListFilter size={14} className="text-[#5865f2]" />
+                          Lọc theo trạng thái Shopee
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedStatuses(SHOPEE_STATUS_OPTIONS.map((s) => s.id))
+                            }
+                            className="text-[11px] text-[#5865f2] hover:underline cursor-pointer font-medium"
+                          >
+                            Chọn tất cả
+                          </button>
+                          <span className="text-gray-300 dark:text-gray-700">|</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedStatuses([])}
+                            className="text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer font-medium"
+                          >
+                            Bỏ chọn
+                          </button>
+                        </div>
+                      </div>
 
-                {/* Footer */}
-                <div className="pt-2 mt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                  <span className="text-[11px] text-gray-400">
-                    {selectedStatuses.length === 0
-                      ? 'Đang tính cho tất cả đơn hàng'
-                      : `Đang chọn ${selectedStatuses.length} trạng thái`}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setIsStatusDropdownOpen(false)}
-                    className="px-3 py-1 rounded bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold cursor-pointer"
-                  >
-                    Áp dụng
-                  </button>
-                </div>
+                      {/* Quick Presets */}
+                      <div className="flex flex-wrap gap-1.5 mb-2.5 pb-2 border-b border-gray-100 dark:border-gray-800">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedStatuses(['COMPLETED', 'TO_CONFIRM_RECEIVE'])
+                          }
+                          className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 hover:bg-emerald-100 transition-colors cursor-pointer border border-emerald-200/60 dark:border-emerald-800/40"
+                        >
+                          ✓ Thành công
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedStatuses(['READY_TO_SHIP', 'SHIPPED', 'RETRY_SHIP'])
+                          }
+                          className="px-2 py-0.5 rounded text-[11px] font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 hover:bg-indigo-100 transition-colors cursor-pointer border border-indigo-200/60 dark:border-indigo-800/40"
+                        >
+                          ⏱ Đang giao
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedStatuses([
+                              'CANCELLED',
+                              'TO_RETURN',
+                              'RETURN_REFUND',
+                              'IN_CANCEL',
+                            ])
+                          }
+                          className="px-2 py-0.5 rounded text-[11px] font-medium bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 hover:bg-rose-100 transition-colors cursor-pointer border border-rose-200/60 dark:border-rose-800/40"
+                        >
+                          ✕ Hủy & Hoàn
+                        </button>
+                      </div>
+
+                      {/* Status Options with Checkbox */}
+                      <div className="max-h-[260px] overflow-y-auto space-y-1 custom-scrollbar pr-1">
+                        {SHOPEE_STATUS_OPTIONS.map((st) => {
+                          const isSelected = selectedStatuses.includes(st.id);
+                          return (
+                            <div
+                              key={st.id}
+                              onClick={() => toggleStatus(st.id)}
+                              className={`flex items-center justify-between p-2 rounded transition-colors cursor-pointer select-none ${
+                                isSelected
+                                  ? 'bg-gray-100/80 dark:bg-white/5'
+                                  : 'hover:bg-gray-50 dark:hover:bg-white/[0.02]'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <Checkbox
+                                  checked={isSelected}
+                                  onChange={() => toggleStatus(st.id)}
+                                  size="sm"
+                                />
+                                <span
+                                  className={`w-2 h-2 rounded-full ${st.dotColor} shrink-0`}
+                                />
+                                <span className="font-medium text-gray-800 dark:text-gray-200 text-xs">
+                                  {st.label}
+                                </span>
+                              </div>
+                              <span className="font-mono text-[10px] text-gray-400">
+                                {st.id}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Footer */}
+                      <div className="pt-2 mt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                        <span className="text-[11px] text-gray-400">
+                          {selectedStatuses.length === 0
+                            ? 'Đang tính cho tất cả đơn hàng'
+                            : `Đang chọn ${selectedStatuses.length} trạng thái`}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsStatusDropdownOpen(false)}
+                          className="px-3 py-1 rounded bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold cursor-pointer"
+                        >
+                          Áp dụng
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+          </div>
+
+          {/* Row 2 on mobile: Date Range + Refresh Button inline */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* Date Range */}
+            <div className="flex-1 sm:flex-initial flex items-center justify-between sm:justify-start gap-1.5 bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 rounded px-2.5 h-8 text-xs min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                <Calendar size={13} className="text-gray-400 shrink-0" />
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none w-full min-w-0 font-sans"
+                />
               </div>
-            )}
-          </div>
+              <span className="text-gray-400 shrink-0 px-0.5">-</span>
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none w-full min-w-0 font-sans"
+                />
+              </div>
+            </div>
 
-          {/* Date Range */}
-          <div className="flex items-center gap-1.5 bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 rounded px-2.5 h-8 text-xs">
-            <Calendar size={13} className="text-gray-400" />
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none"
-            />
-            <span className="text-gray-400">-</span>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none"
-            />
+            {/* Refresh Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadDashboard}
+              disabled={isLoading}
+              className="h-8 w-8 p-0 flex items-center justify-center shrink-0"
+              title="Làm mới"
+            >
+              <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+            </Button>
           </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadDashboard}
-            disabled={isLoading}
-            className="px-2.5"
-            title="Làm mới"
-          >
-            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-          </Button>
         </div>
       </div>
 
