@@ -60,7 +60,7 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/75 backdrop-blur-[2px] animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 dark:bg-black/75 backdrop-blur-[2px] animate-fade-in">
       <div
         className="fixed inset-0 -z-10"
         onClick={onClose}
@@ -69,25 +69,25 @@ export const Modal: React.FC<ModalProps> = ({
       <div
         ref={modalRef}
         className={cn(
-          'bg-white dark:bg-[#181b22] rounded w-full shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[92vh] transition-all',
+          'bg-white dark:bg-[#181b22] rounded-xl sm:rounded w-full shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[92vh] transition-all',
           resolvedMaxWidth,
           className,
         )}
       >
         {/* Modal Header */}
-        <div className="px-5 py-3.5 bg-white dark:bg-[#181b22] border-b border-gray-200 dark:border-gray-800 flex items-center justify-between shrink-0">
+        <div className="px-3.5 sm:px-5 py-3 sm:py-3.5 bg-white dark:bg-[#181b22] border-b border-gray-200 dark:border-gray-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             {Icon && (
-              <div className="w-8 h-8 rounded bg-[#5865f2]/10 dark:bg-[#5865f2]/20 text-[#5865f2] flex items-center justify-center shrink-0">
-                <Icon size={16} strokeWidth={1.5} />
+              <div className="w-8 h-8 rounded-lg sm:rounded bg-[#5865f2]/10 dark:bg-[#5865f2]/20 text-[#5865f2] flex items-center justify-center shrink-0">
+                <Icon size={16} strokeWidth={1.8} />
               </div>
             )}
             <div className="min-w-0">
-              <h3 className="text-sm sm:text-base font-medium text-gray-900 dark:text-white leading-tight truncate">
+              <h3 className="text-sm sm:text-base font-semibold sm:font-medium text-gray-900 dark:text-white leading-tight truncate">
                 {title}
               </h3>
               {subtitle && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate font-normal">
+                <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate font-normal">
                   {subtitle}
                 </p>
               )}
@@ -134,7 +134,7 @@ export const ModalFooter: React.FC<{
 }> = ({ children, className = '' }) => (
   <div
     className={cn(
-      'px-5 py-3 bg-gray-50/50 dark:bg-[#14151a] border-t border-gray-200 dark:border-gray-800 flex items-center justify-end gap-2.5 shrink-0',
+      'px-3.5 sm:px-5 py-2.5 sm:py-3 bg-gray-50/70 dark:bg-[#14151a] border-t border-gray-200 dark:border-gray-800 flex items-center justify-end gap-2 sm:gap-2.5 shrink-0',
       className,
     )}
   >

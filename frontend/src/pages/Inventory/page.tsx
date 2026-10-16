@@ -297,12 +297,14 @@ export const InventoryPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div>
-          <h1 className="text-lg md:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
-            <Warehouse size={20} className="text-[#5865f2]" />
-            Kho & Tồn kho
+          <h1 className="text-base sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
+            <Boxes size={20} className="text-[#5865f2]" />
+            <span className="sm:hidden">Hàng tồn kho</span>
+            <span className="hidden sm:inline">Kho & Tồn kho</span>
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Theo dõi số dư thực tế, nhập kho, điều chỉnh kiểm kê và sổ cái biến động bất biến
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+            <span className="sm:hidden">Số dư thực có & khả dụng</span>
+            <span className="hidden sm:inline">Theo dõi số dư thực tế, nhập kho, điều chỉnh kiểm kê và sổ cái biến động bất biến</span>
           </p>
         </div>
 

@@ -622,12 +622,14 @@ export const SupplierDebtsPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg md:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
-            <Building2 size={20} className="text-[#5865f2]" />
-            Công Nợ & Thanh Toán Nhà Cung Cấp
+          <h1 className="text-base sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
+            <Wallet size={20} className="text-[#5865f2]" />
+            <span className="sm:hidden">Công nợ NCC</span>
+            <span className="hidden sm:inline">Công Nợ & Thanh Toán Nhà Cung Cấp</span>
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Số dư cuối kỳ = Nợ đầu kỳ + Phát sinh phải trả − Giảm trừ trả hàng − Tiền đã trả + Tiền NCC hoàn lại
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+            <span className="sm:hidden">Theo dõi số dư nợ & thanh toán</span>
+            <span className="hidden sm:inline">Số dư cuối kỳ = Nợ đầu kỳ + Phát sinh phải trả − Giảm trừ trả hàng − Tiền đã trả + Tiền NCC hoàn lại</span>
           </p>
         </div>
 

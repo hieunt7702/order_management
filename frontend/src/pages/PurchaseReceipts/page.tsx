@@ -391,12 +391,14 @@ export const PurchaseReceiptsPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg md:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
+          <h1 className="text-base sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
             <PackagePlus size={20} className="text-[#5865f2]" />
-            Quản lý Phiếu Nhập Kho
+            <span className="sm:hidden">Phiếu nhập kho</span>
+            <span className="hidden sm:inline">Quản lý Phiếu Nhập Kho</span>
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Phân tách độc lập: Giá trị hàng thực nhận • Công nợ phải trả NCC • Tiền thực tế đã thanh toán
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+            <span className="sm:hidden">Nhập hàng NCC & công nợ</span>
+            <span className="hidden sm:inline">Phân tách độc lập: Giá trị hàng thực nhận • Công nợ phải trả NCC • Tiền thực tế đã thanh toán</span>
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -978,17 +980,17 @@ export const PurchaseReceiptsPage: React.FC = () => {
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title="Lập Phiếu Nhập Kho & Ghi Nhận Công Nợ NCC"
-        subtitle="Cộng tồn kho thực tế (onHand) và hạch toán dòng công nợ nhà cung cấp"
+        title="Lập phiếu nhập kho"
+        subtitle="Cộng tồn kho thực tế & ghi nhận công nợ NCC"
         icon={PackagePlus}
         size="2xl"
       >
-        <form onSubmit={handleCreateSubmit} className="space-y-5">
-          <ModalBody className="max-h-[75vh] overflow-y-auto space-y-4">
+        <form onSubmit={handleCreateSubmit} className="space-y-4">
+          <ModalBody className="max-h-[75vh] overflow-y-auto space-y-3.5 p-3 sm:p-5">
             {/* Header info */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded border border-gray-200 dark:border-gray-800">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded border border-gray-200 dark:border-gray-800">
               <div>
-                <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                     <Building2 size={13} className="text-[#5865f2]" />
                     <span>Nhà cung cấp *</span>
@@ -1038,7 +1040,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
                   <Warehouse size={13} className="text-[#5865f2]" />
                   <span>Kho nhập hàng *</span>
                 </label>
@@ -1058,7 +1060,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
                   <Store size={13} className="text-gray-400" />
                   <span>Shop sở hữu (Tùy chọn)</span>
                 </label>
@@ -1084,7 +1086,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   <div className="flex items-center gap-1.5">
                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                       <FileText size={13} className="text-[#5865f2]" />
-                      <span>Mã phiếu nhập hàng *</span>
+                      <span>Mã phiếu nhập *</span>
                     </label>
                     <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-medium">
                       Tự sinh
@@ -1106,7 +1108,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   placeholder="Ví dụ: PNK-20261015-ABCD"
                   value={createForm.receiptCode || ''}
                   onChange={(e) => setCreateForm({ ...createForm, receiptCode: e.target.value.toUpperCase() })}
-                  className="w-full text-xs sm:text-sm font-mono uppercase bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full text-xs font-mono uppercase bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1.5 text-gray-900 dark:text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -1119,38 +1121,40 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   type="date"
                   value={createForm.receiptDate || ''}
                   onChange={(e) => setCreateForm({ ...createForm, receiptDate: e.target.value })}
-                  className="w-full text-xs sm:text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white"
+                  className="w-full text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1.5 text-gray-900 dark:text-white"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
                   <Clock size={13} className="text-gray-400" />
-                  <span>Hạn thanh toán công nợ</span>
+                  <span>Hạn thanh toán nợ</span>
                 </label>
                 <input
                   type="date"
                   value={createForm.paymentDueDate || ''}
                   onChange={(e) => setCreateForm({ ...createForm, paymentDueDate: e.target.value })}
-                  className="w-full text-xs sm:text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-gray-900 dark:text-white"
+                  className="w-full text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1.5 text-gray-900 dark:text-white"
                 />
               </div>
             </div>
 
-            {/* Items Table */}
+            {/* Items Section */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide flex items-center gap-1.5">
                   <Boxes size={14} className="text-[#5865f2]" />
-                  <span>Danh sách sản phẩm thực nhận (Cộng tồn kho onHand)</span>
+                  <span className="sm:hidden">Sản phẩm thực nhận</span>
+                  <span className="hidden sm:inline">Danh sách sản phẩm thực nhận (Cộng tồn kho onHand)</span>
                 </span>
-                <Button type="button" variant="outline" size="sm" onClick={addItemRow} className="flex items-center gap-1.5 text-xs">
+                <Button type="button" variant="outline" size="sm" onClick={addItemRow} className="flex items-center gap-1 text-xs py-1 h-7">
                   <Plus className="w-3.5 h-3.5" />
                   <span>Thêm dòng</span>
                 </Button>
               </div>
 
-              <div className="border border-gray-200 dark:border-gray-800 rounded overflow-x-auto">
+              {/* Desktop Table View (hidden on mobile) */}
+              <div className="hidden md:block border border-gray-200 dark:border-gray-800 rounded overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-gray-100 dark:bg-gray-800/80 text-gray-600 dark:text-gray-300">
                     <tr>
@@ -1289,6 +1293,146 @@ export const PurchaseReceiptsPage: React.FC = () => {
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Dedicated Item Cards View (md:hidden) */}
+              <div className="md:hidden space-y-2.5">
+                {createForm.items.map((row, idx) => {
+                  const rowSubtotal = (row.receivedQuantity || 0) * (row.unitPrice || 0);
+
+                  return (
+                    <div
+                      key={idx}
+                      className="p-3 bg-white dark:bg-gray-800/90 rounded-lg border border-gray-200 dark:border-gray-700/80 shadow-xs space-y-2.5"
+                    >
+                      {/* Header with Item # and Delete Button */}
+                      <div className="flex items-center justify-between pb-1.5 border-b border-gray-100 dark:border-gray-700/60">
+                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                          <Package size={13} className="text-[#5865f2]" />
+                          <span>Sản phẩm #{idx + 1}</span>
+                        </span>
+                        {createForm.items.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeItemRow(idx)}
+                            className="text-xs text-rose-500 hover:text-rose-600 flex items-center gap-1 font-semibold cursor-pointer"
+                          >
+                            <Trash2 size={13} />
+                            <span>Xóa</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Full-width SKU Selection */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-300 mb-1">
+                          Biến thể / SKU *
+                        </label>
+                        <Select
+                          value={row.variantId}
+                          onChange={(val) => handleItemChange(idx, 'variantId', String(val))}
+                          options={[
+                            { value: '', label: '-- Chọn biến thể SKU --' },
+                            ...allVariants.map((v) => {
+                              const prodName = v.product?.name || v.productName || '';
+                              const varName =
+                                v.name && v.name !== 'Mặc định' && v.name !== prodName
+                                  ? ` (${v.name})`
+                                  : '';
+                              return {
+                                value: v.id,
+                                label: `[${v.sku || 'SKU'}] ${prodName}${varName}`,
+                                badge: v.costPrice ? `${Number(v.costPrice).toLocaleString('vi-VN')}đ` : undefined,
+                              };
+                            }),
+                          ]}
+                          placeholder="-- Chọn biến thể SKU --"
+                          searchable={true}
+                          size="sm"
+                          className="w-full"
+                        />
+                      </div>
+
+                      {/* 3 Quantities Grid: Đặt, Nhận, Lỗi */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="p-1.5 rounded bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/70 text-center">
+                          <label className="block text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 font-medium">
+                            SL Đặt
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={row.orderedQuantity}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => handleItemChange(idx, 'orderedQuantity', Number(e.target.value))}
+                            className="w-full text-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded py-1 text-xs font-semibold"
+                          />
+                        </div>
+
+                        <div className="p-1.5 rounded bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-center">
+                          <label className="block text-[10px] text-indigo-600 dark:text-indigo-400 mb-0.5 font-bold">
+                            Thực nhận
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={row.receivedQuantity}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => handleItemChange(idx, 'receivedQuantity', Number(e.target.value))}
+                            className="w-full text-center bg-white dark:bg-gray-800 border border-indigo-400 rounded py-1 text-xs font-bold text-indigo-600 dark:text-indigo-400"
+                          />
+                        </div>
+
+                        <div className="p-1.5 rounded bg-rose-50/60 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-center">
+                          <label className="block text-[10px] text-rose-600 dark:text-rose-400 mb-0.5 font-medium">
+                            Lỗi/Thiếu
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={row.disputedQuantity || 0}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => handleItemChange(idx, 'disputedQuantity', Number(e.target.value))}
+                            className="w-full text-center bg-white dark:bg-gray-800 border border-rose-300 dark:border-rose-700 rounded py-1 text-xs text-rose-600 font-semibold"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Price and Subtotal Grid */}
+                      <div className="grid grid-cols-2 gap-2 p-2 rounded bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700/60 items-center">
+                        <div>
+                          <label className="block text-[10px] text-gray-500 dark:text-gray-400 mb-1 font-medium">
+                            Đơn giá nhập (đ)
+                          </label>
+                          <CurrencyInput
+                            value={row.unitPrice}
+                            onChange={(val) => handleItemChange(idx, 'unitPrice', val)}
+                            inputClassName="p-1 text-xs font-semibold"
+                          />
+                        </div>
+                        <div className="text-right">
+                          <span className="block text-[10px] text-gray-500 dark:text-gray-400 mb-1 font-medium">
+                            Thành tiền
+                          </span>
+                          <span className="text-xs font-mono font-bold text-gray-900 dark:text-white">
+                            {rowSubtotal.toLocaleString('vi-VN')}đ
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Note */}
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Ghi chú hàng lỗi/hỏng (nếu có)..."
+                          value={row.note || ''}
+                          onChange={(e) => handleItemChange(idx, 'note', e.target.value)}
+                          className="w-full bg-transparent border-0 border-b border-gray-200 dark:border-gray-700 p-1 text-[11px] text-gray-600 dark:text-gray-400 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -1478,8 +1622,8 @@ export const PurchaseReceiptsPage: React.FC = () => {
       <Modal
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
-        title={`Chi Tiết Phiếu Nhập: ${selectedReceiptDetail?.receiptCode || ''}`}
-        subtitle="Thông tin 3 trục: Hàng thực nhận • Công nợ phải trả • Tiền thực tế đã thanh toán"
+        title={`Chi tiết: ${selectedReceiptDetail?.receiptCode || ''}`}
+        subtitle="Hàng thực nhận • Công nợ • Thanh toán"
         icon={FileText}
         size="2xl"
       >

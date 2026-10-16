@@ -147,10 +147,12 @@ export const DashboardPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div>
           <h1 className="text-base font-medium text-gray-900 dark:text-white leading-tight">
-            Tổng quan Vận hành & Doanh thu
+            <span className="sm:hidden">Tổng quan</span>
+            <span className="hidden sm:inline">Tổng quan Vận hành & Doanh thu</span>
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Dữ liệu tổng hợp từ hệ thống theo thời gian thực
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+            <span className="sm:hidden">Số liệu theo thời gian thực</span>
+            <span className="hidden sm:inline">Dữ liệu tổng hợp từ hệ thống theo thời gian thực</span>
           </p>
         </div>
 
