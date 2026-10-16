@@ -23,13 +23,14 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
 
-  // CORS allowlist
+  // CORS allowlist with preflight cache
   const corsOrigin = process.env.CORS_ORIGIN || '*';
   app.enableCors({
     origin: corsOrigin === '*' ? true : corsOrigin.split(',').map((o) => o.trim()),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id', 'Idempotency-Key', 'X-Request-Id'],
+    maxAge: 86400, // Cache CORS preflight for 24h to avoid duplicate OPTIONS roundtrips
   });
 
   // Graceful shutdown
