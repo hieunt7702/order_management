@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, Package } from 'lucide-react';
+import { CurrencyInput } from '../../components/ui/CurrencyInput';
 
 export interface OrderEditModalProps {
   isOpen: boolean;
@@ -138,12 +139,12 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({ isOpen, onClose,
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Tiền thu COD (VNĐ)</label>
-              <input
-                type="number"
+              <CurrencyInput
                 value={formData.codAmount}
-                onChange={(e) => setFormData({ ...formData, codAmount: parseInt(e.target.value, 10) || 0 })}
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:ring-[2px] focus:ring-[#5865f2]/30 transition-all"
-                placeholder="2744000"
+                onChange={(val) => setFormData({ ...formData, codAmount: val })}
+                placeholder="0"
+                suffix="đ"
+                inputClassName="px-3 py-2 bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:ring-[2px] focus:ring-[#5865f2]/30 transition-all font-mono"
               />
             </div>
             <div>

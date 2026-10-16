@@ -31,6 +31,7 @@ import {
 import { productsApi } from '../../services/productsApi';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { formatCurrency, parseExcelFile } from '../../utils';
+import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import { Select } from '../../components/ui/Select';
 import { Checkbox } from '../../components/ui/Checkbox';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
@@ -2073,32 +2074,32 @@ export const ProductsPage: React.FC = () => {
                             <label className="text-[11px] font-medium text-gray-500">
                               Giá vốn (VND)
                             </label>
-                            <input
-                              type="number"
-                              min="0"
+                            <CurrencyInput
                               value={v.costPrice}
-                              onChange={(e) => {
+                              onChange={(val) => {
                                 const next = [...createProductForm.variants];
-                                next[idx].costPrice = parseFloat(e.target.value) || 0;
+                                next[idx].costPrice = val;
                                 setCreateProductForm({ ...createProductForm, variants: next });
                               }}
-                              className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white"
+                              placeholder="0"
+                              suffix="đ"
+                              inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white"
                             />
                           </div>
                           <div>
                             <label className="text-[11px] font-medium text-gray-500">
                               Giá bán (VND)
                             </label>
-                            <input
-                              type="number"
-                              min="0"
+                            <CurrencyInput
                               value={v.sellPrice}
-                              onChange={(e) => {
+                              onChange={(val) => {
                                 const next = [...createProductForm.variants];
-                                next[idx].sellPrice = parseFloat(e.target.value) || 0;
+                                next[idx].sellPrice = val;
                                 setCreateProductForm({ ...createProductForm, variants: next });
                               }}
-                              className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white"
+                              placeholder="0"
+                              suffix="đ"
+                              inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white"
                             />
                           </div>
                           <div>
@@ -2187,34 +2188,34 @@ export const ProductsPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                     Giá vốn COGS (VND)
                   </label>
-                  <input
-                    type="number"
-                    min="0"
+                  <CurrencyInput
                     value={editVariantForm.costPrice}
-                    onChange={(e) =>
+                    onChange={(val) =>
                       setEditVariantForm({
                         ...editVariantForm,
-                        costPrice: parseFloat(e.target.value) || 0,
+                        costPrice: val,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    placeholder="0"
+                    suffix="đ"
+                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                     Giá bán (VND)
                   </label>
-                  <input
-                    type="number"
-                    min="0"
+                  <CurrencyInput
                     value={editVariantForm.sellPrice}
-                    onChange={(e) =>
+                    onChange={(val) =>
                       setEditVariantForm({
                         ...editVariantForm,
-                        sellPrice: parseFloat(e.target.value) || 0,
+                        sellPrice: val,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    placeholder="0"
+                    suffix="đ"
+                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
               </div>
@@ -2570,34 +2571,34 @@ export const ProductsPage: React.FC = () => {
                         <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
                           Giá vốn COGS (VND)
                         </label>
-                        <input
-                          type="number"
-                          min="0"
+                        <CurrencyInput
                           value={quickCreateForm.costPrice}
-                          onChange={(e) =>
+                          onChange={(val) =>
                             setQuickCreateForm({
                               ...quickCreateForm,
-                              costPrice: parseFloat(e.target.value) || 0,
+                              costPrice: val,
                             })
                           }
-                          className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                          placeholder="0"
+                          suffix="đ"
+                          inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                         />
                       </div>
                       <div>
                         <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
                           Giá bán (VND)
                         </label>
-                        <input
-                          type="number"
-                          min="0"
+                        <CurrencyInput
                           value={quickCreateForm.sellPrice}
-                          onChange={(e) =>
+                          onChange={(val) =>
                             setQuickCreateForm({
                               ...quickCreateForm,
-                              sellPrice: parseFloat(e.target.value) || 0,
+                              sellPrice: val,
                             })
                           }
-                          className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                          placeholder="0"
+                          suffix="đ"
+                          inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                         />
                       </div>
                     </div>

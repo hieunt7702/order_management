@@ -6,6 +6,7 @@ export interface CurrencyInputProps
   value: number | string | undefined | null;
   onChange: (value: number) => void;
   suffix?: string;
+  allowNegative?: boolean;
   className?: string;
   inputClassName?: string;
 }
@@ -15,11 +16,13 @@ export interface CurrencyInputProps
  */
 export const formatVnd = (val: number | string | undefined | null): string => {
   if (val === undefined || val === null || val === '') return '';
-  const num = typeof val === 'number' ? val : parseInt(String(val).replace(/[^\d]/g, ''), 10);
+  const isNeg = typeof val === 'number' ? val < 0 : String(val).trim().startsWith('-');
+  const num = typeof val === 'number' ? Math.abs(val) : parseInt(String(val).replace(/[^\d]/g, ''), 10);
   if (isNaN(num)) return '';
-  return Math.round(num)
+  const formatted = Math.round(num)
     .toString()
     .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return isNeg ? `-${formatted}` : formatted;
 };
 
 /**
@@ -28,13 +31,15 @@ export const formatVnd = (val: number | string | undefined | null): string => {
  * - Automatic elimination of leading zeros (typing 32432 won't become 032432)
  * - Cursor position preservation while typing
  * - Auto-select on focus when value is 0 for effortless overwriting
+ * - Vietnamese currency symbol suffix (đ) by default
  * - No browser spinner buttons
  */
 export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(function CurrencyInput(
   {
     value,
     onChange,
-    suffix,
+    suffix = 'đ',
+    allowNegative = false,
     className = '',
     inputClassName = '',
     placeholder = '0',

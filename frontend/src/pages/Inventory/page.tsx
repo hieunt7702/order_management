@@ -34,6 +34,7 @@ import { Button } from '../../components/ui/Button';
 import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
 import { Select } from '../../components/ui/Select';
 import { toast } from '../../components/ui/Toast';
+import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -1119,17 +1120,17 @@ export const InventoryPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                     Đơn giá vốn nhập (VND)
                   </label>
-                  <input
-                    type="number"
-                    min="0"
+                  <CurrencyInput
                     value={receiveForm.unitCost}
-                    onChange={(e) =>
+                    onChange={(val) =>
                       setReceiveForm({
                         ...receiveForm,
-                        unitCost: parseFloat(e.target.value) || 0,
+                        unitCost: val,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    placeholder="0"
+                    suffix="đ"
+                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
               </div>

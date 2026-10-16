@@ -33,7 +33,12 @@ export const parseExcelFile = (file: File): Promise<any[]> => {
 export const parseNumber = (val: any): number => {
   if (typeof val === 'number') return val;
   if (!val) return 0;
-  return parseFloat(val.toString().replace(/,/g, '')) || 0;
+  const str = String(val).trim();
+  // Check if string matches Vietnamese dot-separated thousands: e.g. 100.000 or 1.500.000 (with optional đ/₫)
+  if (/^-?\d{1,3}(\.\d{3})+(\s*(đ|₫|vnd))?$/i.test(str)) {
+    return parseInt(str.replace(/[^\d-]/g, ''), 10) || 0;
+  }
+  return parseFloat(str.replace(/,/g, '')) || 0;
 };
 
 export const generateProductKey = (product: Record<string, any>): string => {

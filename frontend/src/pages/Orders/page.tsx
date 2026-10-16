@@ -28,6 +28,7 @@ import { productsApi } from '../../services/productsApi';
 import { orderReturnsApi } from '../../services/orderReturnsApi';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { formatCurrency } from '../../utils';
+import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import {
   getPlatformStatusConfig,
   getVerificationStatusConfig,
@@ -1448,17 +1449,17 @@ export const OrdersPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                     Phí vận chuyển (VND)
                   </label>
-                  <input
-                    type="number"
-                    min="0"
+                  <CurrencyInput
                     value={createOrderForm.shippingFee}
-                    onChange={(e) =>
+                    onChange={(val) =>
                       setCreateOrderForm({
                         ...createOrderForm,
-                        shippingFee: parseFloat(e.target.value) || 0,
+                        shippingFee: val,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    placeholder="0"
+                    suffix="đ"
+                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
               </div>
@@ -1609,21 +1610,19 @@ export const OrdersPage: React.FC = () => {
                           <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-0.5">
                             Đơn giá (VND) *
                           </label>
-                          <input
-                            type="number"
-                            min="0"
-                            required
+                          <CurrencyInput
                             value={item.unitPrice}
-                            onChange={(e) => {
+                            onChange={(val) => {
                               const next = [...createOrderForm.items];
-                              next[idx].unitPrice =
-                                parseFloat(e.target.value) || 0;
+                              next[idx].unitPrice = val;
                               setCreateOrderForm({
                                 ...createOrderForm,
                                 items: next,
                               });
                             }}
-                            className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                            placeholder="0"
+                            suffix="đ"
+                            inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                           />
                         </div>
                       </div>
@@ -1791,34 +1790,34 @@ export const OrdersPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                     Phí vận chuyển (VND)
                   </label>
-                  <input
-                    type="number"
-                    min="0"
+                  <CurrencyInput
                     value={editOrderForm.shippingFee}
-                    onChange={(e) =>
+                    onChange={(val) =>
                       setEditOrderForm({
                         ...editOrderForm,
-                        shippingFee: parseFloat(e.target.value) || 0,
+                        shippingFee: val,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    placeholder="0"
+                    suffix="đ"
+                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                     Tổng tiền thanh toán (VND)
                   </label>
-                  <input
-                    type="number"
-                    min="0"
+                  <CurrencyInput
                     value={editOrderForm.totalAmount}
-                    onChange={(e) =>
+                    onChange={(val) =>
                       setEditOrderForm({
                         ...editOrderForm,
-                        totalAmount: parseFloat(e.target.value) || 0,
+                        totalAmount: val,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    placeholder="0"
+                    suffix="đ"
+                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
               </div>

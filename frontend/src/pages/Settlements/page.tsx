@@ -20,6 +20,7 @@ import {
 import { settlementsApi } from '../../services/settlementsApi';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { formatCurrency } from '../../utils';
+import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import { Select } from '../../components/ui/Select';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
 import {
@@ -476,18 +477,18 @@ export const SettlementsPage: React.FC = () => {
                   <DollarSign size={13} className="text-emerald-500" />
                   <span>Số tiền thực nhận vào tài khoản (VND) *</span>
                 </label>
-                <input
-                  type="number"
+                <CurrencyInput
                   required
-                  min="0"
                   value={recordForm.actualAmount}
-                  onChange={(e) =>
+                  onChange={(val) =>
                     setRecordForm({
                       ...recordForm,
-                      actualAmount: parseFloat(e.target.value) || 0,
+                      actualAmount: val,
                     })
                   }
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#5865f2]"
+                  placeholder="0"
+                  suffix="đ"
+                  inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 

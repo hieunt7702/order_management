@@ -49,6 +49,7 @@ import {
   DropdownMenuSeparator,
 } from '../../components/ui/DropdownMenu';
 import { toast } from '../../components/ui/Toast';
+import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import { formatCurrency } from '../../utils';
 
 export const SuppliersPage: React.FC = () => {
@@ -875,12 +876,12 @@ export const SuppliersPage: React.FC = () => {
                     <DollarSign size={13} className="text-amber-500" />
                     <span>Nợ đầu kỳ (VND)</span>
                   </label>
-                  <input
-                    type="number"
+                  <CurrencyInput
                     value={createForm.openingDebt}
-                    onChange={(e) => setCreateForm({ ...createForm, openingDebt: parseFloat(e.target.value) || 0 })}
+                    onChange={(val) => setCreateForm({ ...createForm, openingDebt: val })}
                     placeholder="0"
-                    className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
+                    suffix="đ"
+                    inputClassName="px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
                   />
                 </div>
                 <div>
@@ -1071,11 +1072,12 @@ export const SuppliersPage: React.FC = () => {
                     <DollarSign size={13} className="text-amber-500" />
                     <span>Nợ đầu kỳ (VND)</span>
                   </label>
-                  <input
-                    type="number"
+                  <CurrencyInput
                     value={editForm.openingDebt}
-                    onChange={(e) => setEditForm({ ...editForm, openingDebt: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
+                    onChange={(val) => setEditForm({ ...editForm, openingDebt: val })}
+                    placeholder="0"
+                    suffix="đ"
+                    inputClassName="px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
                   />
                 </div>
                 <div>
