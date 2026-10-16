@@ -1,0 +1,1035 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// -------------------------------------------------------------
+// 1. IDENTITY & MULTI-TENANCY
+// -------------------------------------------------------------
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum TenantStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  WAREHOUSE
+  ACCOUNTANT
+  VIEWER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+  INVITED
+}
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String
+  name         String
+  status       UserStatus  @default(ACTIVE)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  memberships    Membership[]
+  refreshTokens  RefreshToken[]
+  auditLogs      AuditLog[]
+
+  @@map("users")
+}
+
+model Tenant {
+  id        String       @id @default(uuid())
+  code      String       @unique
+  name      String
+  status    TenantStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  memberships         Membership[]
+  shops               Shop[]
+  warehouses          Warehouse[]
+  products            Product[]
+  productVariants     ProductVariant[]
+  listingMappings     ListingMapping[]
+  inventoryBalances   InventoryBalance[]
+  inventoryLedgers    InventoryLedger[]
+  orders              Order[]
+  orderItems          OrderItem[]
+  packages            Package[]
+  packageItems        PackageItem[]
+  scanEvents          ScanEvent[]
+  importJobs          ImportJob[]
+  importRowErrors     ImportRowError[]
+  settlements         Settlement[]
+  auditLogs           AuditLog[]
+  idempotencyRecords  IdempotencyRecord[]
+  suppliers           Supplier[]
+  purchaseReceipts    PurchaseReceipt[]
+  purchaseReceiptItems PurchaseReceiptItem[]
+  supplierPayments    SupplierPayment[]
+  paymentAllocations  PaymentAllocation[]
+  purchaseReturns     PurchaseReturn[]
+  purchaseReturnItems PurchaseReturnItem[]
+  orderReturns        OrderReturn[]
+  orderReturnItems    OrderReturnItem[]
+
+  @@map("tenants")
+}
+
+model Membership {
+  id        String           @id @default(uuid())
+  tenantId  String
+  userId    String
+  role      MembershipRole   @default(VIEWER)
+  status    MembershipStatus @default(ACTIVE)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopMemberships ShopMembership[]
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+  @@map("memberships")
+}
+
+model ShopMembership {
+  id           String     @id @default(uuid())
+  membershipId String
+  shopId       String
+  createdAt    DateTime   @default(now())
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  shop       Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([membershipId, shopId])
+  @@map("shop_memberships")
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid())
+  userId     String
+  tokenHash  String
+  deviceInfo String?
+  isRevoked  Boolean   @default(false)
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+// -------------------------------------------------------------
+// 2. MASTER DATA: SHOPS, WAREHOUSES, PRODUCTS & LISTING MAPPINGS
+// -------------------------------------------------------------
+
+enum Platform {
+  SHOPEE
+  TIKTOK
+  LAZADA
+  MANUAL
+}
+
+enum ShopStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum WarehouseStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+model Shop {
+  id                 String     @id @default(uuid())
+  tenantId           String
+  code               String
+  name               String
+  platform           Platform   @default(SHOPEE)
+  externalShopId     String?
+  defaultWarehouseId String?
+  status             ShopStatus @default(ACTIVE)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  tenant           Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  defaultWarehouse Warehouse?       @relation(fields: [defaultWarehouseId], references: [id], onDelete: SetNull)
+  shopMemberships  ShopMembership[]
+  listingMappings  ListingMapping[]
+  orders           Order[]
+  importJobs       ImportJob[]
+  settlements      Settlement[]
+  scanEvents       ScanEvent[]
+  purchaseReceipts PurchaseReceipt[]
+  orderReturns     OrderReturn[]
+
+  @@unique([tenantId, code])
+  @@unique([tenantId, platform, externalShopId])
+  @@index([tenantId])
+  @@map("shops")
+}
+
+model Warehouse {
+  id        String          @id @default(uuid())
+  tenantId  String
+  code      String
+  name      String
+  address   String?
+  status    WarehouseStatus @default(ACTIVE)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shops             Shop[]
+  inventoryBalances InventoryBalance[]
+  inventoryLedgers  InventoryLedger[]
+  importJobs        ImportJob[]
+  scanEvents        ScanEvent[]
+  purchaseReceipts  PurchaseReceipt[]
+  orderReturns      OrderReturn[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("warehouses")
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  tenantId    String
+  code        String
+  name        String
+  description String?
+  status      ProductStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  variants ProductVariant[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("products")
+}
+
+model ProductVariant {
+  id                String        @id @default(uuid())
+  tenantId          String
+  productId         String
+  sku               String
+  barcode           String?
+  name              String
+  unit              String        @default("cái")
+  costPrice         Decimal       @default(0) @db.Decimal(15, 2)
+  sellingPrice      Decimal       @default(0) @db.Decimal(15, 2)
+  lowStockThreshold Int           @default(5)
+  status            ProductStatus @default(ACTIVE)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product              Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  listingMappings      ListingMapping[]
+  inventoryBalances    InventoryBalance[]
+  inventoryLedgers     InventoryLedger[]
+  orderItems           OrderItem[]
+  purchaseReceiptItems PurchaseReceiptItem[]
+  purchaseReturnItems  PurchaseReturnItem[]
+  orderReturnItems     OrderReturnItem[]
+
+  @@unique([tenantId, sku])
+  @@index([tenantId])
+  @@index([tenantId, barcode])
+  @@map("product_variants")
+}
+
+model ListingMapping {
+  id                  String   @id @default(uuid())
+  tenantId            String
+  shopId              String
+  platform            Platform @default(SHOPEE)
+  externalProductId   String?
+  externalVariationId String?
+  sellerSku           String
+  productName         String?
+  variationName       String?
+  multiplier          Int      @default(1)
+  variantId           String
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shop    Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, shopId, platform, sellerSku])
+  @@index([tenantId, shopId])
+  @@index([tenantId, variantId])
+  @@map("listing_mappings")
+}
+
+// -------------------------------------------------------------
+// 3. INVENTORY & LEDGER (IMMUTABLE LEDGER INVARIANT)
+// -------------------------------------------------------------
+
+enum InventoryMovementType {
+  RECEIVE         // Nhập kho NCC
+  ADJUST          // Điều chỉnh tồn
+  RESERVE         // Giữ hàng cho đơn
+  RELEASE         // Giải phóng giữ hàng (hủy đơn trước xuất)
+  DISPATCH        // Xuất kho thực tế (quét bàn giao)
+  RETURN_RECEIVE  // Nhập lại hàng hoàn đạt chuẩn (cộng onHand)
+  RETURN_DAMAGE   // Nhập hàng hoàn bị lỗi/hỏng (cộng damaged)
+  STATUS_CONVERT  // Chuyển trạng thái hàng (chờ kiểm tra -> bán được / lỗi)
+  PURCHASE_RETURN // Xuất trả hàng NCC
+  SCRAP_DISPOSAL  // Xuất hủy hàng lỗi
+  OPENING_BALANCE // Số dư đầu kỳ
+}
+
+model InventoryBalance {
+  id                String   @id @default(uuid())
+  tenantId          String
+  warehouseId       String
+  variantId         String
+  onHand            Int      @default(0) // Hàng đạt chuẩn có thể bán
+  reserved          Int      @default(0) // Đang giữ cho đơn
+  damaged           Int      @default(0) // Hàng hỏng, móp, cận date
+  pendingInspection Int      @default(0) // Hàng đã nhận về kho chờ kiểm tra
+  inboundReturning  Int      @default(0) // Hàng đang trên đường hoàn về từ khách
+  updatedAt         DateTime @updatedAt
+
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  warehouse Warehouse      @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, warehouseId, variantId])
+  @@index([tenantId, warehouseId])
+  @@index([tenantId, variantId])
+  @@map("inventory_balances")
+}
+
+model InventoryLedger {
+  id                String                @id @default(uuid())
+  tenantId          String
+  warehouseId       String
+  variantId         String
+  movementType      InventoryMovementType
+  deltaOnHand       Int                   @default(0)
+  deltaReserved     Int                   @default(0)
+  deltaDamaged      Int                   @default(0)
+  deltaInspection   Int                   @default(0)
+  stockState        String                @default("SELLABLE") // "SELLABLE", "DAMAGED", "PENDING_INSPECTION"
+  beforeOnHand      Int?
+  afterOnHand       Int?
+  voucherCode       String?               // NK001, ĐH001, PH001, TNCC001
+  performerName     String?               // Chị Hồng, Nhân viên A
+  batchCode         String?               // Lô hàng
+  expiryDate        DateTime?             // Hạn sử dụng
+  referenceType     String?               // ORDER, IMPORT, ADJUSTMENT, RETURN, SCAN, PURCHASE_RECEIPT
+  referenceId       String?
+  performedByUserId String?
+  note              String?
+  createdAt         DateTime              @default(now())
+
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  warehouse Warehouse      @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, warehouseId, variantId])
+  @@index([tenantId, movementType])
+  @@index([referenceType, referenceId])
+  @@map("inventory_ledgers")
+}
+
+// -------------------------------------------------------------
+// 4. ORDERS, PACKAGES & FULFILLMENT SCANNING
+// -------------------------------------------------------------
+
+enum PlatformOrderStatus {
+  UNPAID
+  READY_TO_SHIP
+  RETRY_SHIP
+  SHIPPED
+  TO_CONFIRM_RECEIVE
+  COMPLETED
+  IN_CANCEL
+  CANCELLED
+  TO_RETURN
+  RETURN_REFUND
+}
+
+enum FulfillmentStatus {
+  PENDING_PROCESSING
+  UNMAPPED
+  OUT_OF_STOCK
+  RESERVED
+  PACKED
+  DISPATCHED
+  CANCELLED_RESTOCKED
+  RETURN_RECEIVED
+  PARTIALLY_RETURN_RECEIVED
+}
+
+enum FinancialStatus {
+  PENDING
+  SETTLED
+  ADJUSTED
+  REFUNDED
+}
+
+enum VerificationStatus {
+  NOT_VERIFIED
+  PARTIALLY_VERIFIED
+  VERIFIED
+}
+
+model Order {
+  id                 String              @id @default(uuid())
+  tenantId           String
+  shopId             String
+  internalOrderCode  String
+  platform           Platform            @default(SHOPEE)
+  externalOrderId    String
+  platformStatus     PlatformOrderStatus @default(READY_TO_SHIP)
+  fulfillmentStatus  FulfillmentStatus   @default(PENDING_PROCESSING)
+  financialStatus    FinancialStatus     @default(PENDING)
+  verificationStatus VerificationStatus  @default(NOT_VERIFIED)
+
+  orderDate   DateTime?
+  paidAt      DateTime?
+  shippedAt   DateTime?
+  completedAt DateTime?
+
+  buyerUsername    String?
+  recipientName    String?
+  recipientPhone   String?
+  recipientAddress String?
+  shippingCarrier  String?
+  trackingCode     String?
+
+  totalAmount    Decimal  @default(0) @db.Decimal(15, 2)
+  shippingFee    Decimal  @default(0) @db.Decimal(15, 2)
+  discountAmount Decimal  @default(0) @db.Decimal(15, 2)
+  sellerVoucher  Decimal  @default(0) @db.Decimal(15, 2)
+  cogsTotal      Decimal  @default(0) @db.Decimal(15, 2)
+  note           String?
+  rawPlatformData Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orderItems   OrderItem[]
+  packages     Package[]
+  scanEvents   ScanEvent[]
+  settlements  Settlement[]
+  orderReturns OrderReturn[]
+
+  @@unique([tenantId, shopId, platform, externalOrderId])
+  @@unique([tenantId, internalOrderCode])
+  @@index([tenantId, shopId])
+  @@index([tenantId, platformStatus])
+  @@index([tenantId, fulfillmentStatus])
+  @@index([tenantId, verificationStatus])
+  @@index([tenantId, trackingCode])
+  @@index([tenantId, orderDate])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                  String   @id @default(uuid())
+  tenantId            String
+  orderId             String
+  variantId           String?
+  externalProductId   String?
+  externalVariationId String?
+  externalSku         String?
+  productName         String
+  variationName       String?
+  rawQuantity         Int?     @default(1)
+  packMultiplier      Int      @default(1)
+  quantity            Int      @default(1)
+  originalPrice       Decimal  @default(0) @db.Decimal(15, 2)
+  discountedPrice     Decimal  @default(0) @db.Decimal(15, 2)
+  itemCogs            Decimal  @default(0) @db.Decimal(15, 2)
+  createdAt           DateTime @default(now())
+
+  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order        Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  packageItems PackageItem[]
+
+  @@index([tenantId, orderId])
+  @@index([tenantId, variantId])
+  @@map("order_items")
+}
+
+enum PackageStatus {
+  PENDING
+  READY
+  PACKED
+  DISPATCHED
+  CANCELLED
+}
+
+model Package {
+  id               String        @id @default(uuid())
+  tenantId         String
+  orderId          String
+  packageCode      String
+  trackingCode     String?
+  carrierName      String?
+  status           PackageStatus @default(READY)
+  verifiedAt       DateTime?
+  verifiedByUserId String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order        Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  packageItems PackageItem[]
+  scanEvents   ScanEvent[]
+
+  @@unique([tenantId, packageCode])
+  @@index([tenantId, trackingCode])
+  @@index([tenantId, orderId])
+  @@index([tenantId, status])
+  @@map("packages")
+}
+
+model PackageItem {
+  id          String   @id @default(uuid())
+  tenantId    String
+  packageId   String
+  orderItemId String
+  quantity    Int      @default(1)
+  createdAt   DateTime @default(now())
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  package   Package   @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, orderItemId])
+  @@index([tenantId, packageId])
+  @@map("package_items")
+}
+
+enum ScanResult {
+  VERIFIED
+  ALREADY_VERIFIED
+  NOT_FOUND
+  AMBIGUOUS_CODE
+  INVALID_ORDER_STATUS
+  UNMAPPED_SKU
+  INSUFFICIENT_STOCK
+}
+
+model ScanEvent {
+  id                String     @id @default(uuid())
+  tenantId          String
+  shopId            String?
+  warehouseId       String?
+  orderId           String?
+  packageId         String?
+  rawCode           String
+  normalizedCode    String
+  scanResult        ScanResult
+  deviceId          String?
+  performedByUserId String?
+  idempotencyKey    String?
+  errorMessage      String?
+  createdAt         DateTime   @default(now())
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shop      Shop?      @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  warehouse Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  order     Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  package   Package?   @relation(fields: [packageId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, normalizedCode])
+  @@index([tenantId, orderId])
+  @@index([tenantId, packageId])
+  @@index([tenantId, createdAt])
+  @@map("scan_events")
+}
+
+// -------------------------------------------------------------
+// 5. IMPORT ENGINE (ASYNC QUEUE & BATCH PROCESSING)
+// -------------------------------------------------------------
+
+enum ImportJobStatus {
+  UPLOADED
+  VALIDATING
+  READY
+  PROCESSING
+  COMPLETED
+  COMPLETED_WITH_ERRORS
+  FAILED
+}
+
+model ImportJob {
+  id                 String          @id @default(uuid())
+  tenantId           String
+  shopId             String
+  warehouseId        String?
+  fileName           String
+  fileChecksum       String
+  status             ImportJobStatus @default(UPLOADED)
+  totalRows          Int             @default(0)
+  totalOrders        Int             @default(0)
+  processedOrders    Int             @default(0)
+  newOrdersCount     Int             @default(0)
+  updatedOrdersCount Int             @default(0)
+  errorCount         Int             @default(0)
+  unmappedSkuCount   Int             @default(0)
+  errorMessage       String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shop            Shop             @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  warehouse       Warehouse?       @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  importRowErrors ImportRowError[]
+
+  @@index([tenantId, shopId])
+  @@index([tenantId, status])
+  @@map("import_jobs")
+}
+
+model ImportRowError {
+  id              String   @id @default(uuid())
+  tenantId        String
+  importJobId     String
+  rowNumber       Int
+  externalOrderId String?
+  rawPayload      Json?
+  errorCode       String
+  errorMessage    String
+  createdAt       DateTime @default(now())
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  importJob ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, importJobId])
+  @@map("import_row_errors")
+}
+
+// -------------------------------------------------------------
+// 6. FINANCIAL SETTLEMENTS & RECONCILIATIONS
+// -------------------------------------------------------------
+
+enum SettlementStatus {
+  ESTIMATED
+  RECONCILED
+  DISCREPANCY
+}
+
+model Settlement {
+  id                  String           @id @default(uuid())
+  tenantId            String
+  shopId              String
+  orderId             String
+  platformPayout      Decimal          @default(0) @db.Decimal(15, 2)
+  commissionFee       Decimal          @default(0) @db.Decimal(15, 2)
+  serviceFee          Decimal          @default(0) @db.Decimal(15, 2)
+  transactionFee      Decimal          @default(0) @db.Decimal(15, 2)
+  shippingFee         Decimal          @default(0) @db.Decimal(15, 2)
+  actualReceivedAmount Decimal          @default(0) @db.Decimal(15, 2)
+  settlementDate      DateTime?
+  currency            String           @default("VND")
+  status              SettlementStatus @default(ESTIMATED)
+  note                String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, shopId, orderId])
+  @@index([tenantId, status])
+  @@index([tenantId, settlementDate])
+  @@map("settlements")
+}
+
+// -------------------------------------------------------------
+// 7. AUDIT TRAIL & IDEMPOTENCY
+// -------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String
+  userId     String?
+  action     String   // e.g. "INVENTORY_ADJUST", "SCAN_VERIFY", "SCAN_REVERSE", "ROLE_CHANGE"
+  entityType String   // e.g. "Order", "InventoryBalance", "ProductVariant"
+  entityId   String
+  oldValues  Json?
+  newValues  Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, action])
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
+
+model IdempotencyRecord {
+  id             String   @id @default(uuid())
+  tenantId       String
+  idempotencyKey String
+  requestHash    String
+  requestPath    String
+  responseStatus Int
+  responseBody   Json
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, expiresAt])
+  @@map("idempotency_records")
+}
+
+// -------------------------------------------------------------
+// 6. SUPPLIERS, PURCHASE RECEIPTS & AP ACCOUNTING
+// -------------------------------------------------------------
+
+enum PurchaseReceivingStatus {
+  PENDING_RECEIVE
+  PARTIALLY_RECEIVED
+  RECEIVED
+}
+
+enum PurchasePaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+}
+
+enum PaymentDueStatus {
+  NOT_DUE
+  DUE_SOON
+  OVERDUE
+}
+
+enum ShippingFeePayerType {
+  PAID_TO_SUPPLIER    // Phí ship trả trực tiếp cho NCC (cộng vào công nợ NCC)
+  PAID_TO_CARRIER     // Phí ship trả riêng cho bên vận chuyển (không cộng vào công nợ NCC)
+}
+
+enum FundSourceType {
+  CASH_FUND           // Quỹ tiền mặt
+  BANK_ACCOUNT        // Tài khoản công ty
+  PERSONAL_FUND       // Tiền cá nhân người trả (chi hộ)
+}
+
+enum SupplierPaymentType {
+  PAYMENT             // Thanh toán công nợ theo phiếu
+  ADVANCE_DEPOSIT     // Đặt cọc / Ứng trước cho nhà cung cấp
+  REFUND_RECEIVED     // Nhà cung cấp hoàn lại tiền
+}
+
+enum ReimbursementStatus {
+  NOT_APPLICABLE
+  PENDING_REIMBURSEMENT // Shop cần hoàn lại tiền cho người chi hộ
+  REIMBURSED           // Shop đã hoàn trả tiền
+}
+
+model Supplier {
+  id               String   @id @default(uuid())
+  tenantId         String
+  code             String
+  name             String
+  phone            String?
+  email            String?
+  address          String?
+  bankName         String?
+  bankAccount      String?
+  bankBeneficiary  String?
+  openingDebt      Decimal  @default(0) @db.Decimal(15, 2)
+  status           String   @default("ACTIVE")
+  note             String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  purchaseReceipts PurchaseReceipt[]
+  supplierPayments SupplierPayment[]
+  purchaseReturns  PurchaseReturn[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("suppliers")
+}
+
+model PurchaseReceipt {
+  id                    String                  @id @default(uuid())
+  tenantId              String
+  shopId                String?
+  warehouseId           String
+  supplierId            String
+  receiptCode           String
+  receiptDate           DateTime                @default(now())
+  paymentDueDate        DateTime?
+  
+  // 3 Trục giá trị tài chính & công nợ
+  totalItemsAmount      Decimal                 @default(0) @db.Decimal(15, 2) // Giá trị hàng thực nhận
+  discountAmount        Decimal                 @default(0) @db.Decimal(15, 2) // Chiết khấu trực tiếp
+  taxAmount             Decimal                 @default(0) @db.Decimal(15, 2) // Thuế VAT
+  shippingFee           Decimal                 @default(0) @db.Decimal(15, 2) // Cước vận chuyển
+  shippingFeePayerType  ShippingFeePayerType    @default(PAID_TO_SUPPLIER)
+  payableAmount         Decimal                 @default(0) @db.Decimal(15, 2) // Tổng công nợ phải trả
+  paidAmount            Decimal                 @default(0) @db.Decimal(15, 2) // Tiền thực tế đã thanh toán (phân bổ)
+  returnDeductionAmount Decimal                 @default(0) @db.Decimal(15, 2) // Giảm trừ do trả hàng
+  remainingAmount       Decimal                 @default(0) @db.Decimal(15, 2) // Còn nợ phải trả
+
+  // Trạng thái độc lập
+  receivingStatus       PurchaseReceivingStatus @default(RECEIVED)
+  paymentStatus         PurchasePaymentStatus   @default(UNPAID)
+  dueStatus             PaymentDueStatus        @default(NOT_DUE)
+
+  note                  String?
+  createdById           String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  tenant                Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shop                  Shop?                   @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  warehouse             Warehouse               @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  supplier              Supplier                @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  items                 PurchaseReceiptItem[]
+  paymentAllocations    PaymentAllocation[]
+  purchaseReturns       PurchaseReturn[]
+
+  @@unique([tenantId, receiptCode])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, warehouseId])
+  @@index([tenantId, shopId])
+  @@index([tenantId, paymentStatus])
+  @@map("purchase_receipts")
+}
+
+model PurchaseReceiptItem {
+  id               String          @id @default(uuid())
+  tenantId         String
+  receiptId        String
+  variantId        String
+  productName      String
+  variationName    String?
+  sku              String
+  orderedQuantity  Int             @default(1)
+  receivedQuantity Int             @default(1) // Số lượng thực nhận (cộng tồn kho onHand)
+  disputedQuantity Int             @default(0) // Số lượng lỗi/hỏng/thiếu đang tranh chấp
+  unitPrice        Decimal         @default(0) @db.Decimal(15, 2)
+  subtotal         Decimal         @default(0) @db.Decimal(15, 2)
+  note             String?
+  createdAt        DateTime        @default(now())
+
+  tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  receipt          PurchaseReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  variant          ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, receiptId])
+  @@index([tenantId, variantId])
+  @@map("purchase_receipt_items")
+}
+
+model SupplierPayment {
+  id                    String              @id @default(uuid())
+  tenantId              String
+  supplierId            String
+  paymentCode           String
+  amount                Decimal             @db.Decimal(15, 2) // Số tiền thực tế chi ra
+  paymentDate           DateTime            @default(now())
+  payerName             String              // Ai trả: "Chị Hồng", "Kế toán", "Bạn"
+  payerUserId           String?
+  fundSource            FundSourceType      @default(CASH_FUND)
+  paymentMethod         String              @default("BANK_TRANSFER") // BANK_TRANSFER, CASH, OTHER
+  referenceCode         String?             // Mã giao dịch, số UNC
+  voucherImage          String?             // Ảnh chứng từ
+  
+  isReimbursementNeeded Boolean             @default(false)
+  reimbursementStatus   ReimbursementStatus @default(NOT_APPLICABLE)
+  
+  allocatedAmount       Decimal             @default(0) @db.Decimal(15, 2) // Đã phân bổ cho các phiếu nhập
+  advanceAmount         Decimal             @default(0) @db.Decimal(15, 2) // Tiền dư / Tiền ứng trước tại NCC
+  paymentType           SupplierPaymentType @default(PAYMENT)
+  
+  note                  String?
+  createdById           String?
+  confirmedById         String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  tenant                Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier              Supplier            @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  allocations           PaymentAllocation[]
+
+  @@unique([tenantId, paymentCode])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, fundSource])
+  @@map("supplier_payments")
+}
+
+model PaymentAllocation {
+  id              String          @id @default(uuid())
+  tenantId        String
+  paymentId       String
+  receiptId       String
+  allocatedAmount Decimal         @db.Decimal(15, 2) // Số tiền trích để thanh toán phiếu nhập này
+  note            String?
+  createdAt       DateTime        @default(now())
+
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payment         SupplierPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  receipt         PurchaseReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, paymentId])
+  @@index([tenantId, receiptId])
+  @@map("payment_allocations")
+}
+
+model PurchaseReturn {
+  id                String               @id @default(uuid())
+  tenantId          String
+  supplierId        String
+  receiptId         String?              // Có thể trỏ về phiếu nhập gốc
+  returnCode        String
+  returnDate        DateTime             @default(now())
+  totalReturnAmount Decimal              @default(0) @db.Decimal(15, 2) // Giá trị hàng trả lại
+  debtOffsetAmount  Decimal              @default(0) @db.Decimal(15, 2) // Khoản NCC xác nhận giảm trừ công nợ
+  status            String               @default("CONFIRMED")          // DRAFT, CONFIRMED, CANCELLED
+  reason            String?
+  note              String?
+  createdById       String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  tenant            Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier          Supplier             @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  receipt           PurchaseReceipt?     @relation(fields: [receiptId], references: [id], onDelete: SetNull)
+  items             PurchaseReturnItem[]
+
+  @@unique([tenantId, returnCode])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, receiptId])
+  @@map("purchase_returns")
+}
+
+model PurchaseReturnItem {
+  id        String         @id @default(uuid())
+  tenantId  String
+  returnId  String
+  variantId String
+  sku       String
+  quantity  Int            @default(1) // Trừ tồn kho onHand và ghi InventoryLedger
+  unitPrice Decimal        @default(0) @db.Decimal(15, 2)
+  subtotal  Decimal        @default(0) @db.Decimal(15, 2)
+  createdAt DateTime       @default(now())
+
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  return    PurchaseReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, returnId])
+  @@index([tenantId, variantId])
+  @@map("purchase_return_items")
+}
+
+// -------------------------------------------------------------
+// 7. ORDER RETURNS & PHYSICAL INSPECTION VERIFICATION
+// -------------------------------------------------------------
+
+model OrderReturn {
+  id                 String            @id @default(uuid())
+  tenantId           String
+  orderId            String
+  shopId             String
+  warehouseId        String
+  returnCode         String
+  trackingCode       String?
+  receivedDate       DateTime          @default(now())
+  inspectedDate      DateTime?
+  inspectedByUserId  String?
+  inspectorName      String?
+  status             String            @default("COMPLETED") // PENDING_INSPECTION, COMPLETED, CANCELLED
+  reason             String?
+  conditionPhoto     String?
+  note               String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order              Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  shop               Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  warehouse          Warehouse         @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  items              OrderReturnItem[]
+
+  @@unique([tenantId, returnCode])
+  @@index([tenantId, orderId])
+  @@index([tenantId, warehouseId])
+  @@index([tenantId, shopId])
+  @@map("order_returns")
+}
+
+model OrderReturnItem {
+  id                 String          @id @default(uuid())
+  tenantId           String
+  returnId           String
+  orderItemId        String?
+  variantId          String
+  sku                String
+  dispatchedQuantity Int             @default(1)
+  receivedQuantity   Int             @default(0)
+  sellableQuantity   Int             @default(0) // Tồn có thể bán +
+  damagedQuantity    Int             @default(0) // Tồn hàng lỗi +
+  missingQuantity    Int             @default(0) // Khách giữ lại / thất thoát
+  batchCode          String?
+  expiryDate         DateTime?
+  note               String?
+  createdAt          DateTime        @default(now())
+
+  tenant             Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  return             OrderReturn     @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  variant            ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, returnId])
+  @@index([tenantId, variantId])
+  @@map("order_return_items")
+}
+
+

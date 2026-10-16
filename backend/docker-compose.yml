@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: shopee_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: shopee_user
+      POSTGRES_PASSWORD: shopee_password
+      POSTGRES_DB: shopee_order_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U shopee_user -d shopee_order_db']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: shopee_redis
+    restart: always
+    command: redis-server --appendonly yes
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shopee_backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://shopee_user:shopee_password@postgres:5432/shopee_order_db?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_ACCESS_SECRET: super_secure_access_secret_change_in_production_123456
+      JWT_REFRESH_SECRET: super_secure_refresh_secret_change_in_production_654321
+      JWT_ACCESS_EXPIRATION: 900s
+      JWT_REFRESH_EXPIRATION: 7d
+    ports:
+      - '3000:3000'
+
+volumes:
+  postgres_data:
+  redis_data:

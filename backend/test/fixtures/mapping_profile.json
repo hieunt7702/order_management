@@ -1,0 +1,44 @@
+{
+  "version": "1.0.0",
+  "platform": "SHOPEE",
+  "description": "Cấu hình mapping profile 62 cột xuất từ Trung tâm người bán Shopee (Kênh người bán)",
+  "headers": {
+    "orderCode": ["Mã đơn hàng", "order_sn", "Mã đơn"],
+    "packageCode": ["Mã Kiện Hàng", "package_number"],
+    "orderDate": ["Ngày đặt hàng", "create_time"],
+    "orderStatus": ["Trạng Thái Đơn Hàng", "order_status"],
+    "trackingCode": ["Mã vận đơn", "tracking_number"],
+    "carrier": ["Đơn Vị Vận Chuyển", "shipping_carrier"],
+    "productSku": ["SKU sản phẩm", "product_sku"],
+    "variationSku": ["SKU phân loại hàng", "variation_sku"],
+    "productName": ["Tên sản phẩm", "product_name"],
+    "variationName": ["Tên phân loại hàng", "variation_name"],
+    "quantity": ["Số lượng", "quantity"],
+    "originalPrice": ["Giá gốc", "original_price"],
+    "discountedPrice": ["Giá ưu đãi", "Gia ưu đãi", "discounted_price"],
+    "totalPaidByBuyer": ["Tổng số tiền Người mua thanh toán", "total_amount"],
+    "buyerUsername": ["Người Mua", "buyer_username"],
+    "recipientName": ["Tên Người nhận", "recipient_name"],
+    "recipientPhone": ["Số điện thoại", "recipient_phone"],
+    "recipientAddress": ["Địa chỉ nhận hàng", "recipient_address"],
+    "completedAt": ["Thời gian hoàn thành đơn hàng", "complete_time"],
+    "paidAt": ["Thời gian đơn hàng được thanh toán", "pay_time"],
+    "fixedFee": ["Phí cố định"],
+    "serviceFee": ["Phí Dịch Vụ"],
+    "transactionFee": ["Phí xử lý giao dịch"],
+    "shippingFee": ["Phí vận chuyển (dự kiến)", "Phí vận chuyển"]
+  },
+  "constraints": {
+    "stringPreservation": [
+      "Mã đơn hàng",
+      "Mã Kiện Hàng",
+      "Mã vận đơn",
+      "SKU phân loại hàng",
+      "SKU sản phẩm",
+      "Số điện thoại"
+    ],
+    "multiLineGroupBy": "Mã đơn hàng",
+    "currency": "VND",
+    "numericPrecision": "NUMERIC(15, 2)"
+  }
+}

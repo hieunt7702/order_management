@@ -1,0 +1,2460 @@
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
+import {
+  ShoppingBag,
+  RefreshCw,
+  Eye,
+  Calendar,
+  Truck,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  Activity,
+  Plus,
+  Edit2,
+  Trash2,
+  Package,
+  Store,
+  X,
+  RotateCcw,
+  MoreHorizontal,
+  Boxes,
+  FileText,
+  ShieldCheck,
+  Building2,
+} from 'lucide-react';
+import { ordersApi } from '../../services/ordersApi';
+import { productsApi } from '../../services/productsApi';
+import { orderReturnsApi } from '../../services/orderReturnsApi';
+import { useWorkspaceStore } from '../../stores/workspaceStore';
+import { formatCurrency } from '../../utils';
+import {
+  getPlatformStatusConfig,
+  getVerificationStatusConfig,
+} from '../../utils/orderStatus';
+import { VerificationStatusBadge } from '../../components/orders/VerificationStatusBadge';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '../../components/ui/DropdownMenu';
+import { toast } from '../../components/ui/Toast';
+import {
+  SystemTableWrapper,
+  SystemThead,
+  SystemTh,
+  SystemTbody,
+  SystemTr,
+  SystemTd,
+  SystemTableEmpty,
+  SystemTableSkeleton,
+  SystemPagination,
+} from '../../components/ui/SystemTable';
+import {
+  SystemFilter,
+  SystemFilterItem,
+  SystemFilterSearch,
+  SystemFilterReset,
+} from '../../components/ui/SystemFilter';
+import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
+import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
+import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
+import { OrderDetailDrawer } from './OrderDetailDrawer';
+
+const PRESET_TABS = [
+  { id: 'ALL', label: 'Tất cả' },
+  { id: 'READY_TO_SHIP', label: 'Chờ giao hàng' },
+  { id: 'SHIPPED', label: 'Đang giao' },
+  { id: 'TO_CONFIRM_RECEIVE', label: 'Đã giao' },
+  { id: 'COMPLETED', label: 'Hoàn thành' },
+  { id: 'CANCELLED', label: 'Đã hủy' },
+  { id: 'TO_RETURN', label: 'Trả hàng/Hoàn tiền' },
+  { id: 'NOT_VERIFIED', label: 'Chưa quét kho' },
+  { id: 'VERIFIED', label: 'Đã xuất kho' },
+  { id: 'NEEDS_ATTENTION', label: 'Chưa map SKU' },
+];
+
+export const OrdersPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const { selectedShopId, shops, warehouses, selectedWarehouseId } = useWorkspaceStore();
+
+  const [activeTab, setActiveTab] = useState<string>(
+    () =>
+      searchParams.get('tab') ||
+      searchParams.get('platformStatus') ||
+      searchParams.get('verificationStatus') ||
+      'ALL',
+  );
+  const [searchTerm, setSearchTerm] = useState<string>(
+    searchParams.get('search') || '',
+  );
+  const [fromDate, setFromDate] = useState<string>(
+    searchParams.get('fromDate') || '',
+  );
+  const [toDate, setToDate] = useState<string>(
+    searchParams.get('toDate') || '',
+  );
+  const [page, setPage] = useState<number>(
+    parseInt(searchParams.get('page') || '1', 10),
+  );
+  const [limit, setLimit] = useState<number>(25);
+
+  const [orders, setOrders] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+
+  // Modals for Orders CRUD
+  const [isCreateOrderModalOpen, setIsCreateOrderModalOpen] = useState<boolean>(false);
+  const [isEditOrderModalOpen, setIsEditOrderModalOpen] = useState<boolean>(false);
+  const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<any>(null);
+  const [isDeleteOrderModalOpen, setIsDeleteOrderModalOpen] = useState<boolean>(false);
+  const [selectedOrderForDelete, setSelectedOrderForDelete] = useState<any>(null);
+
+  // Bulk Delete State
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState<boolean>(false);
+  const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState<boolean>(false);
+  const [isDeletingBulk, setIsDeletingBulk] = useState<boolean>(false);
+  const [forceBulkDelete, setForceBulkDelete] = useState<boolean>(false);
+  const [forceDeleteAll, setForceDeleteAll] = useState<boolean>(false);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState<boolean>(false);
+
+  const [isSavingOrder, setIsSavingOrder] = useState<boolean>(false);
+  const [isDeletingOrder, setIsDeletingOrder] = useState<boolean>(false);
+  const [availableVariants, setAvailableVariants] = useState<any[]>([]);
+
+  // Create Order Form
+  const [createOrderForm, setCreateOrderForm] = useState({
+    shopId: '',
+    externalOrderId: '',
+    recipientName: '',
+    recipientPhone: '',
+    recipientAddress: '',
+    shippingCarrier: 'SPX Express',
+    trackingCode: '',
+    shippingFee: 0,
+    note: '',
+    items: [
+      {
+        variantId: '',
+        productName: '',
+        variationName: '',
+        sellerSku: '',
+        quantity: 1,
+        unitPrice: 0,
+      },
+    ],
+  });
+
+  // Edit Order Form
+  const [editOrderForm, setEditOrderForm] = useState({
+    recipientName: '',
+    recipientPhone: '',
+    recipientAddress: '',
+    shippingCarrier: '',
+    trackingCode: '',
+    shippingFee: 0,
+    totalAmount: 0,
+    platformStatus: 'READY_TO_SHIP',
+    note: '',
+  });
+
+  useEffect(() => {
+    loadOrders();
+  }, [selectedShopId, activeTab, searchTerm, fromDate, toDate, page, limit]);
+
+  const loadOrders = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const params: Record<string, any> = {
+        shopId: selectedShopId,
+        page,
+        limit,
+        search: searchTerm || undefined,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+      };
+
+      if (activeTab === 'READY_TO_SHIP') {
+        params.platformStatus = 'READY_TO_SHIP';
+      } else if (activeTab === 'SHIPPED') {
+        params.platformStatus = 'SHIPPED';
+      } else if (activeTab === 'TO_CONFIRM_RECEIVE') {
+        params.platformStatus = 'TO_CONFIRM_RECEIVE';
+      } else if (activeTab === 'COMPLETED') {
+        params.platformStatus = 'COMPLETED';
+      } else if (activeTab === 'CANCELLED') {
+        params.platformStatus = 'CANCELLED';
+      } else if (activeTab === 'TO_RETURN') {
+        params.platformStatus = 'TO_RETURN';
+      } else if (activeTab === 'NOT_VERIFIED') {
+        params.verificationStatus = 'NOT_VERIFIED';
+      } else if (activeTab === 'PARTIALLY_VERIFIED') {
+        params.verificationStatus = 'PARTIALLY_VERIFIED';
+      } else if (activeTab === 'VERIFIED') {
+        params.verificationStatus = 'VERIFIED';
+      } else if (activeTab === 'NEEDS_ATTENTION') {
+        params.fulfillmentStatus = 'UNMAPPED';
+      }
+
+      const res: any = await ordersApi.findAll(params);
+      setOrders(res.items || []);
+      setTotalCount(res.total || 0);
+    } catch (err: any) {
+      setError(err.message || 'Không thể tải danh sách đơn hàng');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenDetail = async (orderId: string) => {
+    try {
+      const fullOrder = await ordersApi.findOne(orderId);
+      setSelectedOrder(fullOrder);
+      setIsDrawerOpen(true);
+    } catch (err: any) {
+      alert('Lỗi tải chi tiết đơn: ' + err.message);
+    }
+  };
+
+  const loadVariantsForOrder = async () => {
+    try {
+      const res: any = await productsApi.findAll({ limit: 150 });
+      const prods = res?.data || res?.items || res || [];
+      const flat = prods.flatMap((p: any) =>
+        (p.variants || []).map((v: any) => ({
+          id: v.id,
+          sku: v.sku,
+          name: v.name,
+          productName: p.name,
+          sellPrice: v.sellingPrice ?? v.sellPrice ?? 0,
+        }))
+      );
+      setAvailableVariants(flat);
+    } catch (err) {
+      console.error('Error loading variants:', err);
+    }
+  };
+
+  const handleOpenCreateOrder = () => {
+    loadVariantsForOrder();
+    const defaultShop =
+      selectedShopId && selectedShopId !== 'ALL'
+        ? selectedShopId
+        : shops.length > 0
+        ? shops[0].id
+        : '';
+    const now = new Date();
+    const dateStr = now.toISOString().slice(2, 10).replace(/-/g, '');
+    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const autoOrderCode = `DH${dateStr}-${rand}`;
+    const autoTracking = `SPX${Math.floor(100000000 + Math.random() * 900000000)}`;
+
+    setCreateOrderForm({
+      shopId: defaultShop,
+      externalOrderId: autoOrderCode,
+      recipientName: '',
+      recipientPhone: '',
+      recipientAddress: '',
+      shippingCarrier: 'SPX Express',
+      trackingCode: autoTracking,
+      shippingFee: 0,
+      note: '',
+      items: [
+        {
+          variantId: '',
+          productName: '',
+          variationName: '',
+          sellerSku: '',
+          quantity: 1,
+          unitPrice: 0,
+        },
+      ],
+    });
+    setIsCreateOrderModalOpen(true);
+  };
+
+  const handleAddItemToCreateOrder = () => {
+    setCreateOrderForm((prev) => ({
+      ...prev,
+      items: [
+        ...prev.items,
+        {
+          variantId: '',
+          productName: '',
+          variationName: '',
+          sellerSku: '',
+          quantity: 1,
+          unitPrice: 0,
+        },
+      ],
+    }));
+  };
+
+  const handleRemoveItemFromCreateOrder = (idx: number) => {
+    if (createOrderForm.items.length <= 1) return;
+    setCreateOrderForm((prev) => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== idx),
+    }));
+  };
+
+  const handleSelectVariantForItem = (idx: number, variantId: string) => {
+    const selected = availableVariants.find((v) => v.id === variantId);
+    setCreateOrderForm((prev) => {
+      const newItems = [...prev.items];
+      if (selected) {
+        newItems[idx] = {
+          ...newItems[idx],
+          variantId: selected.id,
+          productName: selected.productName,
+          variationName: selected.name,
+          sellerSku: selected.sku,
+          unitPrice: selected.sellPrice,
+        };
+      } else {
+        newItems[idx] = {
+          ...newItems[idx],
+          variantId: '',
+        };
+      }
+      return { ...prev, items: newItems };
+    });
+  };
+
+  const handleCreateOrderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createOrderForm.shopId) {
+      alert('Vui lòng chọn gian hàng Shop cho đơn hàng');
+      return;
+    }
+    if (!createOrderForm.recipientName.trim()) {
+      alert('Vui lòng nhập tên người nhận');
+      return;
+    }
+    if (
+      createOrderForm.items.some(
+        (it) => !it.productName.trim() || it.quantity < 1
+      )
+    ) {
+      alert('Vui lòng kiểm tra lại thông tin sản phẩm (Tên sản phẩm và số lượng >= 1)');
+      return;
+    }
+
+    const itemsTotal = createOrderForm.items.reduce(
+      (sum, it) =>
+        sum + it.quantity * (parseFloat(String(it.unitPrice)) || 0),
+      0
+    );
+    const totalAmount =
+      itemsTotal + (parseFloat(String(createOrderForm.shippingFee)) || 0);
+
+    setIsSavingOrder(true);
+    try {
+      await ordersApi.create({
+        shopId: createOrderForm.shopId,
+        externalOrderId: createOrderForm.externalOrderId.trim() || undefined,
+        recipientName: createOrderForm.recipientName.trim(),
+        recipientPhone: createOrderForm.recipientPhone.trim() || undefined,
+        recipientAddress: createOrderForm.recipientAddress.trim() || undefined,
+        shippingCarrier: createOrderForm.shippingCarrier.trim() || undefined,
+        trackingCode: createOrderForm.trackingCode.trim() || undefined,
+        totalAmount,
+        shippingFee: parseFloat(String(createOrderForm.shippingFee)) || 0,
+        note: createOrderForm.note.trim() || undefined,
+        items: createOrderForm.items.map((it) => ({
+          variantId: it.variantId || undefined,
+          productName: it.productName.trim(),
+          variationName: it.variationName?.trim() || undefined,
+          sellerSku: it.sellerSku?.trim() || undefined,
+          quantity: parseInt(String(it.quantity), 10) || 1,
+          unitPrice: parseFloat(String(it.unitPrice)) || 0,
+        })),
+      });
+
+      setIsCreateOrderModalOpen(false);
+      loadOrders();
+    } catch (err: any) {
+      alert(`Lỗi tạo đơn hàng: ${err.message || 'Không thể tạo đơn'}`);
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  const handleOpenEditOrder = (order: any) => {
+    setSelectedOrderForEdit(order);
+    setEditOrderForm({
+      recipientName: order.recipientName || '',
+      recipientPhone: order.recipientPhone || '',
+      recipientAddress: order.recipientAddress || '',
+      shippingCarrier: order.shippingCarrier || '',
+      trackingCode: order.trackingCode || '',
+      shippingFee: order.shippingFee || 0,
+      totalAmount: order.totalAmount || 0,
+      platformStatus: order.platformStatus || 'READY_TO_SHIP',
+      note: order.note || '',
+    });
+    setIsEditOrderModalOpen(true);
+  };
+
+  const handleUpdateOrderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrderForEdit) return;
+    setIsSavingOrder(true);
+    try {
+      await ordersApi.update(selectedOrderForEdit.id, {
+        recipientName: editOrderForm.recipientName.trim(),
+        recipientPhone: editOrderForm.recipientPhone.trim() || undefined,
+        recipientAddress: editOrderForm.recipientAddress.trim() || undefined,
+        shippingCarrier: editOrderForm.shippingCarrier.trim() || undefined,
+        trackingCode: editOrderForm.trackingCode.trim() || undefined,
+        shippingFee: parseFloat(String(editOrderForm.shippingFee)) || 0,
+        totalAmount: parseFloat(String(editOrderForm.totalAmount)) || 0,
+        platformStatus: editOrderForm.platformStatus,
+        note: editOrderForm.note.trim() || undefined,
+      });
+
+      setIsEditOrderModalOpen(false);
+      loadOrders();
+      if (selectedOrder?.id === selectedOrderForEdit.id) {
+        handleOpenDetail(selectedOrderForEdit.id);
+      }
+    } catch (err: any) {
+      alert(`Lỗi cập nhật đơn hàng: ${err.message || 'Không thể cập nhật'}`);
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  const handleOpenDeleteOrder = (order: any) => {
+    setSelectedOrderForDelete(order);
+    setIsDeleteOrderModalOpen(true);
+  };
+
+  const handleDeleteOrderSubmit = async () => {
+    if (!selectedOrderForDelete) return;
+    setIsDeletingOrder(true);
+    try {
+      await ordersApi.delete(selectedOrderForDelete.id);
+      toast.success('Đã xóa đơn hàng thành công');
+      setIsDeleteOrderModalOpen(false);
+      if (selectedOrder?.id === selectedOrderForDelete.id) {
+        setIsDrawerOpen(false);
+        setSelectedOrder(null);
+      }
+      setSelectedOrderForDelete(null);
+      loadOrders();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err.message || 'Không thể xóa đơn hàng');
+    } finally {
+      setIsDeletingOrder(false);
+    }
+  };
+
+  const handleToggleSelectAll = () => {
+    const currentPageIds = orders.map((o) => o.id);
+    const allSelectedOnPage =
+      currentPageIds.length > 0 &&
+      currentPageIds.every((id) => selectedOrderIds.includes(id));
+    if (allSelectedOnPage) {
+      setSelectedOrderIds((prev) =>
+        prev.filter((id) => !currentPageIds.includes(id)),
+      );
+    } else {
+      setSelectedOrderIds((prev) =>
+        Array.from(new Set([...prev, ...currentPageIds])),
+      );
+    }
+  };
+
+  const handleToggleSelectOrder = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedOrderIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  };
+
+  const handleBulkDeleteSubmit = async () => {
+    if (selectedOrderIds.length === 0) return;
+    setIsDeletingBulk(true);
+    try {
+      const res: any = await ordersApi.bulkDelete({
+        orderIds: selectedOrderIds,
+        force: forceBulkDelete,
+      });
+      toast.success(
+        res?.message || `Đã xóa thành công ${selectedOrderIds.length} đơn hàng`,
+      );
+      setIsBulkDeleteModalOpen(false);
+      setSelectedOrderIds([]);
+      setForceBulkDelete(false);
+      loadOrders();
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Lỗi khi xóa các đơn hàng đã chọn',
+      );
+    } finally {
+      setIsDeletingBulk(false);
+    }
+  };
+
+  const handleDeleteAllSubmit = async () => {
+    if (!confirmDeleteAll) return;
+    setIsDeletingBulk(true);
+    try {
+      const res: any = await ordersApi.bulkDelete({
+        deleteAll: true,
+        shopId: selectedShopId || undefined,
+        force: forceDeleteAll,
+      });
+      toast.success(res?.message || 'Đã xóa toàn bộ đơn hàng thành công');
+      setIsDeleteAllModalOpen(false);
+      setSelectedOrderIds([]);
+      setConfirmDeleteAll(false);
+      setForceDeleteAll(false);
+      loadOrders();
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Lỗi khi xóa toàn bộ đơn hàng',
+      );
+    } finally {
+      setIsDeletingBulk(false);
+    }
+  };
+
+  // Return Processing State
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState<boolean>(false);
+  const [selectedOrderForReturn, setSelectedOrderForReturn] = useState<any>(null);
+  const [returnMode, setReturnMode] = useState<'MARK_IN_TRANSIT' | 'INSPECT_AND_RECEIVE'>('INSPECT_AND_RECEIVE');
+  const [isSubmittingReturn, setIsSubmittingReturn] = useState<boolean>(false);
+  const [returnForm, setReturnForm] = useState<{
+    warehouseId: string;
+    trackingCode: string;
+    receivedDate: string;
+    inspectorName: string;
+    reason: string;
+    note: string;
+    conditionPhoto: string;
+    items: Array<{
+      orderItemId: string;
+      variantId: string;
+      sku: string;
+      productName: string;
+      variationName?: string;
+      dispatchedQuantity: number;
+      totalAccounted: number;
+      remainingToReturn: number;
+      sellableQuantity: number;
+      damagedQuantity: number;
+      missingQuantity: number;
+      batchCode?: string;
+      expiryDate?: string;
+      note?: string;
+    }>;
+  }>({
+    warehouseId: '',
+    trackingCode: '',
+    receivedDate: new Date().toISOString().split('T')[0],
+    inspectorName: 'Thủ kho',
+    reason: 'Khách không nhận / Giao thất bại / Đổi trả sàn',
+    note: '',
+    conditionPhoto: '',
+    items: [],
+  });
+
+  const handleOpenReturnModal = async (order: any) => {
+    try {
+      const fullOrder = await ordersApi.findOne(order.id);
+      setSelectedOrderForReturn(fullOrder);
+
+      const defaultWh =
+        fullOrder.shop?.defaultWarehouseId ||
+        selectedWarehouseId ||
+        (warehouses && warehouses[0]?.id) ||
+        '';
+
+      const isDispatched =
+        fullOrder.fulfillmentStatus === 'DISPATCHED' ||
+        fullOrder.fulfillmentStatus === 'PARTIALLY_RETURN_RECEIVED';
+
+      // Tính toán tiến độ hoàn của từng sản phẩm trong đơn
+      const items = (fullOrder.orderItems || []).map((oi: any) => {
+        let returnedSellable = 0;
+        let returnedDamaged = 0;
+        let returnedMissing = 0;
+
+        (fullOrder.orderReturns || []).forEach((ret: any) => {
+          (ret.items || []).forEach((it: any) => {
+            if (it.variantId === oi.variantId) {
+              returnedSellable += it.sellableQuantity || 0;
+              returnedDamaged += it.damagedQuantity || 0;
+              returnedMissing += it.missingQuantity || 0;
+            }
+          });
+        });
+
+        const totalAccounted = returnedSellable + returnedDamaged + returnedMissing;
+        const remaining = Math.max(0, oi.quantity - totalAccounted);
+
+        return {
+          orderItemId: oi.id,
+          variantId: oi.variantId,
+          sku: oi.variant?.sku || oi.sellerSku || 'SKU',
+          productName: oi.variant?.product?.name || oi.productName || 'Sản phẩm',
+          variationName: oi.variant?.name || oi.variationName || '',
+          dispatchedQuantity: oi.quantity,
+          totalAccounted,
+          remainingToReturn: remaining,
+          sellableQuantity: remaining,
+          damagedQuantity: 0,
+          missingQuantity: 0,
+          batchCode: '',
+          expiryDate: '',
+          note: '',
+        };
+      });
+
+      setReturnMode(isDispatched ? 'INSPECT_AND_RECEIVE' : 'MARK_IN_TRANSIT');
+      setReturnForm({
+        warehouseId: defaultWh,
+        trackingCode: fullOrder.trackingCode || '',
+        receivedDate: new Date().toISOString().split('T')[0],
+        inspectorName: 'Thủ kho',
+        reason: 'Khách không nhận / Giao thất bại / Đổi trả sàn',
+        note: '',
+        conditionPhoto: '',
+        items,
+      });
+
+      setIsReturnModalOpen(true);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err?.message || 'Không thể tải thông tin đơn hàng');
+    }
+  };
+
+  const handleReturnItemChange = (index: number, field: string, val: any) => {
+    const updated = [...returnForm.items];
+    updated[index] = { ...updated[index], [field]: val };
+    setReturnForm({ ...returnForm, items: updated });
+  };
+
+  const handleSubmitReturn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrderForReturn) return;
+
+    setIsSubmittingReturn(true);
+    try {
+      if (returnMode === 'MARK_IN_TRANSIT') {
+        // Chế độ 1: Báo sàn đang trả hàng về kho - Không tác động tồn kho
+        await ordersApi.update(selectedOrderForReturn.id, {
+          platformStatus: 'TO_RETURN',
+          note: returnForm.note
+            ? `${selectedOrderForReturn.note ? selectedOrderForReturn.note + ' | ' : ''}[Báo hoàn: ${returnForm.reason} - ${returnForm.note}]`
+            : selectedOrderForReturn.note,
+        });
+        toast.info(
+          'Đã chuyển trạng thái sang "Trả hàng/Hoàn tiền"',
+          'Tồn kho chưa thay đổi cho đến khi kho kiểm nhận thực tế.'
+        );
+      } else {
+        // Chế độ 2: Kho nhận thực tế và kiểm hàng (Kiểm tra & Nhập kho)
+        if (!returnForm.warehouseId) {
+          toast.warning('Vui lòng chọn kho tiếp nhận hàng hoàn');
+          setIsSubmittingReturn(false);
+          return;
+        }
+        if (!returnForm.inspectorName.trim()) {
+          toast.warning('Vui lòng nhập tên người kiểm tra hàng hoàn');
+          setIsSubmittingReturn(false);
+          return;
+        }
+
+        // Kiểm tra ràng buộc: Tổng lượng hoàn không được vượt số lượng còn chờ
+        for (const it of returnForm.items) {
+          const sellable = Number(it.sellableQuantity) || 0;
+          const damaged = Number(it.damagedQuantity) || 0;
+          const missing = Number(it.missingQuantity) || 0;
+          const sumThisTime = sellable + damaged + missing;
+          if (sumThisTime > it.remainingToReturn) {
+            toast.error(
+              `Lỗi SKU ${it.sku}`,
+              `Tổng số lượng hoàn (${sumThisTime}) vượt quá số lượng chưa nhận (${it.remainingToReturn})`
+            );
+            setIsSubmittingReturn(false);
+            return;
+          }
+        }
+
+        const totalCount = returnForm.items.reduce(
+          (acc, it) => acc + (Number(it.sellableQuantity) || 0) + (Number(it.damagedQuantity) || 0) + (Number(it.missingQuantity) || 0),
+          0,
+        );
+
+        if (totalCount === 0) {
+          toast.warning('Vui lòng nhập số lượng nhận lại hoặc thiếu ít nhất 1 sản phẩm');
+          setIsSubmittingReturn(false);
+          return;
+        }
+
+        await orderReturnsApi.inspectAndReceive({
+          orderId: selectedOrderForReturn.id,
+          warehouseId: returnForm.warehouseId,
+          trackingCode: returnForm.trackingCode || selectedOrderForReturn.trackingCode || '',
+          receivedDate: returnForm.receivedDate,
+          inspectorName: returnForm.inspectorName,
+          conditionPhoto: returnForm.conditionPhoto,
+          reason: returnForm.reason,
+          note: returnForm.note,
+          items: returnForm.items.map((it) => ({
+            variantId: it.variantId,
+            sku: it.sku,
+            sellableQuantity: Number(it.sellableQuantity) || 0,
+            damagedQuantity: Number(it.damagedQuantity) || 0,
+            missingQuantity: Number(it.missingQuantity) || 0,
+            batchCode: it.batchCode || undefined,
+            expiryDate: it.expiryDate || undefined,
+            note: it.note || undefined,
+          })),
+        });
+
+        toast.success(
+          'Nhận hàng hoàn thành công!',
+          'Đã cập nhật hàng vào kho và ghi nhận sổ cái tồn kho.'
+        );
+      }
+
+      setIsReturnModalOpen(false);
+      setSelectedOrderForReturn(null);
+      loadOrders();
+    } catch (err: any) {
+      toast.error(
+        'Có lỗi xảy ra khi xử lý đơn hoàn',
+        err?.response?.data?.message || err?.message
+      );
+    } finally {
+      setIsSubmittingReturn(false);
+    }
+  };
+
+  const totalPages = Math.ceil(totalCount / limit) || 1;
+
+  // Handle Quick KPI filter click
+  const handleKpiFilter = (tabId: string) => {
+    if (activeTab === tabId) {
+      setActiveTab('ALL');
+    } else {
+      setActiveTab(tabId);
+    }
+    setPage(1);
+  };
+
+  const resetAllFilters = () => {
+    setActiveTab('ALL');
+    setSearchTerm('');
+    setFromDate('');
+    setToDate('');
+    setPage(1);
+  };
+
+  const hasActiveFilter = activeTab !== 'ALL' || searchTerm || fromDate || toDate;
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0 space-y-3.5 animate-in fade-in duration-300">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-lg md:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
+            <ShoppingBag size={20} className="text-[#5865f2]" />
+            Quản lý Đơn hàng
+          </h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            Theo dõi, tra cứu trạng thái sàn Shopee, mã vận đơn và tiến độ xuất kho
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={handleOpenCreateOrder}
+            className="gap-1.5"
+          >
+            <Plus size={14} />
+            <span>Tạo đơn hàng mới</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setConfirmDeleteAll(false);
+              setForceDeleteAll(false);
+              setIsDeleteAllModalOpen(true);
+            }}
+            className="gap-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 border-red-200 dark:border-red-900/50"
+            title="Xóa toàn bộ đơn hàng trong hệ thống hoặc shop hiện tại"
+          >
+            <Trash2 size={13} />
+            <span>Xóa tất cả</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadOrders}
+            className="gap-1.5"
+            title="Làm mới dữ liệu"
+          >
+            <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
+            <span>Làm mới</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Summary KPI Cards Row matching pawn-system */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 shrink-0">
+        <SystemMetricCard
+          title="Tất cả đơn"
+          value={totalCount}
+          subtitle="Tổng số bản ghi"
+          icon={ShoppingBag}
+          colorScheme="blue"
+          isActive={activeTab === 'ALL'}
+          onClick={() => handleKpiFilter('ALL')}
+        />
+        <SystemMetricCard
+          title="Chờ giao hàng"
+          value={orders.filter((o) => o.platformStatus === 'READY_TO_SHIP').length}
+          subtitle="Cần đóng gói"
+          icon={Clock}
+          colorScheme="orange"
+          isActive={activeTab === 'READY_TO_SHIP'}
+          onClick={() => handleKpiFilter('READY_TO_SHIP')}
+        />
+        <SystemMetricCard
+          title="Đang giao"
+          value={orders.filter((o) => o.platformStatus === 'SHIPPED').length}
+          subtitle="Đã bàn giao ĐVVC"
+          icon={Truck}
+          colorScheme="purple"
+          isActive={activeTab === 'SHIPPED'}
+          onClick={() => handleKpiFilter('SHIPPED')}
+        />
+        <SystemMetricCard
+          title="Đã xuất kho"
+          value={orders.filter((o) => o.verificationStatus === 'VERIFIED').length}
+          subtitle="Đã quét mã vạch"
+          icon={CheckCircle2}
+          colorScheme="green"
+          isActive={activeTab === 'VERIFIED'}
+          onClick={() => handleKpiFilter('VERIFIED')}
+        />
+        <SystemMetricCard
+          title="Chưa map SKU"
+          value={orders.filter((o) => o.fulfillmentStatus === 'UNMAPPED').length}
+          subtitle="Cần liên kết sản phẩm"
+          icon={AlertTriangle}
+          colorScheme="red"
+          isActive={activeTab === 'NEEDS_ATTENTION'}
+          onClick={() => handleKpiFilter('NEEDS_ATTENTION')}
+        />
+      </div>
+
+      {/* Filter Bar */}
+      <SystemFilter>
+        <SystemFilterItem icon={Activity} label="Trạng thái:">
+          <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar py-0.5">
+            {PRESET_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setPage(1);
+                }}
+                className={`px-2.5 py-1 rounded text-xs whitespace-nowrap transition-colors cursor-pointer border-0 ${
+                  activeTab === tab.id
+                    ? 'bg-[#5865f2] text-white font-medium'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1a1b23] font-normal'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </SystemFilterItem>
+
+        <div className="flex items-center gap-2">
+          <SystemFilterSearch
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Tìm mã đơn, MVD, người mua..."
+            className="w-56 sm:w-64"
+          />
+
+          <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 h-8 text-xs">
+            <Calendar size={13} className="text-gray-400" />
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => {
+                setFromDate(e.target.value);
+                setPage(1);
+              }}
+              className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none font-normal"
+            />
+            <span className="text-gray-400 font-normal">-</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => {
+                setToDate(e.target.value);
+                setPage(1);
+              }}
+              className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none font-normal"
+            />
+          </div>
+        </div>
+
+        {hasActiveFilter && <SystemFilterReset onClick={resetAllFilters} />}
+      </SystemFilter>
+
+      {/* Error alert */}
+      {error && (
+        <div className="p-3.5 rounded bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-normal">
+          {error}
+        </div>
+      )}
+
+      {/* Return process notice banner */}
+      {activeTab === 'TO_RETURN' && (
+        <div className="p-3.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-800 dark:text-amber-200">
+          <div className="flex items-center gap-2.5">
+            <RotateCcw className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div>
+              <span className="font-semibold">Quy trình nhập hàng hoàn:</span> Đơn yêu cầu hoàn hoặc đang hoàn chưa cộng kho tự động. Khi kho thực tế nhận bưu phẩm, hãy dùng chức năng <b>Xử lý đơn hoàn</b> để quét mã, phân loại (bán lại được / hàng lỗi / thiếu), sau đó hệ thống mới ghi nhận vào sổ cái kho.
+            </div>
+          </div>
+          <Link
+            to="/order-returns"
+            className="px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs shrink-0 flex items-center gap-1.5 transition-colors no-underline shadow-sm"
+          >
+            <RotateCcw size={13} />
+            Hàng chờ hoàn
+          </Link>
+        </div>
+      )}
+
+      {/* Bulk Selection Action Bar */}
+      {selectedOrderIds.length > 0 && (
+        <div className="flex items-center justify-between px-3.5 py-2 rounded bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 text-xs animate-in fade-in duration-200">
+          <div className="flex items-center gap-2.5">
+            <span className="font-medium text-indigo-950 dark:text-indigo-200">
+              Đã chọn <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{selectedOrderIds.length}</strong> đơn hàng
+            </span>
+            <span className="text-gray-300 dark:text-gray-600">|</span>
+            <button
+              type="button"
+              onClick={() => setSelectedOrderIds([])}
+              className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 underline cursor-pointer"
+            >
+              Bỏ chọn tất cả
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => setIsBulkDeleteModalOpen(true)}
+              className="gap-1.5 h-7 px-2.5 text-xs"
+            >
+              <Trash2 size={13} />
+              <span>Xóa các đơn đã chọn ({selectedOrderIds.length})</span>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Table View */}
+      <div className="hidden md:flex flex-1 flex-col min-h-0">
+        <SystemTableWrapper
+          tableClassName="min-w-[1050px]"
+          pagination={
+            <SystemPagination
+              page={page - 1}
+              totalPages={totalPages}
+              totalItems={totalCount}
+              setPage={(p) => setPage(p + 1)}
+              itemsPerPage={limit}
+              setItemsPerPage={(newLimit) => {
+                setLimit(newLimit);
+                setPage(1);
+              }}
+            />
+          }
+        >
+          <SystemThead>
+            <SystemTh className="w-10 text-center">
+              <input
+                type="checkbox"
+                checked={orders.length > 0 && orders.every((o) => selectedOrderIds.includes(o.id))}
+                ref={(el) => {
+                  if (el) {
+                    const hasSome = orders.some((o) => selectedOrderIds.includes(o.id));
+                    const hasAll = orders.length > 0 && orders.every((o) => selectedOrderIds.includes(o.id));
+                    el.indeterminate = hasSome && !hasAll;
+                  }
+                }}
+                onChange={handleToggleSelectAll}
+                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-[#5865f2] focus:ring-1 focus:ring-[#5865f2] bg-white dark:bg-gray-800 cursor-pointer"
+                title="Chọn tất cả trên trang này"
+              />
+            </SystemTh>
+            <SystemTh className="w-56">Mã đơn / Shop</SystemTh>
+            <SystemTh className="w-32">Ngày đặt</SystemTh>
+            <SystemTh className="w-48">Khách hàng</SystemTh>
+            <SystemTh className="w-28 text-center">Sản phẩm</SystemTh>
+            <SystemTh className="w-36 text-right">Tổng tiền</SystemTh>
+            <SystemTh className="w-40 text-center">Trạng thái sàn</SystemTh>
+            <SystemTh className="w-24 text-center">Kho / Quét</SystemTh>
+            <SystemTh className="w-20 text-center">Thao tác</SystemTh>
+          </SystemThead>
+          <SystemTbody>
+            {isLoading ? (
+              <SystemTableSkeleton cols={9} rows={7} />
+            ) : orders.length === 0 ? (
+              <SystemTableEmpty
+                title="Không có đơn hàng nào"
+                description="Không tìm thấy đơn hàng nào phù hợp với điều kiện tìm kiếm hoặc bộ lọc hiện tại."
+                colSpan={9}
+              />
+            ) : (
+              orders.map((o) => {
+                const pCfg = getPlatformStatusConfig(o.platformStatus);
+
+                return (
+                  <SystemTr
+                    key={o.id}
+                    onClick={() => handleOpenDetail(o.id)}
+                    className={`cursor-pointer ${
+                      selectedOrderIds.includes(o.id)
+                        ? 'bg-indigo-50/40 dark:bg-indigo-950/20'
+                        : ''
+                    }`}
+                  >
+                    <SystemTd className="text-center" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedOrderIds.includes(o.id)}
+                        onChange={(e) => handleToggleSelectOrder(o.id, e as any)}
+                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-[#5865f2] focus:ring-1 focus:ring-[#5865f2] bg-white dark:bg-gray-800 cursor-pointer"
+                      />
+                    </SystemTd>
+                    <SystemTd>
+                      <div className="font-mono font-medium text-xs text-gray-900 dark:text-white hover:text-[#5865f2] truncate">
+                        {o.externalOrderId}
+                      </div>
+                      <div className="text-[11px] text-gray-400 font-normal truncate mt-0.5">
+                        {o.shop?.name || 'Shop Shopee'}
+                      </div>
+                    </SystemTd>
+
+                    <SystemTd className="text-gray-500 dark:text-gray-400 font-normal text-xs">
+                      {o.orderDate ? new Date(o.orderDate).toLocaleDateString('vi-VN') : 'N/A'}
+                    </SystemTd>
+
+                    <SystemTd>
+                      <p className="font-medium text-xs text-gray-800 dark:text-gray-200 truncate">
+                        {o.recipientName || 'Khách lẻ'}
+                      </p>
+                      {o.trackingCode && (
+                        <p className="text-[11px] font-mono text-gray-400 truncate mt-0.5">
+                          MVD: {o.trackingCode}
+                        </p>
+                      )}
+                    </SystemTd>
+
+                    <SystemTd className="text-center font-normal text-xs text-gray-600 dark:text-gray-400">
+                      {o.orderItems?.length || 0} SP
+                    </SystemTd>
+
+                    <SystemTd className="text-right font-medium text-xs text-gray-900 dark:text-white">
+                      {formatCurrency(o.totalAmount)} đ
+                    </SystemTd>
+
+                    <SystemTd className="text-center">
+                      <span
+                        className={`inline-block px-2.5 py-0.5 text-xs font-semibold rounded ${pCfg.badgeClass}`}
+                      >
+                        {pCfg.label}
+                      </span>
+                    </SystemTd>
+
+                    <SystemTd className="text-center">
+                      <div className="flex items-center justify-center">
+                        <VerificationStatusBadge status={o.verificationStatus} />
+                      </div>
+                    </SystemTd>
+
+                    <SystemTd className="text-center">
+                      <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className="w-7 h-7 rounded flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                              title="Thao tác"
+                            >
+                              <MoreHorizontal size={15} />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleOpenDetail(o.id)}
+                            >
+                              <Eye size={14} className="text-gray-400" />
+                              <span>Xem chi tiết</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleOpenReturnModal(o)}
+                            >
+                              <RotateCcw size={14} className="text-amber-500" />
+                              <span className="font-medium text-amber-600 dark:text-amber-400">
+                                Xử lý hoàn hàng
+                              </span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleOpenEditOrder(o)}
+                            >
+                              <Edit2 size={14} className="text-gray-400" />
+                              <span>Chỉnh sửa đơn</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => handleOpenDeleteOrder(o)}
+                            >
+                              <Trash2 size={14} />
+                              <span>Xóa đơn hàng</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </SystemTd>
+                  </SystemTr>
+                );
+              })
+            )}
+          </SystemTbody>
+        </SystemTableWrapper>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden flex-1 flex flex-col min-h-0 space-y-3">
+        {isLoading ? (
+          <div className="py-8 text-center text-xs text-gray-400 font-normal">
+            Đang tải đơn hàng...
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="py-8 text-center text-xs text-gray-400 font-normal">
+            Không tìm thấy đơn hàng nào
+          </div>
+        ) : (
+          orders.map((o) => {
+            const pCfg = getPlatformStatusConfig(o.platformStatus);
+
+            return (
+              <div
+                key={o.id}
+                onClick={() => handleOpenDetail(o.id)}
+                className={`p-3.5 rounded bg-white dark:bg-[#181b22] border ${
+                  selectedOrderIds.includes(o.id)
+                    ? 'border-indigo-400 dark:border-indigo-600 bg-indigo-50/20 dark:bg-indigo-950/20'
+                    : 'border-gray-200 dark:border-gray-800'
+                } space-y-2 cursor-pointer shadow-none`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedOrderIds.includes(o.id)}
+                      onChange={(e) => handleToggleSelectOrder(o.id, e as any)}
+                      className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-[#5865f2] focus:ring-1 focus:ring-[#5865f2] bg-white dark:bg-gray-800 cursor-pointer shrink-0"
+                    />
+                    <span className="font-mono font-medium text-xs text-gray-900 dark:text-white truncate">
+                      {o.externalOrderId}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <span
+                      className={`text-xs font-semibold px-2 py-0.5 rounded ${pCfg.badgeClass}`}
+                    >
+                      {pCfg.label}
+                    </span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                        >
+                          <MoreHorizontal size={14} />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleOpenDetail(o.id)}>
+                          <Eye size={14} className="text-gray-400" />
+                          <span>Xem chi tiết</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleOpenReturnModal(o)}>
+                          <RotateCcw size={14} className="text-amber-500" />
+                          <span className="font-medium text-amber-600 dark:text-amber-400">Xử lý hoàn hàng</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleOpenEditOrder(o)}>
+                          <Edit2 size={14} className="text-gray-400" />
+                          <span>Chỉnh sửa đơn</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem variant="destructive" onClick={() => handleOpenDeleteOrder(o)}>
+                          <Trash2 size={14} />
+                          <span>Xóa đơn hàng</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                <div className="text-xs text-gray-500 flex items-center justify-between font-normal">
+                  <span className="truncate">{o.recipientName || 'Khách lẻ'}</span>
+                  <span className="font-medium text-gray-900 dark:text-white shrink-0">
+                    {formatCurrency(o.totalAmount)} đ
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-100 dark:border-gray-800 text-gray-400 font-normal">
+                  <span className="truncate">{o.shop?.name || 'Shop'}</span>
+                  <VerificationStatusBadge status={o.verificationStatus} showLabel />
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        {/* Mobile Pagination */}
+        <SystemPagination
+          page={page - 1}
+          totalPages={totalPages}
+          totalItems={totalCount}
+          setPage={(p) => setPage(p + 1)}
+          itemsPerPage={limit}
+          setItemsPerPage={(newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+          }}
+        />
+      </div>
+
+      {/* Order Detail Drawer */}
+      <OrderDetailDrawer
+        order={selectedOrder}
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        onRefresh={() => {
+          loadOrders();
+          if (selectedOrder) handleOpenDetail(selectedOrder.id);
+        }}
+        onEdit={(ord) => handleOpenEditOrder(ord)}
+        onDelete={(ord) => handleOpenDeleteOrder(ord)}
+      />
+
+      {/* MODAL 1: CREATE MANUAL ORDER */}
+      {isCreateOrderModalOpen && (
+        <Modal
+          isOpen={isCreateOrderModalOpen}
+          onClose={() => setIsCreateOrderModalOpen(false)}
+          title="Tạo đơn hàng mới"
+          subtitle="Khởi tạo đơn hàng thủ công hoặc bán ngoài sàn với thông tin vận chuyển và tồn kho"
+          icon={Plus}
+          maxWidth="max-w-2xl"
+        >
+          <form onSubmit={handleCreateOrderSubmit} className="flex flex-col flex-1 min-h-0">
+            <ModalBody className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+              {/* Row 1: Shop & Order Code */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Gian hàng Shop *
+                  </label>
+                  <Select
+                    value={createOrderForm.shopId}
+                    onChange={(val: any) =>
+                      setCreateOrderForm({ ...createOrderForm, shopId: val })
+                    }
+                    options={[
+                      { value: '', label: '-- Chọn shop nhận đơn --' },
+                      ...shops.map((s) => ({
+                        value: s.id,
+                        label: `${s.name} (${s.code})`,
+                      })),
+                    ]}
+                    placeholder="-- Chọn shop nhận đơn --"
+                    size="md"
+                    className="w-full"
+                    menuWidth="w-full"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        Mã đơn hàng
+                      </label>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-medium">
+                        Tự sinh
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+                        const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+                        setCreateOrderForm((prev) => ({ ...prev, externalOrderId: `DH${dateStr}-${rand}` }));
+                      }}
+                      className="text-[11px] text-[#5865f2] hover:underline font-medium cursor-pointer"
+                    >
+                      Đổi mã
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="VD: DH261015-ABCD"
+                    value={createOrderForm.externalOrderId}
+                    onChange={(e) =>
+                      setCreateOrderForm({
+                        ...createOrderForm,
+                        externalOrderId: e.target.value.toUpperCase(),
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Customer info */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Tên khách hàng / Người nhận *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="VD: Nguyễn Văn A"
+                    value={createOrderForm.recipientName}
+                    onChange={(e) =>
+                      setCreateOrderForm({
+                        ...createOrderForm,
+                        recipientName: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Số điện thoại
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: 0912345678"
+                    value={createOrderForm.recipientPhone}
+                    onChange={(e) =>
+                      setCreateOrderForm({
+                        ...createOrderForm,
+                        recipientPhone: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Shipping address */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Địa chỉ giao hàng chi tiết
+                </label>
+                <input
+                  type="text"
+                  placeholder="VD: Số 123 Đường Cầu Giấy, Phường Dịch Vọng, Cầu Giấy, Hà Nội"
+                  value={createOrderForm.recipientAddress}
+                  onChange={(e) =>
+                    setCreateOrderForm({
+                      ...createOrderForm,
+                      recipientAddress: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                />
+              </div>
+
+              {/* Row 4: Carrier & Tracking */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Đơn vị vận chuyển
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: SPX Express, GHN, Viettel Post"
+                    value={createOrderForm.shippingCarrier}
+                    onChange={(e) =>
+                      setCreateOrderForm({
+                        ...createOrderForm,
+                        shippingCarrier: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Mã vận đơn (MVD)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: SPXVN0123456789"
+                    value={createOrderForm.trackingCode}
+                    onChange={(e) =>
+                      setCreateOrderForm({
+                        ...createOrderForm,
+                        trackingCode: e.target.value.toUpperCase(),
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Phí vận chuyển (VND)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={createOrderForm.shippingFee}
+                    onChange={(e) =>
+                      setCreateOrderForm({
+                        ...createOrderForm,
+                        shippingFee: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  />
+                </div>
+              </div>
+
+              {/* Items Section */}
+              <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                    <Package size={14} className="text-[#5865f2]" />
+                    Sản phẩm trong đơn ({createOrderForm.items.length})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleAddItemToCreateOrder}
+                    className="text-xs text-[#5865f2] font-semibold flex items-center gap-1 hover:underline cursor-pointer px-2 py-0.5 rounded bg-[#5865f2]/10 border border-[#5865f2]/20"
+                  >
+                    <Plus size={13} /> Thêm sản phẩm
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {createOrderForm.items.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 bg-gray-50 dark:bg-[#14151a] rounded-lg border border-gray-200 dark:border-gray-800 space-y-2.5 relative"
+                    >
+                      {createOrderForm.items.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItemFromCreateOrder(idx)}
+                          className="absolute right-2.5 top-2.5 text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                          title="Xóa dòng sản phẩm"
+                        >
+                          <X size={15} />
+                        </button>
+                      )}
+
+                      {/* Dropdown pick internal variant if available */}
+                      {availableVariants.length > 0 && (
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-500 mb-0.5">
+                            Chọn nhanh từ danh mục SKU nội bộ (Tùy chọn)
+                          </label>
+                          <Select
+                            value={item.variantId || ''}
+                            onChange={(val: any) =>
+                              handleSelectVariantForItem(idx, val)
+                            }
+                            options={[
+                              { value: '', label: '-- Nhập thủ công hoặc chọn SKU --' },
+                              ...availableVariants.map((v) => ({
+                                value: v.id,
+                                label: `${v.productName} - ${v.name} (${v.sku}) [${formatCurrency(v.sellPrice)} đ]`,
+                              })),
+                            ]}
+                            placeholder="-- Nhập thủ công hoặc chọn SKU --"
+                            size="sm"
+                            className="w-full"
+                            menuWidth="w-full"
+                          />
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-0.5">
+                            Tên sản phẩm *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="VD: Bánh gạo One One Vị Bò Nướng 150g"
+                            value={item.productName}
+                            onChange={(e) => {
+                              const next = [...createOrderForm.items];
+                              next[idx].productName = e.target.value;
+                              setCreateOrderForm({
+                                ...createOrderForm,
+                                items: next,
+                              });
+                            }}
+                            className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-0.5">
+                            Phân loại / Biến thể (Variation)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="VD: Gói 150g"
+                            value={item.variationName || ''}
+                            onChange={(e) => {
+                              const next = [...createOrderForm.items];
+                              next[idx].variationName = e.target.value;
+                              setCreateOrderForm({
+                                ...createOrderForm,
+                                items: next,
+                              });
+                            }}
+                            className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-0.5">
+                            Mã SKU người bán
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="VD: SKU-ONE-01"
+                            value={item.sellerSku || ''}
+                            onChange={(e) => {
+                              const next = [...createOrderForm.items];
+                              next[idx].sellerSku = e.target.value.toUpperCase();
+                              setCreateOrderForm({
+                                ...createOrderForm,
+                                items: next,
+                              });
+                            }}
+                            className="w-full px-2.5 py-1.5 text-xs font-mono uppercase bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-0.5">
+                            Số lượng *
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            required
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const next = [...createOrderForm.items];
+                              next[idx].quantity =
+                                parseInt(e.target.value, 10) || 1;
+                              setCreateOrderForm({
+                                ...createOrderForm,
+                                items: next,
+                              });
+                            }}
+                            className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-0.5">
+                            Đơn giá (VND) *
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            required
+                            value={item.unitPrice}
+                            onChange={(e) => {
+                              const next = [...createOrderForm.items];
+                              next[idx].unitPrice =
+                                parseFloat(e.target.value) || 0;
+                              setCreateOrderForm({
+                                ...createOrderForm,
+                                items: next,
+                              });
+                            }}
+                            className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Note */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Ghi chú đơn hàng
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Ghi chú đóng gói, thời gian giao hàng..."
+                  value={createOrderForm.note}
+                  onChange={(e) =>
+                    setCreateOrderForm({
+                      ...createOrderForm,
+                      note: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                />
+              </div>
+
+              {/* Order Total Preview */}
+              <div className="p-3 bg-gray-50 dark:bg-[#14151a] rounded-lg border border-gray-200 dark:border-gray-800 flex items-center justify-between text-xs">
+                <span className="text-gray-500 font-medium">Tổng giá trị đơn hàng tính toán:</span>
+                <span className="font-bold text-sm text-[#5865f2]">
+                  {formatCurrency(
+                    createOrderForm.items.reduce(
+                      (sum, it) => sum + it.quantity * (parseFloat(String(it.unitPrice)) || 0),
+                      0
+                    ) + (parseFloat(String(createOrderForm.shippingFee)) || 0)
+                  )}{' '}
+                  đ
+                </span>
+              </div>
+            </ModalBody>
+
+            <ModalFooter>
+              <ModalButton
+                variant="secondary"
+                onClick={() => setIsCreateOrderModalOpen(false)}
+                disabled={isSavingOrder}
+              >
+                Hủy
+              </ModalButton>
+              <ModalButton
+                variant="primary"
+                type="submit"
+                disabled={isSavingOrder}
+              >
+                {isSavingOrder ? 'Đang tạo...' : 'Tạo đơn hàng'}
+              </ModalButton>
+            </ModalFooter>
+          </form>
+        </Modal>
+      )}
+
+      {/* MODAL 2: EDIT ORDER */}
+      {isEditOrderModalOpen && selectedOrderForEdit && (
+        <Modal
+          isOpen={isEditOrderModalOpen}
+          onClose={() => setIsEditOrderModalOpen(false)}
+          title="Chỉnh sửa đơn hàng"
+          subtitle={`Cập nhật thông tin giao hàng và cước phí cho đơn [${selectedOrderForEdit.externalOrderId}]`}
+          icon={Edit2}
+          maxWidth="max-w-md"
+        >
+          <form onSubmit={handleUpdateOrderSubmit} className="flex flex-col flex-1 min-h-0">
+            <ModalBody className="space-y-3.5 max-h-[75vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Tên người nhận *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editOrderForm.recipientName}
+                    onChange={(e) =>
+                      setEditOrderForm({
+                        ...editOrderForm,
+                        recipientName: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Số điện thoại
+                  </label>
+                  <input
+                    type="text"
+                    value={editOrderForm.recipientPhone}
+                    onChange={(e) =>
+                      setEditOrderForm({
+                        ...editOrderForm,
+                        recipientPhone: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Địa chỉ giao hàng
+                </label>
+                <input
+                  type="text"
+                  value={editOrderForm.recipientAddress}
+                  onChange={(e) =>
+                    setEditOrderForm({
+                      ...editOrderForm,
+                      recipientAddress: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Đơn vị vận chuyển
+                  </label>
+                  <input
+                    type="text"
+                    value={editOrderForm.shippingCarrier}
+                    onChange={(e) =>
+                      setEditOrderForm({
+                        ...editOrderForm,
+                        shippingCarrier: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Mã vận đơn (MVD)
+                  </label>
+                  <input
+                    type="text"
+                    value={editOrderForm.trackingCode}
+                    onChange={(e) =>
+                      setEditOrderForm({
+                        ...editOrderForm,
+                        trackingCode: e.target.value.toUpperCase(),
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Phí vận chuyển (VND)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editOrderForm.shippingFee}
+                    onChange={(e) =>
+                      setEditOrderForm({
+                        ...editOrderForm,
+                        shippingFee: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Tổng tiền thanh toán (VND)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editOrderForm.totalAmount}
+                    onChange={(e) =>
+                      setEditOrderForm({
+                        ...editOrderForm,
+                        totalAmount: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Trạng thái sàn Shopee
+                </label>
+                <Select
+                  value={editOrderForm.platformStatus}
+                  onChange={(val: any) =>
+                    setEditOrderForm({ ...editOrderForm, platformStatus: val })
+                  }
+                  options={[
+                    { value: 'READY_TO_SHIP', label: 'Chờ giao hàng (READY_TO_SHIP)' },
+                    { value: 'SHIPPED', label: 'Đang giao (SHIPPED)' },
+                    { value: 'TO_CONFIRM_RECEIVE', label: 'Đã giao (TO_CONFIRM_RECEIVE)' },
+                    { value: 'COMPLETED', label: 'Hoàn thành (COMPLETED)' },
+                    { value: 'CANCELLED', label: 'Đã hủy (CANCELLED)' },
+                    { value: 'TO_RETURN', label: 'Yêu cầu trả hàng (TO_RETURN)' },
+                  ]}
+                  size="md"
+                  className="w-full"
+                  menuWidth="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Ghi chú đơn hàng
+                </label>
+                <textarea
+                  rows={2}
+                  value={editOrderForm.note}
+                  onChange={(e) =>
+                    setEditOrderForm({
+                      ...editOrderForm,
+                      note: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                />
+              </div>
+            </ModalBody>
+
+            <ModalFooter>
+              <ModalButton
+                variant="secondary"
+                onClick={() => setIsEditOrderModalOpen(false)}
+                disabled={isSavingOrder}
+              >
+                Hủy
+              </ModalButton>
+              <ModalButton
+                variant="primary"
+                type="submit"
+                disabled={isSavingOrder}
+              >
+                {isSavingOrder ? 'Đang lưu...' : 'Lưu thay đổi'}
+              </ModalButton>
+            </ModalFooter>
+          </form>
+        </Modal>
+      )}
+
+      {/* MODAL 3: DELETE ORDER */}
+      {isDeleteOrderModalOpen && selectedOrderForDelete && (
+        <Modal
+          isOpen={isDeleteOrderModalOpen}
+          onClose={() => setIsDeleteOrderModalOpen(false)}
+          title="Xác nhận xóa đơn hàng"
+          subtitle={`Bạn có chắc muốn xóa vĩnh viễn đơn hàng "${selectedOrderForDelete.externalOrderId}"?`}
+          icon={Trash2}
+          maxWidth="max-w-md"
+        >
+          <div className="flex flex-col flex-1 min-h-0">
+            <ModalBody className="space-y-3">
+              <div className="p-3 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+                <AlertTriangle size={16} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                <div>
+                  <p className="font-semibold">Ràng buộc xử lý kho:</p>
+                  <p className="mt-0.5 text-amber-700 dark:text-amber-400/90 leading-relaxed">
+                    - Nếu đơn hàng đã xuất kho (<strong>DISPATCHED</strong>), hệ thống sẽ từ chối xóa để đảm bảo toàn vẹn sổ cái thực tế. Bạn phải tiếp nhận hàng hoàn.<br />
+                    - Nếu đơn hàng đang được giữ hàng (<strong>RESERVED</strong>), số lượng hàng giữ sẽ được tự động hoàn lại vào kho.
+                  </p>
+                </div>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <ModalButton
+                variant="secondary"
+                onClick={() => setIsDeleteOrderModalOpen(false)}
+                disabled={isDeletingOrder}
+              >
+                Hủy
+              </ModalButton>
+              <ModalButton
+                variant="danger"
+                onClick={handleDeleteOrderSubmit}
+                disabled={isDeletingOrder}
+              >
+                {isDeletingOrder ? 'Đang xóa...' : 'Xác nhận xóa'}
+              </ModalButton>
+            </ModalFooter>
+          </div>
+        </Modal>
+      )}
+
+      {/* MODAL 3B: BULK DELETE ORDERS */}
+      {isBulkDeleteModalOpen && selectedOrderIds.length > 0 && (
+        <Modal
+          isOpen={isBulkDeleteModalOpen}
+          onClose={() => !isDeletingBulk && setIsBulkDeleteModalOpen(false)}
+          title="Xác nhận xóa hàng loạt"
+          subtitle={`Bạn có chắc muốn xóa ${selectedOrderIds.length} đơn hàng đã chọn?`}
+          icon={Trash2}
+          maxWidth="max-w-md"
+        >
+          <div className="flex flex-col flex-1 min-h-0">
+            <ModalBody className="space-y-3.5">
+              <div className="p-3 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+                <AlertTriangle size={16} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-semibold">Ràng buộc nghiệp vụ kho:</p>
+                  <p className="text-amber-700 dark:text-amber-400/90 leading-relaxed">
+                    - Đơn ở trạng thái giữ hàng (<strong>RESERVED</strong>) sẽ tự động được hoàn trả tồn kho.<br />
+                    - Mặc định hệ thống sẽ tự động bỏ qua các đơn đã xuất kho bàn giao (<strong>DISPATCHED</strong>) để bảo toàn lịch sử xuất kho.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-700 dark:text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={forceBulkDelete}
+                    onChange={(e) => setForceBulkDelete(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500 mt-0.5"
+                  />
+                  <div>
+                    <span className="font-medium text-red-600 dark:text-red-400">Buộc xóa cả đơn đã xuất kho bàn giao</span>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                      Bật tùy chọn này nếu bạn muốn xóa dọn dẹp triệt để dữ liệu mà không bị chặn bởi trạng thái xuất kho.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <ModalButton
+                variant="secondary"
+                onClick={() => setIsBulkDeleteModalOpen(false)}
+                disabled={isDeletingBulk}
+              >
+                Hủy
+              </ModalButton>
+              <ModalButton
+                variant="danger"
+                onClick={handleBulkDeleteSubmit}
+                disabled={isDeletingBulk}
+              >
+                {isDeletingBulk ? 'Đang xóa...' : `Xác nhận xóa (${selectedOrderIds.length})`}
+              </ModalButton>
+            </ModalFooter>
+          </div>
+        </Modal>
+      )}
+
+      {/* MODAL 3C: DELETE ALL ORDERS */}
+      {isDeleteAllModalOpen && (
+        <Modal
+          isOpen={isDeleteAllModalOpen}
+          onClose={() => !isDeletingBulk && setIsDeleteAllModalOpen(false)}
+          title="Xác nhận xóa toàn bộ đơn hàng"
+          subtitle={
+            selectedShopId
+              ? `Xóa toàn bộ đơn hàng của gian hàng đang lọc (${shops.find((s) => s.id === selectedShopId)?.name || 'Shop'})`
+              : 'Xóa toàn bộ tất cả đơn hàng trong hệ thống'
+          }
+          icon={Trash2}
+          maxWidth="max-w-md"
+        >
+          <div className="flex flex-col flex-1 min-h-0">
+            <ModalBody className="space-y-3.5">
+              <div className="p-3.5 rounded bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 flex items-start gap-2.5 text-xs text-red-800 dark:text-red-300">
+                <AlertTriangle size={18} className="shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold text-red-900 dark:text-red-200">CẢNH BÁO NGUY HIỂM: HÀNH ĐỘNG KHÔNG THỂ HOÀN TÁC</p>
+                  <p className="text-red-700 dark:text-red-300 leading-relaxed">
+                    Hành động này sẽ xóa toàn bộ đơn hàng, kiện hàng, lịch sử quét và dữ liệu đối soát liên quan. Thường chỉ dùng khi làm mới môi trường thử nghiệm.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 space-y-2.5">
+                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-700 dark:text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={forceDeleteAll}
+                    onChange={(e) => setForceDeleteAll(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500 mt-0.5"
+                  />
+                  <div>
+                    <span className="font-medium text-red-600 dark:text-red-400">Buộc xóa cả đơn đã xuất kho bàn giao (Force delete)</span>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                      Bỏ qua kiểm tra trạng thái DISPATCHED và xóa sạch toàn bộ đơn.
+                    </p>
+                  </div>
+                </label>
+
+                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-900 dark:text-white font-medium">
+                    <input
+                      type="checkbox"
+                      checked={confirmDeleteAll}
+                      onChange={(e) => setConfirmDeleteAll(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500 mt-0.5"
+                    />
+                    <span>Tôi hiểu và đồng ý xóa vĩnh viễn toàn bộ đơn hàng</span>
+                  </label>
+                </div>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <ModalButton
+                variant="secondary"
+                onClick={() => {
+                  setIsDeleteAllModalOpen(false);
+                  setConfirmDeleteAll(false);
+                }}
+                disabled={isDeletingBulk}
+              >
+                Hủy
+              </ModalButton>
+              <ModalButton
+                variant="danger"
+                onClick={handleDeleteAllSubmit}
+                disabled={!confirmDeleteAll || isDeletingBulk}
+              >
+                {isDeletingBulk ? 'Đang xóa toàn bộ...' : 'Xác nhận xóa toàn bộ'}
+              </ModalButton>
+            </ModalFooter>
+          </div>
+        </Modal>
+      )}
+
+      {/* MODAL 4: RETURN PROCESSING (ĐÁNH DẤU & XỬ LÝ HOÀN HÀNG) */}
+      {isReturnModalOpen && selectedOrderForReturn && (
+        <Modal
+          isOpen={isReturnModalOpen}
+          onClose={() => {
+            if (!isSubmittingReturn) {
+              setIsReturnModalOpen(false);
+              setSelectedOrderForReturn(null);
+            }
+          }}
+          title="Đánh Dấu & Xử Lý Hoàn Hàng"
+          subtitle={`Đơn hàng: ${selectedOrderForReturn.externalOrderId || selectedOrderForReturn.internalOrderCode} • Shop: ${selectedOrderForReturn.shop?.name || 'Gian hàng'}`}
+          icon={RotateCcw}
+          maxWidth="max-w-4xl"
+        >
+          <form onSubmit={handleSubmitReturn} className="flex flex-col flex-1 min-h-0">
+            <ModalBody className="space-y-4">
+              {/* Order Context Banner */}
+              <div className="p-3 rounded-lg bg-gray-50 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 text-xs grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <span className="text-gray-400 block font-normal">Mã đơn Shopee</span>
+                  <span className="font-mono font-medium text-gray-900 dark:text-white">
+                    {selectedOrderForReturn.externalOrderId}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block font-normal">Mã vận đơn</span>
+                  <span className="font-mono text-gray-700 dark:text-gray-300">
+                    {selectedOrderForReturn.trackingCode || 'Chưa cập nhật'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block font-normal">Khách hàng</span>
+                  <span className="text-gray-800 dark:text-gray-200 font-medium truncate block">
+                    {selectedOrderForReturn.recipientName || 'Khách lẻ'} ({selectedOrderForReturn.recipientPhone || 'N/A'})
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block font-normal">Trạng thái kho</span>
+                  <span className="font-medium text-indigo-600 dark:text-indigo-400">
+                    {selectedOrderForReturn.fulfillmentStatus}
+                  </span>
+                </div>
+              </div>
+
+              {/* Mode Selection Tabs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1 bg-gray-100 dark:bg-gray-800/80 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setReturnMode('MARK_IN_TRANSIT')}
+                  className={`py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    returnMode === 'MARK_IN_TRANSIT'
+                      ? 'bg-white dark:bg-[#1f232b] text-amber-600 dark:text-amber-400 shadow-xs'
+                      : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Truck size={15} />
+                  <span>1. Báo đơn đang hoàn (Chưa nhận hàng)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const isDispatched =
+                      selectedOrderForReturn.fulfillmentStatus === 'DISPATCHED' ||
+                      selectedOrderForReturn.fulfillmentStatus === 'PARTIALLY_RETURN_RECEIVED';
+                    if (!isDispatched) {
+                      alert('Đơn hàng chưa ghi nhận xuất kho thực tế (DISPATCHED). Chỉ có thể dùng chế độ "Báo đơn đang hoàn".');
+                      return;
+                    }
+                    setReturnMode('INSPECT_AND_RECEIVE');
+                  }}
+                  className={`py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    returnMode === 'INSPECT_AND_RECEIVE'
+                      ? 'bg-white dark:bg-[#1f232b] text-[#5865f2] dark:text-indigo-400 shadow-xs'
+                      : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  <ShieldCheck size={15} />
+                  <span>2. Kho đã nhận hàng → Kiểm tra & Nhập kho</span>
+                </button>
+              </div>
+
+              {/* Mode 1 Description & Form */}
+              {returnMode === 'MARK_IN_TRANSIT' && (
+                <div className="space-y-3.5">
+                  <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+                    <AlertTriangle size={16} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <div>
+                      <p className="font-semibold">Quy tắc bảo vệ sổ cái kho:</p>
+                      <p className="mt-0.5 text-amber-700 dark:text-amber-400/90 leading-relaxed">
+                        Hàng đang trên đường quay đầu từ khách hàng / sàn giao dịch. Khi đánh dấu, đơn hàng sẽ chuyển trạng thái sàn thành <strong>Trả hàng/Hoàn tiền (TO_RETURN)</strong> và đưa vào danh sách chờ tiếp nhận hoàn.
+                        <br />
+                        <strong>Tuyệt đối không tăng tồn kho ảo</strong> cho đến khi kiện hàng thực tế được giao đến kho và kiểm đếm.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Lý do báo hoàn
+                      </label>
+                      <select
+                        value={returnForm.reason}
+                        onChange={(e) => setReturnForm({ ...returnForm, reason: e.target.value })}
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
+                      >
+                        <option value="Khách từ chối nhận hàng (Giao thất bại)">Khách từ chối nhận hàng (Giao thất bại)</option>
+                        <option value="Khách yêu cầu Trả hàng / Hoàn tiền trên Shopee">Khách yêu cầu Trả hàng / Hoàn tiền trên Shopee</option>
+                        <option value="Bưu tá giao không thành công 3 lần">Bưu tá giao không thành công 3 lần</option>
+                        <option value="Hàng bị bể vỡ / móp méo khi vận chuyển">Hàng bị bể vỡ / móp méo khi vận chuyển</option>
+                        <option value="Đổi trả theo thỏa thuận với khách">Đổi trả theo thỏa thuận với khách</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Ghi chú chi tiết
+                      </label>
+                      <input
+                        type="text"
+                        value={returnForm.note}
+                        onChange={(e) => setReturnForm({ ...returnForm, note: e.target.value })}
+                        placeholder="VD: Khách báo đi công tác không nhận, shipper chuyển hoàn..."
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Mode 2: INSPECT AND RECEIVE FORM */}
+              {returnMode === 'INSPECT_AND_RECEIVE' && (
+                <div className="space-y-4">
+                  <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 flex items-start gap-2.5 text-xs text-emerald-800 dark:text-emerald-300">
+                    <CheckCircle2 size={16} className="shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+                    <div>
+                      <p className="font-semibold">Quy trình kiểm tra & cộng tồn kho thực tế:</p>
+                      <p className="mt-0.5 text-emerald-700 dark:text-emerald-400/90 leading-relaxed">
+                        • <strong>Hàng còn nguyên:</strong> Tự động tăng tồn kho có thể bán (onHand) qua bút toán RETURN_RECEIVE.<br />
+                        • <strong>Hàng hư hỏng / móp méo:</strong> Tự động đưa vào tồn kho lỗi (damaged) qua bút toán RETURN_DAMAGE.<br />
+                        • <strong>Khách giữ lại / Thiếu mất:</strong> Ghi nhận vào biên bản nhưng không cộng vào tồn kho.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Kho tiếp nhận hàng hoàn *
+                      </label>
+                      <select
+                        value={returnForm.warehouseId}
+                        onChange={(e) => setReturnForm({ ...returnForm, warehouseId: e.target.value })}
+                        required
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
+                      >
+                        <option value="">-- Chọn kho nhận hàng --</option>
+                        {warehouses.map((w) => (
+                          <option key={w.id} value={w.id}>
+                            {w.name} ({w.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Ngày nhận thực tế *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={returnForm.receivedDate}
+                        onChange={(e) => setReturnForm({ ...returnForm, receivedDate: e.target.value })}
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Người kiểm tra hàng *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={returnForm.inspectorName}
+                        onChange={(e) => setReturnForm({ ...returnForm, inspectorName: e.target.value })}
+                        placeholder="VD: Nguyễn Văn A (Thủ kho)"
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Mã vận đơn hoàn (nếu có)
+                      </label>
+                      <input
+                        type="text"
+                        value={returnForm.trackingCode}
+                        onChange={(e) => setReturnForm({ ...returnForm, trackingCode: e.target.value })}
+                        placeholder="Mã vận đơn hàng hoàn về..."
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 font-mono focus:outline-none focus:border-[#5865f2]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Lý do hoàn & Tình trạng kiện hàng
+                      </label>
+                      <input
+                        type="text"
+                        value={returnForm.reason}
+                        onChange={(e) => setReturnForm({ ...returnForm, reason: e.target.value })}
+                        placeholder="VD: Hộp nguyên seal, tem vận chuyển còn nguyên..."
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Items Inspection Table */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
+                        <Boxes size={14} className="text-[#5865f2]" />
+                        Chi tiết kiểm đếm từng sản phẩm:
+                      </span>
+                      <span className="text-[11px] text-gray-500">
+                        Tổng cộng {returnForm.items.length} dòng sản phẩm
+                      </span>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-gray-50 dark:bg-gray-900/80 text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800 font-semibold">
+                            <th className="py-2.5 px-3">Sản phẩm / SKU</th>
+                            <th className="py-2.5 px-2 text-center w-16">Đã xuất</th>
+                            <th className="py-2.5 px-2 text-center w-16">Đã nhận</th>
+                            <th className="py-2.5 px-2 text-center w-16 text-indigo-600 font-bold">Còn chờ</th>
+                            <th className="py-2.5 px-2 text-center w-28 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300">
+                              Nguyên vẹn (Bán)
+                            </th>
+                            <th className="py-2.5 px-2 text-center w-28 bg-rose-50/50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300">
+                              Hàng lỗi (Hỏng)
+                            </th>
+                            <th className="py-2.5 px-2 text-center w-24 bg-gray-50/50 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300">
+                              Khách giữ/Mất
+                            </th>
+                            <th className="py-2.5 px-3 w-40">Ghi chú / Lô</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                          {returnForm.items.map((it, idx) => (
+                            <tr key={it.orderItemId || idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20">
+                              <td className="py-2.5 px-3">
+                                <div className="font-medium text-gray-900 dark:text-white line-clamp-1">
+                                  {it.productName}
+                                </div>
+                                <div className="text-[11px] font-mono text-gray-500">
+                                  {it.sku} {it.variationName ? `• ${it.variationName}` : ''}
+                                </div>
+                              </td>
+
+                              <td className="py-2.5 px-2 text-center font-mono text-gray-600 dark:text-gray-300">
+                                {it.dispatchedQuantity}
+                              </td>
+
+                              <td className="py-2.5 px-2 text-center font-mono text-gray-400">
+                                {it.totalAccounted}
+                              </td>
+
+                              <td className="py-2.5 px-2 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                {it.remainingToReturn}
+                              </td>
+
+                              {/* Sellable */}
+                              <td className="py-2 px-2 text-center bg-emerald-50/30 dark:bg-emerald-950/10">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={it.remainingToReturn}
+                                  value={it.sellableQuantity}
+                                  onChange={(e) =>
+                                    handleReturnItemChange(idx, 'sellableQuantity', Math.max(0, parseInt(e.target.value, 10) || 0))
+                                  }
+                                  className="w-full text-center px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-white dark:bg-[#131720] border border-emerald-300 dark:border-emerald-800 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                />
+                              </td>
+
+                              {/* Damaged */}
+                              <td className="py-2 px-2 text-center bg-rose-50/30 dark:bg-rose-950/10">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={it.remainingToReturn}
+                                  value={it.damagedQuantity}
+                                  onChange={(e) =>
+                                    handleReturnItemChange(idx, 'damagedQuantity', Math.max(0, parseInt(e.target.value, 10) || 0))
+                                  }
+                                  className="w-full text-center px-2 py-1 text-xs font-semibold text-rose-700 dark:text-rose-300 bg-white dark:bg-[#131720] border border-rose-300 dark:border-rose-800 rounded focus:outline-none focus:ring-1 focus:ring-rose-500"
+                                />
+                              </td>
+
+                              {/* Missing */}
+                              <td className="py-2 px-2 text-center bg-gray-50/30 dark:bg-gray-800/20">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={it.remainingToReturn}
+                                  value={it.missingQuantity}
+                                  onChange={(e) =>
+                                    handleReturnItemChange(idx, 'missingQuantity', Math.max(0, parseInt(e.target.value, 10) || 0))
+                                  }
+                                  className="w-full text-center px-2 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-[#131720] border border-gray-300 dark:border-gray-700 rounded focus:outline-none"
+                                />
+                              </td>
+
+                              {/* Note / Batch */}
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  placeholder="Ghi chú/Lô..."
+                                  value={it.note || ''}
+                                  onChange={(e) => handleReturnItemChange(idx, 'note', e.target.value)}
+                                  className="w-full px-2 py-1 text-[11px] rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none"
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Summary row */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-gray-50 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 text-xs">
+                      <span className="font-semibold text-gray-700 dark:text-gray-300">
+                        Tổng kết nhận hàng hoàn:
+                      </span>
+                      <div className="flex items-center gap-4">
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                          Tồn bán lại (+onHand):{' '}
+                          {returnForm.items.reduce((acc, it) => acc + (Number(it.sellableQuantity) || 0), 0)}
+                        </span>
+                        <span className="text-rose-600 dark:text-rose-400 font-semibold">
+                          Tồn hàng lỗi (+damaged):{' '}
+                          {returnForm.items.reduce((acc, it) => acc + (Number(it.damagedQuantity) || 0), 0)}
+                        </span>
+                        <span className="text-gray-500 font-medium">
+                          Khách giữ / Thiếu:{' '}
+                          {returnForm.items.reduce((acc, it) => acc + (Number(it.missingQuantity) || 0), 0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </ModalBody>
+
+            <ModalFooter>
+              <ModalButton
+                variant="secondary"
+                onClick={() => {
+                  setIsReturnModalOpen(false);
+                  setSelectedOrderForReturn(null);
+                }}
+                disabled={isSubmittingReturn}
+              >
+                Đóng
+              </ModalButton>
+
+              <ModalButton
+                variant="primary"
+                type="submit"
+                disabled={isSubmittingReturn}
+              >
+                {isSubmittingReturn
+                  ? 'Đang xử lý...'
+                  : returnMode === 'INSPECT_AND_RECEIVE'
+                  ? 'Xác nhận kiểm nhận & Cập nhật kho'
+                  : 'Xác nhận báo đơn đang hoàn'}
+              </ModalButton>
+            </ModalFooter>
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+};
+

@@ -1,3 +1,17 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Production & Build outputs
+dist
+dist-ssr
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
 # Logs
 logs
 *.log
@@ -7,10 +21,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Local & Temporary files
 *.local
+*.xlsx
+*.csv
 
 # Editor directories and files
 .vscode/*

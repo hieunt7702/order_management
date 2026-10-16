@@ -1,16 +1,63 @@
-# React + Vite
+# Shopee Multi-Tenant Order, Inventory & Fulfillment System
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Hệ thống quản lý đơn hàng đa shop Shopee, kho bãi, tồn kho hai chiều, quét barcode xuất hàng và đối soát tài chính đa Tenant (Doanh nghiệp).
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 1. Cấu Trúc Dự Án (Monorepo Workspace)
 
-## React Compiler
+```
+shopee_order/
+├── backend/          # Backend REST API (NestJS, Prisma, PostgreSQL, Redis, BullMQ)
+│   ├── src/
+│   ├── prisma/
+│   ├── package.json
+│   └── ...
+├── frontend/         # Frontend Web App (React 19, Vite, Tailwind CSS, Lucide React)
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   └── ...
+├── package.json      # Root Workspace Scripts & Concurrently Runner
+├── pnpm-workspace.yaml
+└── README.md
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the Oxlint configuration
+## 2. Hướng Dẫn Khởi Động Nhanh
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+### Cài Đặt Dependencies
+
+Từ thư mục gốc dự án:
+```bash
+pnpm install
+```
+
+### Chạy Đồng Thời Cả Backend & Frontend
+
+Từ thư mục gốc dự án, chỉ cần chạy một lệnh duy nhất:
+```bash
+pnpm run dev
+```
+
+Hệ thống sẽ tự động khởi động đồng thời cả 2 dịch vụ:
+- **Frontend App**: `http://localhost:5173`
+- **Backend API**: `http://localhost:3000/api/v1`
+- **Swagger API Docs**: `http://localhost:3000/api/docs`
+
+---
+
+## 3. Các Lệnh Tiện Ích Khác Tại Root
+
+| Lệnh | Mô tả |
+| :--- | :--- |
+| `pnpm run dev` | Chạy đồng thời cả Backend và Frontend |
+| `pnpm run dev:backend` | Chỉ chạy Backend ở chế độ Watch mode |
+| `pnpm run dev:frontend` | Chỉ chạy Frontend với Vite Dev Server |
+| `pnpm run build` | Biên dịch cả Backend và Frontend cho Production |
+| `pnpm run build:backend` | Biên dịch mã nguồn Backend |
+| `pnpm run build:frontend` | Đóng gói bundle Frontend |
+| `pnpm run prisma:generate` | Tạo lại Prisma Client từ Schema |
+| `pnpm run prisma:migrate` | Chạy database migrations |
+| `pnpm run prisma:seed` | Seed dữ liệu 3 Tenant mẫu và tài khoản |

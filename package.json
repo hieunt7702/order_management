@@ -1,37 +1,22 @@
 {
-  "name": "shopee_mn",
+  "name": "shopee-order-system",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "version": "1.0.0",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "dexie": "^4.4.5",
-    "framer-motion": "^13.1.1",
-    "html5-qrcode": "^2.3.8",
-    "localforage": "^1.10.0",
-    "lucide-react": "^1.34.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.2",
-    "react-tailwindcss-datepicker": "^2.0.0",
-    "recharts": "^3.10.1",
-    "tesseract.js": "^7.0.0",
-    "xlsx": "^0.18.5",
-    "zustand": "^5.0.15"
+    "dev": "concurrently -n \"BE,FE\" -c \"blue.bold,magenta.bold\" --kill-others-on-fail \"pnpm --filter shopee-order-backend dev\" \"pnpm --filter shopee-order-frontend dev\"",
+    "dev:parallel": "pnpm -r --parallel run dev",
+    "dev:backend": "pnpm --filter shopee-order-backend dev",
+    "dev:frontend": "pnpm --filter shopee-order-frontend dev",
+    "build": "pnpm -r run build",
+    "build:backend": "pnpm --filter shopee-order-backend build",
+    "build:frontend": "pnpm --filter shopee-order-frontend build",
+    "prisma:generate": "pnpm --filter shopee-order-backend prisma:generate",
+    "prisma:migrate": "pnpm --filter shopee-order-backend prisma:migrate",
+    "prisma:seed": "pnpm --filter shopee-order-backend prisma:seed",
+    "prisma:seed:admin": "pnpm --filter shopee-order-backend prisma:seed:admin",
+    "prisma:clear": "pnpm --filter shopee-order-backend prisma:clear"
   },
   "devDependencies": {
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.1.0",
-    "autoprefixer": "^10.5.4",
-    "oxlint": "^1.79.0",
-    "postcss": "^8.5.26",
-    "tailwindcss": "^3.4.19",
-    "vite": "^8.2.2"
+    "concurrently": "^9.1.2"
   }
 }

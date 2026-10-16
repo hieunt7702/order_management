@@ -1,0 +1,339 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f9f9fa;
+  --foreground: #151a1e;
+  --card: #ffffff;
+  --card-foreground: #151a1e;
+  --popover: #ffffff;
+  --popover-foreground: #151a1e;
+  --primary: #5865f2;
+  --primary-foreground: #ffffff;
+  --secondary: #f2f3f5;
+  --secondary-foreground: #151a1e;
+  --muted: #f2f3f5;
+  --muted-foreground: #72767d;
+  --accent: #e3e5e8;
+  --accent-foreground: #151a1e;
+  --destructive: #f04747;
+  --border: #e3e5e8;
+  --input: #ffffff;
+  --ring: #5865f2;
+  --radius: 4px;
+
+  /* Legacy aliases for backward compatibility */
+  --primary-color: #5865f2;
+  --primary-brand: #5865f2;
+  --bg-color: #f9f9fa;
+  --bg-secondary: #ffffff;
+  --text-primary: #151a1e;
+  --text-secondary: #72767d;
+  --border-color: #e3e5e8;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+}
+
+.dark {
+  --background: #0f1115;
+  --foreground: #dcddde;
+  --card: #181b22;
+  --card-foreground: #dcddde;
+  --popover: #111216;
+  --popover-foreground: #dcddde;
+  --primary: #5865f2;
+  --primary-foreground: #ffffff;
+  --secondary: #2f3136;
+  --secondary-foreground: #dcddde;
+  --muted: #2f3136;
+  --muted-foreground: #72767d;
+  --accent: #36393f;
+  --accent-foreground: #dcddde;
+  --destructive: #f04747;
+  --border: #262930;
+  --input: #1e2126;
+  --ring: #5865f2;
+
+  /* Legacy aliases */
+  --bg-color: #0f1115;
+  --bg-secondary: #181b22;
+  --text-primary: #dcddde;
+  --text-secondary: #72767d;
+  --border-color: #262930;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* AppLayout will handle scrolling */
+  font-family: "Mona Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Mona Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+}
+
+/* Lucide thin icons matching pawn-system */
+.lucide {
+  stroke-width: 1.5 !important;
+}
+
+/* Guardrail: Prevent illegible ultra-small text on mobile & tablet viewports */
+@media (max-width: 768px) {
+  .text-\[10px\], .text-\[9px\] {
+    font-size: 11.5px !important;
+    line-height: 1.35 !important;
+  }
+}
+
+/* ==========================================================================
+   Global Unified Scrollbar System (Cross-browser, Light & Dark themes)
+   ========================================================================== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.35);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.65);
+}
+
+.dark * {
+  scrollbar-color: rgba(107, 114, 128, 0.35) transparent;
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.35);
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.6);
+}
+
+/* Explicit Custom Scrollbar Utilities */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.8);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.4);
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
+}
+
+/* ==========================================================================
+   Unified System Inputs & Form Controls (Desktop & Mobile First)
+   ========================================================================== */
+input[type="text"],
+input[type="search"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+textarea {
+  border-radius: 4px;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+@media (max-width: 640px) {
+  /* Prevent iOS zoom on input focus by keeping font-size >= 15px on mobile touch */
+  input[type="text"],
+  input[type="search"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="date"],
+  textarea {
+    font-size: 15px !important;
+    min-height: 40px;
+  }
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: #5865f2 !important;
+  box-shadow: 0 0 0 2px rgba(88, 101, 242, 0.2) !important;
+}
+
+
+/* Animations that keep flat design but look premium */
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Drag and Drop Zone */
+.drop-zone {
+  border: 2px dashed var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.drop-zone.active {
+  border-color: var(--primary-brand);
+  background-color: rgba(88, 101, 242, 0.05);
+}
+
+/* Base button styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background-color: var(--primary-brand);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #4752c4;
+}
+
+/* Badges */
+.badge {
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.badge-success { background: #dcfce7; color: #166534; }
+.badge-warning { background: #fef3c7; color: #92400e; }
+.badge-danger { background: #fee2e2; color: #991b1b; }
+
+/* Datepicker Dark Mode Overrides */
+.dark .datepicker-theme .bg-slate-800 {
+  background-color: #1c212a !important; /* Matches our header bg */
+}
+.dark .datepicker-theme .border-slate-800,
+.dark .datepicker-theme .border-gray-700 {
+  border-color: rgba(255,255,255,0.05) !important;
+}
+.dark .datepicker-theme .bg-slate-700 {
+  background-color: #272f3d !important;
+}
+.dark .datepicker-theme .hover\:bg-slate-700:hover {
+  background-color: #2a3142 !important;
+}
+.dark .datepicker-theme .text-slate-300 {
+  color: #d1d5db !important; /* text-gray-300 */
+}
+.dark .datepicker-theme .text-slate-400 {
+  color: #9ca3af !important; /* text-gray-400 */
+}
+/* For the active selected date background */
+.dark .datepicker-theme .bg-blue-600 {
+  background-color: var(--primary-brand) !important;
+}
+/* Light Mode Tweaks to match our border radius / colors */
+.datepicker-theme .border-gray-200 {
+  border-color: rgba(203, 213, 225, 0.6) !important;
+}
+
+/* ==========================================================================
+   Global Dropdown (Select) UI/UX Standardization
+   ========================================================================== */
+select:not(.no-custom-arrow) {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 1rem;
+  padding-right: 2rem !important;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dark select:not(.no-custom-arrow) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+}
+
+/* Barcode Laser Scan Animation */
+@keyframes laserScan {
+  0% { top: 6%; opacity: 0.8; }
+  50% { top: 90%; opacity: 1; }
+  100% { top: 6%; opacity: 0.8; }
+}
+
+.laser-scanner-line {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #5865f2, #ef4444, #5865f2, transparent);
+  box-shadow: 0 0 12px 2px rgba(88, 101, 242, 0.8), 0 0 6px 1px rgba(239, 68, 68, 0.6);
+  animation: laserScan 2.2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 20;
+}
