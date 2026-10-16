@@ -23,6 +23,9 @@ export const fulfillmentApi = {
       },
     );
   },
+  batchVerify: (codes: string[], warehouseId?: string, deviceId?: string, sessionName?: string) => {
+    return api.post('/fulfillment/batch-verify', { codes, warehouseId, deviceId, sessionName });
+  },
   reverseDispatch: (packageId: string, reason: string) => {
     return api.post('/fulfillment/reverse', { packageId, reason });
   },

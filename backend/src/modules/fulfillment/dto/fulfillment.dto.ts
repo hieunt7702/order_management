@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsArray } from 'class-validator';
 
 export class ScanBarcodeDto {
   @ApiProperty({
@@ -41,6 +41,31 @@ export class ReverseDispatchDto {
   reason!: string;
 }
 
+export class BatchVerifyScanDto {
+  @ApiProperty({
+    example: ['SPXVN066144212957', 'SPXVN066144212958'],
+    description: 'Danh sách các mã quét trong phiên gom đơn',
+  })
+  @IsArray()
+  @IsString({ each: true })
+  codes!: string[];
+
+  @ApiPropertyOptional({ example: 'warehouse-uuid' })
+  @IsOptional()
+  @IsString()
+  warehouseId?: string;
+
+  @ApiPropertyOptional({ example: 'SCANNER_HANDHELD_01' })
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
+
+  @ApiPropertyOptional({ example: 'Phiên quét #1' })
+  @IsOptional()
+  @IsString()
+  sessionName?: string;
+}
+
 export class ScanHistoryFilterDto {
   @ApiPropertyOptional({ example: 50, default: 50 })
   @IsOptional()
@@ -56,4 +81,5 @@ export class ScanHistoryFilterDto {
   @IsString()
   result?: string;
 }
+
 

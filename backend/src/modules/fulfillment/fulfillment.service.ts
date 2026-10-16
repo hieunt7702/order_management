@@ -596,5 +596,70 @@ export class FulfillmentService {
       totalVerifiedPackages: verifiedPackages.length,
     };
   }
+
+  async batchVerifyDispatch(
+    tenantId: string,
+    userId: string,
+    dto: { codes: string[]; warehouseId?: string; deviceId?: string; sessionName?: string },
+  ) {
+    const rawCodes = dto.codes || [];
+    const results: any[] = [];
+    let verifiedCount = 0;
+    let alreadyVerifiedCount = 0;
+    let notFoundCount = 0;
+    let failedCount = 0;
+
+    for (const code of rawCodes) {
+      const cleanCode = this.normalizeCode(code);
+      if (!cleanCode) continue;
+
+      try {
+        const res: any = await this.verifyDispatch(tenantId, userId, {
+          code: cleanCode,
+          warehouseId: dto.warehouseId,
+          deviceId: dto.deviceId || 'BATCH_SESSION',
+        });
+
+        if (res.result === ScanResult.VERIFIED) {
+          verifiedCount++;
+        } else if (res.result === ScanResult.ALREADY_VERIFIED) {
+          alreadyVerifiedCount++;
+        } else if (res.result === ScanResult.NOT_FOUND) {
+          notFoundCount++;
+        } else {
+          failedCount++;
+        }
+
+        results.push({
+          code: cleanCode,
+          result: res.result,
+          message: res.message,
+          orderId: res.order?.externalOrderId || res.externalOrderId,
+          internalOrderCode: res.order?.internalOrderCode,
+          carrierName: res.package?.carrierName,
+          shopName: res.package?.order?.shop?.name || res.order?.shop?.name,
+          packageCode: res.package?.packageCode || res.packageCode,
+          packageId: res.package?.id || res.packageId,
+        });
+      } catch (err: any) {
+        failedCount++;
+        results.push({
+          code: cleanCode,
+          result: 'ERROR',
+          message: err.message || 'Lỗi xử lý xác nhận đơn hàng',
+        });
+      }
+    }
+
+    return {
+      total: rawCodes.length,
+      verifiedCount,
+      alreadyVerifiedCount,
+      notFoundCount,
+      failedCount,
+      items: results,
+    };
+  }
 }
+
 

@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { FulfillmentService } from './fulfillment.service';
-import { ScanBarcodeDto, ReverseDispatchDto, ScanHistoryFilterDto } from './dto/fulfillment.dto';
+import { ScanBarcodeDto, ReverseDispatchDto, ScanHistoryFilterDto, BatchVerifyScanDto } from './dto/fulfillment.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TenantGuard } from '../../common/guards/tenant.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -42,6 +42,19 @@ export class FulfillmentController {
   ) {
     const idempotencyKey = req.headers['idempotency-key'] as string;
     return this.fulfillmentService.verifyDispatch(tenantId, user.id, dto, idempotencyKey);
+  }
+
+  @Post('batch-verify')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.WAREHOUSE)
+  @ApiOperation({
+    summary: 'Xác nhận đối soát hàng loạt danh sách các mã đã quét trong phiên xuất kho',
+  })
+  async batchVerify(
+    @CurrentTenantId() tenantId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: BatchVerifyScanDto,
+  ) {
+    return this.fulfillmentService.batchVerifyDispatch(tenantId, user.id, dto);
   }
 
   @Post('reverse')

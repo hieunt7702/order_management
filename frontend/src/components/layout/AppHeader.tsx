@@ -100,7 +100,7 @@ export const AppHeader: React.FC = () => {
             placeholder="Tất cả Shop"
             icon={Store}
             size="sm"
-            className="w-36 sm:w-48"
+            className="w-28 sm:w-44 md:w-48"
             menuWidth="w-56"
           />
         </div>
@@ -122,7 +122,7 @@ export const AppHeader: React.FC = () => {
               placeholder="Chọn kho..."
               icon={Warehouse}
               size="sm"
-              className="w-32 sm:w-44"
+              className="w-28 sm:w-40 md:w-44"
               menuWidth="w-52"
             />
           </div>
@@ -130,11 +130,11 @@ export const AppHeader: React.FC = () => {
       </div>
 
       {/* Right: Actions, Theme Toggle, User Profile */}
-      <div className="flex items-center gap-2 md:gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
         {/* Refresh Context Button */}
         <button
           onClick={loadContextData}
-          className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+          className="hidden sm:flex p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
           title="Làm mới dữ liệu shop/kho"
         >
           <RefreshCw size={15} />
