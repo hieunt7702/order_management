@@ -88,6 +88,11 @@ model Tenant {
   purchaseReturnItems PurchaseReturnItem[]
   orderReturns        OrderReturn[]
   orderReturnItems    OrderReturnItem[]
+  cashAccounts        CashAccount[]
+  cashCategories      CashCategory[]
+  cashTransactions    CashTransaction[]
+  cashTransfers       CashTransfer[]
+  orderReconciliations OrderReconciliationRecord[]
 
   @@map("tenants")
 }
@@ -189,6 +194,9 @@ model Shop {
   scanEvents       ScanEvent[]
   purchaseReceipts PurchaseReceipt[]
   orderReturns     OrderReturn[]
+  cashAccounts     CashAccount[]
+  cashTransactions CashTransaction[]
+  orderReconciliations OrderReconciliationRecord[]
 
   @@unique([tenantId, code])
   @@unique([tenantId, platform, externalShopId])
@@ -452,6 +460,7 @@ model Order {
   scanEvents   ScanEvent[]
   settlements  Settlement[]
   orderReturns OrderReturn[]
+  reconciliation OrderReconciliationRecord?
 
   @@unique([tenantId, shopId, platform, externalOrderId])
   @@unique([tenantId, internalOrderCode])
@@ -1031,5 +1040,200 @@ model OrderReturnItem {
   @@index([tenantId, variantId])
   @@map("order_return_items")
 }
+
+// -------------------------------------------------------------
+// 10. CASHFLOW, RECONCILIATION & ACCOUNTING
+// -------------------------------------------------------------
+
+enum CashAccountType {
+  CASH             // Quỹ tiền mặt
+  BANK             // Tài khoản ngân hàng
+  PLATFORM_WALLET  // Ví / Số dư sàn Shopee
+  PERSONAL_HOLD    // Tiền cá nhân chi hộ (chờ hoàn)
+}
+
+enum CashCategoryType {
+  INCOME             // Thu hoạt động kinh doanh
+  EXPENSE            // Chi hoạt động kinh doanh
+  INTERNAL_TRANSFER  // Chuyển tiền nội bộ (không tính thu/chi)
+  CAPITAL            // Vốn chủ sở hữu (góp/rút vốn)
+  REIMBURSEMENT      // Hoàn tiền cá nhân ứng hộ
+}
+
+enum CashTransactionType {
+  INCOME
+  EXPENSE
+  INTERNAL_TRANSFER
+  CAPITAL_IN
+  CAPITAL_OUT
+  REIMBURSEMENT
+}
+
+enum CashTransactionStatus {
+  DRAFT      // Nháp (chưa làm thay đổi số dư)
+  CONFIRMED  // Đã xác nhận (đã cập nhật số dư tài khoản)
+  CANCELLED  // Đã hủy / Đảo
+}
+
+enum OrderReconciliationStatus {
+  NO_DATA        // Chưa có dữ liệu quyết toán từ sàn
+  UNMATCHED      // Chưa khớp (Lệch tiền hoặc thiếu phí)
+  MATCHED        // Khớp hoàn toàn
+  NEEDS_CHECK    // Cần kiểm tra (Khiếu nại / Hoàn tiền / Điều chỉnh bất thường)
+}
+
+model CashAccount {
+  id             String          @id @default(uuid())
+  tenantId       String
+  shopId         String?         // Gán nếu là số dư sàn của shop cụ thể
+  code           String
+  name           String
+  type           CashAccountType @default(CASH)
+  accountNumber  String?
+  bankName       String?
+  initialBalance Decimal         @default(0) @db.Decimal(15, 2)
+  currentBalance Decimal         @default(0) @db.Decimal(15, 2)
+  currency       String          @default("VND")
+  isActive       Boolean         @default(true)
+  note           String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shop           Shop?           @relation(fields: [shopId], references: [id], onDelete: SetNull)
+
+  outflowTransactions CashTransaction[] @relation("FromAccount")
+  inflowTransactions  CashTransaction[] @relation("ToAccount")
+  outflowTransfers    CashTransfer[]    @relation("TransferFrom")
+  inflowTransfers     CashTransfer[]    @relation("TransferTo")
+
+  @@unique([tenantId, code])
+  @@index([tenantId, type])
+  @@map("cash_accounts")
+}
+
+model CashCategory {
+  id              String           @id @default(uuid())
+  tenantId        String
+  code            String
+  name            String
+  type            CashCategoryType @default(EXPENSE)
+  isSystemDefault Boolean          @default(false)
+  isActive        Boolean          @default(true)
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  transactions    CashTransaction[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, type])
+  @@map("cash_categories")
+}
+
+model CashTransaction {
+  id                 String                @id @default(uuid())
+  tenantId           String
+  shopId             String?               // Gán cho shop cụ thể hoặc null nếu chi chung
+  isCommonExpense    Boolean               @default(false)
+  transactionCode    String
+  type               CashTransactionType   @default(EXPENSE)
+  categoryId         String
+  fromAccountId      String?               // Nguồn tiền (nếu chi hoặc chuyển)
+  toAccountId        String?               // Đích tiền (nếu thu hoặc chuyển)
+  amount             Decimal               @db.Decimal(15, 2)
+  transactionDate    DateTime              @default(now())
+  paymentMethod      String                @default("BANK_TRANSFER") // CASH, BANK_TRANSFER, E_WALLET, PLATFORM_BALANCE
+  status             CashTransactionStatus @default(CONFIRMED)
+  counterpartyName   String?               // Người trả / nhận: NCC, Khách, Nhân viên...
+  performedByName    String?               // Người thực tế chi/thu
+  referenceCode      String?               // Mã giao dịch / số UNC
+  voucherImage       String?               // Ảnh chứng từ
+  note               String?
+  createdById        String?
+  confirmedById      String?
+  confirmedAt        DateTime?
+  relatedEntityType  String?               // PURCHASE_RECEIPT, SUPPLIER_PAYMENT, ORDER, SETTLEMENT, PURCHASE_RETURN
+  relatedEntityId    String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  tenant             Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shop               Shop?                 @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  category           CashCategory          @relation(fields: [categoryId], references: [id])
+  fromAccount        CashAccount?          @relation("FromAccount", fields: [fromAccountId], references: [id])
+  toAccount          CashAccount?          @relation("ToAccount", fields: [toAccountId], references: [id])
+
+  fromTransfers      CashTransfer[]        @relation("FromTx")
+  toTransfers        CashTransfer[]        @relation("ToTx")
+
+  @@unique([tenantId, transactionCode])
+  @@index([tenantId, transactionDate])
+  @@index([tenantId, status])
+  @@index([tenantId, categoryId])
+  @@index([tenantId, referenceCode])
+  @@map("cash_transactions")
+}
+
+model CashTransfer {
+  id                String                @id @default(uuid())
+  tenantId          String
+  transferCode      String
+  fromAccountId     String
+  toAccountId       String
+  amount            Decimal               @db.Decimal(15, 2)
+  feeAmount         Decimal               @default(0) @db.Decimal(15, 2)
+  transferDate      DateTime              @default(now())
+  status            CashTransactionStatus @default(CONFIRMED)
+  referenceCode     String?
+  note              String?
+  createdById       String?
+  fromTransactionId String?
+  toTransactionId   String?
+  createdAt         DateTime              @default(now())
+
+  tenant            Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fromAccount       CashAccount           @relation("TransferFrom", fields: [fromAccountId], references: [id])
+  toAccount         CashAccount           @relation("TransferTo", fields: [toAccountId], references: [id])
+  fromTransaction   CashTransaction?      @relation("FromTx", fields: [fromTransactionId], references: [id])
+  toTransaction     CashTransaction?      @relation("ToTx", fields: [toTransactionId], references: [id])
+
+  @@unique([tenantId, transferCode])
+  @@index([tenantId, transferDate])
+  @@map("cash_transfers")
+}
+
+model OrderReconciliationRecord {
+  id                   String                    @id @default(uuid())
+  tenantId             String
+  shopId               String
+  orderId              String                    @unique
+  externalOrderId      String
+  orderItemAmount      Decimal                   @default(0) @db.Decimal(15, 2) // Giá trị hàng hóa
+  buyerPaidAmount      Decimal                   @default(0) @db.Decimal(15, 2) // Tiền người mua trả
+  estimatedPayout      Decimal                   @default(0) @db.Decimal(15, 2) // Tiền dự kiến nhận
+  settledPayout        Decimal                   @default(0) @db.Decimal(15, 2) // Tiền đã quyết toán thực tế
+  commissionFee        Decimal                   @default(0) @db.Decimal(15, 2) // Phí cố định sàn
+  serviceFee           Decimal                   @default(0) @db.Decimal(15, 2) // Phí dịch vụ
+  transactionFee       Decimal                   @default(0) @db.Decimal(15, 2) // Phí thanh toán
+  shippingFee          Decimal                   @default(0) @db.Decimal(15, 2) // Cước vận chuyển sàn tính
+  adjustmentAmount     Decimal                   @default(0) @db.Decimal(15, 2) // Khoản điều chỉnh / hoàn tiền phát sinh sau
+  reconciliationStatus OrderReconciliationStatus @default(NO_DATA)
+  payoutDate           DateTime?                 // Ngày sàn quyết toán về số dư shop
+  rawSettlementData    Json?                     // Dữ liệu dòng từ file quyết toán sàn
+  note                 String?
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+
+  tenant               Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shop                 Shop                      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  order                Order                     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, shopId, reconciliationStatus])
+  @@index([tenantId, externalOrderId])
+  @@map("order_reconciliation_records")
+}
+
 
 

@@ -21,6 +21,7 @@ import { ShopsPage } from './pages/Shops/page';
 import { MembersPage } from './pages/Members/page';
 import { AuditPage } from './pages/Audit/page';
 import { SettingsPage } from './pages/Settings/page';
+import { CashflowPage } from './pages/Cashflow/page';
 
 interface RouteProps {
   children: React.ReactElement;
@@ -81,6 +82,7 @@ function App() {
           <Route path="/purchase-receipts" element={<PurchaseReceiptsPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
           <Route path="/supplier-debts" element={<SupplierDebtsPage />} />
+          <Route path="/cashflow" element={<CashflowPage />} />
           <Route path="/settlements" element={<SettlementsPage />} />
           <Route path="/shops" element={<ShopsPage />} />
           <Route path="/members" element={<MembersPage />} />

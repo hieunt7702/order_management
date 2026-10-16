@@ -16,6 +16,7 @@ import { SettlementsModule } from './modules/settlements/settlements.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { OrderReturnsModule } from './modules/order-returns/order-returns.module';
+import { CashflowModule } from './modules/cashflow/cashflow.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -45,6 +46,7 @@ import { HealthController } from './health.controller';
     ReportsModule,
     SuppliersModule,
     OrderReturnsModule,
+    CashflowModule,
   ],
   controllers: [HealthController],
 })

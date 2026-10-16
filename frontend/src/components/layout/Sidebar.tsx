@@ -17,6 +17,7 @@ import {
   Settings,
   Command,
   Truck,
+  CircleDollarSign,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -55,6 +56,7 @@ const navigationGroups: NavGroup[] = [
   {
     title: 'Tài chính & Shop',
     items: [
+      { name: 'Thu chi & Đối soát tiền', href: '/cashflow', icon: CircleDollarSign, highlight: true },
       { name: 'Công nợ Nhà cung cấp', href: '/supplier-debts', icon: Building2 },
       { name: 'Đối soát tài chính', href: '/settlements', icon: Receipt },
       { name: 'Quản lý Shop', href: '/shops', icon: Store },
