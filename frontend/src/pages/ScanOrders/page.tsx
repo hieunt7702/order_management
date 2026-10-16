@@ -534,30 +534,33 @@ export const ScanOrdersPage: React.FC = () => {
                 <span className="font-mono text-xs text-gray-400 font-bold">
                   ({activeSession?.sessionCode})
                 </span>
-              </div>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                {/* Status icon only with color - no text label to break layout */}
                 {activeSession?.status === 'DRAFT' ? (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1 shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    Đang quét dở
+                  <span
+                    title="Đang quét dở"
+                    className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 shrink-0"
+                  >
+                    <Clock size={11} className="stroke-[2.5]" />
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1 shrink-0">
-                    <CheckCircle2 size={11} />
-                    Đã đối soát
+                  <span
+                    title="Đã đối soát"
+                    className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 shrink-0"
+                  >
+                    <CheckCircle2 size={12} className="stroke-[2.5]" />
                   </span>
                 )}
-                <span className="text-[11px] text-gray-400 inline-flex items-center gap-1">
-                  <span>•</span>
-                  <span>
-                    Bắt đầu lúc{' '}
-                    {activeSession
-                      ? new Date(activeSession.createdAt).toLocaleTimeString('vi-VN', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })
-                      : '--:--'}
-                  </span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-gray-400">
+                <Clock size={11} className="shrink-0" />
+                <span>
+                  Bắt đầu lúc{' '}
+                  {activeSession
+                    ? new Date(activeSession.createdAt).toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : '--:--'}
                 </span>
               </div>
             </div>
@@ -924,7 +927,7 @@ export const ScanOrdersPage: React.FC = () => {
                   <>
                     <UploadCloud size={16} />
                     <span>
-                      Gửi đối soát ngay ({pendingItemsCount > 0 ? pendingItemsCount : activeSession?.items.length || 0} mã)
+                      Gửi đối soát ngay ({activeSession?.items.length || 0} mã)
                     </span>
                   </>
                 )}

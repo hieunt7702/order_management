@@ -48,6 +48,7 @@ interface ScanSessionState {
   removeItemFromActiveSession: (itemId: string) => void;
   clearActiveSessionItems: () => void;
   deleteSession: (sessionId: string) => void;
+  reopenSession: (sessionId: string) => ScanSession;
   submitSession: (sessionId: string, warehouseId?: string) => Promise<{ success: boolean; session: ScanSession; summary: any }>;
   loadSessionsFromStorage: () => void;
 }
@@ -208,6 +209,7 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
     const newItems = [newItem, ...active.items];
     const updatedActive: ScanSession = {
       ...active,
+      status: 'DRAFT',
       items: newItems,
       updatedAt: now.toISOString(),
       stats: calculateStats(newItems),
@@ -229,6 +231,7 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
     const newItems = active.items.filter((i) => i.id !== itemId);
     const updatedActive: ScanSession = {
       ...active,
+      status: 'DRAFT',
       items: newItems,
       updatedAt: new Date().toISOString(),
       stats: calculateStats(newItems),
@@ -246,6 +249,7 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
 
     const updatedActive: ScanSession = {
       ...active,
+      status: 'DRAFT',
       items: [],
       updatedAt: new Date().toISOString(),
       stats: { total: 0, verified: 0, alreadyVerified: 0, notFound: 0, failed: 0 },
@@ -274,6 +278,23 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
 
     set({ sessions: remaining, activeSessionId: nextActiveId });
     saveToLocalStorage(remaining, nextActiveId);
+  },
+
+  reopenSession: (sessionId: string) => {
+    const { sessions } = get();
+    const session = sessions.find((s) => s.id === sessionId);
+    if (!session) return session as any;
+
+    const updatedSession: ScanSession = {
+      ...session,
+      status: 'DRAFT',
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updatedSessions = sessions.map((s) => (s.id === sessionId ? updatedSession : s));
+    set({ sessions: updatedSessions, activeSessionId: sessionId });
+    saveToLocalStorage(updatedSessions, sessionId);
+    return updatedSession;
   },
 
   submitSession: async (sessionId: string, warehouseId?: string) => {

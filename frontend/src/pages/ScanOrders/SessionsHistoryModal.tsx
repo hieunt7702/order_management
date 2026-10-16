@@ -36,6 +36,8 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
     createNewSession,
     deleteSession,
     submitSession,
+    reopenSession,
+    setActiveSession,
     isVerifyingBatch,
   } = useScanSessionStore();
 
@@ -54,6 +56,17 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
     const newSession = createNewSession();
     toast.success(`Đã tạo ${newSession.name}`);
     onSelectSessionToScan(newSession);
+    onClose();
+  };
+
+  const handleContinueScan = (session: ScanSession) => {
+    if (session.status === 'SUBMITTED') {
+      reopenSession(session.id);
+      toast.info(`Đã mở lại "${session.name}" để tiếp tục quét / sửa mã`);
+    } else {
+      setActiveSession(session.id);
+    }
+    onSelectSessionToScan(session);
     onClose();
   };
 
@@ -219,103 +232,149 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
               return (
                 <div
                   key={session.id}
-                  className={`relative p-3.5 sm:p-4 rounded-lg border transition-all ${
+                  onClick={() => handleContinueScan(session)}
+                  className={`relative p-3.5 sm:p-4 rounded-lg border transition-all cursor-pointer ${
                     isCurrentActive
                       ? 'border-2 border-[#2563eb] dark:border-[#3b82f6] bg-blue-50/40 dark:bg-blue-950/25 shadow-sm'
                       : 'border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1e2b] hover:border-gray-300 dark:hover:border-gray-700'
                   }`}
                 >
-                  {/* Corner Active Icon Indicator replacing the text "Đang mở" */}
+                  {/* Corner Active Indicator */}
                   {isCurrentActive && (
                     <div
-                      className="absolute top-3 right-3 flex items-center justify-center w-6 h-6 rounded-full bg-[#2563eb]/10 dark:bg-[#2563eb]/20 text-[#2563eb] dark:text-blue-400 border border-[#2563eb]/30 shadow-xs"
+                      className="absolute top-3.5 right-3.5 flex items-center justify-center w-5 h-5 rounded-full bg-[#2563eb]/15 dark:bg-[#2563eb]/25 text-[#2563eb] dark:text-blue-400 border border-[#2563eb]/30 shadow-xs"
                       title="Phiên đang mở quét hiện tại"
                     >
                       <span className="w-2 h-2 rounded-full bg-[#2563eb] dark:bg-blue-400 animate-pulse" />
                     </div>
                   )}
 
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className={`flex items-center gap-2 flex-wrap ${isCurrentActive ? 'pr-7' : ''}`}>
-                        <span className="font-bold text-sm text-gray-900 dark:text-white">
-                          {session.name}
-                        </span>
-                        <span className="font-mono text-xs text-gray-500 font-semibold">
-                          ({session.sessionCode})
-                        </span>
-                        {isDraft ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                            Đang quét dở
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1">
-                            <CheckCircle2 size={11} />
-                            Đã đối soát
-                          </span>
-                        )}
-                      </div>
+                  {/* Header Row: Title, Code & Icon Status (NO text label to avoid wrapping) */}
+                  <div className={`flex items-center gap-2 flex-wrap ${isCurrentActive ? 'pr-7' : ''}`}>
+                    <span className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                      {session.name}
+                    </span>
+                    <span className="font-mono text-xs text-gray-500 font-semibold">
+                      ({session.sessionCode})
+                    </span>
 
-                      <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-1.5">
-                        <span className="inline-flex items-center gap-1">
-                          <Package size={13} className="text-gray-400" />
-                          <strong className="text-gray-900 dark:text-white font-mono">
-                            {session.items.length}
-                          </strong>{' '}
-                          mã
+                    {/* Status using ICON and COLOR only */}
+                    {isDraft ? (
+                      <span
+                        title="Đang quét dở"
+                        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 shrink-0"
+                      >
+                        <Clock size={11} className="stroke-[2.5]" />
+                      </span>
+                    ) : (
+                      <span
+                        title="Đã đối soát"
+                        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 shrink-0"
+                      >
+                        <CheckCircle2 size={12} className="stroke-[2.5]" />
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Metadata Row: Count & Time */}
+                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <span className="inline-flex items-center gap-1 font-medium">
+                      <Package size={13} className="text-gray-400 shrink-0" />
+                      <strong className="text-gray-900 dark:text-white font-mono">
+                        {session.items.length}
+                      </strong>{' '}
+                      mã
+                    </span>
+                    <span>•</span>
+                    <span className="inline-flex items-center gap-1 text-[11px] text-gray-400">
+                      <Clock size={12} className="shrink-0" />
+                      {new Date(session.createdAt).toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}{' '}
+                      {new Date(session.createdAt).toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit',
+                      })}
+                    </span>
+                  </div>
+
+                  {/* Verification Results: Distinct Badge Pills (Never breaks or squishes on iPhone 16 Pro) */}
+                  {!isDraft && (
+                    <div className="flex items-center gap-1.5 flex-wrap mt-2 pt-1.5 border-t border-gray-100 dark:border-gray-800/60">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold whitespace-nowrap">
+                        <span className="font-bold">✓</span> {session.stats?.verified ?? 0} thành công
+                      </span>
+                      {(session.stats?.alreadyVerified ?? 0) > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[11px] font-semibold whitespace-nowrap">
+                          <span className="font-bold">⚠</span> {session.stats.alreadyVerified} trùng
                         </span>
-                        <span className="inline-flex items-center gap-1">
-                          <Clock size={13} className="text-gray-400" />
-                          {new Date(session.createdAt).toLocaleTimeString('vi-VN', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}{' '}
-                          {new Date(session.createdAt).toLocaleDateString('vi-VN')}
+                      )}
+                      {(session.stats?.notFound ?? 0) > 0 && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[11px] font-semibold whitespace-nowrap">
+                          <span className="font-bold">✕</span> {session.stats.notFound} không thấy
                         </span>
-                        {!isDraft && (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                            ✓ {session.stats.verified} thành công
-                            {session.stats.alreadyVerified > 0 && ` • ${session.stats.alreadyVerified} trùng`}
-                            {session.stats.notFound > 0 && ` • ${session.stats.notFound} không thấy`}
-                          </span>
-                        )}
-                      </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Action Buttons Row */}
+                  <div className="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-between gap-2 flex-wrap">
+                    {/* Left: Preview first codes */}
+                    <div className="flex items-center gap-1.5 flex-wrap min-w-0 flex-1">
+                      {session.items.length > 0 ? (
+                        <>
+                          <span className="text-[10px] text-gray-400 shrink-0">Mã:</span>
+                          {session.items.slice(0, 3).map((it) => (
+                            <span
+                              key={it.id}
+                              className="px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono text-[10px] font-medium"
+                            >
+                              {it.code}
+                            </span>
+                          ))}
+                          {session.items.length > 3 && (
+                            <span className="text-[10px] text-gray-400 font-medium">
+                              +{session.items.length - 3}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-[10px] text-gray-400 italic">Chưa có mã</span>
+                      )}
                     </div>
 
-                    {/* Action buttons */}
-                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {/* Can continue scan on ANY session (including submitted sessions) */}
+                      <button
+                        type="button"
+                        onClick={() => handleContinueScan(session)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-semibold cursor-pointer shadow-sm transition-all"
+                        title={isDraft ? "Tiếp tục quét mã vào phiên này" : "Mở lại phiên này để quét thêm hoặc sửa/xóa mã"}
+                      >
+                        <Play size={12} className="fill-current" />
+                        <span>Quét tiếp</span>
+                      </button>
+
                       {isDraft ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onSelectSessionToScan(session);
-                              onClose();
-                            }}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-semibold cursor-pointer shadow-sm transition-all"
-                            title="Tiếp tục quét mã vào phiên này"
-                          >
-                            <Play size={13} className="fill-current" />
-                            <span>Tiếp tục quét</span>
-                          </button>
-                          <button
-                            type="button"
-                            disabled={session.items.length === 0 || isVerifyingBatch}
-                            onClick={(e) => handleSubmit(session, e)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-semibold cursor-pointer shadow-sm transition-all"
-                            title="Gửi danh sách mã để đối soát & cập nhật đơn hàng"
-                          >
-                            <UploadCloud size={13} />
-                            <span>Đối soát</span>
-                          </button>
-                        </>
+                        <button
+                          type="button"
+                          disabled={session.items.length === 0 || isVerifyingBatch}
+                          onClick={(e) => handleSubmit(session, e)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-semibold cursor-pointer shadow-sm transition-all"
+                          title="Gửi danh sách mã để đối soát & cập nhật đơn hàng"
+                        >
+                          <UploadCloud size={13} />
+                          <span>Đối soát</span>
+                        </button>
                       ) : (
                         <>
                           <button
                             type="button"
                             onClick={() => setSelectedSessionForDetail(session)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-semibold hover:bg-gray-200 cursor-pointer"
+                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-semibold hover:bg-gray-200 cursor-pointer"
+                            title="Xem chi tiết các mã trong phiên"
                           >
                             <Eye size={13} />
                             <span>Xem mã</span>
@@ -326,7 +385,7 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
                             className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                             title="Xuất file CSV"
                           >
-                            <Download size={14} />
+                            <Download size={13} />
                           </button>
                         </>
                       )}
@@ -337,30 +396,10 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
                         className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
                         title="Xóa phiên này"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   </div>
-
-                  {/* Preview items snippet (first 3 codes) */}
-                  {session.items.length > 0 && (
-                    <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-gray-800/80 flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] text-gray-400">Mã vừa quét:</span>
-                      {session.items.slice(0, 4).map((it) => (
-                        <span
-                          key={it.id}
-                          className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono text-[11px] font-medium"
-                        >
-                          {it.code}
-                        </span>
-                      ))}
-                      {session.items.length > 4 && (
-                        <span className="text-[11px] text-gray-400 font-medium">
-                          +{session.items.length - 4} mã khác...
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
               );
             })
@@ -466,11 +505,27 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
                 ))}
               </div>
 
-              <div className="pt-3 border-t border-gray-200 dark:border-gray-800 flex justify-end">
+              <div className="pt-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = selectedSessionForDetail;
+                    setSelectedSessionForDetail(null);
+                    handleContinueScan(target);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2563eb] text-white text-xs font-semibold hover:bg-[#1d4ed8] cursor-pointer shadow-sm"
+                >
+                  <Play size={12} className="fill-current" />
+                  <span>
+                    {selectedSessionForDetail.status === 'SUBMITTED'
+                      ? 'Mở lại phiên để sửa & quét'
+                      : 'Tiếp tục quét phiên này'}
+                  </span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setSelectedSessionForDetail(null)}
-                  className="px-4 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-xs font-semibold"
+                  className="px-4 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-xs font-semibold cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700"
                 >
                   Đóng
                 </button>
