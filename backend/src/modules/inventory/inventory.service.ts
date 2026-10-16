@@ -307,8 +307,18 @@ export class InventoryService {
       throw new BadRequestException('Kho hàng không thuộc Workspace hiện tại');
     }
 
+    // Resolve items from either items array or single variant shorthand
+    let items = dto.items;
+    if (!items || items.length === 0) {
+      if (dto.variantId && dto.quantity) {
+        items = [{ variantId: dto.variantId, quantity: dto.quantity }];
+      } else {
+        throw new BadRequestException('Danh sách mặt hàng nhập kho không được để trống');
+      }
+    }
+
     // Verify all variants belong to tenant
-    const variantIds = dto.items.map((i) => i.variantId);
+    const variantIds = items.map((i) => i.variantId);
     const validCount = await this.prisma.productVariant.count({
       where: { id: { in: variantIds }, tenantId },
     });
@@ -316,10 +326,14 @@ export class InventoryService {
       throw new BadRequestException('Một hoặc nhiều SKU không thuộc Workspace hiện tại');
     }
 
+    const noteText = dto.referenceCode
+      ? `[PNK: ${dto.referenceCode}] ${dto.note || 'Nhập kho hàng'}`
+      : (dto.note || 'Nhập kho hàng');
+
     return this.prisma.$transaction(async (tx) => {
       const results = [];
 
-      for (const item of dto.items) {
+      for (const item of items) {
         // Upsert balance
         const balance = await tx.inventoryBalance.upsert({
           where: {
@@ -352,7 +366,7 @@ export class InventoryService {
             deltaReserved: 0,
             referenceType: 'MANUAL_RECEIVE',
             performedByUserId: userId,
-            note: dto.note || 'Nhập kho hàng',
+            note: noteText,
           },
         });
 
@@ -365,17 +379,22 @@ export class InventoryService {
         action: 'INVENTORY_RECEIVE',
         entityType: 'Warehouse',
         entityId: dto.warehouseId,
-        newValues: { items: dto.items, note: dto.note },
+        newValues: { items, note: noteText, referenceCode: dto.referenceCode },
       });
 
       return {
-        message: `Đã nhập kho thành công ${dto.items.length} mặt hàng`,
+        message: `Đã nhập kho thành công ${items.length} mặt hàng`,
         balances: results,
       };
     });
   }
 
   async adjustStock(tenantId: string, userId: string, dto: AdjustStockDto) {
+    const delta = dto.deltaOnHand !== undefined ? dto.deltaOnHand : dto.quantityChange;
+    if (delta === undefined || delta === 0) {
+      throw new BadRequestException('Số lượng thay đổi tồn kho (deltaOnHand) phải khác 0');
+    }
+
     const balance = await this.prisma.inventoryBalance.findUnique({
       where: {
         tenantId_warehouseId_variantId: {
@@ -390,7 +409,7 @@ export class InventoryService {
       throw new NotFoundException('Không tìm thấy bản ghi tồn kho để điều chỉnh');
     }
 
-    const newOnHand = balance.onHand + dto.deltaOnHand;
+    const newOnHand = balance.onHand + delta;
     if (newOnHand < 0) {
       throw new BadRequestException('Số lượng tồn thực tế (onHand) không được phép âm');
     }
@@ -401,6 +420,8 @@ export class InventoryService {
         `Không thể giảm tồn xuống dưới số lượng đã giữ hàng cho đơn (Reserved: ${balance.reserved})`,
       );
     }
+
+    const noteText = dto.note ? `${dto.reason}: ${dto.note}` : dto.reason;
 
     return this.prisma.$transaction(async (tx) => {
       const updated = await tx.inventoryBalance.update({
@@ -414,11 +435,11 @@ export class InventoryService {
           warehouseId: dto.warehouseId,
           variantId: dto.variantId,
           movementType: InventoryMovementType.ADJUST,
-          deltaOnHand: dto.deltaOnHand,
+          deltaOnHand: delta,
           deltaReserved: 0,
           referenceType: 'MANUAL_ADJUST',
           performedByUserId: userId,
-          note: dto.reason,
+          note: noteText,
         },
       });
 
@@ -428,11 +449,13 @@ export class InventoryService {
         action: 'INVENTORY_ADJUST',
         entityType: 'InventoryBalance',
         entityId: balance.id,
-        oldValues: { onHand: balance.onHand },
-        newValues: { onHand: newOnHand, deltaOnHand: dto.deltaOnHand, reason: dto.reason },
+        newValues: { deltaOnHand: delta, newOnHand, reason: noteText },
       });
 
-      return updated;
+      return {
+        message: `Đã điều chỉnh tồn kho thành công (Delta: ${delta > 0 ? '+' : ''}${delta})`,
+        balance: updated,
+      };
     });
   }
 

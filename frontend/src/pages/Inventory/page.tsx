@@ -202,11 +202,13 @@ export const InventoryPage: React.FC = () => {
     }
     const idempotencyKey = `rcv_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     try {
+      const qty = parseInt(String(receiveForm.quantity), 10);
       await inventoryApi.receiveStock(
         {
           warehouseId: receiveForm.warehouseId,
+          items: [{ variantId: receiveForm.variantId, quantity: qty }],
           variantId: receiveForm.variantId,
-          quantity: parseInt(String(receiveForm.quantity), 10),
+          quantity: qty,
           unitCost: parseFloat(String(receiveForm.unitCost)) || undefined,
           referenceCode: receiveForm.referenceCode || undefined,
           note: receiveForm.note || undefined,
@@ -238,11 +240,13 @@ export const InventoryPage: React.FC = () => {
     }
     const idempotencyKey = `adj_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     try {
+      const delta = parseInt(String(adjustForm.quantityChange), 10);
       await inventoryApi.adjustStock(
         {
           warehouseId: adjustForm.warehouseId,
           variantId: adjustForm.variantId,
-          quantityChange: parseInt(String(adjustForm.quantityChange), 10),
+          deltaOnHand: delta,
+          quantityChange: delta,
           reason: adjustForm.reason,
           note: adjustForm.note || undefined,
         },

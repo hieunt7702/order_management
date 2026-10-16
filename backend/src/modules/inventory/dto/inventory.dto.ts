@@ -3,6 +3,7 @@ import {
   IsArray,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   Min,
@@ -28,11 +29,33 @@ export class ReceiveStockDto {
   @IsString()
   warehouseId!: string;
 
-  @ApiProperty({ type: [StockItemDto] })
+  @ApiPropertyOptional({ type: [StockItemDto] })
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => StockItemDto)
-  items!: StockItemDto[];
+  items?: StockItemDto[];
+
+  @ApiPropertyOptional({ example: 'variant-uuid' })
+  @IsOptional()
+  @IsString()
+  variantId?: string;
+
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  quantity?: number;
+
+  @ApiPropertyOptional({ example: 50000 })
+  @IsOptional()
+  @IsNumber()
+  unitCost?: number;
+
+  @ApiPropertyOptional({ example: 'PNK-20261016-RZEH' })
+  @IsOptional()
+  @IsString()
+  referenceCode?: string;
 
   @ApiPropertyOptional({ example: 'Nhập lô hàng đầu kỳ từ nhà cung cấp' })
   @IsOptional()
@@ -51,15 +74,30 @@ export class AdjustStockDto {
   @IsString()
   variantId!: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: -2,
     description: 'Số lượng thay đổi (âm hoặc dương). Hoặc số chênh lệch kiểm kê.',
   })
+  @IsOptional()
   @IsInt()
-  deltaOnHand!: number;
+  deltaOnHand?: number;
+
+  @ApiPropertyOptional({
+    example: -2,
+    description: 'Số lượng thay đổi gửi từ frontend',
+  })
+  @IsOptional()
+  @IsInt()
+  quantityChange?: number;
 
   @ApiProperty({ example: 'Hao hụt rách bao bì khi bốc dỡ' })
   @IsNotEmpty()
   @IsString()
   reason!: string;
+
+  @ApiPropertyOptional({ example: 'Ghi chú thêm' })
+  @IsOptional()
+  @IsString()
+  note?: string;
 }
+
