@@ -754,7 +754,8 @@ export const SupplierDebtsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col min-h-fit md:min-h-0">
+          {/* Desktop Table View */}
+          <div className="hidden md:flex flex-1 flex-col min-h-0">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
                 <SystemTh className="w-52">Mã & Nhà Cung Cấp</SystemTh>
@@ -897,6 +898,118 @@ export const SupplierDebtsPage: React.FC = () => {
                 )}
               </SystemTbody>
             </SystemTableWrapper>
+          </div>
+
+          {/* Mobile Card View (md:hidden) */}
+          <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5">
+            {isLoading ? (
+              <div className="py-8 text-center text-xs text-gray-400 font-normal">
+                <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
+                Đang tải công nợ nhà cung cấp...
+              </div>
+            ) : suppliers.length === 0 ? (
+              <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+                <Building2 className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Chưa có nhà cung cấp nào</p>
+                <p className="text-[11px] text-gray-400">Không tìm thấy nhà cung cấp nào phù hợp với bộ lọc.</p>
+              </div>
+            ) : (
+              suppliers.map((s) => {
+                const isShopOwing = s.closingDebt > 0;
+                const isSupplierHolding = s.closingDebt < 0;
+
+                return (
+                  <div
+                    key={s.id}
+                    onClick={() => handleOpenStatement(s.id)}
+                    className="p-3.5 rounded-lg bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs cursor-pointer active:scale-[0.99] transition-all"
+                  >
+                    {/* Header: Supplier Name & Status */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-xs text-gray-900 dark:text-white truncate">
+                          {s.name}
+                        </div>
+                        <div className="text-[11px] font-mono text-gray-400 mt-0.5">
+                          {s.code}
+                        </div>
+                      </div>
+                      {isShopOwing ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 shrink-0">
+                          Shop nợ NCC
+                        </span>
+                      ) : isSupplierHolding ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shrink-0">
+                          NCC giữ cọc/dư
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 shrink-0">
+                          Khớp nợ (0đ)
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Contact & Bank */}
+                    {(s.phone || s.bankAccount) && (
+                      <div className="text-[11px] text-gray-500 dark:text-gray-400 space-y-0.5">
+                        {s.phone && (
+                          <div>
+                            SĐT: <span className="text-gray-700 dark:text-gray-300 font-medium">{s.phone}</span>
+                          </div>
+                        )}
+                        {s.bankAccount && (
+                          <div>
+                            TK: <span className="font-mono text-gray-700 dark:text-gray-300">{s.bankAccount} {s.bankName ? `(${s.bankName})` : ''}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Financial Summary */}
+                    <div className="grid grid-cols-3 gap-2 p-2 rounded bg-gray-50 dark:bg-[#1a1e28] border border-gray-100 dark:border-gray-800/60 text-center">
+                      <div>
+                        <div className="text-[10px] text-gray-400">Phát sinh (+)</div>
+                        <div className="font-mono font-medium text-xs text-gray-900 dark:text-white mt-0.5">
+                          {(s.totalIncurred || 0).toLocaleString('vi-VN')}đ
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-gray-400">Đã trả (-)</div>
+                        <div className="font-mono font-medium text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+                          {(s.totalPaid || 0).toLocaleString('vi-VN')}đ
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-gray-400">Số dư nợ cuối</div>
+                        <div className={`font-mono font-bold text-xs mt-0.5 ${isShopOwing ? 'text-rose-600 dark:text-rose-400' : isSupplierHolding ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500'}`}>
+                          {Math.abs(s.closingDebt || 0).toLocaleString('vi-VN')}đ
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card Actions */}
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-gray-100 dark:border-gray-800/80" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenStatement(s.id)}
+                        className="px-2.5 py-1 text-xs rounded border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1 font-medium cursor-pointer"
+                      >
+                        <Eye size={12} className="text-indigo-500" />
+                        <span>Xem sao kê</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenPaymentModal(s.id)}
+                        className="px-3 py-1 text-xs rounded bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 font-semibold cursor-pointer shadow-xs active:scale-95 transition-all"
+                      >
+                        <CreditCard size={12} />
+                        <span>Chi trả nợ</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}

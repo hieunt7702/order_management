@@ -542,8 +542,8 @@ export const PurchaseReceiptsPage: React.FC = () => {
         )}
       </SystemFilter>
 
-      {/* Main Table */}
-      <div className="flex flex-1 flex-col min-h-fit md:min-h-0">
+      {/* Desktop Table View */}
+      <div className="hidden md:flex flex-1 flex-col min-h-0">
         <SystemTableWrapper
           tableClassName="min-w-[1100px]"
           pagination={
@@ -812,6 +812,166 @@ export const PurchaseReceiptsPage: React.FC = () => {
             )}
           </SystemTbody>
         </SystemTableWrapper>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5">
+        {isLoading ? (
+          <div className="py-8 text-center text-xs text-gray-400 font-normal">
+            <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
+            Đang tải danh sách phiếu nhập...
+          </div>
+        ) : receipts.length === 0 ? (
+          <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+            <PackagePlus className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+            <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Chưa có phiếu nhập kho nào</p>
+            <p className="text-[11px] text-gray-400">Bấm &quot;Tạo phiếu nhập mới&quot; để ghi nhận hàng thực tế từ Nhà phân phối.</p>
+          </div>
+        ) : (
+          receipts.map((r) => {
+            const hasRemaining = Number(r.remainingAmount) > 0;
+            const isDueSoon = r.paymentDueDate && new Date(r.paymentDueDate).getTime() - Date.now() < 3 * 86400000 && new Date(r.paymentDueDate).getTime() > Date.now();
+            const isOverdue = r.paymentDueDate && new Date(r.paymentDueDate).getTime() < Date.now();
+
+            return (
+              <div
+                key={r.id}
+                onClick={() => {
+                  setSelectedReceiptDetail(r);
+                  setIsDetailModalOpen(true);
+                }}
+                className="p-3.5 rounded-lg bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs cursor-pointer active:scale-[0.99] transition-all"
+              >
+                {/* Header: Receipt code & status badge */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <FileText size={14} className="text-[#5865f2] shrink-0" />
+                    <span className="font-mono font-bold text-xs text-gray-900 dark:text-white truncate">
+                      {r.receiptCode}
+                    </span>
+                  </div>
+                  {r.paymentStatus === 'PAID' ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shrink-0">
+                      <CheckCircle2 className="w-3 h-3" /> Đã xong
+                    </span>
+                  ) : r.paymentStatus === 'PARTIALLY_PAID' ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 shrink-0">
+                      Trả 1 phần
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 shrink-0">
+                      Chưa trả
+                    </span>
+                  )}
+                </div>
+
+                {/* Supplier & Warehouse */}
+                <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Building2 size={12} className="text-gray-400 shrink-0" />
+                    <span className="font-medium text-gray-800 dark:text-gray-200 truncate">
+                      {r.supplier?.name || r.supplierName || 'Nhà cung cấp'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-gray-400">
+                    <div className="flex items-center gap-1 truncate">
+                      <Warehouse size={11} className="shrink-0" />
+                      <span className="truncate">{r.warehouse?.name || r.warehouseName || 'Kho chính'}</span>
+                    </div>
+                    <span>{r.receiptDate ? new Date(r.receiptDate).toLocaleDateString('vi-VN') : ''}</span>
+                  </div>
+                </div>
+
+                {/* Financial 3-column stats */}
+                <div className="grid grid-cols-3 gap-2 p-2 rounded bg-gray-50 dark:bg-[#1a1e28] border border-gray-100 dark:border-gray-800/60 text-center">
+                  <div>
+                    <div className="text-[10px] text-gray-400">Hàng thực nhận</div>
+                    <div className="font-mono font-medium text-xs text-gray-900 dark:text-white mt-0.5">
+                      {Number(r.totalAmount || 0).toLocaleString('vi-VN')}đ
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-gray-400">Phải trả NCC</div>
+                    <div className="font-mono font-semibold text-xs text-gray-900 dark:text-white mt-0.5">
+                      {Number(r.totalPayable || 0).toLocaleString('vi-VN')}đ
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-gray-400">Còn nợ</div>
+                    <div className={`font-mono font-bold text-xs mt-0.5 ${hasRemaining ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                      {Number(r.remainingAmount || 0).toLocaleString('vi-VN')}đ
+                    </div>
+                  </div>
+                </div>
+
+                {/* Overdue alert if applicable */}
+                {isOverdue && hasRemaining && (
+                  <div className="flex items-center gap-1 text-[11px] text-rose-600 dark:text-rose-400 font-semibold bg-rose-50 dark:bg-rose-950/30 px-2 py-1 rounded">
+                    <AlertCircle size={12} className="shrink-0" />
+                    <span>Nợ đã quá hạn ({r.paymentDueDate ? new Date(r.paymentDueDate).toLocaleDateString('vi-VN') : ''})</span>
+                  </div>
+                )}
+                {isDueSoon && hasRemaining && !isOverdue && (
+                  <div className="flex items-center gap-1 text-[11px] text-orange-600 dark:text-orange-400 font-semibold bg-orange-50 dark:bg-orange-950/30 px-2 py-1 rounded">
+                    <Clock size={12} className="shrink-0" />
+                    <span>Sắp đến hạn ({r.paymentDueDate ? new Date(r.paymentDueDate).toLocaleDateString('vi-VN') : ''})</span>
+                  </div>
+                )}
+
+                {/* Card Action Buttons */}
+                <div className="flex items-center justify-end gap-2 pt-1 border-t border-gray-100 dark:border-gray-800/80" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedReceiptDetail(r);
+                      setIsDetailModalOpen(true);
+                    }}
+                    className="px-2.5 py-1 text-xs rounded border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1 font-medium cursor-pointer"
+                  >
+                    <Eye size={12} />
+                    <span>Chi tiết</span>
+                  </button>
+                  {hasRemaining && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuickPayReceipt(r);
+                        setQuickPayForm({
+                          amount: Number(r.remainingAmount),
+                          payerName: 'Chị Hồng',
+                          fundSource: 'CASH_FUND',
+                          paymentMethod: 'BANK_TRANSFER',
+                          referenceCode: '',
+                          note: `Thanh toán phiếu nhập ${r.receiptCode}`,
+                        });
+                      }}
+                      className="px-3 py-1 text-xs rounded bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 font-semibold cursor-pointer shadow-xs active:scale-95 transition-all"
+                    >
+                      <CreditCard size={12} />
+                      <span>Trả nợ ngay</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        {/* Mobile Pagination */}
+        <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+          <SystemPagination
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={total}
+            itemsPerPage={limit}
+            onPageChange={(p) => setPage(p)}
+            onLimitChange={(l) => {
+              setLimit(l);
+              setPage(1);
+            }}
+            className="border-t-0"
+          />
+        </div>
       </div>
 
       {/* MODAL 1: TẠO PHIẾU NHẬP MỚI */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Warehouse,
   Boxes,
@@ -14,6 +15,7 @@ import {
   MoreHorizontal,
   Plus,
   Package,
+  PackagePlus,
 } from 'lucide-react';
 import { inventoryApi } from '../../services/inventoryApi';
 import { productsApi } from '../../services/productsApi';
@@ -305,13 +307,26 @@ export const InventoryPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <Link to="/purchase-receipts">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 border-[#5865f2]/40 text-[#5865f2] dark:text-[#7b85f5] hover:bg-[#5865f2]/10"
+              title="Nhập hàng từ Nhà phân phối có công nợ"
+            >
+              <PackagePlus size={14} />
+              <span className="hidden sm:inline">Phiếu nhập NCC</span>
+              <span className="sm:hidden">Phiếu nhập</span>
+            </Button>
+          </Link>
           <Button
             size="sm"
             onClick={() => handleOpenReceiveModal()}
             className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
           >
             <ArrowDownLeft size={14} />
-            <span>Nhập kho</span>
+            <span className="hidden sm:inline">Nhập kho lẻ</span>
+            <span className="sm:hidden">Nhập lẻ</span>
           </Button>
           <Button
             size="sm"
@@ -319,7 +334,7 @@ export const InventoryPage: React.FC = () => {
             className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
           >
             <Sliders size={14} />
-            <span>Điều chỉnh tồn</span>
+            <span>Điều chỉnh</span>
           </Button>
           <Button
             variant="outline"
@@ -497,23 +512,24 @@ export const InventoryPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Balances Table with Bottom-pinned Pagination */}
-                <SystemTableWrapper
-                  tableClassName="min-w-[1000px]"
-                  pagination={
-                    <SystemPagination
-                      page={balancePage - 1}
-                      totalPages={Math.ceil(filteredBalances.length / balanceLimit) || 1}
-                      totalItems={filteredBalances.length}
-                      setPage={(p) => setBalancePage(p + 1)}
-                      itemsPerPage={balanceLimit}
-                      setItemsPerPage={(newLimit) => {
-                        setBalanceLimit(newLimit);
-                        setBalancePage(1);
-                      }}
-                    />
-                  }
-                >
+                {/* Desktop Balances Table with Bottom-pinned Pagination */}
+                <div className="hidden md:flex flex-1 flex-col min-h-0">
+                  <SystemTableWrapper
+                    tableClassName="min-w-[1000px]"
+                    pagination={
+                      <SystemPagination
+                        page={balancePage - 1}
+                        totalPages={Math.ceil(filteredBalances.length / balanceLimit) || 1}
+                        totalItems={filteredBalances.length}
+                        setPage={(p) => setBalancePage(p + 1)}
+                        itemsPerPage={balanceLimit}
+                        setItemsPerPage={(newLimit) => {
+                          setBalanceLimit(newLimit);
+                          setBalancePage(1);
+                        }}
+                      />
+                    }
+                  >
                   <SystemThead>
                     <SystemTh className="w-44">SKU Biến thể</SystemTh>
                     <SystemTh className="w-64">Tên sản phẩm</SystemTh>
@@ -644,8 +660,151 @@ export const InventoryPage: React.FC = () => {
                   </SystemTbody>
                 </SystemTableWrapper>
               </div>
-            );
-          })()}
+
+              {/* Mobile Card View (md:hidden) */}
+              <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5">
+                {isLoadingBalances ? (
+                  <div className="py-8 text-center text-xs text-gray-400 font-normal">
+                    <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
+                    Đang tải số dư tồn kho...
+                  </div>
+                ) : filteredBalances.length === 0 ? (
+                  <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+                    <Boxes className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                    <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Không có dữ liệu tồn kho</p>
+                    <p className="text-[11px] text-gray-400">Không tìm thấy SKU nào phù hợp với bộ lọc hiện tại.</p>
+                  </div>
+                ) : (
+                  paginatedBalances.map((b) => {
+                    const onHand = b.onHand || 0;
+                    const reserved = b.reserved || 0;
+                    const available = b.available ?? onHand - reserved;
+                    const vObj = b.variant || allVariants.find((v) => v.id === b.variantId);
+                    const wObj = b.warehouse || warehouses.find((w) => w.id === b.warehouseId);
+                    const sku = b.sku || vObj?.sku || b.variantId;
+                    const productName = b.productName || vObj?.productName || vObj?.product?.name || '--';
+                    const variantName = b.variantName || vObj?.name;
+                    const warehouseName = b.warehouseName || wObj?.name || b.warehouseId;
+                    const minAlert = b.lowStockThreshold ?? vObj?.lowStockThreshold ?? vObj?.minStockAlert ?? 5;
+                    const isLowStock = available <= minAlert;
+                    const isNegative = available < 0;
+
+                    return (
+                      <div
+                        key={b.id || `${b.warehouseId}_${b.variantId}`}
+                        className="p-3.5 rounded-lg bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs"
+                      >
+                        {/* Card Header: SKU & Status Badge */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-mono font-bold text-xs text-[#5865f2] dark:text-[#7b85f5] truncate">
+                              {sku}
+                            </div>
+                            <div className="font-medium text-xs text-gray-900 dark:text-white line-clamp-1 mt-0.5">
+                              {productName}
+                            </div>
+                            {variantName && variantName !== sku && (
+                              <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                                {variantName}
+                              </div>
+                            )}
+                          </div>
+                          {isNegative ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 shrink-0">
+                              Tồn âm
+                            </span>
+                          ) : available === 0 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 shrink-0">
+                              Hết hàng
+                            </span>
+                          ) : isLowStock ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 shrink-0">
+                              Sắp hết
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shrink-0">
+                              Còn hàng
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Warehouse Badge & Shopee Mappings */}
+                        <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-medium">
+                            <Warehouse size={11} /> {warehouseName}
+                          </span>
+                          {vObj?.listingMappings && vObj.listingMappings.length > 0 && (
+                            <span className="text-[10px] text-orange-600 dark:text-orange-400 font-semibold">
+                              Đã map {vObj.listingMappings.length} SKU sàn
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 3 Metrics: Thực có, Đang giữ, Khả dụng */}
+                        <div className="grid grid-cols-3 gap-2 p-2 rounded bg-gray-50 dark:bg-[#1a1e28] border border-gray-100 dark:border-gray-800/60 text-center">
+                          <div>
+                            <div className="text-[10px] text-gray-400">Thực có (onHand)</div>
+                            <div className="font-mono font-medium text-xs text-gray-900 dark:text-white mt-0.5">
+                              {onHand.toLocaleString('vi-VN')}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-amber-500">Đang giữ (đơn)</div>
+                            <div className="font-mono font-medium text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                              {reserved.toLocaleString('vi-VN')}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-gray-400">Khả dụng bán</div>
+                            <div className={`font-mono font-bold text-xs mt-0.5 ${isNegative ? 'text-rose-600 dark:text-rose-400' : available === 0 ? 'text-gray-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                              {available.toLocaleString('vi-VN')}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div className="flex items-center justify-end gap-2 pt-1 border-t border-gray-100 dark:border-gray-800/80">
+                          <button
+                            type="button"
+                            onClick={() => openReceiveForVariant(b.variantId)}
+                            className="px-2.5 py-1 text-xs rounded border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1 font-medium cursor-pointer"
+                          >
+                            <ArrowDownLeft size={12} className="text-emerald-500" />
+                            <span>Nhập thêm</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openAdjustForVariant(b.variantId)}
+                            className="px-2.5 py-1 text-xs rounded bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1 font-medium cursor-pointer shadow-xs active:scale-95 transition-all"
+                          >
+                            <Sliders size={12} />
+                            <span>Kiểm kê tồn</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+
+                {/* Mobile Pagination */}
+                <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+                  <SystemPagination
+                    page={balancePage - 1}
+                    totalPages={Math.ceil(filteredBalances.length / balanceLimit) || 1}
+                    totalItems={filteredBalances.length}
+                    setPage={(p) => setBalancePage(p + 1)}
+                    itemsPerPage={balanceLimit}
+                    setItemsPerPage={(newLimit) => {
+                      setBalanceLimit(newLimit);
+                      setBalancePage(1);
+                    }}
+                    className="border-t-0"
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {activeTab === 'LEDGER' &&
           (() => {

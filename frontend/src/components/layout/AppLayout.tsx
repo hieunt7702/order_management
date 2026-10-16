@@ -2,26 +2,28 @@ import React from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { AppHeader } from './AppHeader';
-import { LayoutGrid, ShoppingBag, ScanLine, Warehouse, Settings } from 'lucide-react';
+import { Warehouse, ReceiptText, ScanLine, HandCoins, ShoppingBag } from 'lucide-react';
 
 export const AppLayout: React.FC = () => {
   const location = useLocation();
 
-  const isHomeActive = location.pathname === '/';
+  const isInventoryActive =
+    location.pathname.startsWith('/inventory') ||
+    location.pathname.startsWith('/products');
+
+  const isReceiptsActive =
+    location.pathname.startsWith('/purchase-receipts') ||
+    location.pathname.startsWith('/suppliers');
+
+  const isScanActive = location.pathname === '/scan';
+
+  const isDebtsActive =
+    location.pathname.startsWith('/supplier-debts');
+
   const isOrdersActive =
     location.pathname.startsWith('/orders') ||
     location.pathname.startsWith('/order-returns') ||
     location.pathname.startsWith('/imports');
-  const isScanActive = location.pathname === '/scan';
-  const isInventoryActive =
-    location.pathname.startsWith('/inventory') ||
-    location.pathname.startsWith('/products') ||
-    location.pathname.startsWith('/purchase-receipts') ||
-    location.pathname.startsWith('/suppliers');
-  const isSettingsActive =
-    location.pathname.startsWith('/settings') ||
-    location.pathname.startsWith('/members') ||
-    location.pathname.startsWith('/audit');
 
   return (
     <div className="flex h-[100dvh] bg-[#f9f9fa] dark:bg-[#0f1115] text-[#151a1e] dark:text-[#dcddde] overflow-hidden font-sans transition-colors duration-300">
@@ -45,38 +47,38 @@ export const AppLayout: React.FC = () => {
             {/* Top specular reflection line */}
             <div className="absolute inset-x-8 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 dark:via-white/25 to-transparent pointer-events-none rounded-full" />
 
-            {/* 1. Tổng quan */}
+            {/* 1. Hàng tồn kho */}
             <Link
-              to="/"
+              to="/inventory"
               className="flex flex-col items-center justify-center w-16 h-full transition-colors relative group"
-              title="Tổng quan"
+              title="Hàng tồn kho"
             >
-              <LayoutGrid
+              <Warehouse
                 className={`w-[23px] h-[23px] transition-all duration-300 z-10 ${
-                  isHomeActive
+                  isInventoryActive
                     ? 'text-[#5865f2] dark:text-[#7b85f5] scale-110 drop-shadow-[0_2px_8px_rgba(88,101,242,0.35)] stroke-[2.4]'
                     : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200 group-hover:scale-110 stroke-[1.8]'
                 }`}
               />
-              {isHomeActive && (
+              {isInventoryActive && (
                 <span className="absolute bottom-2 w-1.5 h-1.5 bg-[#5865f2] dark:bg-[#7b85f5] rounded-full shadow-[0_0_6px_rgba(88,101,242,0.6)]" />
               )}
             </Link>
 
-            {/* 2. Đơn hàng */}
+            {/* 2. Phiếu nhập kho (Nhà phân phối / NCC) */}
             <Link
-              to="/orders"
+              to="/purchase-receipts"
               className="flex flex-col items-center justify-center w-16 h-full transition-colors relative group"
-              title="Đơn hàng"
+              title="Phiếu nhập NCC"
             >
-              <ShoppingBag
+              <ReceiptText
                 className={`w-[23px] h-[23px] transition-all duration-300 z-10 ${
-                  isOrdersActive
+                  isReceiptsActive
                     ? 'text-[#5865f2] dark:text-[#7b85f5] scale-110 drop-shadow-[0_2px_8px_rgba(88,101,242,0.35)] stroke-[2.4]'
                     : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200 group-hover:scale-110 stroke-[1.8]'
                 }`}
               />
-              {isOrdersActive && (
+              {isReceiptsActive && (
                 <span className="absolute bottom-2 w-1.5 h-1.5 bg-[#5865f2] dark:bg-[#7b85f5] rounded-full shadow-[0_0_6px_rgba(88,101,242,0.6)]" />
               )}
             </Link>
@@ -112,40 +114,40 @@ export const AppLayout: React.FC = () => {
               </Link>
             </div>
 
-            {/* 4. Kho & Tồn (Đã loại bỏ chấm tím trên góc) */}
+            {/* 4. Công nợ nhà cung cấp */}
             <Link
-              to="/inventory"
+              to="/supplier-debts"
               className="flex flex-col items-center justify-center w-16 h-full transition-colors relative group"
-              title="Kho & Tồn kho"
+              title="Công nợ NCC"
             >
-              <Warehouse
+              <HandCoins
                 className={`w-[23px] h-[23px] transition-all duration-300 z-10 ${
-                  isInventoryActive
+                  isDebtsActive
                     ? 'text-[#5865f2] dark:text-[#7b85f5] scale-110 drop-shadow-[0_2px_8px_rgba(88,101,242,0.35)] stroke-[2.4]'
                     : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200 group-hover:scale-110 stroke-[1.8]'
                 }`}
               />
 
-              {isInventoryActive && (
+              {isDebtsActive && (
                 <span className="absolute bottom-2 w-1.5 h-1.5 bg-[#5865f2] dark:bg-[#7b85f5] rounded-full shadow-[0_0_6px_rgba(88,101,242,0.6)]" />
               )}
             </Link>
 
-            {/* 5. Cài đặt hệ thống */}
+            {/* 5. Đơn hàng Shopee */}
             <Link
-              to="/settings"
+              to="/orders"
               className="flex flex-col items-center justify-center w-16 h-full transition-colors relative group"
-              title="Cài đặt hệ thống"
+              title="Đơn hàng"
             >
-              <Settings
+              <ShoppingBag
                 className={`w-[23px] h-[23px] transition-all duration-300 z-10 ${
-                  isSettingsActive
+                  isOrdersActive
                     ? 'text-[#5865f2] dark:text-[#7b85f5] scale-110 drop-shadow-[0_2px_8px_rgba(88,101,242,0.35)] stroke-[2.4]'
                     : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200 group-hover:scale-110 stroke-[1.8]'
                 }`}
               />
 
-              {isSettingsActive && (
+              {isOrdersActive && (
                 <span className="absolute bottom-2 w-1.5 h-1.5 bg-[#5865f2] dark:bg-[#7b85f5] rounded-full shadow-[0_0_6px_rgba(88,101,242,0.6)]" />
               )}
             </Link>
@@ -155,3 +157,4 @@ export const AppLayout: React.FC = () => {
     </div>
   );
 };
+
