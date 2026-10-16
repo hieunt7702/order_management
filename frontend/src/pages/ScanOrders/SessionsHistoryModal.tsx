@@ -130,88 +130,82 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="w-full max-w-2xl bg-white dark:bg-[#131722] rounded-2xl border border-gray-200 dark:border-gray-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
-        <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#5865f2]/10 border border-[#5865f2]/20 text-[#5865f2] flex items-center justify-center shrink-0">
+        <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#5865f2]/10 border border-[#5865f2]/20 text-[#5865f2] flex items-center justify-center shrink-0">
               <FileText size={18} />
             </div>
-            <div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-white">
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate">
                 Quản lý các phiên quét
               </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Lưu trữ các phiên quét dở, tiếp tục quét hoặc gửi đối soát đơn hàng.
+              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">
+                Lịch sử các phiên quét gom mã
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleCreateNew}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
-            >
-              <Plus size={14} />
-              <span>Tạo phiên mới</span>
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-            >
-              <X size={18} />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer shrink-0"
+            title="Đóng modal"
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="px-5 pt-3 pb-2 flex items-center gap-2 border-b border-gray-100 dark:border-gray-800/80 bg-gray-50/50 dark:bg-[#161a26]/50 shrink-0">
-          <button
-            type="button"
-            onClick={() => setFilterTab('ALL')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-              filterTab === 'ALL'
-                ? 'bg-[#2563eb] text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/60 dark:hover:bg-gray-800'
-            }`}
-          >
-            Tất cả ({sessions.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterTab('DRAFT')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
-              filterTab === 'DRAFT'
-                ? 'bg-amber-500 text-white shadow-sm'
-                : 'text-amber-600 dark:text-amber-400 hover:bg-amber-500/10'
-            }`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-            Đang quét dở ({sessions.filter((s) => s.status === 'DRAFT').length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterTab('SUBMITTED')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-              filterTab === 'SUBMITTED'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10'
-            }`}
-          >
-            Đã đối soát ({sessions.filter((s) => s.status === 'SUBMITTED').length})
-          </button>
+        {/* Filter Tabs - Responsive Segmented Control */}
+        <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800/80 bg-gray-50/50 dark:bg-[#161a26]/50 shrink-0">
+          <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-200/60 dark:bg-[#1a1e2b] rounded-xl text-center">
+            <button
+              type="button"
+              onClick={() => setFilterTab('ALL')}
+              className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer truncate ${
+                filterTab === 'ALL'
+                  ? 'bg-white dark:bg-[#2563eb] text-[#2563eb] dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              Tất cả ({sessions.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterTab('DRAFT')}
+              className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer truncate flex items-center justify-center gap-1 ${
+                filterTab === 'DRAFT'
+                  ? 'bg-white dark:bg-amber-600 text-amber-600 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 animate-pulse" />
+              <span className="truncate">Quét dở ({sessions.filter((s) => s.status === 'DRAFT').length})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterTab('SUBMITTED')}
+              className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer truncate flex items-center justify-center gap-1 ${
+                filterTab === 'SUBMITTED'
+                  ? 'bg-white dark:bg-emerald-600 text-emerald-600 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+              <span className="truncate">Đã soát ({sessions.filter((s) => s.status === 'SUBMITTED').length})</span>
+            </button>
+          </div>
         </div>
 
         {/* Sessions List */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 custom-scrollbar">
           {filteredSessions.length === 0 ? (
-            <div className="py-16 text-center text-gray-400">
+            <div className="py-14 text-center text-gray-400">
               <FileText size={40} className="mx-auto mb-2 opacity-30" />
               <p className="text-sm font-medium">Không có phiên quét nào trong mục này</p>
               <button
                 type="button"
                 onClick={handleCreateNew}
-                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2563eb] text-white text-xs font-semibold"
+                className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2563eb] text-white text-xs font-semibold shadow-sm hover:bg-[#1d4ed8] transition-colors cursor-pointer"
               >
                 <Plus size={14} />
                 Bắt đầu phiên quét ngay
@@ -225,26 +219,31 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
               return (
                 <div
                   key={session.id}
-                  className={`p-4 rounded-xl border transition-all ${
+                  className={`relative p-3.5 sm:p-4 rounded-xl border transition-all ${
                     isCurrentActive
-                      ? 'border-[#2563eb] bg-blue-50/30 dark:bg-blue-950/20 ring-1 ring-[#2563eb]/30 shadow-sm'
-                      : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1e2b] hover:border-gray-300 dark:hover:border-gray-700'
+                      ? 'border-2 border-[#2563eb] dark:border-[#3b82f6] bg-blue-50/40 dark:bg-blue-950/25 shadow-sm'
+                      : 'border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1e2b] hover:border-gray-300 dark:hover:border-gray-700'
                   }`}
                 >
+                  {/* Corner Active Icon Indicator replacing the text "Đang mở" */}
+                  {isCurrentActive && (
+                    <div
+                      className="absolute top-3 right-3 flex items-center justify-center w-6 h-6 rounded-full bg-[#2563eb]/10 dark:bg-[#2563eb]/20 text-[#2563eb] dark:text-blue-400 border border-[#2563eb]/30 shadow-xs"
+                      title="Phiên đang mở quét hiện tại"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-[#2563eb] dark:bg-blue-400 animate-pulse" />
+                    </div>
+                  )}
+
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <div className={`flex items-center gap-2 flex-wrap ${isCurrentActive ? 'pr-7' : ''}`}>
                         <span className="font-bold text-sm text-gray-900 dark:text-white">
                           {session.name}
                         </span>
                         <span className="font-mono text-xs text-gray-500 font-semibold">
                           ({session.sessionCode})
                         </span>
-                        {isCurrentActive && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                            Đang mở
-                          </span>
-                        )}
                         {isDraft ? (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
@@ -366,6 +365,25 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
               );
             })
           )}
+        </div>
+
+        {/* Modal Footer with Close & Create Session Buttons */}
+        <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-t border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-[#161a26]/80 flex items-center justify-between gap-2.5 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+          >
+            Đóng
+          </button>
+          <button
+            type="button"
+            onClick={handleCreateNew}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs sm:text-sm font-semibold shadow-sm transition-all cursor-pointer"
+          >
+            <Plus size={16} />
+            <span>Tạo phiên mới</span>
+          </button>
         </div>
 
         {/* Detail drawer / submodal for completed session */}

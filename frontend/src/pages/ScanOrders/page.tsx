@@ -27,8 +27,6 @@ import {
   Eye,
   Building2,
   UploadCloud,
-  History,
-  Plus,
   ArrowRight,
   Sparkles,
   Clock,
@@ -113,6 +111,7 @@ export const ScanOrdersPage: React.FC = () => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isCameraRunningRef = useRef<boolean>(false);
   const lastScanTimeRef = useRef<number>(0);
+  const lastDuplicateScanRef = useRef<{ code: string; time: number }>({ code: '', time: 0 });
 
   // Auto focus input
   useEffect(() => {
@@ -318,16 +317,32 @@ export const ScanOrdersPage: React.FC = () => {
     const timestamp = new Date().toLocaleTimeString('vi-VN');
 
     if (res.isDuplicate) {
-      if (soundEnabled) playWarningSound();
-      setScanFlash('warning');
-      setTimeout(() => setScanFlash(null), 700);
-      toast.warning(`Mã "${raw}" đã có trong phiên này!`);
+      // Prevent repeated duplicate alerts/sounds for the same barcode within 3 seconds
+      const isSameDuplicateRecent =
+        lastDuplicateScanRef.current.code === raw.toUpperCase() &&
+        now - lastDuplicateScanRef.current.time < 3000;
+
+      if (!isSameDuplicateRecent) {
+        lastDuplicateScanRef.current = { code: raw.toUpperCase(), time: now };
+        if (soundEnabled) playWarningSound();
+        setScanFlash('warning');
+        setTimeout(() => setScanFlash(null), 700);
+        // Use fixed ID so duplicate warning replaces previous toast instead of stacking multiple rows
+        toast.show({
+          id: 'scan-duplicate-warning',
+          type: 'warning',
+          title: `Mã "${raw}" đã có trong phiên này!`,
+          duration: 2200,
+        });
+      }
+
       setLastScannedFeedback({
         code: raw.toUpperCase(),
         isDuplicate: true,
         timestamp,
       });
     } else {
+      lastDuplicateScanRef.current = { code: '', time: 0 };
       if (soundEnabled) playSuccessSound();
       setScanFlash('success');
       setTimeout(() => setScanFlash(null), 700);
@@ -344,6 +359,7 @@ export const ScanOrdersPage: React.FC = () => {
     const code = barcodeInput.trim();
     if (!code) return;
 
+    lastDuplicateScanRef.current = { code: '', time: 0 };
     handleIncomingBarcode(code);
     setBarcodeInput('');
     focusInput();
@@ -471,71 +487,43 @@ export const ScanOrdersPage: React.FC = () => {
       }`}
     >
       {/* 1. TOP HEADER & SESSION SELECTOR */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
-        <div className="flex items-center justify-between sm:justify-start gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#5865f2]/10 border border-[#5865f2]/20 text-[#5865f2] flex items-center justify-center shrink-0">
-              <ScanLine size={19} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight">
-                  Quét xuất hàng
-                </h1>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 animate-pulse" />
-                  Sẵn sàng
-                </span>
-              </div>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                Gom mã trong phiên, sau đó bấm Xác nhận để đối soát đơn hàng.
-              </p>
-            </div>
+      <div className="flex items-center justify-between gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-[#5865f2]/10 border border-[#5865f2]/20 text-[#5865f2] flex items-center justify-center shrink-0">
+            <ScanLine size={19} />
           </div>
-
-          {/* Mobile Fullscreen Button */}
-          <button
-            type="button"
-            onClick={() => setIsFocusMode(!isFocusMode)}
-            className="sm:hidden w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-white"
-            title={isFocusMode ? 'Thu nhỏ' : 'Toàn màn hình'}
-          >
-            {isFocusMode ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-          </button>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight truncate">
+                Quét xuất hàng
+              </h1>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 animate-pulse" />
+                Sẵn sàng
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate hidden sm:block">
+              Gom mã trong phiên, sau đó bấm Xác nhận để đối soát đơn hàng.
+            </p>
+          </div>
         </div>
 
-        {/* Header Right Actions */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Sessions Management Button */}
-          <button
-            type="button"
-            onClick={() => setIsHistoryModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-[#1a1e2b] dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700/80 text-xs font-semibold text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
-          >
-            <History size={14} className="text-[#5865f2]" />
-            <span>Lịch sử phiên</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 font-mono font-bold">
-              {sessions.length}
-            </span>
-          </button>
-
-          {/* New Session Button */}
-          <button
-            type="button"
-            onClick={handleCreateNewSessionClick}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-semibold transition-all cursor-pointer shadow-sm"
-          >
-            <Plus size={14} />
-            <span className="hidden sm:inline">Phiên mới</span>
-          </button>
-        </div>
+        {/* Mobile Fullscreen Button */}
+        <button
+          type="button"
+          onClick={() => setIsFocusMode(!isFocusMode)}
+          className="sm:hidden w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-white shrink-0"
+          title={isFocusMode ? 'Thu nhỏ' : 'Toàn màn hình'}
+        >
+          {isFocusMode ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+        </button>
       </div>
 
       {/* 2. ACTIVE SESSION STATUS CARD & STATS */}
       <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#131722] border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-gray-100 dark:border-gray-800/80">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-[#5865f2]/10 text-[#5865f2] flex items-center justify-center shrink-0 border border-[#5865f2]/20">
+            <div className="w-8 h-8 rounded-xl bg-[#5865f2]/10 text-[#5865f2] flex items-center justify-center shrink-0 border border-[#5865f2]/20">
               <FileText size={16} />
             </div>
             <div className="min-w-0">
@@ -546,27 +534,32 @@ export const ScanOrdersPage: React.FC = () => {
                 <span className="font-mono text-xs text-gray-400 font-bold">
                   ({activeSession?.sessionCode})
                 </span>
+              </div>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 {activeSession?.status === 'DRAFT' ? (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                     Đang quét dở
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1 shrink-0">
                     <CheckCircle2 size={11} />
                     Đã đối soát
                   </span>
                 )}
+                <span className="text-[11px] text-gray-400 inline-flex items-center gap-1">
+                  <span>•</span>
+                  <span>
+                    Bắt đầu lúc{' '}
+                    {activeSession
+                      ? new Date(activeSession.createdAt).toLocaleTimeString('vi-VN', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : '--:--'}
+                  </span>
+                </span>
               </div>
-              <span className="text-[11px] text-gray-400 block mt-0.5">
-                Bắt đầu lúc{' '}
-                {activeSession
-                  ? new Date(activeSession.createdAt).toLocaleTimeString('vi-VN', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : '--:--'}
-              </span>
             </div>
           </div>
 
@@ -575,7 +568,7 @@ export const ScanOrdersPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsHistoryModalOpen(true)}
-              className="text-xs text-[#2563eb] hover:underline font-semibold flex items-center gap-1"
+              className="text-xs text-[#2563eb] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
             >
               <span>Đổi phiên khác</span>
               <ChevronRight size={13} />
@@ -585,8 +578,8 @@ export const ScanOrdersPage: React.FC = () => {
 
         {/* 3 Metric Pills */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <div className="p-2 sm:p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/30 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+          <div className="p-2 sm:p-2.5 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/30 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
               <ScanLine size={14} />
             </div>
             <div className="min-w-0">
@@ -599,8 +592,8 @@ export const ScanOrdersPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-2 sm:p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+          <div className="p-2 sm:p-2.5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
               <Clock size={14} />
             </div>
             <div className="min-w-0">
@@ -613,8 +606,8 @@ export const ScanOrdersPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-2 sm:p-2.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+          <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
               <CheckCircle2 size={14} />
             </div>
             <div className="min-w-0">
@@ -664,7 +657,7 @@ export const ScanOrdersPage: React.FC = () => {
           {/* CAMERA VIEWPORT - EXPANDED & WIDENED ON MOBILE */}
           {activeInputTab === 'camera' && (
             <div
-              className={`rounded-2xl bg-black border overflow-hidden relative transition-all duration-300 ${
+              className={`rounded-xl bg-black border overflow-hidden relative transition-all duration-300 ${
                 scanFlash === 'success'
                   ? 'border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)] ring-2 ring-emerald-500/60'
                   : scanFlash === 'warning'
@@ -849,13 +842,13 @@ export const ScanOrdersPage: React.FC = () => {
                   placeholder="Nhập mã vận đơn hoặc mã đơn hàng..."
                   value={barcodeInput}
                   onChange={(e) => setBarcodeInput(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-[#1a1e2b] border border-gray-200 dark:border-gray-700/80 rounded-lg text-xs font-mono text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20"
+                  className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-[#1a1e2b] border border-gray-200 dark:border-gray-700/80 rounded-xl text-xs font-mono text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20"
                 />
               </div>
               <button
                 type="submit"
                 disabled={!barcodeInput.trim()}
-                className="px-4 py-2 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] disabled:opacity-40 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 shadow-sm"
+                className="px-4 py-2 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] disabled:opacity-40 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 shadow-sm"
               >
                 <span>Thêm</span>
                 <span className="text-[10px]">↵</span>
@@ -920,7 +913,7 @@ export const ScanOrdersPage: React.FC = () => {
                 type="button"
                 disabled={!activeSession || activeSession.items.length === 0 || isVerifyingBatch}
                 onClick={handleSubmitBatch}
-                className="flex-1 py-2.5 px-4 rounded-lg bg-white text-[#2563eb] hover:bg-blue-50 active:scale-[0.98] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-white text-[#2563eb] hover:bg-blue-50 active:scale-[0.98] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
               >
                 {isVerifyingBatch ? (
                   <>
@@ -941,7 +934,7 @@ export const ScanOrdersPage: React.FC = () => {
                 type="button"
                 onClick={handleExportCurrentSession}
                 disabled={!activeSession || activeSession.items.length === 0}
-                className="p-2.5 rounded-lg bg-white/20 hover:bg-white/30 text-white disabled:opacity-40 transition-colors cursor-pointer shrink-0"
+                className="p-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white disabled:opacity-40 transition-colors cursor-pointer shrink-0"
                 title="Xuất danh sách mã ra file CSV"
               >
                 <Download size={16} />
