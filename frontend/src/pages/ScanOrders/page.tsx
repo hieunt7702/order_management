@@ -348,13 +348,6 @@ export const ScanOrdersPage: React.FC = () => {
         if (soundEnabled) playWarningSound();
         setScanFlash('warning');
         setTimeout(() => setScanFlash(null), 700);
-        // Use fixed ID so duplicate warning replaces previous toast instead of stacking multiple rows
-        toast.show({
-          id: 'scan-duplicate-warning',
-          type: 'warning',
-          title: `Mã "${raw}" đã có trong phiên này!`,
-          duration: 2200,
-        });
       }
 
       setLastScannedFeedback({
