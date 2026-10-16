@@ -1,10 +1,11 @@
-# Stage 1: Build React/Vite
+# Stage 1: Build React/Vite SPA
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9
 
+COPY .npmrc* ./
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install
 
