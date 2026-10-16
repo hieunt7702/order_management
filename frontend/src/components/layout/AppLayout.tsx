@@ -32,18 +32,18 @@ export const AppLayout: React.FC = () => {
         <AppHeader />
 
         {/* Page Content */}
-        <main className="flex-1 flex flex-col min-h-0 overflow-y-auto overscroll-y-contain custom-scrollbar p-4 sm:p-5 md:px-6 md:py-5 pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] md:pb-6">
+        <main className="flex-1 flex flex-col min-h-0 overflow-y-auto overscroll-y-contain custom-scrollbar p-4 sm:p-5 md:px-6 md:py-5 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] md:pb-6">
           <Outlet />
         </main>
 
         {/* Mobile Floating Glass Pill Navbar (md:hidden) */}
         <div
           className="fixed z-40 md:hidden left-3 right-3 max-w-md mx-auto pb-0 pointer-events-none"
-          style={{ bottom: 'calc(3px + env(safe-area-inset-bottom, 0px))' }}
+          style={{ bottom: 'max(0px, calc(env(safe-area-inset-bottom, 0px) * 0.15))' }}
         >
-          <nav className="pointer-events-auto bg-white/20 dark:bg-[#0c0e14]/40 backdrop-blur-[40px] backdrop-saturate-[200%] text-slate-500 dark:text-slate-400 shadow-[0_12px_40px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.7)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.12)] border border-white/50 dark:border-white/10 rounded-[28px] flex items-center justify-around h-[64px] px-2 relative overflow-visible">
+          <nav className="pointer-events-auto bg-white/20 dark:bg-[#0c0e14]/40 backdrop-blur-[40px] backdrop-saturate-[200%] text-slate-500 dark:text-slate-400 shadow-[0_12px_40px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.7)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.12)] border border-white/50 dark:border-white/10 rounded-full flex items-center justify-around h-[64px] px-2 relative overflow-visible">
             {/* Top specular reflection line */}
-            <div className="absolute inset-x-8 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 dark:via-white/25 to-transparent pointer-events-none rounded-t-[28px]" />
+            <div className="absolute inset-x-8 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 dark:via-white/25 to-transparent pointer-events-none rounded-full" />
 
             {/* 1. Tổng quan */}
             <Link
