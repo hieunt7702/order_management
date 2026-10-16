@@ -8,7 +8,7 @@ export const AppLayout: React.FC = () => {
   const location = useLocation();
 
   return (
-    <div className="flex h-screen bg-[#f9f9fa] dark:bg-[#0f1115] text-[#151a1e] dark:text-[#dcddde] overflow-hidden font-sans transition-colors duration-300">
+    <div className="flex h-[100dvh] bg-[#f9f9fa] dark:bg-[#0f1115] text-[#151a1e] dark:text-[#dcddde] overflow-hidden font-sans transition-colors duration-300">
       <Sidebar />
 
       {/* Main Column */}

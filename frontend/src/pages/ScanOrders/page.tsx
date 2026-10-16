@@ -31,6 +31,7 @@ import {
   Plus,
   ArrowRight,
   Sparkles,
+  Clock,
 } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useWorkspaceStore } from '../../stores/workspaceStore';

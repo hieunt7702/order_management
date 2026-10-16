@@ -81,7 +81,7 @@ export const AppHeader: React.FC = () => {
     location.pathname.startsWith('/scan');
 
   return (
-    <header className="h-[60px] flex-shrink-0 bg-white dark:bg-[#14151a] border-b border-gray-200 dark:border-gray-800 px-4 md:px-6 flex items-center justify-between z-20 transition-colors">
+    <header className="flex-shrink-0 bg-white dark:bg-[#14151a] border-b border-gray-200 dark:border-gray-800 px-4 md:px-6 flex items-center justify-between z-20 transition-colors pt-[env(safe-area-inset-top,0px)] h-[calc(60px+env(safe-area-inset-top,0px))]">
       {/* Left: Context Selectors (Shop & Warehouse) */}
       <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
         {/* Shop Selector */}
