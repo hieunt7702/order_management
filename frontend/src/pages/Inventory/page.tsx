@@ -374,11 +374,17 @@ export const InventoryPage: React.FC = () => {
         <SystemMetricCard
           title="Cảnh báo tồn"
           value={
-            balances.filter(
-              (b) =>
-                (b.available ?? (b.onHand || 0) - (b.reserved || 0)) <=
-                (b.variant?.minStockAlert || 5)
-            ).length
+            balances.filter((b) => {
+              const onHand = b.onHand || 0;
+              const reserved = b.reserved || 0;
+              const available = b.available ?? onHand - reserved;
+              const minAlert =
+                b.lowStockThreshold ??
+                b.variant?.lowStockThreshold ??
+                b.variant?.minStockAlert ??
+                5;
+              return available <= minAlert;
+            }).length
           }
           subtitle="cần nhập thêm"
           icon={AlertTriangle}
@@ -434,11 +440,16 @@ export const InventoryPage: React.FC = () => {
               if (selectedWarehouseId && b.warehouseId !== selectedWarehouseId) return false;
               if (!searchTerm) return true;
               const term = searchTerm.toLowerCase();
+              const vObj = b.variant || allVariants.find((v) => v.id === b.variantId);
+              const sku = (b.sku || vObj?.sku || b.variantId || '').toLowerCase();
+              const prodName = (b.productName || vObj?.productName || vObj?.product?.name || '').toLowerCase();
+              const varName = (b.variantName || vObj?.name || '').toLowerCase();
+              const barcode = (b.barcode || vObj?.barcode || '').toLowerCase();
               return (
-                (b.variant?.sku || '').toLowerCase().includes(term) ||
-                (b.variant?.product?.name || '').toLowerCase().includes(term) ||
-                (b.variant?.name || '').toLowerCase().includes(term) ||
-                (b.variant?.barcode || '').toLowerCase().includes(term)
+                sku.includes(term) ||
+                prodName.includes(term) ||
+                varName.includes(term) ||
+                barcode.includes(term)
               );
             });
             const paginatedBalances = filteredBalances.slice(
@@ -526,41 +537,47 @@ export const InventoryPage: React.FC = () => {
                         const onHand = b.onHand || 0;
                         const reserved = b.reserved || 0;
                         const available = b.available ?? onHand - reserved;
-                        const minAlert = b.variant?.minStockAlert || 5;
+                        const vObj = b.variant || allVariants.find((v) => v.id === b.variantId);
+                        const wObj = b.warehouse || warehouses.find((w) => w.id === b.warehouseId);
+                        const sku = b.sku || vObj?.sku || b.variantId;
+                        const productName = b.productName || vObj?.productName || vObj?.product?.name || '--';
+                        const variantName = b.variantName || vObj?.name;
+                        const warehouseName = b.warehouseName || wObj?.name || b.warehouseId;
+                        const minAlert = b.lowStockThreshold ?? vObj?.lowStockThreshold ?? vObj?.minStockAlert ?? 5;
                         const isLowStock = available <= minAlert;
                         const isNegative = available < 0;
 
                         return (
                           <SystemTr key={b.id || `${b.warehouseId}_${b.variantId}`}>
                             <SystemTd>
-                              <div className="font-mono font-medium text-[#5865f2]">
-                                {b.variant?.sku || b.variantId}
+                              <div className="font-mono font-bold text-[#5865f2]">
+                                {sku}
                               </div>
-                              {b.variant?.listingMappings && b.variant.listingMappings.length > 0 && (
+                              {variantName && variantName !== sku && (
+                                <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                  {variantName}
+                                </div>
+                              )}
+                              {vObj?.listingMappings && vObj.listingMappings.length > 0 && (
                                 <div className="mt-1 flex items-center gap-1 flex-wrap">
                                   <span
                                     className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-orange-200/50"
-                                    title={b.variant.listingMappings
+                                    title={vObj.listingMappings
                                       .map((m: any) => `${m.sellerSku} (${m.shop?.code || 'Shopee'})`)
                                       .join(', ')}
                                   >
-                                    Shopee: {b.variant.listingMappings.length} SKU
+                                    Shopee: {vObj.listingMappings.length} SKU
                                   </span>
                                 </div>
                               )}
                             </SystemTd>
                             <SystemTd>
-                              <span className="font-medium text-gray-900 dark:text-gray-100">
-                                {b.variant?.product?.name || b.variant?.name || '--'}
+                              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                {productName}
                               </span>
-                              {b.variant?.name && (
-                                <div className="text-[11px] text-gray-400 mt-0.5">
-                                  {b.variant.name}
-                                </div>
-                              )}
                             </SystemTd>
-                            <SystemTd className="text-gray-600 dark:text-gray-400">
-                              {b.warehouse?.name || b.warehouseId}
+                            <SystemTd className="text-gray-700 dark:text-gray-300 font-medium">
+                              {warehouseName}
                             </SystemTd>
                             <SystemTd className="text-right font-medium text-gray-900 dark:text-white">
                               {onHand.toLocaleString('vi-VN')}
@@ -687,6 +704,11 @@ export const InventoryPage: React.FC = () => {
                         const isPositive = (l.deltaOnHand || l.quantityDelta || 0) > 0;
                         const delta = l.deltaOnHand ?? l.quantityDelta ?? 0;
                         const type = l.entryType || l.type || 'UNKNOWN';
+                        const vObj = l.variant || allVariants.find((v) => v.id === l.variantId);
+                        const wObj = l.warehouse || warehouses.find((w) => w.id === l.warehouseId);
+                        const sku = l.sku || vObj?.sku || l.variantId;
+                        const variantName = l.variantName || vObj?.name;
+                        const warehouseName = l.warehouseName || wObj?.name || l.warehouseId;
 
                         return (
                           <SystemTr key={l.id}>
@@ -713,10 +735,15 @@ export const InventoryPage: React.FC = () => {
                               </span>
                             </SystemTd>
                             <SystemTd className="font-mono font-bold text-gray-900 dark:text-gray-100">
-                              {l.variant?.sku || l.variantId}
+                              <div>{sku}</div>
+                              {variantName && variantName !== sku && (
+                                <div className="text-[11px] font-normal text-gray-500 dark:text-gray-400">
+                                  {variantName}
+                                </div>
+                              )}
                             </SystemTd>
-                            <SystemTd className="text-gray-600 dark:text-gray-400">
-                              {l.warehouse?.name || l.warehouseId}
+                            <SystemTd className="text-gray-700 dark:text-gray-300 font-medium">
+                              {warehouseName}
                             </SystemTd>
                             <SystemTd
                               className={`text-right font-bold ${
