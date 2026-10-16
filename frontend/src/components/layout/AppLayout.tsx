@@ -32,7 +32,7 @@ export const AppLayout: React.FC = () => {
         <AppHeader />
 
         {/* Page Content */}
-        <main className="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-5 md:px-6 md:py-5 pb-[calc(10rem+env(safe-area-inset-bottom,0px))] md:pb-6">
+        <main className="flex-1 flex flex-col min-h-0 overflow-y-auto overscroll-y-contain custom-scrollbar p-4 sm:p-5 md:px-6 md:py-5 pb-[calc(10rem+env(safe-area-inset-bottom,0px))] md:pb-6">
           <Outlet />
         </main>
 

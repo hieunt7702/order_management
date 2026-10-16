@@ -186,7 +186,7 @@ export const AuditPage: React.FC = () => {
   const paginatedLogs = filteredLogs.slice((page - 1) * limit, page * limit);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div>
@@ -281,7 +281,7 @@ export const AuditPage: React.FC = () => {
       </div>
 
       {/* Table with Bottom-Pinned SystemPagination */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-fit md:min-h-0">
         <SystemTableWrapper
           tableClassName="min-w-[900px]"
           pagination={

@@ -922,7 +922,7 @@ export const ProductsPage: React.FC = () => {
         );
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 space-y-3.5">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-3">
@@ -986,10 +986,10 @@ export const ProductsPage: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-fit md:min-h-0">
         {activeTab === 'PRODUCTS' ? (
           /* TAB 1: INTERNAL PRODUCTS */
-          <div className="flex-1 flex flex-col min-h-0 space-y-3">
+          <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3">
             {/* Search filter & Mapping status toolbar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0 p-3 bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded">
               <div className="relative flex-1 max-w-md w-full">
@@ -1039,7 +1039,7 @@ export const ProductsPage: React.FC = () => {
             </div>
 
             {/* Products Table with Bottom-Pinned SystemPagination */}
-            <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 flex flex-col min-h-fit md:min-h-0">
               {(() => {
                 const displayedProducts = products.filter((product) => {
                   if (mappingStatusFilter === 'ALL') return true;

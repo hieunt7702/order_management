@@ -1002,7 +1002,7 @@ export const ScanOrdersPage: React.FC = () => {
 
         {/* RIGHT COLUMN: SCANNED ITEMS LIST IN ACTIVE SESSION (5 cols on PC) */}
         <div className="lg:col-span-5 flex flex-col space-y-3">
-          <div className="p-3.5 rounded-lg bg-white dark:bg-[#131722] border border-gray-200 dark:border-gray-800 flex-1 flex flex-col min-h-0 space-y-3 shadow-sm">
+          <div className="p-3.5 rounded-lg bg-white dark:bg-[#131722] border border-gray-200 dark:border-gray-800 flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3 shadow-sm">
             {/* Header: Title & Clear */}
             <div className="flex items-center justify-between gap-2 shrink-0">
               <div className="flex items-center gap-2">

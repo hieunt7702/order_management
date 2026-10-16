@@ -481,7 +481,7 @@ export const ImportedFilesPage: React.FC = () => {
 
       {/* --- MAIN IMPORT & LIST SCREEN --- */}
       <div
-        className="flex-1 flex flex-col min-h-0 w-full space-y-3.5"
+        className="flex-1 flex flex-col min-h-fit md:min-h-0 w-full space-y-3.5"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -535,7 +535,7 @@ export const ImportedFilesPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col min-h-0 space-y-3.5">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5">
           <AnimatePresence>
             {error && (
               <motion.div
@@ -678,7 +678,7 @@ export const ImportedFilesPage: React.FC = () => {
             </SystemFilter>
           </div>
 
-          <div className="flex-1 flex flex-col min-h-0 mb-6">
+          <div className="flex-1 flex flex-col min-h-fit md:min-h-0 mb-6">
             <SystemTableWrapper
               tableClassName="min-w-[1400px]"
               pagination={

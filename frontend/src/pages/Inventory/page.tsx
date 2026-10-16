@@ -291,7 +291,7 @@ export const InventoryPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div>
@@ -434,7 +434,7 @@ export const InventoryPage: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-fit md:min-h-0">
         {activeTab === 'BALANCES' &&
           (() => {
             const filteredBalances = balances.filter((b) => {
@@ -459,7 +459,7 @@ export const InventoryPage: React.FC = () => {
             );
 
             return (
-              <div className="flex-1 flex flex-col min-h-0 gap-3">
+              <div className="flex-1 flex flex-col min-h-fit md:min-h-0 gap-3">
                 {/* Warehouse and Search Filter */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded shrink-0">
                   <div className="relative flex-1 max-w-md w-full">
@@ -655,7 +655,7 @@ export const InventoryPage: React.FC = () => {
             );
 
             return (
-              <div className="flex-1 flex flex-col min-h-0 gap-3">
+              <div className="flex-1 flex flex-col min-h-fit md:min-h-0 gap-3">
                 <div className="bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-800/40 p-3 rounded-lg flex items-start gap-3 shrink-0">
                   <History className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                   <div className="text-xs text-blue-800 dark:text-blue-300">
@@ -817,7 +817,7 @@ export const InventoryPage: React.FC = () => {
             );
 
             return (
-              <div className="flex-1 flex flex-col min-h-0 gap-3.5">
+              <div className="flex-1 flex flex-col min-h-fit md:min-h-0 gap-3.5">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
                   <div className="flex items-center gap-3">
@@ -928,7 +928,7 @@ export const InventoryPage: React.FC = () => {
                 </div>
 
                 {/* Reconciliation Table with SystemTableWrapper & Pagination */}
-                <div className="flex-1 flex flex-col min-h-0">
+                <div className="flex-1 flex flex-col min-h-fit md:min-h-0">
                   <SystemTableWrapper
                     tableClassName="min-w-[850px]"
                     pagination={

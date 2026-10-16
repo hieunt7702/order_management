@@ -618,7 +618,7 @@ export const SupplierDebtsPage: React.FC = () => {
   const summaryPendingReimbursement = debtReports?.summary?.totalPendingReimbursement ?? 0;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -739,7 +739,7 @@ export const SupplierDebtsPage: React.FC = () => {
 
       {/* TAB 1: SỔ CÔNG NỢ NHÀ CUNG CẤP */}
       {activeTab === 'DEBT_LIST' && (
-        <div className="flex-1 flex flex-col min-h-0 space-y-3">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3">
           <div className="flex items-center justify-between gap-3 shrink-0">
             <div className="relative w-full max-w-sm">
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -754,7 +754,7 @@ export const SupplierDebtsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="hidden md:flex flex-1 flex-col min-h-0">
+          <div className="flex flex-1 flex-col min-h-fit md:min-h-0">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
                 <SystemTh className="w-52">Mã & Nhà Cung Cấp</SystemTh>
@@ -903,8 +903,8 @@ export const SupplierDebtsPage: React.FC = () => {
 
       {/* TAB 2: LỊCH SỬ THANH TOÁN & NGUỒN TIỀN */}
       {activeTab === 'PAYMENTS' && (
-        <div className="flex-1 flex flex-col min-h-0 space-y-3">
-          <div className="hidden md:flex flex-1 flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3">
+          <div className="flex flex-1 flex-col min-h-fit md:min-h-0">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
                 <SystemTh className="w-44">Mã Phiếu & Ngày</SystemTh>
@@ -1026,8 +1026,8 @@ export const SupplierDebtsPage: React.FC = () => {
 
       {/* TAB 3: TRẢ HÀNG NCC */}
       {activeTab === 'RETURNS' && (
-        <div className="flex-1 flex flex-col min-h-0 space-y-3">
-          <div className="hidden md:flex flex-1 flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3">
+          <div className="flex flex-1 flex-col min-h-fit md:min-h-0">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
                 <SystemTh className="w-40">Mã Phiếu Trả</SystemTh>

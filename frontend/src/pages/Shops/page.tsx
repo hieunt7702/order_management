@@ -199,7 +199,7 @@ export const ShopsPage: React.FC = () => {
   const paginatedShops = filteredShops.slice((page - 1) * limit, page * limit);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div>
@@ -331,7 +331,7 @@ export const ShopsPage: React.FC = () => {
 
       {/* Main Content: Grid or Table View */}
       {viewMode === 'grid' ? (
-        <div className="flex-1 flex flex-col min-h-0 justify-between">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 justify-between">
           <div className="flex-1 md:overflow-y-auto pr-0.5 custom-scrollbar pb-3">
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
@@ -525,7 +525,7 @@ export const ShopsPage: React.FC = () => {
         </div>
       ) : (
         /* Unified SystemTable */
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0">
           <SystemTableWrapper
             tableClassName="min-w-[850px]"
             pagination={

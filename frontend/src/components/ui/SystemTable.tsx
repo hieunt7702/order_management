@@ -19,11 +19,11 @@ export const SystemTableWrapper: React.FC<SystemTableWrapperProps> = ({
   return (
     <div
       className={cn(
-        'flex-1 flex flex-col min-h-0 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#14151a] shadow-none overflow-hidden',
+        'flex-1 flex flex-col min-h-[380px] md:min-h-0 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#14151a] shadow-none overflow-hidden shrink-0 md:shrink',
         className,
       )}
     >
-      <div className="relative flex-1 flex flex-col min-h-0">
+      <div className="relative flex-1 flex flex-col min-h-[300px] md:min-h-0">
         <div className="flex-1 overflow-auto custom-scrollbar">
           <table
             className={cn(

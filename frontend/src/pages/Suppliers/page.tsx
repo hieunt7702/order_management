@@ -269,7 +269,7 @@ export const SuppliersPage: React.FC = () => {
   const totalPayableDebt = suppliers.reduce((sum, s) => sum + (s.closingDebt > 0 ? s.closingDebt : 0), 0);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* 1. Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div>
@@ -610,7 +610,7 @@ export const SuppliersPage: React.FC = () => {
       </div>
 
       {/* 5. Mobile Cards View */}
-      <div className="md:hidden flex-1 flex flex-col min-h-0 space-y-3">
+      <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-3">
         {isLoading ? (
           <div className="py-8 text-center text-xs text-gray-400 font-normal">
             Đang tải danh sách nhà cung cấp...

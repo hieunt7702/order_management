@@ -772,7 +772,7 @@ export const OrdersPage: React.FC = () => {
   const hasActiveFilter = activeTab !== 'ALL' || searchTerm || fromDate || toDate;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -1167,7 +1167,7 @@ export const OrdersPage: React.FC = () => {
       </div>
 
       {/* Mobile Card View */}
-      <div className="md:hidden flex-1 flex flex-col min-h-0 space-y-3">
+      <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-3">
         {isLoading ? (
           <div className="py-8 text-center text-xs text-gray-400 font-normal">
             Đang tải đơn hàng...

@@ -151,7 +151,7 @@ export const SettlementsPage: React.FC = () => {
   const paginatedSettlements = filteredSettlements;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div>
@@ -245,7 +245,7 @@ export const SettlementsPage: React.FC = () => {
       </div>
 
       {/* Settlements Table with Bottom-Pinned SystemPagination */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-fit md:min-h-0">
         <SystemTableWrapper
           tableClassName="min-w-[1050px]"
           pagination={
