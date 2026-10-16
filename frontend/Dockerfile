@@ -17,14 +17,15 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 RUN pnpm run build
 
-# Stage 2: Serve with Nginx
-FROM nginx:alpine
+# Stage 2: Production SPA Runner using standard Node + serve (Zero Nginx envsubst bugs)
+FROM node:20-alpine AS runner
 
-ENV PORT=80
+WORKDIR /app
 
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+RUN npm install -g serve
 
-EXPOSE 80
+COPY --from=builder /app/dist ./dist
 
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 5173
+
+CMD ["sh", "-c", "serve -s dist -l ${PORT:-5173}"]

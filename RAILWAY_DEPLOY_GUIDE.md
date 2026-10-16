@@ -99,7 +99,7 @@ graph LR
 3. Vào tab **Settings**:
    - **Root Directory**: Điền `backend` (chữ thường).
    - **Builder**: Mặc định là **NIXPACKS**.
-   - **Start Command**: Điền `pnpm run start:prod` (đã cấu hình sẵn trong `Procfile` và `nixpacks.toml`).
+   - **Start Command**: Điền ` ` (đã cấu hình sẵn trong `Procfile` và `nixpacks.toml`).
 4. Vào tab **Variables** ➔ Bấm **RAW Editor** ➔ Dán toàn bộ khối cấu hình ở **Mục I.1** vào.
 5. Vào tab **Settings** ➔ mục **Networking** ➔ Bấm **Generate Domain** để nhận domain API (VD: `https://backend-production-xxxx.up.railway.app`).
 

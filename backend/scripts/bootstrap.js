@@ -25,7 +25,11 @@ async function bootstrap() {
   // 1. Prisma schema push with accept-data-loss flag to avoid blocking non-interactive deploy
   try {
     console.log('[Bootstrap] Syncing schema directly via prisma db push (clean schema)...');
-    execSync('npx prisma db push --skip-generate --accept-data-loss', { stdio: 'inherit', timeout: 60000 });
+    try {
+      execSync('node node_modules/prisma/build/index.js db push --skip-generate --accept-data-loss', { stdio: 'inherit', timeout: 60000 });
+    } catch (_) {
+      execSync('npx prisma db push --skip-generate --accept-data-loss', { stdio: 'inherit', timeout: 60000 });
+    }
     console.log('[Bootstrap] PostgreSQL schema push: DONE ✅');
   } catch (schemaErr) {
     console.warn('[Bootstrap] Schema sync warning (non-fatal):', schemaErr.message);
