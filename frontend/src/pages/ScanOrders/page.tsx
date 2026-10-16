@@ -38,6 +38,7 @@ import { playSuccessSound, playErrorSound, playWarningSound } from '../../utils/
 import { SessionsHistoryModal } from './SessionsHistoryModal';
 import { OrderDetailDrawer } from '../Orders/OrderDetailDrawer';
 import { ordersApi } from '../../services/ordersApi';
+import { fulfillmentApi } from '../../services/fulfillmentApi';
 import { toast } from '../../components/ui/Toast';
 import { Select } from '../../components/ui/Select';
 
@@ -112,6 +113,26 @@ export const ScanOrdersPage: React.FC = () => {
   const isCameraRunningRef = useRef<boolean>(false);
   const lastScanTimeRef = useRef<number>(0);
   const lastDuplicateScanRef = useRef<{ code: string; time: number }>({ code: '', time: 0 });
+  const cameraTabRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollToCameraTab = (smooth = true) => {
+    if (window.innerWidth < 1024 && cameraTabRef.current) {
+      cameraTabRef.current.scrollIntoView({
+        behavior: smooth ? 'smooth' : 'auto',
+        block: 'start',
+      });
+    }
+  };
+
+  // Auto scroll to camera tab on mobile mount
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      const scrollTimer = setTimeout(() => {
+        scrollToCameraTab(true);
+      }, 350);
+      return () => clearTimeout(scrollTimer);
+    }
+  }, []);
 
   // Auto focus input
   useEffect(() => {
@@ -426,6 +447,32 @@ export const ScanOrdersPage: React.FC = () => {
     }
   };
 
+  // Reversal handler for items that were already verified
+  const handleReverseItem = async (item: SessionItem) => {
+    if (!item.packageId) {
+      toast.warning('Không tìm thấy thông tin kiện hàng để hoàn tác');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Bạn có muốn hoàn tác xuất kho cho mã "${item.code}" không?\n\nSố lượng sản phẩm sẽ được cộng hoàn trả lại vào kho ngay lập tức.`
+    );
+    if (!confirmed) return;
+
+    try {
+      toast.info(`Đang hoàn tác xuất kho mã "${item.code}"...`);
+      await fulfillmentApi.reverseDispatch(
+        item.packageId,
+        'Hủy đơn tại kho / Đổi kiện cho đơn khác'
+      );
+      toast.success(`Đã hoàn tác mã "${item.code}", tồn kho đã được cộng lại!`);
+      removeItemFromActiveSession(item.id);
+      if (soundEnabled) playWarningSound();
+    } catch (err: any) {
+      toast.error('Lỗi hoàn tác', err.message || 'Không thể hoàn tác xuất kho');
+    }
+  };
+
   // Export current session CSV
   const handleExportCurrentSession = () => {
     if (!activeSession || activeSession.items.length === 0) {
@@ -538,16 +585,16 @@ export const ScanOrdersPage: React.FC = () => {
                 {activeSession?.status === 'DRAFT' ? (
                   <span
                     title="Đang quét dở"
-                    className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 shrink-0"
+                    className="grid place-items-center w-5 h-5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 shrink-0 leading-none"
                   >
-                    <Clock size={11} className="stroke-[2.5]" />
+                    <Clock size={12} className="stroke-[2.2] block shrink-0" />
                   </span>
                 ) : (
                   <span
                     title="Đã đối soát"
-                    className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 shrink-0"
+                    className="grid place-items-center w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 shrink-0 leading-none"
                   >
-                    <CheckCircle2 size={12} className="stroke-[2.5]" />
+                    <CheckCircle2 size={12} className="stroke-[2.2] block shrink-0" />
                   </span>
                 )}
               </div>
@@ -582,8 +629,8 @@ export const ScanOrdersPage: React.FC = () => {
         {/* 3 Metric Pills */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <div className="p-2 sm:p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/30 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-              <ScanLine size={14} />
+            <div className="w-7 h-7 rounded-md bg-blue-500/10 text-blue-500 grid place-items-center shrink-0">
+              <ScanLine size={14} className="block shrink-0" />
             </div>
             <div className="min-w-0">
               <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 block truncate">
@@ -596,8 +643,8 @@ export const ScanOrdersPage: React.FC = () => {
           </div>
 
           <div className="p-2 sm:p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-              <Clock size={14} />
+            <div className="w-7 h-7 rounded-md bg-amber-500/10 text-amber-500 grid place-items-center shrink-0">
+              <Clock size={14} className="block shrink-0" />
             </div>
             <div className="min-w-0">
               <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 block truncate">
@@ -610,8 +657,8 @@ export const ScanOrdersPage: React.FC = () => {
           </div>
 
           <div className="p-2 sm:p-2.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-              <CheckCircle2 size={14} />
+            <div className="w-7 h-7 rounded-md bg-emerald-500/10 text-emerald-500 grid place-items-center shrink-0">
+              <CheckCircle2 size={14} className="block shrink-0" />
             </div>
             <div className="min-w-0">
               <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 block truncate">
@@ -630,10 +677,17 @@ export const ScanOrdersPage: React.FC = () => {
         {/* LEFT COLUMN: Camera & Scanner Controls (7 cols on PC) */}
         <div className="lg:col-span-7 flex flex-col space-y-3">
           {/* Input Mode Selector Bar */}
-          <div className="p-1 bg-gray-100 dark:bg-[#1a1e2b] rounded-lg border border-gray-200 dark:border-gray-800 grid grid-cols-2 gap-1">
+          <div
+            ref={cameraTabRef}
+            id="camera-barcode-tab"
+            className="scroll-mt-3 sm:scroll-mt-4 p-1 bg-gray-100 dark:bg-[#1a1e2b] rounded-lg border border-gray-200 dark:border-gray-800 grid grid-cols-2 gap-1"
+          >
             <button
               type="button"
-              onClick={() => setActiveInputTab('camera')}
+              onClick={() => {
+                setActiveInputTab('camera');
+                setTimeout(() => scrollToCameraTab(true), 50);
+              }}
               className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                 activeInputTab === 'camera'
                   ? 'bg-[#2563eb] text-white shadow-sm'
@@ -1021,7 +1075,7 @@ export const ScanOrdersPage: React.FC = () => {
 
                         {/* Status Icon */}
                         <div
-                          className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                          className={`w-7 h-7 rounded-full grid place-items-center shrink-0 leading-none ${
                             isVerified
                               ? 'bg-emerald-500/10 text-emerald-500'
                               : isAlreadyVerified
@@ -1032,13 +1086,13 @@ export const ScanOrdersPage: React.FC = () => {
                           }`}
                         >
                           {isVerified ? (
-                            <CheckCircle2 size={15} />
+                            <CheckCircle2 size={15} className="block shrink-0" />
                           ) : isAlreadyVerified ? (
-                            <AlertTriangle size={15} />
+                            <AlertTriangle size={15} className="block shrink-0" />
                           ) : isNotFound ? (
-                            <XCircle size={15} />
+                            <XCircle size={15} className="block shrink-0" />
                           ) : (
-                            <Clock size={15} />
+                            <Clock size={15} className="block shrink-0" />
                           )}
                         </div>
 
@@ -1074,8 +1128,8 @@ export const ScanOrdersPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Status Badge & Delete item */}
-                      <div className="flex items-center gap-2 shrink-0">
+                      {/* Status Badge & Actions */}
+                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
                             isVerified
@@ -1096,15 +1150,30 @@ export const ScanOrdersPage: React.FC = () => {
                             : 'Chờ đối soát'}
                         </span>
 
-                        {/* Quick Delete Single Barcode */}
-                        <button
-                          type="button"
-                          onClick={() => removeItemFromActiveSession(item.id)}
-                          className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
-                          title="Xóa mã này khỏi phiên"
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                        {/* Fast 1-Tap Hoàn tác nếu đã xác nhận xuất kho */}
+                        {isVerified && item.packageId && (
+                          <button
+                            type="button"
+                            onClick={() => handleReverseItem(item)}
+                            className="h-6 px-1.5 rounded flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-900/40 transition-colors cursor-pointer"
+                            title="Hoàn tác xuất kho (cộng lại tồn vào kho)"
+                          >
+                            <RotateCcw size={12} />
+                            <span>Hoàn tác</span>
+                          </button>
+                        )}
+
+                        {/* Quick Delete Single Barcode nếu chưa gửi đối soát hoặc lỗi */}
+                        {!isVerified && (
+                          <button
+                            type="button"
+                            onClick={() => removeItemFromActiveSession(item.id)}
+                            className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                            title="Xóa mã này khỏi phiên"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );

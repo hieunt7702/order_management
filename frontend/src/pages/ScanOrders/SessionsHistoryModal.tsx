@@ -262,16 +262,16 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
                     {isDraft ? (
                       <span
                         title="Đang quét dở"
-                        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 shrink-0"
+                        className="grid place-items-center w-5 h-5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 shrink-0 leading-none"
                       >
-                        <Clock size={11} className="stroke-[2.5]" />
+                        <Clock size={12} className="stroke-[2.2] block shrink-0" />
                       </span>
                     ) : (
                       <span
                         title="Đã đối soát"
-                        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 shrink-0"
+                        className="grid place-items-center w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 shrink-0 leading-none"
                       >
-                        <CheckCircle2 size={12} className="stroke-[2.5]" />
+                        <CheckCircle2 size={12} className="stroke-[2.2] block shrink-0" />
                       </span>
                     )}
                   </div>
