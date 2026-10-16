@@ -14,7 +14,8 @@
     "prisma:migrate": "pnpm --filter shopee-order-backend prisma:migrate",
     "prisma:seed": "pnpm --filter shopee-order-backend prisma:seed",
     "prisma:seed:admin": "pnpm --filter shopee-order-backend prisma:seed:admin",
-    "prisma:clear": "pnpm --filter shopee-order-backend prisma:clear"
+    "prisma:clear": "pnpm --filter shopee-order-backend prisma:clear",
+    "start": "pnpm --filter shopee-order-backend start"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

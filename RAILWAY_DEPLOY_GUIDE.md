@@ -31,11 +31,8 @@ NIXPACKS_PNPM_VERSION=9.15.9
 # ==============================================================================
 # 3. KẾT NỐI DATABASE POSTGRESQL TRÊN RAILWAY
 # ==============================================================================
+# Lưu ý: Prisma chỉ cần đúng DATABASE_URL (nếu DB của bạn đặt tên khác, hãy đổi ${{Postgres...}} tương ứng)
 DATABASE_URL=${{Postgres.DATABASE_URL}}
-POSTGRES_USER=${{Postgres.POSTGRES_USER}}
-POSTGRES_PASSWORD=${{Postgres.POSTGRES_PASSWORD}}
-POSTGRES_DB=${{Postgres.POSTGRES_DB}}
-POSTGRES_PORT=${{Postgres.POSTGRES_PORT}}
 
 # ==============================================================================
 # 4. BẢO MẬT JWT & TOKEN ROTATION
@@ -100,8 +97,9 @@ graph LR
 1. Bấm **+ Create** ➔ chọn **GitHub Repo** ➔ chọn repository `hieunt7702/order_management`.
 2. Đổi tên service thành **`backend`**.
 3. Vào tab **Settings**:
-   - **Root Directory**: Điền `backend`
-   - **Builder**: Mặc định là **NIXPACKS** (Hệ thống đã chuẩn bị sẵn `nixpacks.toml` và `railway.json`).
+   - **Root Directory**: Điền `backend` (chữ thường).
+   - **Builder**: Mặc định là **NIXPACKS**.
+   - **Start Command**: Điền `pnpm run start:prod` (đã cấu hình sẵn trong `Procfile` và `nixpacks.toml`).
 4. Vào tab **Variables** ➔ Bấm **RAW Editor** ➔ Dán toàn bộ khối cấu hình ở **Mục I.1** vào.
 5. Vào tab **Settings** ➔ mục **Networking** ➔ Bấm **Generate Domain** để nhận domain API (VD: `https://backend-production-xxxx.up.railway.app`).
 
@@ -116,8 +114,9 @@ graph LR
 1. Bấm **+ Create** ➔ chọn tiếp **GitHub Repo** ➔ chọn cùng repository `hieunt7702/order_management`.
 2. Đổi tên service thành **`frontend`**.
 3. Vào tab **Settings**:
-   - **Root Directory**: Điền `frontend`
-   - **Builder**: Mặc định là **NIXPACKS** (Hệ thống đã có sẵn `nixpacks.toml`, `railway.json` và lệnh `start`).
+   - **Root Directory**: Điền `frontend` (chữ thường).
+   - **Builder**: Mặc định là **NIXPACKS**.
+   - **Start Command**: Điền `pnpm run start` (hoặc `vite preview --host 0.0.0.0 --port $PORT`).
 4. Vào tab **Variables** ➔ Bấm **RAW Editor** ➔ Dán khối cấu hình ở **Mục I.2** vào (nhớ điền đúng link backend ở Bước 2).
 5. Vào tab **Settings** ➔ mục **Networking** ➔ Bấm **Generate Domain** để nhận link vào web app người dùng.
 

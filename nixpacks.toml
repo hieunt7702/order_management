@@ -6,3 +6,9 @@ cmds = ["pnpm install --no-frozen-lockfile --prod=false"]
 
 [phases.build]
 cmds = ["pnpm run prisma:generate", "pnpm run build"]
+
+[phases.start]
+cmds = ["pnpm --filter shopee-order-backend start"]
+
+[start]
+cmd = "pnpm --filter shopee-order-backend start"
