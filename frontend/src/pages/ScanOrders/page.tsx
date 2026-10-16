@@ -489,7 +489,7 @@ export const ScanOrdersPage: React.FC = () => {
       {/* 1. TOP HEADER & SESSION SELECTOR */}
       <div className="flex items-center justify-between gap-2.5 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-[#5865f2]/10 border border-[#5865f2]/20 text-[#5865f2] flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-lg bg-[#5865f2]/10 border border-[#5865f2]/20 text-[#5865f2] flex items-center justify-center shrink-0">
             <ScanLine size={19} />
           </div>
           <div className="min-w-0">
@@ -520,10 +520,10 @@ export const ScanOrdersPage: React.FC = () => {
       </div>
 
       {/* 2. ACTIVE SESSION STATUS CARD & STATS */}
-      <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#131722] border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
+      <div className="p-3 sm:p-4 rounded-lg bg-white dark:bg-[#131722] border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-gray-100 dark:border-gray-800/80">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-[#5865f2]/10 text-[#5865f2] flex items-center justify-center shrink-0 border border-[#5865f2]/20">
+            <div className="w-8 h-8 rounded-lg bg-[#5865f2]/10 text-[#5865f2] flex items-center justify-center shrink-0 border border-[#5865f2]/20">
               <FileText size={16} />
             </div>
             <div className="min-w-0">
@@ -578,8 +578,8 @@ export const ScanOrdersPage: React.FC = () => {
 
         {/* 3 Metric Pills */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <div className="p-2 sm:p-2.5 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/30 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+          <div className="p-2 sm:p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/30 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-md bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
               <ScanLine size={14} />
             </div>
             <div className="min-w-0">
@@ -592,8 +592,8 @@ export const ScanOrdersPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-2 sm:p-2.5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+          <div className="p-2 sm:p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-md bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
               <Clock size={14} />
             </div>
             <div className="min-w-0">
@@ -606,8 +606,8 @@ export const ScanOrdersPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+          <div className="p-2 sm:p-2.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
               <CheckCircle2 size={14} />
             </div>
             <div className="min-w-0">
@@ -627,11 +627,11 @@ export const ScanOrdersPage: React.FC = () => {
         {/* LEFT COLUMN: Camera & Scanner Controls (7 cols on PC) */}
         <div className="lg:col-span-7 flex flex-col space-y-3">
           {/* Input Mode Selector Bar */}
-          <div className="p-1 bg-gray-100 dark:bg-[#1a1e2b] rounded-xl border border-gray-200 dark:border-gray-800 grid grid-cols-2 gap-1">
+          <div className="p-1 bg-gray-100 dark:bg-[#1a1e2b] rounded-lg border border-gray-200 dark:border-gray-800 grid grid-cols-2 gap-1">
             <button
               type="button"
               onClick={() => setActiveInputTab('camera')}
-              className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                 activeInputTab === 'camera'
                   ? 'bg-[#2563eb] text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-white'
@@ -643,7 +643,7 @@ export const ScanOrdersPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveInputTab('manual')}
-              className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                 activeInputTab === 'manual'
                   ? 'bg-[#2563eb] text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-white'
@@ -657,7 +657,7 @@ export const ScanOrdersPage: React.FC = () => {
           {/* CAMERA VIEWPORT - EXPANDED & WIDENED ON MOBILE */}
           {activeInputTab === 'camera' && (
             <div
-              className={`rounded-xl bg-black border overflow-hidden relative transition-all duration-300 ${
+              className={`rounded-lg bg-black border overflow-hidden relative transition-all duration-300 ${
                 scanFlash === 'success'
                   ? 'border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)] ring-2 ring-emerald-500/60'
                   : scanFlash === 'warning'
@@ -790,7 +790,7 @@ export const ScanOrdersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleSwitchCamera}
-                  className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-gray-800 text-gray-200 hover:bg-gray-700 active:scale-95 transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 py-2 rounded-md bg-gray-800 text-gray-200 hover:bg-gray-700 active:scale-95 transition-all cursor-pointer"
                 >
                   <RefreshCw size={13} />
                   <span>Đổi camera</span>
@@ -798,7 +798,7 @@ export const ScanOrdersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSoundEnabled(!soundEnabled)}
-                  className={`flex items-center justify-center gap-1.5 py-2 rounded-lg border transition-all cursor-pointer active:scale-95 ${
+                  className={`flex items-center justify-center gap-1.5 py-2 rounded-md border transition-all cursor-pointer active:scale-95 ${
                     soundEnabled
                       ? 'border-blue-500/40 bg-blue-500/20 text-blue-400'
                       : 'border-gray-700 bg-gray-800 text-gray-400'
@@ -810,7 +810,7 @@ export const ScanOrdersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={togglePauseCamera}
-                  className={`flex items-center justify-center gap-1.5 py-2 rounded-lg border transition-all cursor-pointer active:scale-95 ${
+                  className={`flex items-center justify-center gap-1.5 py-2 rounded-md border transition-all cursor-pointer active:scale-95 ${
                     isCameraPaused
                       ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
                       : 'bg-gray-800 text-gray-200 border-gray-700 hover:bg-gray-700'
@@ -824,7 +824,7 @@ export const ScanOrdersPage: React.FC = () => {
           )}
 
           {/* MANUAL BARCODE INPUT BOX */}
-          <div className="p-3.5 rounded-xl bg-white dark:bg-[#131722] border border-gray-200 dark:border-gray-800 space-y-2 shadow-sm">
+          <div className="p-3.5 rounded-lg bg-white dark:bg-[#131722] border border-gray-200 dark:border-gray-800 space-y-2 shadow-sm">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                 <Keyboard size={14} className="text-gray-400" />
@@ -842,13 +842,13 @@ export const ScanOrdersPage: React.FC = () => {
                   placeholder="Nhập mã vận đơn hoặc mã đơn hàng..."
                   value={barcodeInput}
                   onChange={(e) => setBarcodeInput(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-[#1a1e2b] border border-gray-200 dark:border-gray-700/80 rounded-xl text-xs font-mono text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20"
+                  className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-[#1a1e2b] border border-gray-200 dark:border-gray-700/80 rounded-lg text-xs font-mono text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20"
                 />
               </div>
               <button
                 type="submit"
                 disabled={!barcodeInput.trim()}
-                className="px-4 py-2 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] disabled:opacity-40 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 shadow-sm"
+                className="px-4 py-2 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] disabled:opacity-40 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 shadow-sm"
               >
                 <span>Thêm</span>
                 <span className="text-[10px]">↵</span>
@@ -859,7 +859,7 @@ export const ScanOrdersPage: React.FC = () => {
           {/* LIVE SCAN FEEDBACK BANNER */}
           {lastScannedFeedback && (
             <div
-              className={`p-3 rounded-xl border flex items-center justify-between gap-2.5 transition-all animate-in fade-in ${
+              className={`p-3 rounded-lg border flex items-center justify-between gap-2.5 transition-all animate-in fade-in ${
                 lastScannedFeedback.isDuplicate
                   ? 'bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200'
                   : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
@@ -897,7 +897,7 @@ export const ScanOrdersPage: React.FC = () => {
           )}
 
           {/* PROMINENT ACTION: SUBMIT & VERIFY BATCH */}
-          <div className="p-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg space-y-2">
+          <div className="p-3.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg space-y-2">
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-bold text-xs sm:text-sm">Xác nhận & Cập nhật đơn hàng</h4>
@@ -913,7 +913,7 @@ export const ScanOrdersPage: React.FC = () => {
                 type="button"
                 disabled={!activeSession || activeSession.items.length === 0 || isVerifyingBatch}
                 onClick={handleSubmitBatch}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-white text-[#2563eb] hover:bg-blue-50 active:scale-[0.98] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                className="flex-1 py-2.5 px-4 rounded-lg bg-white text-[#2563eb] hover:bg-blue-50 active:scale-[0.98] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
               >
                 {isVerifyingBatch ? (
                   <>
@@ -934,7 +934,7 @@ export const ScanOrdersPage: React.FC = () => {
                 type="button"
                 onClick={handleExportCurrentSession}
                 disabled={!activeSession || activeSession.items.length === 0}
-                className="p-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white disabled:opacity-40 transition-colors cursor-pointer shrink-0"
+                className="p-2.5 rounded-lg bg-white/20 hover:bg-white/30 text-white disabled:opacity-40 transition-colors cursor-pointer shrink-0"
                 title="Xuất danh sách mã ra file CSV"
               >
                 <Download size={16} />
@@ -945,7 +945,7 @@ export const ScanOrdersPage: React.FC = () => {
 
         {/* RIGHT COLUMN: SCANNED ITEMS LIST IN ACTIVE SESSION (5 cols on PC) */}
         <div className="lg:col-span-5 flex flex-col space-y-3">
-          <div className="p-3.5 rounded-xl bg-white dark:bg-[#131722] border border-gray-200 dark:border-gray-800 flex-1 flex flex-col min-h-0 space-y-3 shadow-sm">
+          <div className="p-3.5 rounded-lg bg-white dark:bg-[#131722] border border-gray-200 dark:border-gray-800 flex-1 flex flex-col min-h-0 space-y-3 shadow-sm">
             {/* Header: Title & Clear */}
             <div className="flex items-center justify-between gap-2 shrink-0">
               <div className="flex items-center gap-2">
@@ -1008,7 +1008,7 @@ export const ScanOrdersPage: React.FC = () => {
                   return (
                     <div
                       key={item.id}
-                      className="p-3 rounded-xl bg-gray-50 dark:bg-[#1a1e2b] border border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2.5 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+                      className="p-2.5 sm:p-3 rounded-lg bg-gray-50 dark:bg-[#1a1e2b] border border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2.5 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         {/* STT Index */}

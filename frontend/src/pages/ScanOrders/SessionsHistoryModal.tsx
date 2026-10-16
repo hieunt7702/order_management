@@ -128,11 +128,11 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-white dark:bg-[#131722] rounded-2xl border border-gray-200 dark:border-gray-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-2xl bg-white dark:bg-[#131722] rounded-xl border border-gray-200 dark:border-gray-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
         <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#5865f2]/10 border border-[#5865f2]/20 text-[#5865f2] flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#5865f2]/10 border border-[#5865f2]/20 text-[#5865f2] flex items-center justify-center shrink-0">
               <FileText size={18} />
             </div>
             <div className="min-w-0">
@@ -157,11 +157,11 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
 
         {/* Filter Tabs - Responsive Segmented Control */}
         <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800/80 bg-gray-50/50 dark:bg-[#161a26]/50 shrink-0">
-          <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-200/60 dark:bg-[#1a1e2b] rounded-xl text-center">
+          <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-200/60 dark:bg-[#1a1e2b] rounded-lg text-center">
             <button
               type="button"
               onClick={() => setFilterTab('ALL')}
-              className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer truncate ${
+              className={`py-1.5 px-2 rounded-md text-xs font-semibold transition-all cursor-pointer truncate ${
                 filterTab === 'ALL'
                   ? 'bg-white dark:bg-[#2563eb] text-[#2563eb] dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -172,7 +172,7 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
             <button
               type="button"
               onClick={() => setFilterTab('DRAFT')}
-              className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer truncate flex items-center justify-center gap-1 ${
+              className={`py-1.5 px-2 rounded-md text-xs font-semibold transition-all cursor-pointer truncate flex items-center justify-center gap-1 ${
                 filterTab === 'DRAFT'
                   ? 'bg-white dark:bg-amber-600 text-amber-600 dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -184,7 +184,7 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
             <button
               type="button"
               onClick={() => setFilterTab('SUBMITTED')}
-              className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer truncate flex items-center justify-center gap-1 ${
+              className={`py-1.5 px-2 rounded-md text-xs font-semibold transition-all cursor-pointer truncate flex items-center justify-center gap-1 ${
                 filterTab === 'SUBMITTED'
                   ? 'bg-white dark:bg-emerald-600 text-emerald-600 dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -205,7 +205,7 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
               <button
                 type="button"
                 onClick={handleCreateNew}
-                className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2563eb] text-white text-xs font-semibold shadow-sm hover:bg-[#1d4ed8] transition-colors cursor-pointer"
+                className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#2563eb] text-white text-xs font-semibold shadow-sm hover:bg-[#1d4ed8] transition-colors cursor-pointer"
               >
                 <Plus size={14} />
                 Bắt đầu phiên quét ngay
@@ -219,7 +219,7 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
               return (
                 <div
                   key={session.id}
-                  className={`relative p-3.5 sm:p-4 rounded-xl border transition-all ${
+                  className={`relative p-3.5 sm:p-4 rounded-lg border transition-all ${
                     isCurrentActive
                       ? 'border-2 border-[#2563eb] dark:border-[#3b82f6] bg-blue-50/40 dark:bg-blue-950/25 shadow-sm'
                       : 'border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1e2b] hover:border-gray-300 dark:hover:border-gray-700'
@@ -349,7 +349,7 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
                       {session.items.slice(0, 4).map((it) => (
                         <span
                           key={it.id}
-                          className="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono text-[11px] font-medium"
+                          className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono text-[11px] font-medium"
                         >
                           {it.code}
                         </span>
@@ -372,14 +372,14 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
           >
             Đóng
           </button>
           <button
             type="button"
             onClick={handleCreateNew}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs sm:text-sm font-semibold shadow-sm transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs sm:text-sm font-semibold shadow-sm transition-all cursor-pointer"
           >
             <Plus size={16} />
             <span>Tạo phiên mới</span>
@@ -389,7 +389,7 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
         {/* Detail drawer / submodal for completed session */}
         {selectedSessionForDetail && (
           <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60">
-            <div className="w-full max-w-xl bg-white dark:bg-[#131722] rounded-2xl border border-gray-200 dark:border-gray-800 shadow-2xl p-5 flex flex-col max-h-[85vh]">
+            <div className="w-full max-w-xl bg-white dark:bg-[#131722] rounded-xl border border-gray-200 dark:border-gray-800 shadow-2xl p-5 flex flex-col max-h-[85vh]">
               <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-800">
                 <div>
                   <h4 className="font-bold text-sm text-gray-900 dark:text-white">
