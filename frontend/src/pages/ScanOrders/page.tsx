@@ -880,7 +880,6 @@ export const ScanOrdersPage: React.FC = () => {
                 <Keyboard size={14} className="text-gray-400" />
                 Nhập mã thủ công / Máy quét súng USB
               </span>
-              <span className="text-[10px] text-gray-400">Nhấn Enter để thêm</span>
             </div>
 
             <form onSubmit={handleManualScanSubmit} className="flex items-center gap-2">
