@@ -7,8 +7,11 @@ import {
   HelpCircle,
   ArrowRight,
   ShieldCheck,
+  Store,
+  Wallet,
 } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
+import { Select } from '../../components/ui/Select';
 import {
   cashflowApi,
   CashAccountModel,
@@ -254,18 +257,17 @@ export const ImportSettlementModal: React.FC<ImportSettlementModalProps> = ({
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
               Shop thực hiện đối soát <span className="text-rose-500">*</span>
             </label>
-            <select
+            <Select
               value={selectedShopId}
-              onChange={(e) => setSelectedShopId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold focus:outline-none"
-            >
-              <option value="">-- Chọn Shop --</option>
-              {shops.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedShopId(String(val || ''))}
+              options={[
+                { value: '', label: '-- Chọn Shop --' },
+                ...shops.map((s) => ({ value: s.id, label: s.name, icon: Store })),
+              ]}
+              placeholder="-- Chọn Shop --"
+              searchable={true}
+              className="w-full"
+            />
           </div>
 
           <div>
@@ -283,26 +285,27 @@ export const ImportSettlementModal: React.FC<ImportSettlementModalProps> = ({
                 Tự động tăng số dư ví
               </label>
             </div>
-            <select
+            <Select
               disabled={!creditToWallet}
               value={targetAccountId}
-              onChange={(e) => setTargetAccountId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:outline-none disabled:opacity-50"
-            >
-              {platformAccounts.length > 0 ? (
-                platformAccounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.name} (Số dư: {Number(acc.currentBalance).toLocaleString('vi-VN')}đ)
-                  </option>
-                ))
-              ) : (
-                accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.name}
-                  </option>
-                ))
-              )}
-            </select>
+              onChange={(val) => setTargetAccountId(String(val || ''))}
+              options={
+                platformAccounts.length > 0
+                  ? platformAccounts.map((acc) => ({
+                      value: acc.id,
+                      label: `${acc.name} (Số dư: ${Number(acc.currentBalance).toLocaleString('vi-VN')}đ)`,
+                      icon: Wallet,
+                    }))
+                  : accounts.map((acc) => ({
+                      value: acc.id,
+                      label: acc.name,
+                      icon: Wallet,
+                    }))
+              }
+              placeholder="-- Chọn tài khoản nhận tiền --"
+              searchable={true}
+              className="w-full"
+            />
           </div>
         </div>
 

@@ -53,6 +53,7 @@ import {
   SystemFilterReset,
 } from '../../components/ui/SystemFilter';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { toast } from '../../components/ui/Toast';
 import { CreateTransactionModal } from './CreateTransactionModal';
 import { InternalTransferModal } from './InternalTransferModal';
@@ -446,23 +447,22 @@ export const CashflowPage: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto lg:ml-auto">
           {/* Gian hàng Filter */}
-          <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 h-8 text-xs">
-            <Store size={13} className="text-gray-400 shrink-0" />
-            <select
+          <div className="w-full sm:w-48">
+            <Select
               value={selectedShopId}
-              onChange={(e) => {
-                setSelectedShopId(e.target.value);
-                setStoreShopId(e.target.value);
+              onChange={(val) => {
+                const s = String(val || 'ALL');
+                setSelectedShopId(s);
+                setStoreShopId(s);
               }}
-              className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">Tất cả gian hàng</option>
-              {shops.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: 'ALL', label: 'Tất cả gian hàng', icon: Store },
+                ...shops.map((s) => ({ value: s.id, label: s.name, icon: Store })),
+              ]}
+              icon={Store}
+              size="sm"
+              className="w-full"
+            />
           </div>
 
           {/* Date Range Picker */}
@@ -710,67 +710,73 @@ export const CashflowPage: React.FC = () => {
             />
 
             <div className="flex flex-wrap items-center gap-2">
-              <select
+              <Select
                 value={txFilterType}
-                onChange={(e) => {
-                  setTxFilterType(e.target.value);
+                onChange={(val) => {
+                  setTxFilterType(String(val || 'ALL'));
                   setTxPage(1);
                 }}
-                className="h-8 px-2.5 text-xs bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
-              >
-                <option value="ALL">Tất cả loại giao dịch</option>
-                <option value="EXPENSE">Khoản chi</option>
-                <option value="INCOME">Khoản thu</option>
-                <option value="INTERNAL_TRANSFER">Chuyển nội bộ</option>
-                <option value="REIMBURSEMENT">Hoàn tiền ứng</option>
-                <option value="CAPITAL_IN">Góp vốn</option>
-              </select>
+                options={[
+                  { value: 'ALL', label: 'Tất cả loại giao dịch' },
+                  { value: 'EXPENSE', label: 'Khoản chi', icon: ArrowUpRight },
+                  { value: 'INCOME', label: 'Khoản thu', icon: ArrowDownLeft },
+                  { value: 'INTERNAL_TRANSFER', label: 'Chuyển nội bộ', icon: ArrowLeftRight },
+                  { value: 'REIMBURSEMENT', label: 'Hoàn tiền ứng', icon: Wallet },
+                  { value: 'CAPITAL_IN', label: 'Góp vốn', icon: TrendingUp },
+                ]}
+                size="sm"
+                className="w-44"
+              />
 
-              <select
+              <Select
                 value={txFilterCategoryId}
-                onChange={(e) => {
-                  setTxFilterCategoryId(e.target.value);
+                onChange={(val) => {
+                  setTxFilterCategoryId(String(val || 'ALL'));
                   setTxPage(1);
                 }}
-                className="h-8 px-2.5 text-xs bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
-              >
-                <option value="ALL">Tất cả khoản mục</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: 'ALL', label: 'Tất cả khoản mục' },
+                  ...categories.map((c) => ({ value: c.id, label: c.name })),
+                ]}
+                searchable={true}
+                size="sm"
+                className="w-44"
+              />
 
-              <select
+              <Select
                 value={txFilterAccountId}
-                onChange={(e) => {
-                  setTxFilterAccountId(e.target.value);
+                onChange={(val) => {
+                  setTxFilterAccountId(String(val || 'ALL'));
                   setTxPage(1);
                 }}
-                className="h-8 px-2.5 text-xs bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
-              >
-                <option value="ALL">Tất cả tài khoản</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: 'ALL', label: 'Tất cả tài khoản' },
+                  ...accounts.map((a) => ({
+                    value: a.id,
+                    label: a.name,
+                    icon: a.type === 'CASH' ? Wallet : a.type === 'BANK' ? Landmark : Store,
+                  })),
+                ]}
+                searchable={true}
+                size="sm"
+                className="w-44"
+              />
 
-              <select
+              <Select
                 value={txFilterStatus}
-                onChange={(e) => {
-                  setTxFilterStatus(e.target.value);
+                onChange={(val) => {
+                  setTxFilterStatus(String(val || 'ALL'));
                   setTxPage(1);
                 }}
-                className="h-8 px-2.5 text-xs bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
-              >
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="CONFIRMED">Đã xác nhận</option>
-                <option value="DRAFT">Lưu nháp</option>
-                <option value="CANCELLED">Đã hủy</option>
-              </select>
+                options={[
+                  { value: 'ALL', label: 'Tất cả trạng thái' },
+                  { value: 'CONFIRMED', label: 'Đã xác nhận' },
+                  { value: 'DRAFT', label: 'Lưu nháp' },
+                  { value: 'CANCELLED', label: 'Đã hủy' },
+                ]}
+                size="sm"
+                className="w-36"
+              />
 
               {(txSearch ||
                 txFilterType !== 'ALL' ||

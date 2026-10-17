@@ -12,8 +12,11 @@ import {
   Sparkles,
   HelpCircle,
   Package,
+  Store,
+  Landmark,
 } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
+import { Select } from '../../components/ui/Select';
 import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import {
   cashflowApi,
@@ -425,18 +428,21 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
             ))}
           </div>
 
-          <select
+          <Select
             value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-          >
-            <option value="">-- Chọn danh mục chi tiết --</option>
-            {filteredCategories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name} {cat.description ? `(${cat.description})` : ''}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setCategoryId(String(val || ''))}
+            options={[
+              { value: '', label: '-- Chọn danh mục chi tiết --' },
+              ...filteredCategories.map((cat) => ({
+                value: cat.id,
+                label: cat.description ? `${cat.name} (${cat.description})` : cat.name,
+                badge: cat.code ? cat.code : undefined,
+              })),
+            ]}
+            placeholder="-- Chọn danh mục chi tiết --"
+            searchable={true}
+            className="w-full"
+          />
         </div>
 
         {/* 3. Số tiền & Ngày giao dịch */}
@@ -512,18 +518,22 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
           {!isPersonalAdvance ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <select
+                <Select
                   value={accountId}
-                  onChange={(e) => setAccountId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                >
-                  <option value="">-- Chọn tài khoản tiền --</option>
-                  {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>
-                      {acc.name} ({Number(acc.currentBalance).toLocaleString('vi-VN')}đ)
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setAccountId(String(val || ''))}
+                  options={[
+                    { value: '', label: '-- Chọn tài khoản tiền --' },
+                    ...accounts.map((acc) => ({
+                      value: acc.id,
+                      label: `${acc.name} (${Number(acc.currentBalance).toLocaleString('vi-VN')}đ)`,
+                      icon: acc.type === 'CASH' ? Wallet : acc.type === 'BANK' ? Landmark : Building2,
+                      badge: acc.type === 'CASH' ? 'Tiền mặt' : acc.type === 'BANK' ? 'Ngân hàng' : 'Ví sàn',
+                    })),
+                  ]}
+                  placeholder="-- Chọn tài khoản tiền --"
+                  searchable={true}
+                  className="w-full"
+                />
               </div>
 
               <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/80 px-3 py-2 rounded border border-slate-200 dark:border-slate-700">
@@ -560,18 +570,21 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                   Chọn nhà cung cấp cần thanh toán:
                 </label>
-                <select
+                <Select
                   value={selectedSupplierId}
-                  onChange={(e) => setSelectedSupplierId(e.target.value)}
-                  className="w-full px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
-                >
-                  <option value="">-- Chọn Nhà cung cấp --</option>
-                  {suppliers.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.code} - {s.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSelectedSupplierId(String(val || ''))}
+                  options={[
+                    { value: '', label: '-- Chọn Nhà cung cấp --' },
+                    ...suppliers.map((s) => ({
+                      value: s.id,
+                      label: `${s.code} - ${s.name}`,
+                      icon: Building2,
+                    })),
+                  ]}
+                  placeholder="-- Chọn Nhà cung cấp --"
+                  searchable={true}
+                  className="w-full"
+                />
               </div>
 
               {selectedSupplierId && (
@@ -658,19 +671,22 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
                 Chi chung toàn hệ thống
               </label>
             </div>
-            <select
+            <Select
               disabled={isCommonExpense}
               value={shopId}
-              onChange={(e) => setShopId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50"
-            >
-              <option value="">-- Chi chung / Không gắn shop --</option>
-              {shops.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setShopId(String(val || ''))}
+              options={[
+                { value: '', label: '-- Chi chung / Không gắn shop --' },
+                ...shops.map((s) => ({
+                  value: s.id,
+                  label: s.name,
+                  icon: Store,
+                })),
+              ]}
+              placeholder="-- Chi chung / Không gắn shop --"
+              searchable={true}
+              className="w-full"
+            />
           </div>
 
           <div>

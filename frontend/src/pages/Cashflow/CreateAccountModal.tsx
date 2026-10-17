@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Landmark, CheckCircle2 } from 'lucide-react';
+import { Landmark, CheckCircle2, Wallet, Store, User } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
+import { Select } from '../../components/ui/Select';
 import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import { cashflowApi, CashAccountType } from '../../services/cashflowApi';
 import { toast } from '../../components/ui/Toast';
@@ -110,16 +111,17 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                 Loại tài khoản <span className="text-rose-500">*</span>
               </label>
-              <select
+              <Select
                 value={type}
-                onChange={(e) => setType(e.target.value as CashAccountType)}
-                className="w-full px-3.5 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
-              >
-                <option value="BANK">Tài khoản Ngân hàng</option>
-                <option value="CASH">Quỹ tiền mặt tại kho</option>
-                <option value="PLATFORM_WALLET">Số dư ví sàn Shopee</option>
-                <option value="PERSONAL_HOLD">Tiền cá nhân chi hộ</option>
-              </select>
+                onChange={(val) => setType(val as CashAccountType)}
+                options={[
+                  { value: 'BANK', label: 'Tài khoản Ngân hàng', icon: Landmark, badge: 'Ngân hàng' },
+                  { value: 'CASH', label: 'Quỹ tiền mặt tại kho', icon: Wallet, badge: 'Tiền mặt' },
+                  { value: 'PLATFORM_WALLET', label: 'Số dư ví sàn Shopee', icon: Store, badge: 'Ví sàn' },
+                  { value: 'PERSONAL_HOLD', label: 'Tiền cá nhân chi hộ', icon: User, badge: 'Cá nhân' },
+                ]}
+                className="w-full"
+              />
             </div>
           </div>
 
@@ -172,18 +174,17 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                 Gán Shop Shopee sở hữu
               </label>
-              <select
+              <Select
                 value={shopId}
-                onChange={(e) => setShopId(e.target.value)}
-                className="w-full px-3.5 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
-              >
-                <option value="">-- Chọn shop sở hữu ví --</option>
-                {shops.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setShopId(String(val || ''))}
+                options={[
+                  { value: '', label: '-- Chọn shop sở hữu ví --' },
+                  ...shops.map((s) => ({ value: s.id, label: s.name, icon: Store })),
+                ]}
+                placeholder="-- Chọn shop sở hữu ví --"
+                searchable={true}
+                className="w-full"
+              />
             </div>
           )}
 

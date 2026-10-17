@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeftRight, Wallet, CheckCircle2, Info, Building2 } from 'lucide-react';
+import { ArrowLeftRight, Wallet, CheckCircle2, Info, Building2, Landmark } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
+import { Select } from '../../components/ui/Select';
 import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import {
   cashflowApi,
@@ -153,18 +154,22 @@ export const InternalTransferModal: React.FC<InternalTransferModalProps> = ({
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                 Tài khoản nguồn (Tiền ra) <span className="text-rose-500">*</span>
               </label>
-              <select
+              <Select
                 value={fromAccountId}
-                onChange={(e) => setFromAccountId(e.target.value)}
-                className="w-full px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold focus:outline-none"
-              >
-                <option value="">-- Chọn tài khoản nguồn --</option>
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.name} ({Number(acc.currentBalance).toLocaleString('vi-VN')}đ)
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setFromAccountId(String(val || ''))}
+                options={[
+                  { value: '', label: '-- Chọn tài khoản nguồn --' },
+                  ...accounts.map((acc) => ({
+                    value: acc.id,
+                    label: `${acc.name} (${Number(acc.currentBalance).toLocaleString('vi-VN')}đ)`,
+                    icon: acc.type === 'CASH' ? Wallet : acc.type === 'BANK' ? Landmark : Building2,
+                    badge: acc.type === 'CASH' ? 'Tiền mặt' : acc.type === 'BANK' ? 'Ngân hàng' : 'Ví sàn',
+                  })),
+                ]}
+                placeholder="-- Chọn tài khoản nguồn --"
+                searchable={true}
+                className="w-full"
+              />
               {fromAccount && (
                 <div className="mt-2 text-[11px] text-slate-500 flex justify-between">
                   <span>Số dư hiện tại:</span>
@@ -179,18 +184,23 @@ export const InternalTransferModal: React.FC<InternalTransferModalProps> = ({
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                 Tài khoản đích (Tiền vào) <span className="text-emerald-500">*</span>
               </label>
-              <select
+              <Select
                 value={toAccountId}
-                onChange={(e) => setToAccountId(e.target.value)}
-                className="w-full px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold focus:outline-none"
-              >
-                <option value="">-- Chọn tài khoản đích --</option>
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id} disabled={acc.id === fromAccountId}>
-                    {acc.name} ({Number(acc.currentBalance).toLocaleString('vi-VN')}đ)
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setToAccountId(String(val || ''))}
+                options={[
+                  { value: '', label: '-- Chọn tài khoản đích --' },
+                  ...accounts.map((acc) => ({
+                    value: acc.id,
+                    label: `${acc.name} (${Number(acc.currentBalance).toLocaleString('vi-VN')}đ)`,
+                    disabled: acc.id === fromAccountId,
+                    icon: acc.type === 'CASH' ? Wallet : acc.type === 'BANK' ? Landmark : Building2,
+                    badge: acc.type === 'CASH' ? 'Tiền mặt' : acc.type === 'BANK' ? 'Ngân hàng' : 'Ví sàn',
+                  })),
+                ]}
+                placeholder="-- Chọn tài khoản đích --"
+                searchable={true}
+                className="w-full"
+              />
               {toAccount && (
                 <div className="mt-2 text-[11px] text-slate-500 flex justify-between">
                   <span>Số dư hiện tại:</span>

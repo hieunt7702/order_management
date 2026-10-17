@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Tag, CheckCircle2 } from 'lucide-react';
+import { Tag, CheckCircle2, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
+import { Select } from '../../components/ui/Select';
 import { cashflowApi, CashCategoryType } from '../../services/cashflowApi';
 import { toast } from '../../components/ui/Toast';
 
@@ -97,14 +98,15 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                 Nhóm loại <span className="text-rose-500">*</span>
               </label>
-              <select
+              <Select
                 value={type}
-                onChange={(e) => setType(e.target.value as CashCategoryType)}
-                className="w-full px-3.5 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
-              >
-                <option value="EXPENSE">Khoản chi (Chi phí)</option>
-                <option value="INCOME">Khoản thu (Doanh thu)</option>
-              </select>
+                onChange={(val) => setType(val as CashCategoryType)}
+                options={[
+                  { value: 'EXPENSE', label: 'Khoản chi (Chi phí)', icon: ArrowUpRight, color: 'text-rose-500' },
+                  { value: 'INCOME', label: 'Khoản thu (Doanh thu)', icon: ArrowDownLeft, color: 'text-emerald-500' },
+                ]}
+                className="w-full"
+              />
             </div>
           </div>
 
