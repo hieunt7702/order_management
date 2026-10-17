@@ -659,7 +659,7 @@ export const SupplierDebtsPage: React.FC = () => {
       </div>
 
       {/* KPI Cards Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 shrink-0">
         <SystemMetricCard
           title="Tổng nợ phải trả NCC"
           mobileTitle="Tổng nợ NCC"

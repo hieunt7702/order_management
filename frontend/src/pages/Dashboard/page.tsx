@@ -146,29 +146,13 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Mobile Home Feature Launcher (Matches exact user mockup) */}
-      <MobileFeatureHub />
-
-      {/* Mobile Accordion Toggle for Real-time Operational KPIs */}
+      {/* Mobile & Tablet: ONLY Feature Hub / Functions Menu */}
       <div className="lg:hidden">
-        <button
-          type="button"
-          onClick={() => setShowMobileKPIs(!showMobileKPIs)}
-          className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-white dark:bg-[#161922] border border-gray-200 dark:border-[#222736] text-xs font-semibold text-gray-700 dark:text-gray-300 hover:border-[#5865f2] transition-colors shadow-2xs cursor-pointer"
-        >
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Báo cáo số liệu vận hành & doanh thu thực tế
-          </span>
-          <ChevronDown
-            size={14}
-            className={`transition-transform text-gray-400 ${showMobileKPIs ? 'rotate-180' : ''}`}
-          />
-        </button>
+        <MobileFeatureHub />
       </div>
 
-      {/* Desktop Dashboard or Expanded Mobile Metrics */}
-      <div className={`${showMobileKPIs ? 'block' : 'hidden lg:block'} space-y-4`}>
+      {/* Desktop Dashboard ONLY (hidden on mobile and tablet) */}
+      <div className="hidden lg:block space-y-4">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div>

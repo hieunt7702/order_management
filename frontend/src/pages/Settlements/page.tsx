@@ -177,7 +177,7 @@ export const SettlementsPage: React.FC = () => {
       </div>
 
       {/* Summary KPI Cards matching pawn-system */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 shrink-0">
         <SystemMetricCard
           title="Doanh thu Shopee (GMV)"
           value={formatCurrency(totalGmv)}
@@ -245,8 +245,8 @@ export const SettlementsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Settlements Table with Bottom-Pinned SystemPagination */}
-      <div className="flex-1 flex flex-col min-h-fit md:min-h-0">
+      {/* Settlements Desktop Table */}
+      <div className="hidden md:flex flex-1 flex-col min-h-fit md:min-h-0">
         <SystemTableWrapper
           tableClassName="min-w-[1050px]"
           pagination={
@@ -451,6 +451,119 @@ export const SettlementsPage: React.FC = () => {
             )}
           </SystemTbody>
         </SystemTableWrapper>
+      </div>
+
+      {/* Settlements Mobile Card View */}
+      <div className="md:hidden flex-1 overflow-y-auto space-y-2 pb-16">
+        {isLoading ? (
+          <div className="py-8 text-center text-xs text-gray-400">Đang tải đối soát...</div>
+        ) : paginatedSettlements.length === 0 ? (
+          <div className="py-8 text-center text-xs text-gray-400">Không có bản ghi đối soát nào</div>
+        ) : (
+          paginatedSettlements.map((s, index) => {
+            const gross = s.grossAmount || s.order?.totalAmount || 0;
+            const fees = s.platformFees || 0;
+            const expected = s.expectedAmount || s.netAmount || 0;
+            const actual = s.actualAmount;
+            const hasActual = actual !== null && actual !== undefined;
+            const discrepancy = hasActual ? actual - expected : 0;
+            const isMatched = hasActual && Math.abs(discrepancy) < 1;
+            const stt = (page - 1) * limit + index + 1;
+            const orderCode = s.order?.externalOrderId || s.order?.internalOrderCode || s.order?.orderSn || s.orderId;
+
+            return (
+              <div
+                key={s.id}
+                className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 space-y-2"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="w-5 h-5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold text-gray-500 flex items-center justify-center shrink-0">
+                      {stt}
+                    </span>
+                    <span className="font-mono font-bold text-xs text-gray-900 dark:text-white truncate">
+                      {orderCode}
+                    </span>
+                  </div>
+                  {isMatched ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                      <CheckCircle size={10} /> Khớp 100%
+                    </span>
+                  ) : hasActual ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 shrink-0">
+                      <AlertCircle size={10} /> Lệch {discrepancy > 0 ? `+${formatCurrency(discrepancy)}` : formatCurrency(discrepancy)}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                      Chờ tiền về
+                    </span>
+                  )}
+                </div>
+
+                <div className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center justify-between">
+                  <span className="text-gray-600 dark:text-gray-300 font-medium">Shop: {s.order?.shop?.name || s.shop?.name || '--'}</span>
+                  {s.payoutDate && (
+                    <span className="font-mono text-gray-400">
+                      {new Date(s.payoutDate).toLocaleDateString('vi-VN')}
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-3 gap-1.5 p-2 bg-gray-50 dark:bg-[#14151a] rounded text-center border border-gray-100 dark:border-gray-800">
+                  <div>
+                    <div className="text-[10px] text-gray-400">Doanh thu sàn</div>
+                    <div className="text-xs font-semibold text-gray-900 dark:text-white">{formatCurrency(gross)}đ</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-gray-400">Phí sàn</div>
+                    <div className="text-xs font-semibold text-rose-500">-{formatCurrency(fees)}đ</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-gray-400">Dự kiến nhận</div>
+                    <div className="text-xs font-semibold text-[#5865f2]">{formatCurrency(expected)}đ</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-800 text-[11px]">
+                  <div>
+                    <span className="text-gray-400">Thực nhận NH: </span>
+                    {hasActual ? (
+                      <strong className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(actual)}đ
+                      </strong>
+                    ) : (
+                      <span className="text-gray-400 italic">Chưa khớp</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenRecordModal(s)}
+                    className="px-2.5 py-1 rounded bg-[#5865f2] hover:bg-[#4752c4] text-white font-medium text-xs transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <CreditCard size={12} />
+                    <span>{hasActual ? 'Sửa' : 'Ghi nhận'}</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        {totalCount > limit && (
+          <div className="pt-2">
+            <SystemPagination
+              currentPage={page}
+              totalPages={Math.ceil(totalCount / limit) || 1}
+              totalItems={totalCount}
+              itemsPerPage={limit}
+              onPageChange={(p) => setPage(p)}
+              onLimitChange={(l) => {
+                setLimit(l);
+                setPage(1);
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* RECORD PAYOUT MODAL */}

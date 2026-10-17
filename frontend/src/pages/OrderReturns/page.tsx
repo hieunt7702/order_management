@@ -255,7 +255,7 @@ export const OrderReturnsPage: React.FC = () => {
       </div>
 
       {/* KPI Cards Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 shrink-0">
         <SystemMetricCard
           title="Chờ nhận hoàn"
           value={totalWaitingCount.toString()}
@@ -339,7 +339,8 @@ export const OrderReturnsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col min-h-fit md:min-h-0">
+          {/* Desktop Table View */}
+          <div className="hidden md:flex flex-1 flex-col min-h-fit md:min-h-0">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
                 <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
@@ -455,13 +456,106 @@ export const OrderReturnsPage: React.FC = () => {
               </SystemTbody>
             </SystemTableWrapper>
           </div>
+
+          {/* Mobile Card List View */}
+          <div className="md:hidden flex-1 overflow-y-auto space-y-2 pb-16">
+            {isLoading ? (
+              <div className="py-8 text-center text-xs text-gray-400">Đang tải danh sách chờ hoàn...</div>
+            ) : returnQueue.length === 0 ? (
+              <div className="py-8 text-center text-xs text-gray-400">Không có đơn hàng nào chờ hoàn</div>
+            ) : (
+              returnQueue.map((item, index) => (
+                <div
+                  key={item.id}
+                  className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 space-y-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-5 h-5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold text-gray-500 flex items-center justify-center shrink-0">
+                        {index + 1}
+                      </span>
+                      <span className="font-mono font-bold text-xs text-[#5865f2] truncate">
+                        {item.internalOrderCode}
+                      </span>
+                    </div>
+                    {item.queueStatus === 'FULLY_INSPECTED' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 shrink-0">
+                        <CheckCircle2 className="w-2.5 h-2.5" /> Hoàn tất
+                      </span>
+                    ) : item.queueStatus === 'PARTIALLY_INSPECTED' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 shrink-0">
+                        Hoàn 1 phần
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 shrink-0">
+                        Chờ kiểm tra
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center justify-between">
+                    <span className="font-mono truncate">Mã sàn: {item.externalOrderId}</span>
+                    <span className="text-gray-900 dark:text-white font-medium truncate max-w-[140px] text-right">
+                      {item.shop?.name || 'Shop'}
+                    </span>
+                  </div>
+
+                  {item.trackingCode && (
+                    <div className="text-[11px] font-mono text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-[#14151a] px-2 py-1 rounded border border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                      <span className="text-gray-400">Vận đơn:</span>
+                      <span className="font-semibold text-gray-800 dark:text-gray-200">{item.trackingCode}</span>
+                    </div>
+                  )}
+
+                  <div className="p-2 bg-gray-50/70 dark:bg-[#14151a] rounded text-[11px] space-y-1 border border-gray-100 dark:border-gray-800/60">
+                    <div className="text-[10px] font-semibold uppercase text-gray-400 flex justify-between">
+                      <span>Sản phẩm hoàn</span>
+                      <span>Còn chờ: <strong className="text-[#5865f2]">{item.remainingTotal}</strong></span>
+                    </div>
+                    {item.itemsProgress.slice(0, 2).map((ip) => (
+                      <div key={ip.orderItemId} className="flex items-center justify-between text-[11px]">
+                        <span className="font-mono text-gray-700 dark:text-gray-300 truncate max-w-[200px]">
+                          {ip.sku} - {ip.productName}
+                        </span>
+                        <span className="font-semibold text-gray-900 dark:text-white shrink-0">
+                          x{ip.remainingToReturn}
+                        </span>
+                      </div>
+                    ))}
+                    {item.itemsProgress.length > 2 && (
+                      <div className="text-[10px] text-gray-400 italic">
+                        + {item.itemsProgress.length - 2} sản phẩm khác
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-1 flex items-center justify-between gap-2">
+                    <div className="text-[11px] text-gray-500">
+                      Xuất: <strong>{item.totalDispatched}</strong> • Bán: <strong className="text-emerald-600">{item.itemsProgress.reduce((s, it) => s + it.returnedSellable, 0)}</strong> • Lỗi: <strong className="text-rose-500">{item.itemsProgress.reduce((s, it) => s + it.returnedDamaged, 0)}</strong>
+                    </div>
+                    {item.remainingTotal > 0 ? (
+                      <button
+                        onClick={() => handleOpenInspect(item)}
+                        className="px-3 py-1.5 rounded bg-[#5865f2] hover:bg-[#4752c4] text-white font-medium text-xs transition-colors cursor-pointer shrink-0"
+                      >
+                        Kiểm & Nhập kho
+                      </button>
+                    ) : (
+                      <span className="text-gray-400 text-xs italic">Đã nhận đủ</span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
 
       {/* TAB 2: LỊCH SỬ PHIẾU NHẬN HOÀN */}
       {activeTab === 'HISTORY' && (
         <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3">
-          <div className="flex flex-1 flex-col min-h-fit md:min-h-0">
+          {/* Desktop Table View */}
+          <div className="hidden md:flex flex-1 flex-col min-h-fit md:min-h-0">
             <SystemTableWrapper
               tableClassName="min-w-[1100px]"
               pagination={
@@ -579,6 +673,90 @@ export const OrderReturnsPage: React.FC = () => {
                 )}
               </SystemTbody>
             </SystemTableWrapper>
+          </div>
+
+          {/* Mobile Card List View */}
+          <div className="md:hidden flex-1 overflow-y-auto space-y-2 pb-16">
+            {isLoading ? (
+              <div className="py-8 text-center text-xs text-gray-400">Đang tải lịch sử nhận hoàn...</div>
+            ) : historyList.length === 0 ? (
+              <div className="py-8 text-center text-xs text-gray-400">Chưa có phiếu nhận hoàn nào</div>
+            ) : (
+              historyList.map((item, index) => {
+                const totalSellable = item.items.reduce((s, i) => s + i.sellableQuantity, 0);
+                const totalDamaged = item.items.reduce((s, i) => s + i.damagedQuantity, 0);
+                const totalMissing = item.items.reduce((s, i) => s + i.missingQuantity, 0);
+                const stt = (historyPage - 1) * historyLimit + index + 1;
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      setSelectedHistoryDetail(item);
+                      setIsDetailModalOpen(true);
+                    }}
+                    className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 space-y-2 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="w-5 h-5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold text-gray-500 flex items-center justify-center shrink-0">
+                          {stt}
+                        </span>
+                        <span className="font-mono font-bold text-xs text-[#5865f2] truncate">
+                          {item.returnCode}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-gray-400 shrink-0">
+                        {new Date(item.receivedDate).toLocaleDateString('vi-VN')}
+                      </span>
+                    </div>
+
+                    <div className="text-[11px] text-gray-600 dark:text-gray-300 flex items-center justify-between">
+                      <span className="font-mono font-medium">Đơn: {item.order?.internalOrderCode}</span>
+                      <span className="text-gray-500">{item.warehouse?.name || 'Kho chính'}</span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1.5 p-2 bg-gray-50 dark:bg-[#14151a] rounded text-center border border-gray-100 dark:border-gray-800">
+                      <div>
+                        <div className="text-[10px] text-gray-400 uppercase">Tồn bán</div>
+                        <div className="text-xs font-bold text-emerald-600">+{totalSellable}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-gray-400 uppercase">Hàng lỗi</div>
+                        <div className="text-xs font-bold text-rose-500">+{totalDamaged}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-gray-400 uppercase">Thiếu/Mất</div>
+                        <div className="text-xs font-bold text-amber-500">{totalMissing}</div>
+                      </div>
+                    </div>
+
+                    <div className="text-[11px] text-gray-500 flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-800">
+                      <span className="truncate">Người kiểm: <strong>{item.inspectorName || 'Thủ kho'}</strong></span>
+                      <span className="text-xs text-[#5865f2] font-medium flex items-center gap-1">
+                        <Eye size={12} /> Xem
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            {historyTotal > historyLimit && (
+              <div className="pt-2">
+                <SystemPagination
+                  currentPage={historyPage}
+                  totalPages={historyTotalPages}
+                  totalItems={historyTotal}
+                  itemsPerPage={historyLimit}
+                  onPageChange={(p) => setHistoryPage(p)}
+                  onLimitChange={(l) => {
+                    setHistoryLimit(l);
+                    setHistoryPage(1);
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

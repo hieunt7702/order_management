@@ -357,7 +357,7 @@ export const InventoryPage: React.FC = () => {
       </div>
 
       {/* KPI Summary Metric Cards matching pawn-system */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3 shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-2.5 shrink-0">
         <SystemMetricCard
           title="Tổng mặt hàng"
           value={balances.length}
@@ -1019,7 +1019,7 @@ export const InventoryPage: React.FC = () => {
                 </div>
 
                 {/* KPI Summary Metric Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 shrink-0">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5 shrink-0">
                   <SystemMetricCard
                     title="Tổng SKU kiểm toán"
                     value={totalAudited}

@@ -530,74 +530,74 @@ export const CashflowPage: React.FC = () => {
       {/* -------------------- TAB 1: TỔNG QUAN -------------------- */}
       {activeTab === 'OVERVIEW' && (
         <div className="space-y-4 animate-in fade-in duration-200">
-          {/* Row 1: 4 KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+          {/* Row 1: 4 KPI Cards (Ultra-compact 2-column mobile & tablet) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5">
             {/* Card 1: Số dư hiện tại */}
-            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-3 sm:p-3.5 flex items-center gap-3 shadow-xs">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded bg-blue-50 dark:bg-[#182642] text-blue-500 dark:text-[#38bdf8] flex items-center justify-center shrink-0">
-                <Wallet size={18} />
+            <div className="bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 rounded-lg p-2.5 sm:p-3 flex items-center gap-2.5 shadow-2xs">
+              <div className="w-8 h-8 rounded bg-blue-50 dark:bg-[#182642] text-blue-500 dark:text-[#38bdf8] flex items-center justify-center shrink-0">
+                <Wallet size={16} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-normal">Số dư hiện tại</div>
-                <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight leading-none mt-1 truncate">
+                <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium truncate">Số dư hiện tại</div>
+                <div className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white tracking-tight leading-tight mt-0.5 truncate">
                   {(overview?.totals.totalNetBalance || 0).toLocaleString('vi-VN')} đ
                 </div>
-                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                  Tiền mặt, ngân hàng & ví sàn
+                <div className="text-[9px] sm:text-[11px] text-gray-400 dark:text-gray-500 truncate hidden xs:block">
+                  Tiền mặt, bank & ví sàn
                 </div>
               </div>
             </div>
 
             {/* Card 2: Dòng tiền thuần trong kỳ */}
-            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-3 sm:p-3.5 flex items-center gap-3 shadow-xs">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded bg-emerald-50 dark:bg-[#102d25] text-emerald-600 dark:text-[#10b981] flex items-center justify-center shrink-0">
-                <ArrowUpDown size={18} />
+            <div className="bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 rounded-lg p-2.5 sm:p-3 flex items-center gap-2.5 shadow-2xs">
+              <div className="w-8 h-8 rounded bg-emerald-50 dark:bg-[#102d25] text-emerald-600 dark:text-[#10b981] flex items-center justify-center shrink-0">
+                <ArrowUpDown size={16} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-normal">Dòng tiền thuần trong kỳ</div>
-                <div className="text-base sm:text-xl font-bold text-emerald-600 dark:text-[#10b981] tracking-tight leading-none mt-1 truncate">
+                <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium truncate">Dòng tiền thuần</div>
+                <div className="text-sm sm:text-lg font-bold text-emerald-600 dark:text-[#10b981] tracking-tight leading-tight mt-0.5 truncate">
                   {(overview?.period.netOperatingCashflow || 0) >= 0 ? '+' : ''}
                   {(overview?.period.netOperatingCashflow || 0).toLocaleString('vi-VN')} đ
                 </div>
-                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                  Thu {(overview?.period.periodIncome || 0).toLocaleString('vi-VN')} đ · Chi {(overview?.period.periodExpense || 0).toLocaleString('vi-VN')} đ
+                <div className="text-[9px] sm:text-[11px] text-gray-400 dark:text-gray-500 truncate hidden xs:block">
+                  Thu {(overview?.period.periodIncome || 0).toLocaleString('vi-VN')}đ · Chi {(overview?.period.periodExpense || 0).toLocaleString('vi-VN')}đ
                 </div>
               </div>
             </div>
 
             {/* Card 3: Chờ Shopee quyết toán */}
-            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-3 sm:p-3.5 flex items-center gap-3 shadow-xs">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded bg-amber-50 dark:bg-[#382613] text-amber-600 dark:text-[#f59e0b] flex items-center justify-center shrink-0">
-                <Clock size={18} />
+            <div className="bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 rounded-lg p-2.5 sm:p-3 flex items-center gap-2.5 shadow-2xs">
+              <div className="w-8 h-8 rounded bg-amber-50 dark:bg-[#382613] text-amber-600 dark:text-[#f59e0b] flex items-center justify-center shrink-0">
+                <Clock size={16} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-normal">Chờ Shopee quyết toán</div>
-                <div className="text-base sm:text-xl font-bold text-amber-600 dark:text-[#f59e0b] tracking-tight leading-none mt-1 truncate">
+                <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium truncate">Chờ Shopee về</div>
+                <div className="text-sm sm:text-lg font-bold text-amber-600 dark:text-[#f59e0b] tracking-tight leading-tight mt-0.5 truncate">
                   {(overview?.outstanding.pendingPlatformMoney || 0).toLocaleString('vi-VN')} đ
                 </div>
                 <div
                   onClick={() => setActiveTab('RECONCILIATION')}
-                  className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 truncate flex items-center gap-1 cursor-pointer hover:text-[#5865f2] dark:hover:text-[#5865f2] transition-colors group"
+                  className="text-[9px] sm:text-[11px] text-gray-400 dark:text-gray-500 truncate flex items-center gap-1 cursor-pointer hover:text-[#5865f2] transition-colors"
                   title="Xem đối soát Shopee"
                 >
-                  <span className="truncate">{overview?.outstanding.pendingPlatformCount || 0} đơn đang giao / chờ tiền</span>
-                  <ArrowRight size={12} className="shrink-0 text-gray-400 group-hover:text-[#5865f2] group-hover:translate-x-0.5 transition-all" />
+                  <span className="truncate">{overview?.outstanding.pendingPlatformCount || 0} đơn chờ tiền</span>
+                  <ArrowRight size={10} className="shrink-0" />
                 </div>
               </div>
             </div>
 
             {/* Card 4: Nợ nhà cung cấp */}
-            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-3 sm:p-3.5 flex items-center gap-3 shadow-xs">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded bg-rose-50 dark:bg-[#351821] text-rose-600 dark:text-[#f43f5e] flex items-center justify-center shrink-0">
-                <Building2 size={18} />
+            <div className="bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 rounded-lg p-2.5 sm:p-3 flex items-center gap-2.5 shadow-2xs">
+              <div className="w-8 h-8 rounded bg-rose-50 dark:bg-[#351821] text-rose-600 dark:text-[#f43f5e] flex items-center justify-center shrink-0">
+                <Building2 size={16} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-normal">Nợ nhà cung cấp</div>
-                <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight leading-none mt-1 truncate">
+                <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium truncate">Nợ NCC</div>
+                <div className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white tracking-tight leading-tight mt-0.5 truncate">
                   {(overview?.outstanding.supplierDebt || 0).toLocaleString('vi-VN')} đ
                 </div>
-                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                  {overview?.outstanding.unpaidReceiptsCount || 0} phiếu nhập chưa thanh toán
+                <div className="text-[9px] sm:text-[11px] text-gray-400 dark:text-gray-500 truncate hidden xs:block">
+                  {overview?.outstanding.unpaidReceiptsCount || 0} phiếu chưa trả
                 </div>
               </div>
             </div>
@@ -1032,8 +1032,8 @@ export const CashflowPage: React.FC = () => {
             </div>
           </SystemFilter>
 
-          {/* Transactions Table */}
-          <div className="bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden shadow-xs flex-1 flex flex-col">
+          {/* Desktop Transactions Table */}
+          <div className="hidden md:flex bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden shadow-xs flex-1 flex-col">
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
@@ -1191,6 +1191,141 @@ export const CashflowPage: React.FC = () => {
               />
             </div>
           </div>
+
+          {/* Mobile Transactions Card View */}
+          <div className="md:hidden flex-1 overflow-y-auto space-y-2 pb-16">
+            {txLoading ? (
+              <div className="py-8 text-center text-xs text-gray-400">Đang tải phiếu thu chi...</div>
+            ) : transactions.length === 0 ? (
+              <div className="py-8 text-center text-xs text-gray-400">Không có giao dịch nào</div>
+            ) : (
+              transactions.map((tx, index) => {
+                const stt = (txPage - 1) * txLimit + index + 1;
+                return (
+                  <div
+                    key={tx.id}
+                    className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="w-5 h-5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold text-gray-500 flex items-center justify-center shrink-0">
+                          {stt}
+                        </span>
+                        <span className="font-mono font-bold text-xs text-[#5865f2] truncate">
+                          {tx.transactionCode}
+                        </span>
+                      </div>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
+                          tx.status === 'CONFIRMED'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                            : tx.status === 'DRAFT'
+                            ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                            : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                        }`}
+                      >
+                        {tx.status === 'CONFIRMED'
+                          ? 'Đã xác nhận'
+                          : tx.status === 'DRAFT'
+                          ? 'Lưu nháp'
+                          : 'Đã hủy'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-medium text-gray-900 dark:text-white truncate max-w-[180px]">
+                        {tx.category?.name || '---'}
+                      </div>
+                      <span
+                        className={`font-bold text-sm sm:text-base ${
+                          tx.type === 'INCOME'
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : tx.type === 'EXPENSE'
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : 'text-[#5865f2] dark:text-[#7b85f5]'
+                        }`}
+                      >
+                        {tx.type === 'INCOME' ? '+' : tx.type === 'EXPENSE' ? '−' : ''}
+                        {Number(tx.amount).toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+
+                    {tx.note && (
+                      <div className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 italic">
+                        {tx.note}
+                      </div>
+                    )}
+
+                    <div className="p-2 bg-gray-50 dark:bg-[#14151a] rounded text-[11px] space-y-1 border border-gray-100 dark:border-gray-800">
+                      <div className="flex items-center justify-between text-gray-600 dark:text-gray-300">
+                        <span className="text-gray-400">Tài khoản:</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">
+                          {tx.fromAccount?.name || tx.toAccount?.name || 'Tiền cá nhân'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-gray-600 dark:text-gray-300">
+                        <span className="text-gray-400">Đối tượng / Shop:</span>
+                        <span className="truncate max-w-[160px] text-right">
+                          {tx.counterpartyName || (tx.isCommonExpense ? 'Chi chung' : tx.shop?.name || '---')}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-gray-400 text-[10px]">
+                        <span>Ngày: {new Date(tx.transactionDate).toLocaleDateString('vi-VN')}</span>
+                        {tx.performedByName && <span>Bởi: {tx.performedByName}</span>}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-gray-100 dark:border-gray-800">
+                      {tx.voucherImage && (
+                        <a
+                          href={tx.voucherImage}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2 py-1 text-xs text-[#5865f2] hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded transition-colors flex items-center gap-1"
+                        >
+                          <Eye size={12} /> Chứng từ
+                        </a>
+                      )}
+                      {tx.status === 'DRAFT' && (
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmTx(tx.id)}
+                          className="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded font-medium flex items-center gap-1 cursor-pointer"
+                        >
+                          <Check size={12} /> Xác nhận
+                        </button>
+                      )}
+                      {tx.status !== 'CANCELLED' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCancelTx(tx.id)}
+                          className="px-2.5 py-1 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded border border-rose-200 dark:border-rose-900/50 flex items-center gap-1 cursor-pointer"
+                        >
+                          <Trash2 size={12} /> Hủy
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            {txTotal > txLimit && (
+              <div className="pt-2">
+                <SystemPagination
+                  page={txPage - 1}
+                  totalPages={Math.ceil(txTotal / txLimit) || 1}
+                  totalItems={txTotal}
+                  setPage={(p) => setTxPage(p + 1)}
+                  itemsPerPage={txLimit}
+                  setItemsPerPage={(newLimit) => {
+                    setTxLimit(newLimit);
+                    setTxPage(1);
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1236,45 +1371,45 @@ export const CashflowPage: React.FC = () => {
 
           {/* 4 Financial Columns Metric Overview */}
           {reconSummary && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
-              <div className="p-3.5 sm:p-4 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2.5">
+              <div className="p-2 sm:p-2.5 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs">
                 <span className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase">
                   1. Giá trị hàng hóa
                 </span>
-                <div className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mt-0.5">
+                <div className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mt-0.5">
                   {(reconSummary.totalGoodsValue || 0).toLocaleString('vi-VN')}đ
                 </div>
-                <p className="text-[11px] text-gray-500 mt-0.5">Tổng tiền sản phẩm theo đơn</p>
+                <p className="text-[10px] text-gray-500 mt-0.5 hidden sm:block">Tổng tiền sản phẩm theo đơn</p>
               </div>
 
-              <div className="p-3.5 sm:p-4 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs">
+              <div className="p-2 sm:p-2.5 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs">
                 <span className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase">
                   2. Tiền dự kiến nhận
                 </span>
-                <div className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400 mt-0.5">
+                <div className="text-sm sm:text-base font-bold text-blue-600 dark:text-blue-400 mt-0.5">
                   {(reconSummary.totalEstimatedPayout || 0).toLocaleString('vi-VN')}đ
                 </div>
-                <p className="text-[11px] text-gray-500 mt-0.5">Tạm tính trừ các loại phí sàn</p>
+                <p className="text-[10px] text-gray-500 mt-0.5 hidden sm:block">Tạm tính trừ các loại phí sàn</p>
               </div>
 
-              <div className="p-3.5 sm:p-4 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs">
+              <div className="p-2 sm:p-2.5 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs">
                 <span className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase">
                   3. Tiền đã quyết toán
                 </span>
-                <div className="text-base sm:text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                <div className="text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
                   {(reconSummary.totalSettledPayout || 0).toLocaleString('vi-VN')}đ
                 </div>
-                <p className="text-[11px] text-gray-500 mt-0.5">Xác nhận từ file quyết toán</p>
+                <p className="text-[10px] text-gray-500 mt-0.5 hidden sm:block">Xác nhận từ file quyết toán</p>
               </div>
 
-              <div className="p-3.5 sm:p-4 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs">
+              <div className="p-2 sm:p-2.5 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs">
                 <span className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase">
                   4. Điều chỉnh / Hoàn tiền
                 </span>
-                <div className="text-base sm:text-lg font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+                <div className="text-sm sm:text-base font-bold text-amber-600 dark:text-amber-400 mt-0.5">
                   {(reconSummary.totalAdjustment || 0).toLocaleString('vi-VN')}đ
                 </div>
-                <p className="text-[11px] text-gray-500 mt-0.5">Phát sinh khiếu nại, bồi thường</p>
+                <p className="text-[10px] text-gray-500 mt-0.5 hidden sm:block">Phát sinh khiếu nại, bồi thường</p>
               </div>
             </div>
           )}
@@ -1328,8 +1463,8 @@ export const CashflowPage: React.FC = () => {
             )}
           </SystemFilter>
 
-          {/* Reconciliation Table */}
-          <div className="bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden shadow-xs flex-1 flex flex-col">
+          {/* Desktop Reconciliation Table */}
+          <div className="hidden md:flex bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden shadow-xs flex-1 flex-col">
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
@@ -1451,6 +1586,124 @@ export const CashflowPage: React.FC = () => {
                 className="border-t-0"
               />
             </div>
+          </div>
+
+          {/* Mobile Reconciliation Card View */}
+          <div className="md:hidden flex-1 overflow-y-auto space-y-2 pb-16">
+            {reconLoading ? (
+              <div className="py-8 text-center text-xs text-gray-400">Đang tải đối soát sàn...</div>
+            ) : reconItems.length === 0 ? (
+              <div className="py-8 text-center text-xs text-gray-400">Chưa có dữ liệu đối soát</div>
+            ) : (
+              reconItems.map((rec, index) => {
+                const est = Number(rec.estimatedPayout || 0);
+                const setl = Number(rec.settledPayout || 0);
+                const diff = setl > 0 ? setl - est : 0;
+                const stt = (reconPage - 1) * reconLimit + index + 1;
+
+                return (
+                  <div
+                    key={rec.id}
+                    className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="w-5 h-5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold text-gray-500 flex items-center justify-center shrink-0">
+                          {stt}
+                        </span>
+                        <span className="font-mono font-bold text-xs text-gray-900 dark:text-white truncate">
+                          {rec.externalOrderId}
+                        </span>
+                      </div>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 ${
+                          rec.reconciliationStatus === 'MATCHED'
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                            : rec.reconciliationStatus === 'NEEDS_CHECK'
+                            ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                            : rec.reconciliationStatus === 'UNMATCHED'
+                            ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+                            : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                        }`}
+                      >
+                        {rec.reconciliationStatus === 'MATCHED'
+                          ? 'Khớp'
+                          : rec.reconciliationStatus === 'NEEDS_CHECK'
+                          ? 'Cần kiểm tra'
+                          : rec.reconciliationStatus === 'UNMATCHED'
+                          ? 'Chưa khớp'
+                          : 'Chưa có file'}
+                      </span>
+                    </div>
+
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center justify-between">
+                      <span>Shop: <strong className="text-gray-700 dark:text-gray-300">{rec.shop?.name || '--'}</strong></span>
+                      {rec.order?.internalOrderCode && (
+                        <span className="font-mono text-gray-400">Đơn: {rec.order?.internalOrderCode}</span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1.5 p-2 bg-gray-50 dark:bg-[#14151a] rounded text-center border border-gray-100 dark:border-gray-800">
+                      <div>
+                        <div className="text-[10px] text-gray-400">Tiền hàng</div>
+                        <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+                          {Number(rec.orderItemAmount).toLocaleString('vi-VN')}đ
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-gray-400">Dự kiến nhận</div>
+                        <div className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                          {est.toLocaleString('vi-VN')}đ
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-gray-400">Đã quyết toán</div>
+                        <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                          {setl > 0 ? `${setl.toLocaleString('vi-VN')}đ` : '---'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-800 text-[11px]">
+                      <span className="text-gray-400">Chênh lệch:</span>
+                      {setl > 0 ? (
+                        <span
+                          className={`font-semibold ${
+                            diff === 0
+                              ? 'text-gray-400'
+                              : diff > 0
+                              ? 'text-emerald-500'
+                              : 'text-rose-500'
+                          }`}
+                        >
+                          {diff > 0
+                            ? `+${diff.toLocaleString('vi-VN')}đ`
+                            : `${diff.toLocaleString('vi-VN')}đ`}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 italic">Chưa quyết toán</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            {reconTotal > reconLimit && (
+              <div className="pt-2">
+                <SystemPagination
+                  page={reconPage - 1}
+                  totalPages={Math.ceil(reconTotal / reconLimit) || 1}
+                  totalItems={reconTotal}
+                  setPage={(p) => setReconPage(p + 1)}
+                  itemsPerPage={reconLimit}
+                  setItemsPerPage={(newLimit) => {
+                    setReconLimit(newLimit);
+                    setReconPage(1);
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

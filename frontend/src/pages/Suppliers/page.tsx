@@ -322,7 +322,7 @@ export const SuppliersPage: React.FC = () => {
       </div>
 
       {/* 2. Metric KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 shrink-0">
         <SystemMetricCard
           title="Tổng nhà cung cấp"
           value={totalSuppliersCount}

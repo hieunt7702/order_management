@@ -104,74 +104,52 @@ export const SystemMetricCard: React.FC<SystemMetricCardProps> = ({
     <button
       onClick={onClick}
       disabled={!onClick}
-      className={`w-full text-left bg-white dark:bg-[#1a1b23] border rounded p-2.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between sm:justify-start gap-1.5 sm:gap-4 relative shadow-none transition-all ${
-        onClick ? 'cursor-pointer group' : 'cursor-default'
+      className={`w-full text-left bg-white dark:bg-[#161922] border rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 flex flex-col justify-between relative shadow-2xs transition-all ${
+        onClick ? 'cursor-pointer hover:border-[#5865f2]/50 group' : 'cursor-default'
       } ${isActive ? scheme.borderActive : scheme.borderInactive} ${className}`}
     >
-      {/* Mobile Top Header: Title & Icon Badge */}
-      <div className="flex sm:hidden items-center justify-between w-full min-w-0 gap-1.5">
-        <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium truncate flex-1 min-w-0">
-          {mobileTitle || title}
-        </span>
-        {Icon && (
-          <div
-            className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-              isActive ? scheme.bgActive : scheme.bgInactive
-            }`}
-          >
-            <Icon className={`w-3.5 h-3.5 ${scheme.iconColor}`} strokeWidth={2} />
+      {/* Top Header Row: Icon + Title */}
+      <div className="flex items-center justify-between w-full min-w-0 gap-1.5 mb-1">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          {Icon && (
+            <div
+              className={`w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors ${
+                isActive ? scheme.bgActive : scheme.bgInactive
+              }`}
+            >
+              <Icon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${scheme.iconColor}`} strokeWidth={2} />
+            </div>
+          )}
+          <span className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 font-medium truncate">
+            {mobileTitle || title}
+          </span>
+        </div>
+        {tooltip && (
+          <div className="relative group/tooltip hidden sm:flex items-center shrink-0">
+            <Info size={11} className="text-gray-400 cursor-help" />
+            <div className="absolute top-full right-0 mt-1 w-max max-w-[180px] p-1.5 bg-gray-800 text-gray-100 text-[10px] rounded shadow-lg opacity-0 group-hover/tooltip:opacity-100 transition-opacity z-[100] text-center pointer-events-none whitespace-normal leading-relaxed">
+              {tooltip}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Desktop Icon (sm and up) */}
-      <div
-        className={`hidden sm:flex w-10 h-10 sm:w-12 sm:h-12 rounded-full items-center justify-center shrink-0 transition-colors ${
-          isActive ? scheme.bgActive : scheme.bgInactive
-        }`}
-      >
-        {Icon && (
-          <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${scheme.iconColor}`} strokeWidth={2} />
-        )}
-      </div>
-
-      {/* Main Info */}
-      <div className="flex flex-col flex-1 min-w-0 w-full">
-        {/* Desktop Title & Tooltip (sm and up) */}
-        <div className="hidden sm:flex items-center gap-1.5 mb-0.5 relative z-10">
-          <span className="text-xs sm:text-[13px] text-gray-500 dark:text-gray-400 font-medium truncate">
-            {title}
-          </span>
-          {tooltip && (
-            <div className="relative group/tooltip flex items-center">
-              <Info size={13} className="text-gray-400 cursor-help" />
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-max max-w-[200px] p-2 bg-gray-800 text-gray-100 text-[11px] rounded shadow-lg opacity-0 group-hover/tooltip:opacity-100 transition-opacity z-[100] text-center pointer-events-none whitespace-normal leading-relaxed">
-                {tooltip}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-0.5 border-4 border-transparent border-b-gray-800" />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Value Display - Full Width, responsive font size */}
-        <div className="flex items-baseline gap-1 mt-0.5 sm:mt-0 w-full overflow-hidden">
-          <span className="text-[15px] xs:text-base sm:text-[22px] xl:text-[28px] leading-tight sm:leading-none font-bold text-gray-900 dark:text-white truncate block w-full tracking-tight">
-            <motion.div
-              key={String(value)}
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="inline-block truncate max-w-full"
-            >
-              {value}
-            </motion.div>
-          </span>
-        </div>
-
-        {/* Subtitle */}
+      {/* Bottom Row: Value & Subtitle */}
+      <div className="flex items-baseline justify-between gap-1 w-full min-w-0">
+        <span className="text-[13px] xs:text-[14px] sm:text-[16px] font-bold text-gray-900 dark:text-white truncate tracking-tight leading-tight">
+          <motion.div
+            key={String(value)}
+            initial={{ opacity: 0, y: -2 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="inline-block truncate max-w-full"
+          >
+            {value}
+          </motion.div>
+        </span>
         {resolvedSubtitle && (
           <span
-            className={`text-[10px] sm:text-[12px] font-medium mt-0.5 sm:mt-1.5 truncate block ${
+            className={`text-[9px] sm:text-[10px] font-medium truncate shrink-0 ml-1 hidden xs:inline-block ${
               isActive ? scheme.textColor : 'text-gray-400 dark:text-gray-500'
             }`}
           >
