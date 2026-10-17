@@ -2,32 +2,34 @@ import React from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { AppHeader } from './AppHeader';
-import { LayoutDashboard, PackagePlus, ScanLine, Boxes, Wallet } from 'lucide-react';
+import { MobileNavDrawer } from './MobileNavDrawer';
+import { useNavigationStore } from '../../stores/navigationStore';
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  ScanLine,
+  Boxes,
+  LayoutGrid,
+} from 'lucide-react';
 
 export const AppLayout: React.FC = () => {
   const location = useLocation();
+  const { isMobileMenuOpen, toggleMobileMenu } = useNavigationStore();
 
   const isHomeActive = location.pathname === '/';
-
-  const isReceiptsActive =
-    location.pathname.startsWith('/purchase-receipts') ||
-    location.pathname.startsWith('/suppliers');
-
+  const isOrdersActive = location.pathname.startsWith('/orders');
   const isScanActive =
     location.pathname === '/scan' ||
     location.pathname.startsWith('/scan') ||
     location.pathname === '/scan-orders';
-
   const isInventoryActive =
     location.pathname.startsWith('/inventory') ||
     location.pathname.startsWith('/products');
 
-  const isDebtsActive =
-    location.pathname.startsWith('/supplier-debts');
-
   return (
     <div className="flex h-[100dvh] bg-[#f9f9fa] dark:bg-[#0f1115] text-[#151a1e] dark:text-[#dcddde] overflow-hidden font-sans transition-colors duration-300">
       <Sidebar />
+      <MobileNavDrawer />
 
       {/* Main Column */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f9f9fa] dark:bg-[#0f1115]">
@@ -67,31 +69,33 @@ export const AppLayout: React.FC = () => {
             >
               <LayoutDashboard
                 strokeWidth={isHomeActive ? 1.4 : 1.25}
-                className={`w-[24px] h-[24px] transition-all duration-300 z-10 ${isHomeActive
-                  ? 'text-[#5865f2] dark:text-[#7b85f5] scale-110 drop-shadow-[0_2px_10px_rgba(88,101,242,0.45)]'
-                  : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white group-hover:scale-110'
-                  }`}
+                className={`w-[24px] h-[24px] transition-all duration-300 z-10 ${
+                  isHomeActive
+                    ? 'text-[#5865f2] dark:text-[#7b85f5] scale-110 drop-shadow-[0_2px_10px_rgba(88,101,242,0.45)]'
+                    : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white group-hover:scale-110'
+                }`}
               />
               {isHomeActive && (
                 <span className="absolute bottom-2 w-1.5 h-1.5 bg-[#5865f2] dark:bg-[#7b85f5] rounded-full shadow-[0_0_8px_rgba(88,101,242,0.8)]" />
               )}
             </Link>
 
-            {/* 2. Phiếu nhập kho (Nhà phân phối / NCC) */}
+            {/* 2. Đơn hàng Shopee */}
             <Link
-              to="/purchase-receipts"
-              data-active={isReceiptsActive}
+              to="/orders"
+              data-active={isOrdersActive}
               className="flex flex-col items-center justify-center w-16 h-full transition-colors relative group"
-              title="Phiếu nhập NCC"
+              title="Quản lý Đơn hàng"
             >
-              <PackagePlus
-                strokeWidth={isReceiptsActive ? 1.4 : 1.25}
-                className={`w-[24px] h-[24px] transition-all duration-300 z-10 ${isReceiptsActive
-                  ? 'text-[#5865f2] dark:text-[#7b85f5] scale-110 drop-shadow-[0_2px_10px_rgba(88,101,242,0.45)]'
-                  : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white group-hover:scale-110'
-                  }`}
+              <ShoppingBag
+                strokeWidth={isOrdersActive ? 1.4 : 1.25}
+                className={`w-[24px] h-[24px] transition-all duration-300 z-10 ${
+                  isOrdersActive
+                    ? 'text-[#5865f2] dark:text-[#7b85f5] scale-110 drop-shadow-[0_2px_10px_rgba(88,101,242,0.45)]'
+                    : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white group-hover:scale-110'
+                }`}
               />
-              {isReceiptsActive && (
+              {isOrdersActive && (
                 <span className="absolute bottom-2 w-1.5 h-1.5 bg-[#5865f2] dark:bg-[#7b85f5] rounded-full shadow-[0_0_8px_rgba(88,101,242,0.8)]" />
               )}
             </Link>
@@ -106,22 +110,27 @@ export const AppLayout: React.FC = () => {
               >
                 {/* Pulsing glow backdrop aura */}
                 <div
-                  className={`absolute -inset-1.5 rounded-full bg-gradient-to-tr from-[#5865f2] to-[#818cf8] blur-md transition-opacity duration-300 animate-pulse ${isScanActive
-                    ? 'opacity-85 scale-110'
-                    : 'opacity-45 group-hover:opacity-75'
-                    }`}
+                  className={`absolute -inset-1.5 rounded-full bg-gradient-to-tr from-[#5865f2] to-[#818cf8] blur-md transition-opacity duration-300 animate-pulse ${
+                    isScanActive
+                      ? 'opacity-85 scale-110'
+                      : 'opacity-45 group-hover:opacity-75'
+                  }`}
                 />
 
                 {/* Primary elevated button circular body */}
                 <div
-                  className={`absolute inset-0 bg-gradient-to-tr from-[#404eed] via-[#5865f2] to-[#7983f5] rounded-full shadow-[0_8px_24px_rgba(88,101,242,0.55)] flex items-center justify-center transition-all duration-300 group-hover:scale-105 group-active:scale-95 ${isScanActive ? 'scale-105' : ''
-                    }`}
+                  className={`absolute inset-0 bg-gradient-to-tr from-[#404eed] via-[#5865f2] to-[#7983f5] rounded-full shadow-[0_8px_24px_rgba(88,101,242,0.55)] flex items-center justify-center transition-all duration-300 group-hover:scale-105 group-active:scale-95 ${
+                    isScanActive ? 'scale-105' : ''
+                  }`}
                 >
                   {/* Subtle specular sheen on hover */}
                   <div className="absolute inset-0 rounded-full bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                   {/* Icon with interactive tilt */}
-                  <ScanLine strokeWidth={1.4} className="w-[28px] h-[28px] text-white group-hover:rotate-12 transition-transform duration-300 relative z-10" />
+                  <ScanLine
+                    strokeWidth={1.4}
+                    className="w-[28px] h-[28px] text-white group-hover:rotate-12 transition-transform duration-300 relative z-10"
+                  />
                 </div>
               </Link>
             </div>
@@ -135,10 +144,11 @@ export const AppLayout: React.FC = () => {
             >
               <Boxes
                 strokeWidth={isInventoryActive ? 1.4 : 1.25}
-                className={`w-[24px] h-[24px] transition-all duration-300 z-10 ${isInventoryActive
-                  ? 'text-[#5865f2] dark:text-[#7b85f5] scale-110 drop-shadow-[0_2px_10px_rgba(88,101,242,0.45)]'
-                  : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white group-hover:scale-110'
-                  }`}
+                className={`w-[24px] h-[24px] transition-all duration-300 z-10 ${
+                  isInventoryActive
+                    ? 'text-[#5865f2] dark:text-[#7b85f5] scale-110 drop-shadow-[0_2px_10px_rgba(88,101,242,0.45)]'
+                    : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white group-hover:scale-110'
+                }`}
               />
 
               {isInventoryActive && (
@@ -146,25 +156,26 @@ export const AppLayout: React.FC = () => {
               )}
             </Link>
 
-            {/* 5. Công nợ nhà cung cấp */}
-            <Link
-              to="/supplier-debts"
-              data-active={isDebtsActive}
-              className="flex flex-col items-center justify-center w-16 h-full transition-colors relative group"
-              title="Công nợ NCC"
+            {/* 5. Tất cả chức năng (Open Drawer) */}
+            <button
+              type="button"
+              onClick={toggleMobileMenu}
+              className="flex flex-col items-center justify-center w-16 h-full transition-colors relative group cursor-pointer"
+              title="Tất cả chức năng"
             >
-              <Wallet
-                strokeWidth={isDebtsActive ? 1.4 : 1.25}
-                className={`w-[24px] h-[24px] transition-all duration-300 z-10 ${isDebtsActive
-                  ? 'text-[#5865f2] dark:text-[#7b85f5] scale-110 drop-shadow-[0_2px_10px_rgba(88,101,242,0.45)]'
-                  : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white group-hover:scale-110'
-                  }`}
+              <LayoutGrid
+                strokeWidth={isMobileMenuOpen ? 1.4 : 1.25}
+                className={`w-[24px] h-[24px] transition-all duration-300 z-10 ${
+                  isMobileMenuOpen
+                    ? 'text-[#5865f2] dark:text-[#7b85f5] scale-110 drop-shadow-[0_2px_10px_rgba(88,101,242,0.45)]'
+                    : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white group-hover:scale-110'
+                }`}
               />
 
-              {isDebtsActive && (
+              {isMobileMenuOpen && (
                 <span className="absolute bottom-2 w-1.5 h-1.5 bg-[#5865f2] dark:bg-[#7b85f5] rounded-full shadow-[0_0_8px_rgba(88,101,242,0.8)]" />
               )}
-            </Link>
+            </button>
           </nav>
         </div>
       </div>

@@ -31,6 +31,7 @@ import {
   CardTitle,
   CardContent,
 } from '../../components/ui/Card';
+import { MobileFeatureHub } from '../../components/dashboard/MobileFeatureHub';
 
 const SHOPEE_STATUS_OPTIONS = [
   {
@@ -637,6 +638,9 @@ export const DashboardPage: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* Mobile & Tablet Feature Hub: Instant access to all system functions */}
+      <MobileFeatureHub />
 
       {/* 1. Operational Fulfillment KPIs */}
       <div>

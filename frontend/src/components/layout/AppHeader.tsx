@@ -9,9 +9,11 @@ import {
   Moon,
   Sun,
   RefreshCw,
+  Menu,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
+import { useNavigationStore } from '../../stores/navigationStore';
 import { shopsApi } from '../../services/shopsApi';
 import { warehousesApi } from '../../services/warehousesApi';
 import { Select } from '../ui/Select';
@@ -32,6 +34,7 @@ export const AppHeader: React.FC = () => {
     warehouses,
     setContextData,
   } = useWorkspaceStore();
+  const openMobileMenu = useNavigationStore((s) => s.openMobileMenu);
 
   const [isDark, setIsDark] = useState<boolean>(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState<boolean>(false);
@@ -81,9 +84,20 @@ export const AppHeader: React.FC = () => {
     location.pathname.startsWith('/scan');
 
   return (
-    <header className="flex-shrink-0 bg-white dark:bg-[#14151a] border-b border-gray-200 dark:border-gray-800 px-4 md:px-6 flex items-center justify-between z-20 transition-colors pt-[env(safe-area-inset-top,0px)] h-[calc(60px+env(safe-area-inset-top,0px))]">
-      {/* Left: Context Selectors (Shop & Warehouse) */}
-      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+    <header className="flex-shrink-0 bg-white dark:bg-[#14151a] border-b border-gray-200 dark:border-gray-800 px-3 sm:px-4 md:px-6 flex items-center justify-between z-20 transition-colors pt-[env(safe-area-inset-top,0px)] h-[calc(60px+env(safe-area-inset-top,0px))]">
+      {/* Left: Context Selectors (Shop & Warehouse) & Mobile Hamburger */}
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        {/* Hamburger Menu Toggle for Mobile & Tablet */}
+        <button
+          type="button"
+          onClick={openMobileMenu}
+          className="lg:hidden p-1.5 -ml-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800/80 transition-colors cursor-pointer shrink-0"
+          title="Mở menu quản lý"
+          aria-label="Mở menu quản lý"
+        >
+          <Menu size={20} />
+        </button>
+
         {/* Shop Selector */}
         <div className="flex items-center">
           <Select
