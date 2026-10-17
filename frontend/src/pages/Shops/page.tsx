@@ -300,7 +300,7 @@ export const ShopsPage: React.FC = () => {
           </div>
 
           {/* View Mode Toggle */}
-          <div className="flex items-center p-0.5 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700/60 shrink-0">
+          <div className="hidden sm:flex items-center p-0.5 bg-gray-100 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700/60 shrink-0">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
@@ -527,7 +527,7 @@ export const ShopsPage: React.FC = () => {
         </div>
       ) : (
         /* Unified SystemTable */
-        <div className="flex-1 flex flex-col min-h-fit md:min-h-0">
+        <div className="hidden md:flex flex-1 flex-col min-h-0">
           <SystemTableWrapper
             tableClassName="min-w-[850px]"
             pagination={

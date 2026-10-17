@@ -833,9 +833,231 @@ export const InventoryPage: React.FC = () => {
                   </div>
                 </div>
 
-                <SystemTableWrapper
-                  tableClassName="min-w-[1000px]"
-                  pagination={
+                {/* Desktop Ledger Table */}
+                <div className="hidden md:flex flex-1 flex-col min-h-0">
+                  <SystemTableWrapper
+                    tableClassName="min-w-[1000px]"
+                    pagination={
+                      <SystemPagination
+                        page={ledgerPage - 1}
+                        totalPages={Math.ceil(ledgerEntries.length / ledgerLimit) || 1}
+                        totalItems={ledgerEntries.length}
+                        setPage={(p) => setLedgerPage(p + 1)}
+                        itemsPerPage={ledgerLimit}
+                        setItemsPerPage={(newLimit) => {
+                          setLedgerLimit(newLimit);
+                          setLedgerPage(1);
+                        }}
+                      />
+                    }
+                  >
+                    <SystemThead>
+                      <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
+                      <SystemTh className="w-40">Thời gian</SystemTh>
+                      <SystemTh className="w-32">Loại bút toán</SystemTh>
+                      <SystemTh className="w-44">SKU Biến thể</SystemTh>
+                      <SystemTh className="w-36">Kho</SystemTh>
+                      <SystemTh className="w-32 text-right">Biến động (Delta)</SystemTh>
+                      <SystemTh className="w-32 text-right">Tồn sau GD</SystemTh>
+                      <SystemTh className="w-40">Chứng từ / Đơn hàng</SystemTh>
+                      <SystemTh className="w-48">Người thực hiện / Ghi chú</SystemTh>
+                    </SystemThead>
+                    <SystemTbody>
+                      {isLoadingLedger ? (
+                        <SystemTableSkeleton cols={9} rows={7} />
+                      ) : ledgerEntries.length === 0 ? (
+                        <SystemTableEmpty
+                          title="Chưa có bút toán nào"
+                          description="Chưa có bản ghi biến động nào trong sổ cái kho."
+                          colSpan={9}
+                        />
+                      ) : (
+                        paginatedLedger.map((l, index) => {
+                          const isPositive = (l.deltaOnHand || l.quantityDelta || 0) > 0;
+                          const delta = l.deltaOnHand ?? l.quantityDelta ?? 0;
+                          const type = l.entryType || l.type || 'UNKNOWN';
+                          const vObj = l.variant || allVariants.find((v) => v.id === l.variantId);
+                          const wObj = l.warehouse || warehouses.find((w) => w.id === l.warehouseId);
+                          const sku = l.sku || vObj?.sku || l.variantId;
+                          const variantName = l.variantName || vObj?.name;
+                          const warehouseName = l.warehouseName || wObj?.name || l.warehouseId;
+                          const stt = (ledgerPage - 1) * ledgerLimit + index + 1;
+
+                          return (
+                            <SystemTr key={l.id}>
+                              <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                                {stt}
+                              </SystemTd>
+                              <SystemTd className="text-gray-500 font-mono text-[11px] whitespace-nowrap">
+                                {new Date(l.createdAt).toLocaleString('vi-VN')}
+                              </SystemTd>
+                              <SystemTd>
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
+                                    type === 'RECEIVE'
+                                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                                      : type === 'DISPATCH'
+                                        ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30'
+                                        : type === 'RESERVE'
+                                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                          : type === 'RELEASE'
+                                            ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                                            : type === 'RETURN_RECEIVE'
+                                              ? 'bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/30'
+                                              : 'bg-gray-500/15 text-gray-600 dark:text-gray-400 border border-gray-500/30'
+                                  }`}
+                                >
+                                  {type}
+                                </span>
+                              </SystemTd>
+                              <SystemTd className="font-mono font-bold text-gray-900 dark:text-gray-100">
+                                <div>{sku}</div>
+                                {variantName && variantName !== sku && (
+                                  <div className="text-[11px] font-normal text-gray-500 dark:text-gray-400">
+                                    {variantName}
+                                  </div>
+                                )}
+                              </SystemTd>
+                              <SystemTd className="text-gray-700 dark:text-gray-300 font-medium">
+                                {warehouseName}
+                              </SystemTd>
+                              <SystemTd
+                                className={`text-right font-bold ${
+                                  isPositive
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : delta < 0
+                                      ? 'text-rose-600 dark:text-rose-400'
+                                      : 'text-gray-500'
+                                }`}
+                              >
+                                {delta > 0 ? `+${delta}` : delta}
+                              </SystemTd>
+                              <SystemTd className="text-right font-medium text-gray-900 dark:text-white">
+                                {l.afterOnHand ?? '--'}
+                              </SystemTd>
+                              <SystemTd className="font-mono text-gray-600 dark:text-gray-400">
+                                {l.order?.orderSn || l.referenceCode || '--'}
+                              </SystemTd>
+                              <SystemTd className="text-gray-600 dark:text-gray-400 truncate max-w-xs">
+                                {l.user?.name || l.user?.email || 'Hệ thống'}
+                                {l.note && (
+                                  <span className="block text-[11px] text-gray-400">{l.note}</span>
+                                )}
+                              </SystemTd>
+                            </SystemTr>
+                          );
+                        })
+                      )}
+                    </SystemTbody>
+                  </SystemTableWrapper>
+                </div>
+
+                {/* Mobile Card View (md:hidden) */}
+                <div className="md:hidden flex-1 overflow-y-auto space-y-2.5 pb-20">
+                  {isLoadingLedger ? (
+                    <div className="py-8 text-center text-xs text-gray-400 font-normal">
+                      <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
+                      Đang tải sổ cái kho...
+                    </div>
+                  ) : ledgerEntries.length === 0 ? (
+                    <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 p-6">
+                      <History className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                      <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Chưa có bút toán nào</p>
+                      <p className="text-[11px] text-gray-400">Chưa có bản ghi biến động nào trong sổ cái kho.</p>
+                    </div>
+                  ) : (
+                    paginatedLedger.map((l, index) => {
+                      const isPositive = (l.deltaOnHand || l.quantityDelta || 0) > 0;
+                      const delta = l.deltaOnHand ?? l.quantityDelta ?? 0;
+                      const type = l.entryType || l.type || 'UNKNOWN';
+                      const vObj = l.variant || allVariants.find((v) => v.id === l.variantId);
+                      const wObj = l.warehouse || warehouses.find((w) => w.id === l.warehouseId);
+                      const sku = l.sku || vObj?.sku || l.variantId;
+                      const variantName = l.variantName || vObj?.name;
+                      const warehouseName = l.warehouseName || wObj?.name || l.warehouseId;
+                      const stt = (ledgerPage - 1) * ledgerLimit + index + 1;
+
+                      return (
+                        <div
+                          key={l.id}
+                          className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2 shadow-xs"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-mono text-gray-400">#{stt}</span>
+                                <span className="font-mono font-bold text-xs text-gray-900 dark:text-white truncate">
+                                  {sku}
+                                </span>
+                              </div>
+                              {variantName && variantName !== sku && (
+                                <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                  {variantName}
+                                </div>
+                              )}
+                            </div>
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+                                type === 'RECEIVE'
+                                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                                  : type === 'DISPATCH'
+                                    ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30'
+                                    : type === 'RESERVE'
+                                      ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                      : type === 'RELEASE'
+                                        ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                                        : type === 'RETURN_RECEIVE'
+                                          ? 'bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/30'
+                                          : 'bg-gray-500/15 text-gray-600 dark:text-gray-400 border border-gray-500/30'
+                              }`}
+                            >
+                              {type}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs py-1.5 px-2.5 rounded bg-gray-50 dark:bg-[#1a1b23] border border-gray-100 dark:border-gray-800">
+                            <div>
+                              <span className="text-[10px] text-gray-400 block">Biến động (Delta)</span>
+                              <span
+                                className={`font-mono font-bold text-xs ${
+                                  isPositive
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : delta < 0
+                                      ? 'text-rose-600 dark:text-rose-400'
+                                      : 'text-gray-500'
+                                }`}
+                              >
+                                {delta > 0 ? `+${delta}` : delta}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[10px] text-gray-400 block">Tồn sau GD</span>
+                              <span className="font-mono font-medium text-xs text-gray-900 dark:text-white">
+                                {l.afterOnHand ?? '--'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 pt-1 border-t border-gray-100 dark:border-gray-800">
+                            <span className="truncate">
+                              {warehouseName} • {new Date(l.createdAt).toLocaleString('vi-VN')}
+                            </span>
+                            <span className="font-mono text-gray-700 dark:text-gray-300 font-medium shrink-0">
+                              {l.order?.orderSn || l.referenceCode || '--'}
+                            </span>
+                          </div>
+                          {l.note && (
+                            <div className="text-[11px] text-gray-400 italic">
+                              Ghi chú: {l.note}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+
+                  {/* Mobile Pagination */}
+                  <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
                     <SystemPagination
                       page={ledgerPage - 1}
                       totalPages={Math.ceil(ledgerEntries.length / ledgerLimit) || 1}
@@ -846,108 +1068,10 @@ export const InventoryPage: React.FC = () => {
                         setLedgerLimit(newLimit);
                         setLedgerPage(1);
                       }}
+                      className="border-t-0"
                     />
-                  }
-                >
-                  <SystemThead>
-                    <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
-                    <SystemTh className="w-40">Thời gian</SystemTh>
-                    <SystemTh className="w-32">Loại bút toán</SystemTh>
-                    <SystemTh className="w-44">SKU Biến thể</SystemTh>
-                    <SystemTh className="w-36">Kho</SystemTh>
-                    <SystemTh className="w-32 text-right">Biến động (Delta)</SystemTh>
-                    <SystemTh className="w-32 text-right">Tồn sau GD</SystemTh>
-                    <SystemTh className="w-40">Chứng từ / Đơn hàng</SystemTh>
-                    <SystemTh className="w-48">Người thực hiện / Ghi chú</SystemTh>
-                  </SystemThead>
-                  <SystemTbody>
-                    {isLoadingLedger ? (
-                      <SystemTableSkeleton cols={9} rows={7} />
-                    ) : ledgerEntries.length === 0 ? (
-                      <SystemTableEmpty
-                        title="Chưa có bút toán nào"
-                        description="Chưa có bản ghi biến động nào trong sổ cái kho."
-                        colSpan={9}
-                      />
-                    ) : (
-                      paginatedLedger.map((l, index) => {
-                        const isPositive = (l.deltaOnHand || l.quantityDelta || 0) > 0;
-                        const delta = l.deltaOnHand ?? l.quantityDelta ?? 0;
-                        const type = l.entryType || l.type || 'UNKNOWN';
-                        const vObj = l.variant || allVariants.find((v) => v.id === l.variantId);
-                        const wObj = l.warehouse || warehouses.find((w) => w.id === l.warehouseId);
-                        const sku = l.sku || vObj?.sku || l.variantId;
-                        const variantName = l.variantName || vObj?.name;
-                        const warehouseName = l.warehouseName || wObj?.name || l.warehouseId;
-                        const stt = (ledgerPage - 1) * ledgerLimit + index + 1;
-
-                        return (
-                          <SystemTr key={l.id}>
-                            <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
-                              {stt}
-                            </SystemTd>
-                            <SystemTd className="text-gray-500 font-mono text-[11px] whitespace-nowrap">
-                              {new Date(l.createdAt).toLocaleString('vi-VN')}
-                            </SystemTd>
-                            <SystemTd>
-                              <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
-                                  type === 'RECEIVE'
-                                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                                    : type === 'DISPATCH'
-                                      ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30'
-                                      : type === 'RESERVE'
-                                        ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                                        : type === 'RELEASE'
-                                          ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
-                                          : type === 'RETURN_RECEIVE'
-                                            ? 'bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/30'
-                                            : 'bg-gray-500/15 text-gray-600 dark:text-gray-400 border border-gray-500/30'
-                                }`}
-                              >
-                                {type}
-                              </span>
-                            </SystemTd>
-                            <SystemTd className="font-mono font-bold text-gray-900 dark:text-gray-100">
-                              <div>{sku}</div>
-                              {variantName && variantName !== sku && (
-                                <div className="text-[11px] font-normal text-gray-500 dark:text-gray-400">
-                                  {variantName}
-                                </div>
-                              )}
-                            </SystemTd>
-                            <SystemTd className="text-gray-700 dark:text-gray-300 font-medium">
-                              {warehouseName}
-                            </SystemTd>
-                            <SystemTd
-                              className={`text-right font-bold ${
-                                isPositive
-                                  ? 'text-emerald-600 dark:text-emerald-400'
-                                  : delta < 0
-                                    ? 'text-rose-600 dark:text-rose-400'
-                                    : 'text-gray-500'
-                              }`}
-                            >
-                              {delta > 0 ? `+${delta}` : delta}
-                            </SystemTd>
-                            <SystemTd className="text-right font-medium text-gray-900 dark:text-white">
-                              {l.afterOnHand ?? '--'}
-                            </SystemTd>
-                            <SystemTd className="font-mono text-gray-600 dark:text-gray-400">
-                              {l.order?.orderSn || l.referenceCode || '--'}
-                            </SystemTd>
-                            <SystemTd className="text-gray-600 dark:text-gray-400 truncate max-w-xs">
-                              {l.user?.name || l.user?.email || 'Hệ thống'}
-                              {l.note && (
-                                <span className="block text-[11px] text-gray-400">{l.note}</span>
-                              )}
-                            </SystemTd>
-                          </SystemTr>
-                        );
-                      })
-                    )}
-                  </SystemTbody>
-                </SystemTableWrapper>
+                  </div>
+                </div>
               </div>
             );
           })()}
@@ -1100,8 +1224,8 @@ export const InventoryPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Reconciliation Table with SystemTableWrapper & Pagination */}
-                <div className="flex-1 flex flex-col min-h-fit md:min-h-0">
+                {/* Desktop Reconciliation Table */}
+                <div className="hidden md:flex flex-1 flex-col min-h-0">
                   <SystemTableWrapper
                     tableClassName="min-w-[850px]"
                     pagination={
@@ -1228,6 +1352,131 @@ export const InventoryPage: React.FC = () => {
                       )}
                     </SystemTbody>
                   </SystemTableWrapper>
+                </div>
+
+                {/* Mobile Card View (md:hidden) */}
+                <div className="md:hidden flex-1 overflow-y-auto space-y-2.5 pb-20">
+                  {isReconciling ? (
+                    <div className="py-8 text-center text-xs text-gray-400 font-normal">
+                      <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
+                      Đang kiểm toán đối soát số dư...
+                    </div>
+                  ) : filteredItems.length === 0 ? (
+                    <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 p-6">
+                      <ShieldCheck className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                      <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {reconciliationResult ? 'Không tìm thấy SKU nào phù hợp' : 'Chưa có kết quả kiểm toán'}
+                      </p>
+                      <p className="text-[11px] text-gray-400">
+                        {reconciliationResult
+                          ? 'Không có biến thể nào khớp với bộ lọc hiện tại.'
+                          : 'Bấm "Chạy kiểm toán ngay" để so khớp số dư với sổ cái bất biến.'}
+                      </p>
+                    </div>
+                  ) : (
+                    paginatedItems.map((r: any, idx: number) => {
+                      const isBalanced =
+                        r.isConsistent ??
+                        r.isBalanced ??
+                        (r.difference === 0);
+                      const diff = r.difference ?? r.discrepancy ?? 0;
+                      const onHand =
+                        r.currentOnHand ?? r.balanceOnHand ?? 0;
+                      const ledgerSum =
+                        r.calculatedFromLedger ??
+                        r.ledgerCalculatedOnHand ??
+                        0;
+                      const stt = (reconciliationPage - 1) * reconciliationLimit + idx + 1;
+
+                      return (
+                        <div
+                          key={idx}
+                          className={`p-3.5 rounded bg-white dark:bg-[#14151a] border ${
+                            !isBalanced
+                              ? 'border-rose-300 dark:border-rose-900/60 bg-rose-50/20 dark:bg-rose-950/10'
+                              : 'border-gray-200 dark:border-gray-800'
+                          } space-y-2 shadow-xs`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-mono text-gray-400">#{stt}</span>
+                                <span className="font-mono font-bold text-xs text-gray-900 dark:text-white truncate">
+                                  {r.sku}
+                                </span>
+                              </div>
+                              {r.variantName && (
+                                <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                  {r.variantName}
+                                </div>
+                              )}
+                            </div>
+                            {isBalanced ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                                <CheckCircle size={11} /> Khớp
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0 animate-pulse">
+                                <AlertTriangle size={11} /> Lệch {diff > 0 ? `+${diff}` : diff}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 text-xs py-2 px-2.5 rounded bg-gray-50 dark:bg-[#1a1b23] border border-gray-100 dark:border-gray-800 text-center">
+                            <div>
+                              <span className="text-[10px] text-gray-400 block">Số dư OnHand</span>
+                              <span className="font-mono font-medium text-xs text-gray-900 dark:text-white">
+                                {onHand.toLocaleString('vi-VN')}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-gray-400 block">Sổ cái Sum</span>
+                              <span className="font-mono font-medium text-xs text-gray-900 dark:text-white">
+                                {ledgerSum.toLocaleString('vi-VN')}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-gray-400 block">Chênh lệch</span>
+                              <span
+                                className={`font-mono font-bold text-xs ${
+                                  diff !== 0
+                                    ? 'text-rose-600 dark:text-rose-400'
+                                    : 'text-emerald-600 dark:text-emerald-400'
+                                }`}
+                              >
+                                {diff > 0 ? `+${diff.toLocaleString('vi-VN')}` : diff.toLocaleString('vi-VN')}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 pt-1 border-t border-gray-100 dark:border-gray-800">
+                            <span>
+                              Kho: {r.warehouseCode || 'Kho chính'}
+                            </span>
+                            <span className="text-[10px] font-medium text-gray-400">
+                              {isBalanced ? 'Bút toán toàn vẹn' : 'Cần kiểm tra bút toán'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+
+                  {/* Mobile Pagination */}
+                  <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+                    <SystemPagination
+                      page={reconciliationPage - 1}
+                      totalPages={Math.ceil(filteredItems.length / reconciliationLimit) || 1}
+                      totalItems={filteredItems.length}
+                      setPage={(p) => setReconciliationPage(p + 1)}
+                      itemsPerPage={reconciliationLimit}
+                      setItemsPerPage={(newLimit) => {
+                        setReconciliationLimit(newLimit);
+                        setReconciliationPage(1);
+                      }}
+                      className="border-t-0"
+                    />
+                  </div>
                 </div>
               </div>
             );

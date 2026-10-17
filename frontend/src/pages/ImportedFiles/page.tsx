@@ -681,7 +681,9 @@ export const ImportedFilesPage: React.FC = () => {
           </div>
 
           <div className="flex-1 flex flex-col min-h-fit md:min-h-0 mb-6">
-            <SystemTableWrapper
+            {/* Desktop Table Wrapper */}
+            <div className="hidden md:flex flex-1 flex-col min-h-0">
+              <SystemTableWrapper
               tableClassName="min-w-[1400px]"
               pagination={
                 <SystemPagination
@@ -803,6 +805,112 @@ export const ImportedFilesPage: React.FC = () => {
               </SystemTbody>
             </SystemTableWrapper>
           </div>
+
+          {/* Mobile Card View (md:hidden) */}
+          <div className="md:hidden flex-1 overflow-y-auto space-y-2.5 pb-20">
+            {isLoading ? (
+              <div className="py-8 text-center text-xs text-gray-400 font-normal">
+                <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
+                Đang tải lịch sử import...
+              </div>
+            ) : currentFiles.length === 0 ? (
+              <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 p-6">
+                <FileSpreadsheet className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Chưa có file import nào</p>
+                <p className="text-[11px] text-gray-400">Tải lên file Excel Shopee để bắt đầu phân tích đơn hàng.</p>
+              </div>
+            ) : (
+              currentFiles.map((file, index) => {
+                const uploadDate = new Date(file.importedAt);
+                const dateStr = uploadDate.toLocaleDateString('vi-VN');
+                const timeStr =
+                  String(uploadDate.getHours()).padStart(2, '0') +
+                  ':' +
+                  String(uploadDate.getMinutes()).padStart(2, '0');
+                const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
+                const stt = (currentPage - 1) * itemsPerPage + index + 1;
+
+                return (
+                  <div
+                    key={file.id}
+                    className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className="w-8 h-8 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200/50">
+                          <FileSpreadsheet size={16} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-mono text-gray-400">#{stt}</span>
+                            <span className="font-semibold text-xs text-gray-900 dark:text-white truncate">
+                              {file.filename}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-gray-400 mt-0.5">
+                            {sizeInMb} MB • {timeStr} {dateStr}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 gap-1">
+                          <CheckCircle size={10} strokeWidth={3} /> Thành công
+                        </span>
+                        <button
+                          onClick={() => requestDeleteFile(file)}
+                          className="w-7 h-7 flex items-center justify-center rounded bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-100 transition-colors"
+                          title="Xóa file"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-xs py-2 px-2.5 rounded bg-gray-50 dark:bg-[#1a1b23] border border-gray-100 dark:border-gray-800 text-center">
+                      <div>
+                        <span className="text-[10px] text-gray-400 block">Số đơn</span>
+                        <span className="font-mono font-bold text-xs text-gray-900 dark:text-white">
+                          {file.totalOrders?.toLocaleString('vi-VN')}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 block">Doanh thu</span>
+                        <span className="font-mono font-bold text-xs text-[#3b82f6]">
+                          {formatCurrency(file.summary?.revenue || 0)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 block">Lợi nhuận</span>
+                        <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                          {formatCurrency(file.summary?.profit || 0)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 pt-1 border-t border-gray-100 dark:border-gray-800">
+                      <span>Kỳ: <span className="font-medium text-gray-700 dark:text-gray-300">{file.period || '--'}</span></span>
+                      <span>Phí sàn: <span className="font-mono font-medium text-rose-600 dark:text-rose-400">{formatCurrency(file.summary?.shopeeFee || 0)}</span></span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            {/* Mobile Pagination */}
+            <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+              <SystemPagination
+                page={currentPage - 1}
+                totalPages={totalPages}
+                totalItems={filteredFiles.length}
+                setPage={(p) => setCurrentPage(p + 1)}
+                itemsPerPage={itemsPerPage}
+                setItemsPerPage={setItemsPerPage}
+                className="border-t-0"
+              />
+            </div>
+          </div>
+        </div>
 
           {/* ROW 3: FOOTER INSTRUCTIONS */}
           <div className="flex-shrink-0 bg-[#1c212a] border border-gray-800 rounded px-4 py-2.5 flex items-center justify-between gap-4 text-[12px]">

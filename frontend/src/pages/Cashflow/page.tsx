@@ -1842,67 +1842,157 @@ export const CashflowPage: React.FC = () => {
           </div>
 
           <div className="bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden shadow-xs">
-            <SystemTableWrapper>
-              <SystemThead>
-                <SystemTr>
-                  <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
-                  <SystemTh>Mã khoản mục</SystemTh>
-                  <SystemTh>Tên khoản mục</SystemTh>
-                  <SystemTh>Loại nghiệp vụ</SystemTh>
-                  <SystemTh>Mô tả / Ví dụ</SystemTh>
-                  <SystemTh>Số giao dịch</SystemTh>
-                  <SystemTh>Trạng thái</SystemTh>
-                  <SystemTh className="text-right">Hành động</SystemTh>
-                </SystemTr>
-              </SystemThead>
-              <SystemTbody>
-                {categories.map((cat, index) => (
-                  <SystemTr key={cat.id}>
-                    <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
-                      {index + 1}
-                    </SystemTd>
-                    <SystemTd>
-                      <span className="font-mono font-medium text-xs text-gray-800 dark:text-gray-200">
+            {/* Desktop Table */}
+            <div className="hidden md:block">
+              <SystemTableWrapper>
+                <SystemThead>
+                  <SystemTr>
+                    <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
+                    <SystemTh>Mã khoản mục</SystemTh>
+                    <SystemTh>Tên khoản mục</SystemTh>
+                    <SystemTh>Loại nghiệp vụ</SystemTh>
+                    <SystemTh>Mô tả / Ví dụ</SystemTh>
+                    <SystemTh>Số giao dịch</SystemTh>
+                    <SystemTh>Trạng thái</SystemTh>
+                    <SystemTh className="text-right">Hành động</SystemTh>
+                  </SystemTr>
+                </SystemThead>
+                <SystemTbody>
+                  {categories.map((cat, index) => (
+                    <SystemTr key={cat.id}>
+                      <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                        {index + 1}
+                      </SystemTd>
+                      <SystemTd>
+                        <span className="font-mono font-medium text-xs text-gray-800 dark:text-gray-200">
+                          {cat.code}
+                        </span>
+                      </SystemTd>
+                      <SystemTd>
+                        <span className="font-medium text-xs text-gray-900 dark:text-white">
+                          {cat.name}
+                        </span>
+                      </SystemTd>
+                      <SystemTd>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
+                            cat.type === 'INCOME'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                              : cat.type === 'EXPENSE'
+                              ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+                              : cat.type === 'INTERNAL_TRANSFER'
+                              ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
+                              : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                          }`}
+                        >
+                          {cat.type === 'INCOME'
+                            ? 'Thu tiền'
+                            : cat.type === 'EXPENSE'
+                            ? 'Chi tiền'
+                            : cat.type === 'INTERNAL_TRANSFER'
+                            ? 'Chuyển nội bộ'
+                            : cat.type === 'CAPITAL'
+                            ? 'Vốn chủ shop'
+                            : 'Hoàn tiền ứng'}
+                        </span>
+                      </SystemTd>
+                      <SystemTd className="text-xs text-gray-500 max-w-sm">
+                        {cat.description || '---'}
+                      </SystemTd>
+                      <SystemTd className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        {cat._count?.transactions || 0}
+                      </SystemTd>
+                      <SystemTd>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
+                            cat.isActive
+                              ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+                              : 'bg-gray-100 text-gray-400'
+                          }`}
+                        >
+                          {cat.isActive ? 'Đang dùng' : 'Ngừng dùng'}
+                        </span>
+                      </SystemTd>
+                      <SystemTd className="text-right">
+                        {!cat.isSystemDefault && (cat._count?.transactions || 0) === 0 ? (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (window.confirm(`Xác nhận xóa khoản mục ${cat.name}?`)) {
+                                try {
+                                  await cashflowApi.deleteCategory(cat.id);
+                                  toast.success('Đã xóa khoản mục');
+                                  loadBaseData();
+                                } catch (e: any) {
+                                  toast.error(e?.response?.data?.message || 'Không thể xóa');
+                                }
+                              }
+                            }}
+                            className="p-1 text-rose-500 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-gray-400 italic">Cố định</span>
+                        )}
+                      </SystemTd>
+                    </SystemTr>
+                  ))}
+                </SystemTbody>
+              </SystemTableWrapper>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-2.5 p-3 pb-20">
+              {categories.map((cat, index) => (
+                <div
+                  key={cat.id}
+                  className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2 shadow-xs"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-mono text-gray-400">#{index + 1}</span>
+                        <span className="font-semibold text-xs text-gray-900 dark:text-white truncate">
+                          {cat.name}
+                        </span>
+                      </div>
+                      <span className="font-mono text-[11px] text-gray-500 block mt-0.5">
                         {cat.code}
                       </span>
-                    </SystemTd>
-                    <SystemTd>
-                      <span className="font-medium text-xs text-gray-900 dark:text-white">
-                        {cat.name}
-                      </span>
-                    </SystemTd>
-                    <SystemTd>
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
-                          cat.type === 'INCOME'
-                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-                            : cat.type === 'EXPENSE'
-                            ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
-                            : cat.type === 'INTERNAL_TRANSFER'
-                            ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
-                            : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
-                        }`}
-                      >
-                        {cat.type === 'INCOME'
-                          ? 'Thu tiền'
+                    </div>
+
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+                        cat.type === 'INCOME'
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
                           : cat.type === 'EXPENSE'
-                          ? 'Chi tiền'
+                          ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
                           : cat.type === 'INTERNAL_TRANSFER'
-                          ? 'Chuyển nội bộ'
-                          : cat.type === 'CAPITAL'
-                          ? 'Vốn chủ shop'
-                          : 'Hoàn tiền ứng'}
-                      </span>
-                    </SystemTd>
-                    <SystemTd className="text-xs text-gray-500 max-w-sm">
-                      {cat.description || '---'}
-                    </SystemTd>
-                    <SystemTd className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                      {cat._count?.transactions || 0}
-                    </SystemTd>
-                    <SystemTd>
+                          ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
+                          : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
+                      }`}
+                    >
+                      {cat.type === 'INCOME'
+                        ? 'Thu tiền'
+                        : cat.type === 'EXPENSE'
+                        ? 'Chi tiền'
+                        : cat.type === 'INTERNAL_TRANSFER'
+                        ? 'Chuyển nội bộ'
+                        : 'Khác'}
+                    </span>
+                  </div>
+
+                  {cat.description && (
+                    <div className="text-[11px] text-gray-500 italic">
+                      {cat.description}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-2">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
+                        className={`inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium ${
                           cat.isActive
                             ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
                             : 'bg-gray-100 text-gray-400'
@@ -1910,34 +2000,35 @@ export const CashflowPage: React.FC = () => {
                       >
                         {cat.isActive ? 'Đang dùng' : 'Ngừng dùng'}
                       </span>
-                    </SystemTd>
-                    <SystemTd className="text-right">
-                      {!cat.isSystemDefault && (cat._count?.transactions || 0) === 0 ? (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (window.confirm(`Xác nhận xóa khoản mục ${cat.name}?`)) {
-                              try {
-                                await cashflowApi.deleteCategory(cat.id);
-                                toast.success('Đã xóa khoản mục');
-                                loadBaseData();
-                              } catch (e: any) {
-                                toast.error(e?.response?.data?.message || 'Không thể xóa');
-                              }
+                      <span>{cat._count?.transactions || 0} giao dịch</span>
+                    </div>
+
+                    {!cat.isSystemDefault && (cat._count?.transactions || 0) === 0 ? (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (window.confirm(`Xác nhận xóa khoản mục ${cat.name}?`)) {
+                            try {
+                              await cashflowApi.deleteCategory(cat.id);
+                              toast.success('Đã xóa khoản mục');
+                              loadBaseData();
+                            } catch (e: any) {
+                              toast.error(e?.response?.data?.message || 'Không thể xóa');
                             }
-                          }}
-                          className="p-1 text-rose-500 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      ) : (
-                        <span className="text-[11px] text-gray-400 italic">Cố định</span>
-                      )}
-                    </SystemTd>
-                  </SystemTr>
-                ))}
-              </SystemTbody>
-            </SystemTableWrapper>
+                          }
+                        }}
+                        className="p-1 text-rose-500 hover:bg-rose-50 rounded transition-colors"
+                        title="Xóa khoản mục"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-gray-400 italic">Mặc định</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

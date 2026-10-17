@@ -450,12 +450,27 @@ export const PurchaseReceiptsPage: React.FC = () => {
 
       {/* Filter Bar */}
       <SystemFilter className="p-2.5 sm:p-3 flex-col sm:flex-row items-stretch sm:items-center">
-        <SystemFilterSearch
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Tìm mã phiếu, SKU, ghi chú..."
-          className="w-full sm:w-64"
-        />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <SystemFilterSearch
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Tìm mã phiếu, SKU, ghi chú..."
+            className="flex-1 sm:w-64"
+          />
+          {(searchTerm || selectedSupplierId !== 'ALL' || filterPaymentStatus !== 'ALL' || filterReceivingStatus !== 'ALL' || filterDueStatus !== 'ALL') && (
+            <SystemFilterReset
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedSupplierId('ALL');
+                setFilterPaymentStatus('ALL');
+                setFilterReceivingStatus('ALL');
+                setFilterDueStatus('ALL');
+                setPage(1);
+              }}
+              className="shrink-0"
+            />
+          )}
+        </div>
 
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
           <div className="w-full sm:w-52">
@@ -528,19 +543,6 @@ export const PurchaseReceiptsPage: React.FC = () => {
             />
           </div>
         </div>
-
-        {(searchTerm || selectedSupplierId !== 'ALL' || filterPaymentStatus !== 'ALL' || filterReceivingStatus !== 'ALL' || filterDueStatus !== 'ALL') && (
-          <SystemFilterReset
-            onClick={() => {
-              setSearchTerm('');
-              setSelectedSupplierId('ALL');
-              setFilterPaymentStatus('ALL');
-              setFilterReceivingStatus('ALL');
-              setFilterDueStatus('ALL');
-              setPage(1);
-            }}
-          />
-        )}
       </SystemFilter>
 
       {/* Desktop Table View */}

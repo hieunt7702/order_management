@@ -213,7 +213,7 @@ export const AuditPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 shrink-0">
         <SystemMetricCard
           title="Tổng nhật ký kiểm toán"
           value={logs.length}
@@ -282,8 +282,8 @@ export const AuditPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Table with Bottom-Pinned SystemPagination */}
-      <div className="flex-1 flex flex-col min-h-fit md:min-h-0">
+      {/* Desktop Table with Bottom-Pinned SystemPagination */}
+      <div className="hidden md:flex flex-1 flex-col min-h-fit md:min-h-0">
         <SystemTableWrapper
           tableClassName="min-w-[900px]"
           pagination={
@@ -389,6 +389,78 @@ export const AuditPage: React.FC = () => {
           )}
           </SystemTbody>
         </SystemTableWrapper>
+      </div>
+
+      {/* Mobile Audit Card List View */}
+      <div className="md:hidden flex-1 overflow-y-auto space-y-2 pb-16">
+        {isLoading ? (
+          <div className="py-8 text-center text-xs text-gray-400">Đang tải nhật ký kiểm toán...</div>
+        ) : paginatedLogs.length === 0 ? (
+          <div className="py-8 text-center text-xs text-gray-400">Không có bản ghi nhật ký nào</div>
+        ) : (
+          paginatedLogs.map((log, index) => {
+            const stt = (page - 1) * limit + index + 1;
+            const actionInfo = getActionInfo(log.action);
+
+            return (
+              <div
+                key={log.id}
+                onClick={() => setSelectedLog(log)}
+                className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 space-y-2 cursor-pointer shadow-none"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="w-5 h-5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold text-gray-500 flex items-center justify-center shrink-0">
+                      {stt}
+                    </span>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold truncate ${actionInfo.color}`}
+                    >
+                      {actionInfo.label}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-gray-400 font-mono shrink-0">
+                    {new Date(log.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}{' '}
+                    {new Date(log.createdAt).toLocaleDateString('vi-VN')}
+                  </span>
+                </div>
+
+                <div className="text-[11px] text-gray-600 dark:text-gray-300 flex items-center justify-between">
+                  <span className="font-medium text-gray-800 dark:text-gray-200">
+                    {getEntityLabel(log.entityType)}
+                  </span>
+                  {log.entityId && (
+                    <span className="font-mono text-gray-400 truncate max-w-[160px]">
+                      ID: {log.entityId}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] pt-1 border-t border-gray-100 dark:border-gray-800 text-gray-500">
+                  <span className="truncate">
+                    Bởi: <strong>{log.user?.name || log.user?.email || 'Hệ thống'}</strong>
+                  </span>
+                  <span className="text-xs text-[#5865f2] font-medium flex items-center gap-1 shrink-0">
+                    <Eye size={12} /> Chi tiết
+                  </span>
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        {filteredLogs.length > limit && (
+          <div className="pt-2">
+            <SystemPagination
+              page={page - 1}
+              totalPages={Math.ceil(filteredLogs.length / limit) || 1}
+              totalItems={filteredLogs.length}
+              setPage={(p) => setPage(p + 1)}
+              itemsPerPage={limit}
+              setItemsPerPage={setLimit}
+            />
+          </div>
+        )}
       </div>
 
       {/* MODAL: VIEW AUDIT METADATA */}

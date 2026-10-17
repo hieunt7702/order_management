@@ -1012,7 +1012,7 @@ export const ProductsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleToggleExpandAllShopee}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold border transition-all cursor-pointer shrink-0 ${
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded text-xs font-semibold border transition-all cursor-pointer shrink-0 ${
                     isAllShopeeVariantsExpanded
                       ? 'bg-[#5865f2] text-white border-[#5865f2] shadow-xs'
                       : 'bg-gray-50 dark:bg-[#1a1b23] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#5865f2]/40'
@@ -1020,11 +1020,12 @@ export const ProductsPage: React.FC = () => {
                   title="Mở rộng hoặc thu gọn để xem tất cả biến thể Shopee trực tiếp trên bảng"
                 >
                   <Store size={13} />
-                  <span>{isAllShopeeVariantsExpanded ? 'Thu gọn SKU Shopee' : 'Xem đầy đủ SKU Shopee'}</span>
+                  <span className="hidden sm:inline">{isAllShopeeVariantsExpanded ? 'Thu gọn SKU Shopee' : 'Xem đầy đủ SKU Shopee'}</span>
+                  <span className="sm:hidden">{isAllShopeeVariantsExpanded ? 'Thu gọn' : 'SKU Shopee'}</span>
                 </button>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 shrink-0">
+                <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 shrink-0 hidden xs:inline">
                     Shopee:
                   </span>
                   <Select
@@ -1032,11 +1033,11 @@ export const ProductsPage: React.FC = () => {
                     onChange={(val: any) => setMappingStatusFilter(val)}
                     options={[
                       { value: 'ALL', label: 'Tất cả trạng thái' },
-                      { value: 'MAPPED', label: 'Đã liên kết SKU Shopee' },
-                      { value: 'UNMAPPED', label: 'Chưa liên kết SKU Shopee' },
+                      { value: 'MAPPED', label: 'Đã liên kết' },
+                      { value: 'UNMAPPED', label: 'Chưa liên kết' },
                     ]}
                     size="sm"
-                    className="w-44 sm:w-52"
+                    className="w-full sm:w-52"
                     menuWidth="w-56"
                   />
                 </div>
@@ -1058,8 +1059,11 @@ export const ProductsPage: React.FC = () => {
                 });
 
                 return (
-                  <SystemTableWrapper
-                    tableClassName="min-w-[1200px]"
+                  <>
+                    {/* Desktop Products Table */}
+                    <div className="hidden md:flex flex-1 flex-col min-h-0">
+                      <SystemTableWrapper
+                        tableClassName="min-w-[1200px]"
                     pagination={
                       <SystemPagination
                         currentPage={page}
@@ -1370,7 +1374,203 @@ export const ProductsPage: React.FC = () => {
                       )}
                     </SystemTbody>
                   </SystemTableWrapper>
-                );
+                </div>
+
+                {/* Mobile Card View (md:hidden) */}
+                <div className="md:hidden flex-1 overflow-y-auto space-y-2.5 pb-20">
+                  {isLoadingProducts ? (
+                    <div className="py-8 text-center text-xs text-gray-400 font-normal">
+                      <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
+                      Đang tải danh sách sản phẩm...
+                    </div>
+                  ) : displayedProducts.length === 0 ? (
+                    <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 p-6">
+                      <Package className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                      <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Không tìm thấy sản phẩm nào</p>
+                      <p className="text-[11px] text-gray-400">Thử tìm kiếm với từ khóa khác hoặc nhấn "Thêm sản phẩm".</p>
+                    </div>
+                  ) : (
+                    displayedProducts.map((product, pIndex) => {
+                      const variants = product.variants || [];
+                      const pStt = (page - 1) * limit + pIndex + 1;
+
+                      return (
+                        <div
+                          key={product.id}
+                          className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs"
+                        >
+                          {/* Product Header */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-mono text-gray-400">#{pStt}</span>
+                                <span
+                                  onClick={() => handleOpenProductDetail(product)}
+                                  className="font-bold text-xs text-gray-900 dark:text-white truncate cursor-pointer hover:text-[#5865f2]"
+                                >
+                                  {product.name}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium">
+                                  {variants.length} biến thể
+                                </span>
+                                {product.description && (
+                                  <span className="text-[11px] text-gray-400 truncate max-w-xs">
+                                    {product.description}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="w-7 h-7 rounded flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer shrink-0"
+                                >
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOpenProductDetail(product)}>
+                                  <Eye size={13} className="text-[#5865f2]" />
+                                  <span>Xem chi tiết SKU sàn</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleOpenAddVariant(product)}>
+                                  <Plus className="w-4 h-4 text-emerald-500" />
+                                  <span>Thêm biến thể</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleOpenEditProduct(product)}>
+                                  <Edit2 className="w-4 h-4 text-[#5865f2]" />
+                                  <span>Sửa thông tin sản phẩm</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onClick={() => handleOpenDeleteProduct(product)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  <span>Xóa sản phẩm</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+
+                          {/* Variants List Inside Card */}
+                          <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800/80">
+                            {variants.map((v: any) => {
+                              const shopeeCount = v.listingMappings?.length || 0;
+
+                              return (
+                                <div
+                                  key={v.id}
+                                  className="p-2.5 rounded bg-gray-50/70 dark:bg-[#1a1b23] border border-gray-200/60 dark:border-gray-800 space-y-1.5"
+                                >
+                                  <div className="flex items-start justify-between gap-1.5">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="font-mono font-bold text-xs text-[#5865f2] dark:text-[#7b85f5] truncate">
+                                        {v.sku}
+                                      </div>
+                                      {v.name && v.name !== v.sku && (
+                                        <div className="text-[11px] text-gray-600 dark:text-gray-300 truncate">
+                                          {v.name}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button
+                                          type="button"
+                                          className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                        >
+                                          <MoreHorizontal size={13} />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleOpenEditVariant(product, v)}>
+                                          <Edit2 size={13} className="text-[#5865f2]" />
+                                          <span>Sửa biến thể</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleOpenHistory(v)}>
+                                          <History size={13} className="text-gray-400" />
+                                          <span>Lịch sử biến động</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleOpenShopeeVariants(product, v)}>
+                                          <Store size={13} className="text-orange-500" />
+                                          <span>Xem SKU Shopee ({shopeeCount})</span>
+                                        </DropdownMenuItem>
+                                        {variants.length > 1 && (
+                                          <>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                              variant="destructive"
+                                              onClick={() => handleOpenDeleteVariant(product, v)}
+                                            >
+                                              <Trash2 size={13} />
+                                              <span>Xóa biến thể</span>
+                                            </DropdownMenuItem>
+                                          </>
+                                        )}
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                                    <div>
+                                      <span className="text-gray-400">Giá vốn: </span>
+                                      <span className="font-medium text-amber-600 dark:text-amber-400">
+                                        {formatCurrency(v.costPrice || 0)} đ
+                                      </span>
+                                    </div>
+                                    <div className="text-right">
+                                      <span className="text-gray-400">Giá bán: </span>
+                                      <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                                        {formatCurrency(v.sellPrice || 0)} đ
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-between text-[10px] text-gray-400 pt-1 border-t border-gray-200/40 dark:border-gray-800/40">
+                                    <span>Barcode: {v.barcode || '--'}</span>
+                                    {shopeeCount > 0 ? (
+                                      <span
+                                        onClick={() => handleOpenShopeeVariants(product, v)}
+                                        className="text-orange-600 dark:text-orange-400 font-semibold cursor-pointer hover:underline"
+                                      >
+                                        {shopeeCount} SKU Shopee
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400">Chưa map Shopee</span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+
+                  {/* Mobile Pagination */}
+                  <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+                    <SystemPagination
+                      currentPage={page}
+                      itemsPerPage={limit}
+                      totalItems={totalProducts}
+                      onPageChange={setPage}
+                      onLimitChange={(l) => {
+                        setLimit(l);
+                        setPage(1);
+                      }}
+                      className="border-t-0"
+                    />
+                  </div>
+                </div>
+              </>
+            );
               })()}
             </div>
           </div>
@@ -1495,8 +1695,11 @@ export const ProductsPage: React.FC = () => {
                 );
 
                 return (
-                  <SystemTableWrapper
-                    tableClassName="min-w-[1100px]"
+                  <>
+                    {/* Desktop Mappings Table */}
+                    <div className="hidden md:flex flex-1 flex-col min-h-0">
+                      <SystemTableWrapper
+                        tableClassName="min-w-[1100px]"
                     pagination={
                       <SystemPagination
                         currentPage={mappingPage}
@@ -1700,7 +1903,149 @@ export const ProductsPage: React.FC = () => {
                       )}
                     </SystemTbody>
                   </SystemTableWrapper>
-                );
+                </div>
+
+                {/* Mobile Card View (md:hidden) */}
+                <div className="md:hidden flex-1 overflow-y-auto space-y-2.5 pb-20">
+                  {isLoadingMappings ? (
+                    <div className="py-8 text-center text-xs text-gray-400 font-normal">
+                      <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
+                      Đang tải liên kết SKU Shopee...
+                    </div>
+                  ) : filteredMappings.length === 0 ? (
+                    <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 p-6">
+                      <Store className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                      <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Chưa có liên kết SKU nào</p>
+                      <p className="text-[11px] text-gray-400">Không tìm thấy sản phẩm sàn nào phù hợp với bộ lọc.</p>
+                    </div>
+                  ) : (
+                    paginatedMappings.map((m, mIndex) => {
+                      const isMapped = !!(m.variant || m.variantId);
+                      const internalVariant = m.variant || m.internalVariant;
+                      const stt = (mappingPage - 1) * mappingLimit + mIndex + 1;
+
+                      return (
+                        <div
+                          key={m.id}
+                          className={`p-3.5 rounded bg-white dark:bg-[#14151a] border ${
+                            !isMapped
+                              ? 'border-amber-300 dark:border-amber-900/60 bg-amber-50/20 dark:bg-amber-950/10'
+                              : selectedListingIds.includes(m.id)
+                                ? 'border-[#5865f2] dark:border-[#5865f2] bg-[#5865f2]/5'
+                                : 'border-gray-200 dark:border-gray-800'
+                          } space-y-2.5 shadow-xs`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <Checkbox
+                                checked={selectedListingIds.includes(m.id)}
+                                onChange={() => toggleSelectListing(m.id)}
+                              />
+                              <span className="text-[11px] font-mono text-gray-400">#{stt}</span>
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-orange-200/50 shrink-0">
+                                {m.shop?.code || m.shop?.name || 'Shopee'}
+                              </span>
+                            </div>
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="w-7 h-7 rounded flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer shrink-0"
+                                >
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOpenMapModal(m)}>
+                                  <LinkIcon size={14} className="text-[#5865f2]" />
+                                  <span>{isMapped ? 'Đổi mapping SKU' : 'Gán vào SKU kho'}</span>
+                                </DropdownMenuItem>
+                                {isMapped && m.id && !m.id.startsWith('unmapped-') && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      variant="destructive"
+                                      onClick={() => handleDeleteMapping(m.id)}
+                                    >
+                                      <Trash2 size={14} />
+                                      <span>Hủy liên kết mapping</span>
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+
+                          <div>
+                            <div className="font-semibold text-xs text-gray-900 dark:text-white line-clamp-2">
+                              {m.productName || m.listingName || '--'}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {m.variationName && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-[#5865f2] font-semibold border border-indigo-200/50">
+                                  Phân loại: {m.variationName}
+                                </span>
+                              )}
+                              <span className="text-[11px] font-mono text-gray-500 dark:text-gray-400">
+                                Mã sàn: {m.sellerSku || m.externalSku || 'Chưa có'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="p-2.5 rounded bg-gray-50 dark:bg-[#1a1b23] border border-gray-100 dark:border-gray-800 text-xs space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] text-gray-400">SKU Kho liên kết:</span>
+                              <span className="font-mono font-bold text-amber-600 text-[11px]">
+                                Hệ số: x{m.multiplier || 1}
+                              </span>
+                            </div>
+                            {isMapped && internalVariant ? (
+                              <div className="flex items-center gap-1.5">
+                                <Boxes size={13} className="text-[#5865f2] shrink-0" />
+                                <span className="font-mono font-bold text-[#5865f2] truncate">
+                                  {internalVariant.sku}
+                                </span>
+                                <span className="text-[11px] text-gray-500 truncate">
+                                  - {internalVariant.name || internalVariant.product?.name}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between pt-0.5">
+                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                                  <AlertTriangle size={12} /> Chưa map SKU kho
+                                </span>
+                                <button
+                                  onClick={() => handleOpenMapModal(m)}
+                                  className="px-2 py-0.5 text-[10px] font-bold bg-[#5865f2] text-white rounded hover:bg-[#4752c4]"
+                                >
+                                  Map ngay
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+
+                  {/* Mobile Pagination */}
+                  <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+                    <SystemPagination
+                      currentPage={mappingPage}
+                      itemsPerPage={mappingLimit}
+                      totalItems={filteredMappings.length}
+                      onPageChange={setMappingPage}
+                      onLimitChange={(l) => {
+                        setMappingLimit(l);
+                        setMappingPage(1);
+                      }}
+                      className="border-t-0"
+                    />
+                  </div>
+                </div>
+              </>
+            );
               })()
             ) : (
               /* Content for View Mode: GROUPED BY WAREHOUSE SKU */
@@ -1778,8 +2123,8 @@ export const ProductsPage: React.FC = () => {
                               </div>
                             </div>
 
-                            {/* Group Table: Listings belonging to this SKU */}
-                            <div className="overflow-x-auto">
+                            {/* Group Table: Desktop */}
+                            <div className="overflow-x-auto hidden md:block">
                               <table className="w-full text-left border-collapse text-xs">
                                 <thead>
                                   <tr className="bg-gray-50/40 dark:bg-gray-800/20 text-gray-400 border-b border-gray-100 dark:border-gray-800 text-[11px]">
@@ -1837,6 +2182,50 @@ export const ProductsPage: React.FC = () => {
                                 </tbody>
                               </table>
                             </div>
+
+                            {/* Group Card List: Mobile (md:hidden) */}
+                            <div className="md:hidden space-y-2 p-3">
+                              {items.map((it) => (
+                                <div
+                                  key={it.id}
+                                  className="p-2.5 rounded bg-gray-50/70 dark:bg-[#1a1b23] border border-gray-200/60 dark:border-gray-800 space-y-1.5 text-xs"
+                                >
+                                  <div className="flex items-start justify-between gap-1.5">
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                      {it.shop?.code || it.shop?.name || it.shopId}
+                                    </span>
+                                    <span className="font-mono font-bold text-amber-600 text-[11px]">
+                                      x{it.multiplier || 1}
+                                    </span>
+                                  </div>
+                                  <div className="font-semibold text-xs text-gray-900 dark:text-white line-clamp-2">
+                                    {it.productName || it.listingName || '--'}
+                                  </div>
+                                  {it.variationName && (
+                                    <div className="text-[11px] text-[#5865f2] font-medium">
+                                      Phân loại: {it.variationName}
+                                    </div>
+                                  )}
+                                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-gray-200/40 dark:border-gray-800/40">
+                                    <button
+                                      onClick={() => handleOpenMapModal(it)}
+                                      className="px-2 py-0.5 text-[11px] text-[#5865f2] hover:bg-[#5865f2]/10 rounded border border-[#5865f2]/30"
+                                    >
+                                      Sửa hệ số / SKU
+                                    </button>
+                                    {it.id && !it.id.startsWith('unmapped-') && (
+                                      <button
+                                        onClick={() => handleDeleteMapping(it.id)}
+                                        className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded"
+                                        title="Gỡ khỏi nhóm"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         ))
                       )}
@@ -1851,7 +2240,8 @@ export const ProductsPage: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="bg-white dark:bg-[#161b26] rounded border border-rose-200 dark:border-rose-900/40 overflow-x-auto">
+                          {/* Desktop Unmapped Table */}
+                          <div className="bg-white dark:bg-[#161b26] rounded border border-rose-200 dark:border-rose-900/40 overflow-x-auto hidden md:block">
                             <table className="w-full text-left text-xs">
                               <thead>
                                 <tr className="bg-rose-50/50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300 border-b border-rose-100 text-[11px] font-semibold">
@@ -1889,6 +2279,41 @@ export const ProductsPage: React.FC = () => {
                                 ))}
                               </tbody>
                             </table>
+                          </div>
+
+                          {/* Mobile Unmapped Cards */}
+                          <div className="md:hidden space-y-2">
+                            {unmappedItems.map((it) => (
+                              <div
+                                key={it.id}
+                                className="p-2.5 rounded bg-white dark:bg-[#161b26] border border-rose-200 dark:border-rose-900/40 space-y-1.5 text-xs"
+                              >
+                                <div className="flex items-start justify-between gap-1.5">
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300">
+                                    {it.shop?.code || it.shopId}
+                                  </span>
+                                  <span className="font-mono font-bold text-amber-600 text-[11px]">
+                                    x{it.multiplier || 1}
+                                  </span>
+                                </div>
+                                <div className="font-semibold text-xs text-gray-900 dark:text-white line-clamp-2">
+                                  {it.productName || it.listingName || '--'}
+                                </div>
+                                {it.variationName && (
+                                  <div className="text-[11px] text-gray-500">
+                                    Phân loại: {it.variationName}
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-end pt-1 border-t border-rose-100 dark:border-rose-900/30">
+                                  <button
+                                    onClick={() => handleOpenMapModal(it)}
+                                    className="px-3 py-1 bg-[#5865f2] hover:bg-[#4752c4] text-white text-[11px] font-bold rounded shadow-2xs"
+                                  >
+                                    Gán vào SKU kho
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       )}

@@ -978,35 +978,35 @@ export const OrdersPage: React.FC = () => {
             className="w-full sm:w-60"
           />
 
-          <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 h-8 text-xs w-full sm:w-auto">
-            <Calendar size={13} className="text-gray-400 shrink-0" />
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => {
-                setFromDate(e.target.value);
-                setPage(1);
-              }}
-              className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none font-normal min-w-0"
-            />
-            <span className="text-gray-400 font-normal shrink-0">-</span>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => {
-                setToDate(e.target.value);
-                setPage(1);
-              }}
-              className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none font-normal min-w-0"
-            />
+          <div className="flex items-center gap-1.5 w-full sm:w-auto">
+            <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 h-8 text-xs flex-1 sm:w-auto">
+              <Calendar size={13} className="text-gray-400 shrink-0" />
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => {
+                  setFromDate(e.target.value);
+                  setPage(1);
+                }}
+                className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none font-normal min-w-0"
+              />
+              <span className="text-gray-400 font-normal shrink-0">-</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => {
+                  setToDate(e.target.value);
+                  setPage(1);
+                }}
+                className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none font-normal min-w-0"
+              />
+            </div>
+
+            {hasActiveFilter && (
+              <SystemFilterReset onClick={resetAllFilters} className="shrink-0" />
+            )}
           </div>
         </div>
-
-        {hasActiveFilter && (
-          <div className="w-full sm:w-auto flex justify-end">
-            <SystemFilterReset onClick={resetAllFilters} />
-          </div>
-        )}
       </SystemFilter>
 
       {/* Error alert */}

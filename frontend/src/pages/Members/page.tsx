@@ -582,7 +582,7 @@ export const MembersPage: React.FC = () => {
         </div>
       ) : (
         /* Members Table */
-        <div className="flex-1 flex flex-col min-h-fit md:min-h-0">
+        <div className="hidden md:flex flex-1 flex-col min-h-0">
           <SystemTableWrapper
             tableClassName="min-w-[850px]"
             pagination={
