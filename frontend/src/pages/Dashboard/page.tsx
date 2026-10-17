@@ -111,7 +111,8 @@ export const DashboardPage: React.FC = () => {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState<boolean>(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
-  useClickOutside(() => setIsStatusDropdownOpen(false), isStatusDropdownOpen, statusDropdownRef);
+  const statusDrawerRef = useRef<HTMLDivElement>(null);
+  useClickOutside(() => setIsStatusDropdownOpen(false), isStatusDropdownOpen, [statusDropdownRef, statusDrawerRef]);
 
   const toggleStatus = (statusId: string) => {
     setSelectedStatuses((prev) =>
@@ -207,6 +208,11 @@ export const DashboardPage: React.FC = () => {
 
                       {/* Bottom Sheet Drawer */}
                       <div
+                        ref={statusDrawerRef}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onTouchEnd={(e) => e.stopPropagation()}
                         className="relative z-10 w-full max-h-[85vh] bg-white dark:bg-[#161b26] border-t border-gray-200 dark:border-gray-800 rounded-t shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200"
                         style={{
                           paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
@@ -396,7 +402,13 @@ export const DashboardPage: React.FC = () => {
                   )
                 : (
                     /* Desktop Dropdown Popover */
-                    <div className="absolute right-0 top-full mt-1.5 z-50 w-[350px] rounded bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 shadow-xl p-3 text-xs animate-in fade-in zoom-in-95 duration-150">
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      onTouchEnd={(e) => e.stopPropagation()}
+                      className="absolute right-0 top-full mt-1.5 z-50 w-[350px] rounded bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 shadow-xl p-3 text-xs animate-in fade-in zoom-in-95 duration-150"
+                    >
                       {/* Header */}
                       <div className="pb-2.5 mb-2.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2">
                         <span className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 truncate min-w-0">

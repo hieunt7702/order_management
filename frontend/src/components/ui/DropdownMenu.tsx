@@ -220,7 +220,9 @@ export function DropdownMenuItem({
     e.stopPropagation();
     onClick?.(e);
     if (closeOnClick && context?.setIsOpen) {
-      context.setIsOpen(false);
+      setTimeout(() => {
+        context.setIsOpen(false);
+      }, 60);
     }
   };
 
@@ -235,6 +237,9 @@ export function DropdownMenuItem({
     <div
       role="menuitem"
       onClick={handleClick}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
       className={cn(
         'flex items-center gap-2 px-2.5 py-1.5 text-xs font-normal rounded transition-colors cursor-pointer select-none outline-none leading-snug',
         variantClasses[variant] || variantClasses.default,

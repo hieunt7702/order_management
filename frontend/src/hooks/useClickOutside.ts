@@ -15,6 +15,9 @@ export const useClickOutside = <T extends HTMLElement = HTMLElement>(
   const ref = (externalRef || internalRef) as any;
   const savedHandler = useRef(handler);
   const refHolder = useRef(ref);
+  // Keep refs immediately fresh on every render synchronously
+  refHolder.current = ref;
+  savedHandler.current = handler;
 
   useEffect(() => {
     savedHandler.current = handler;
@@ -32,12 +35,13 @@ export const useClickOutside = <T extends HTMLElement = HTMLElement>(
       if (!currentRef) return;
 
       const target = event.target as Node | null;
+      if (!target) return;
       const path = event.composedPath ? event.composedPath() : [];
 
       const refList = Array.isArray(currentRef) ? currentRef : [currentRef];
       const isInside = refList.some((r: any) => {
         const el = r?.current;
-        return el && (el.contains(target) || path.includes(el));
+        return el && (el === target || el.contains(target) || path.includes(el));
       });
 
       if (isInside) {
@@ -54,12 +58,12 @@ export const useClickOutside = <T extends HTMLElement = HTMLElement>(
     };
 
     document.addEventListener('mousedown', handleClickOutside, true);
-    document.addEventListener('touchstart', handleClickOutside, true);
+    document.addEventListener('touchend', handleClickOutside, true);
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside, true);
-      document.removeEventListener('touchstart', handleClickOutside, true);
+      document.removeEventListener('touchend', handleClickOutside, true);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [active]);

@@ -40,6 +40,9 @@ export interface SelectProps {
 }
 
 // Helper hook to detect mobile viewport (< 640px)
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -126,7 +129,7 @@ export const Select: React.FC<SelectProps> = ({
     });
   }, [placement, setIsOpen]);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!isOpen || (isMobile && mobileSheet) || !usePortal) {
       setCoords(null);
       return;
@@ -216,9 +219,14 @@ export const Select: React.FC<SelectProps> = ({
     lg: 'h-[42px] px-3.5 text-sm',
   };
 
-  const handleSelect = (val: string | number) => {
+  const handleSelect = (val: string | number, e?: React.SyntheticEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
     onChange?.(val);
-    setIsOpen(false);
+    setTimeout(() => {
+      setIsOpen(false);
+    }, 60);
   };
 
   const ActiveIcon = selectedOption?.icon || Icon;
@@ -284,7 +292,13 @@ export const Select: React.FC<SelectProps> = ({
             return (
               <li
                 key={String(opt.value)}
-                onClick={() => !opt.disabled && handleSelect(opt.value)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!opt.disabled) handleSelect(opt.value, e);
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
                 className={`px-3 py-2 text-xs flex items-center justify-between gap-2 transition-colors select-none font-normal
                   ${
                     opt.disabled
@@ -357,12 +371,15 @@ export const Select: React.FC<SelectProps> = ({
   );
 
   return (
-    <div className={`relative inline-block ${className}`} ref={containerRef}>
+    <div className={`relative inline-block ${className || 'w-full'}`} ref={containerRef}>
       {/* Trigger Button */}
       <button
         type="button"
         disabled={disabled}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!disabled) setIsOpen(!isOpen);
+        }}
         className={`w-full flex items-center justify-between gap-2 rounded bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 text-gray-800 dark:text-gray-100 font-normal transition-all cursor-pointer select-none
           hover:border-[#5865f2]/50 hover:bg-gray-50/50 dark:hover:bg-[#1c2230]
           focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]
@@ -412,13 +429,19 @@ export const Select: React.FC<SelectProps> = ({
             {/* Dark Backdrop */}
             <div
               className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200 animate-fade-in cursor-pointer"
-              onClick={() => setIsOpen(false)}
-              onTouchStart={() => setIsOpen(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+              }}
             />
 
             {/* Bottom Sheet Drawer */}
             <div
               ref={sheetRef}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => e.stopPropagation()}
               className="relative z-10 w-full max-h-[85vh] bg-white dark:bg-[#161b26] border-t border-gray-200 dark:border-gray-700/80 rounded-t shadow-[0_-12px_40px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-slide-up"
               style={{
                 paddingBottom:
@@ -509,7 +532,13 @@ export const Select: React.FC<SelectProps> = ({
                     return (
                       <li
                         key={String(opt.value)}
-                        onClick={() => !opt.disabled && handleSelect(opt.value)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!opt.disabled) handleSelect(opt.value, e);
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        onTouchEnd={(e) => e.stopPropagation()}
                         className={`px-4 py-3 text-sm flex items-center justify-between gap-2.5 transition-colors cursor-pointer select-none font-normal
                           ${
                             opt.disabled
@@ -611,6 +640,9 @@ export const Select: React.FC<SelectProps> = ({
                   ${menuWidth && menuWidth !== 'w-full' ? menuWidth : ''}
                 `}
                 onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
               >
                 {renderDesktopMenuContent()}
               </div>,
@@ -620,6 +652,10 @@ export const Select: React.FC<SelectProps> = ({
         ) : (
           <div
             ref={sheetRef}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
             className={`
               absolute z-50 min-w-[180px] ${menuWidth}
               bg-white dark:bg-[#181d28] border border-gray-200 dark:border-gray-700/80
