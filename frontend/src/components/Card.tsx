@@ -13,7 +13,8 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   return (
     <div
-      className={`rounded border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1c212a] ${className}`}
+      data-slot="card"
+      className={`rounded border border-gray-200/60 dark:border-white/[0.08] bg-white dark:bg-[#1c212a] ${className}`}
       style={style}
       {...props}
     >

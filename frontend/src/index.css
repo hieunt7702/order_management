@@ -19,6 +19,7 @@
   --accent-foreground: #151a1e;
   --destructive: #f04747;
   --border: #e3e5e8;
+  --card-border: rgba(229, 231, 235, 0.65);
   --input: #ffffff;
   --ring: #5865f2;
   --radius: 4px;
@@ -53,6 +54,7 @@
   --accent-foreground: #dcddde;
   --destructive: #f04747;
   --border: #262930;
+  --card-border: rgba(255, 255, 255, 0.08);
   --input: #1e2126;
   --ring: #5865f2;
 
@@ -98,6 +100,25 @@ nav .lucide,
 aside nav .lucide,
 header .lucide {
   stroke-width: 1.25 !important;
+}
+
+/* Refined Card Borders (Softer border in Light & Dark modes) */
+@layer components {
+  [data-slot="card"],
+  .card-border,
+  .system-card,
+  div[class*="rounded"][class*="border-gray-200"],
+  button[class*="rounded"][class*="border-gray-200"] {
+    border-color: var(--card-border);
+  }
+
+  .dark [data-slot="card"],
+  .dark .card-border,
+  .dark .system-card,
+  .dark div[class*="rounded"][class*="dark:border-gray-800"],
+  .dark button[class*="rounded"][class*="dark:border-gray-800"] {
+    border-color: var(--card-border);
+  }
 }
 
 /* Active navigation icons: slightly defined but remaining lightweight */

@@ -18,7 +18,7 @@ export function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        'group/card flex flex-col overflow-hidden rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 text-sm text-gray-900 dark:text-gray-100 shadow-none',
+        'group/card flex flex-col overflow-hidden rounded bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] text-sm text-gray-900 dark:text-gray-100 shadow-none',
         className,
       )}
       {...props}
@@ -38,7 +38,7 @@ export function CardHeader({
     <div
       data-slot="card-header"
       className={cn(
-        'p-4 sm:p-5 border-b border-gray-100 dark:border-gray-800',
+        'p-4 sm:p-5 border-b border-gray-100/80 dark:border-white/[0.06]',
         isRow ? 'flex flex-row items-center justify-between gap-3' : 'flex flex-col gap-1.5',
         className,
       )}
@@ -109,7 +109,7 @@ export function CardFooter({
     <div
       data-slot="card-footer"
       className={cn(
-        'flex items-center p-4 sm:p-5 pt-0 border-t border-gray-100 dark:border-gray-800',
+        'flex items-center p-4 sm:p-5 pt-0 border-t border-gray-100/80 dark:border-white/[0.06]',
         className,
       )}
       {...props}

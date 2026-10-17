@@ -54,7 +54,7 @@ export const SystemMetricCard: React.FC<SystemMetricCardProps> = ({
     green: {
       borderActive: 'border-green-500 ring-2 ring-green-500/20',
       borderInactive:
-        'border-gray-100 dark:border-gray-800 hover:border-green-300 dark:hover:border-green-900/50',
+        'border-gray-200/60 dark:border-white/[0.08] hover:border-green-300 dark:hover:border-green-900/50',
       bgActive: 'bg-green-500/20',
       bgInactive: 'bg-green-500/10',
       iconColor: 'text-green-500',
@@ -63,7 +63,7 @@ export const SystemMetricCard: React.FC<SystemMetricCardProps> = ({
     orange: {
       borderActive: 'border-orange-500 ring-2 ring-orange-500/20',
       borderInactive:
-        'border-gray-100 dark:border-gray-800 hover:border-orange-300 dark:hover:border-orange-900/50',
+        'border-gray-200/60 dark:border-white/[0.08] hover:border-orange-300 dark:hover:border-orange-900/50',
       bgActive: 'bg-orange-500/20',
       bgInactive: 'bg-orange-500/10',
       iconColor: 'text-orange-500',
@@ -72,7 +72,7 @@ export const SystemMetricCard: React.FC<SystemMetricCardProps> = ({
     red: {
       borderActive: 'border-red-500 ring-2 ring-red-500/20',
       borderInactive:
-        'border-gray-100 dark:border-gray-800 hover:border-red-300 dark:hover:border-red-900/50',
+        'border-gray-200/60 dark:border-white/[0.08] hover:border-red-300 dark:hover:border-red-900/50',
       bgActive: 'bg-red-500/20',
       bgInactive: 'bg-red-500/10',
       iconColor: 'text-red-500',
@@ -81,7 +81,7 @@ export const SystemMetricCard: React.FC<SystemMetricCardProps> = ({
     blue: {
       borderActive: 'border-blue-500 ring-2 ring-blue-500/20',
       borderInactive:
-        'border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-900/50',
+        'border-gray-200/60 dark:border-white/[0.08] hover:border-blue-300 dark:hover:border-blue-900/50',
       bgActive: 'bg-blue-500/20',
       bgInactive: 'bg-blue-500/10',
       iconColor: 'text-blue-500',
@@ -90,7 +90,7 @@ export const SystemMetricCard: React.FC<SystemMetricCardProps> = ({
     purple: {
       borderActive: 'border-purple-500 ring-2 ring-purple-500/20',
       borderInactive:
-        'border-gray-100 dark:border-gray-800 hover:border-purple-300 dark:hover:border-purple-900/50',
+        'border-gray-200/60 dark:border-white/[0.08] hover:border-purple-300 dark:hover:border-purple-900/50',
       bgActive: 'bg-purple-500/20',
       bgInactive: 'bg-purple-500/10',
       iconColor: 'text-purple-500',

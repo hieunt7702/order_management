@@ -80,7 +80,7 @@ export const MobileFeatureHub: React.FC = () => {
             Thao tác nhanh
           </h2>
 
-          <div className="bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 rounded grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-800 overflow-hidden shadow-2xs">
+          <div className="bg-white dark:bg-[#161922] border border-gray-200/60 dark:border-white/[0.08] rounded grid grid-cols-3 divide-x divide-gray-100/80 dark:divide-white/[0.05] overflow-hidden shadow-2xs">
             {/* Action 1: Quét xuất hàng (Highlighted) */}
             <Link
               to="/scan"
@@ -130,7 +130,7 @@ export const MobileFeatureHub: React.FC = () => {
         </h2>
 
         {filteredGroups.length === 0 ? (
-          <div className="p-6 text-center rounded bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 text-xs text-gray-400">
+          <div className="p-6 text-center rounded bg-white dark:bg-[#161922] border border-gray-200/60 dark:border-white/[0.08] text-xs text-gray-400">
             Không tìm thấy chức năng nào phù hợp với "{searchQuery}"
           </div>
         ) : (
@@ -143,7 +143,7 @@ export const MobileFeatureHub: React.FC = () => {
                 </div>
 
                 {/* 2-Column Grid Card Container with unified system rounded */}
-                <div className="bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 rounded grid grid-cols-2 divide-x divide-gray-100 dark:divide-gray-800 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden shadow-2xs">
+                <div className="bg-white dark:bg-[#161922] border border-gray-200/60 dark:border-white/[0.08] rounded grid grid-cols-2 divide-x divide-gray-100/80 dark:divide-white/[0.05] divide-y divide-gray-100/80 dark:divide-white/[0.05] overflow-hidden shadow-2xs">
                   {group.items.map((item) => {
                     const IconComp = item.icon || Home;
                     return (

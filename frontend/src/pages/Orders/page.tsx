@@ -1236,8 +1236,8 @@ export const OrdersPage: React.FC = () => {
                 className={`p-3.5 rounded bg-white dark:bg-[#181b22] border ${
                   selectedOrderIds.includes(o.id)
                     ? 'border-indigo-400 dark:border-indigo-600 bg-indigo-50/20 dark:bg-indigo-950/20'
-                    : 'border-gray-200 dark:border-gray-800'
-                } space-y-2 cursor-pointer shadow-none`}
+                    : 'border-gray-200/60 dark:border-white/[0.08]'
+                } space-y-2 cursor-pointer shadow-none card-border`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0" onClick={(e) => e.stopPropagation()}>
@@ -1304,7 +1304,7 @@ export const OrdersPage: React.FC = () => {
         )}
 
         {/* Mobile Pagination */}
-        <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+        <div className="rounded border border-gray-200/60 dark:border-white/[0.08] overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
           <SystemPagination
             page={page - 1}
             totalPages={totalPages}

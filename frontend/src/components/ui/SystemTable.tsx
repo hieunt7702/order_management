@@ -19,7 +19,7 @@ export const SystemTableWrapper: React.FC<SystemTableWrapperProps> = ({
   return (
     <div
       className={cn(
-        'flex-1 flex flex-col min-h-[380px] md:min-h-0 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#14151a] shadow-none overflow-hidden shrink-0 md:shrink',
+        'flex-1 flex flex-col min-h-[380px] md:min-h-0 rounded border border-gray-200/60 dark:border-white/[0.08] bg-white dark:bg-[#14151a] shadow-none overflow-hidden shrink-0 md:shrink',
         className,
       )}
     >
