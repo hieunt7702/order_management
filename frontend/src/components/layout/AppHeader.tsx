@@ -10,7 +10,6 @@ import {
   Sun,
   RefreshCw,
   Menu,
-  Bell,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
@@ -154,17 +153,8 @@ export const AppHeader: React.FC = () => {
         )}
       </div>
 
-      {/* Right: Notification Bell, Actions, Theme Toggle, User Profile */}
+      {/* Right: Actions, Theme Toggle, User Profile */}
       <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
-        {/* Notification Bell matching mobile mockup */}
-        <button
-          type="button"
-          className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer relative"
-          title="Thông báo"
-        >
-          <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#5865f2] ring-2 ring-white dark:ring-[#14151a]" />
-        </button>
 
         {/* Refresh Context Button */}
         <button
