@@ -3,19 +3,16 @@ import { Outlet, useLocation, Link } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { AppHeader } from './AppHeader';
 import { MobileNavDrawer } from './MobileNavDrawer';
-import { useNavigationStore } from '../../stores/navigationStore';
 import {
   Home,
   ShoppingBag,
   ScanLine,
   Boxes,
-  LayoutGrid,
+  Settings,
 } from 'lucide-react';
 
 export const AppLayout: React.FC = () => {
   const location = useLocation();
-  const { isMobileMenuOpen, toggleMobileMenu } = useNavigationStore();
-
   const isHomeActive = location.pathname === '/';
   const isOrdersActive = location.pathname.startsWith('/orders');
   const isScanActive =
@@ -25,6 +22,7 @@ export const AppLayout: React.FC = () => {
   const isInventoryActive =
     location.pathname.startsWith('/inventory') ||
     location.pathname.startsWith('/products');
+  const isSettingsActive = location.pathname.startsWith('/settings');
 
   return (
     <div className="flex h-[100dvh] bg-[#f9f9fa] dark:bg-[#0f1115] text-[#151a1e] dark:text-[#dcddde] overflow-hidden font-sans transition-colors duration-300">
@@ -156,26 +154,26 @@ export const AppLayout: React.FC = () => {
               )}
             </Link>
 
-            {/* 5. Tất cả chức năng (Open Drawer) */}
-            <button
-              type="button"
-              onClick={toggleMobileMenu}
-              className="flex flex-col items-center justify-center w-16 h-full transition-colors relative group cursor-pointer"
-              title="Tất cả chức năng"
+            {/* 5. Cài đặt hệ thống */}
+            <Link
+              to="/settings"
+              data-active={isSettingsActive}
+              className="flex flex-col items-center justify-center w-16 h-full transition-colors relative group"
+              title="Cài đặt hệ thống"
             >
-              <LayoutGrid
-                strokeWidth={isMobileMenuOpen ? 1.4 : 1.25}
+              <Settings
+                strokeWidth={isSettingsActive ? 1.4 : 1.25}
                 className={`w-[24px] h-[24px] transition-all duration-300 z-10 ${
-                  isMobileMenuOpen
+                  isSettingsActive
                     ? 'text-[#5865f2] dark:text-[#7b85f5] scale-110 drop-shadow-[0_2px_10px_rgba(88,101,242,0.45)]'
                     : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white group-hover:scale-110'
                 }`}
               />
 
-              {isMobileMenuOpen && (
+              {isSettingsActive && (
                 <span className="absolute bottom-2 w-1.5 h-1.5 bg-[#5865f2] dark:bg-[#7b85f5] rounded-full shadow-[0_0_8px_rgba(88,101,242,0.8)]" />
               )}
-            </button>
+            </Link>
           </nav>
         </div>
       </div>
