@@ -299,6 +299,7 @@ export const AuditPage: React.FC = () => {
         >
           <SystemThead>
             <SystemTr>
+              <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
               <SystemTh align="left">Thời gian</SystemTh>
               <SystemTh align="left">Người thực hiện</SystemTh>
               <SystemTh align="left">Hành động</SystemTh>
@@ -310,10 +311,10 @@ export const AuditPage: React.FC = () => {
           </SystemThead>
           <SystemTbody>
             {isLoading ? (
-              <SystemTableSkeleton cols={7} rows={7} />
+              <SystemTableSkeleton cols={8} rows={7} />
             ) : paginatedLogs.length === 0 ? (
               <SystemTableEmpty
-                colSpan={7}
+                colSpan={8}
                 title="Không có bản ghi nhật ký kiểm toán nào"
                 description={
                   searchTerm
@@ -322,8 +323,13 @@ export const AuditPage: React.FC = () => {
                 }
               />
             ) : (
-              paginatedLogs.map((log) => (
-                <SystemTr key={log.id}>
+              paginatedLogs.map((log, index) => {
+                const stt = (page - 1) * limit + index + 1;
+                return (
+                  <SystemTr key={log.id}>
+                    <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                      {stt}
+                    </SystemTd>
                   <SystemTd className="text-gray-500 dark:text-gray-400 font-mono text-[11px] whitespace-nowrap">
                     {new Date(log.createdAt).toLocaleString('vi-VN')}
                   </SystemTd>
@@ -378,8 +384,9 @@ export const AuditPage: React.FC = () => {
                     </Button>
                   </SystemTd>
                 </SystemTr>
-              ))
-            )}
+              );
+            })
+          )}
           </SystemTbody>
         </SystemTableWrapper>
       </div>

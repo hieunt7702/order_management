@@ -342,6 +342,7 @@ export const OrderReturnsPage: React.FC = () => {
           <div className="flex flex-1 flex-col min-h-fit md:min-h-0">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
+                <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                 <SystemTh className="w-48">Mã Đơn & Vận Đơn</SystemTh>
                 <SystemTh className="w-48">Shop & Khách Hàng</SystemTh>
                 <SystemTh className="w-64">Sản Phẩm & Tiến Độ Hoàn</SystemTh>
@@ -354,16 +355,19 @@ export const OrderReturnsPage: React.FC = () => {
               </SystemThead>
               <SystemTbody>
                 {isLoading ? (
-                  <SystemTableSkeleton cols={9} rows={7} />
+                  <SystemTableSkeleton cols={10} rows={7} />
                 ) : returnQueue.length === 0 ? (
                   <SystemTableEmpty
                     title="Không có đơn hàng nào chờ hoàn"
                     description="Hiện không có đơn hàng nào đang chờ nhận hoàn hoặc kiểm tra tại kho."
-                    colSpan={9}
+                    colSpan={10}
                   />
                 ) : (
-                  returnQueue.map((item) => (
+                  returnQueue.map((item, index) => (
                     <SystemTr key={item.id}>
+                      <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                        {index + 1}
+                      </SystemTd>
                       <SystemTd>
                         <div className="font-semibold text-[#5865f2] font-mono">
                           {item.internalOrderCode}
@@ -475,6 +479,7 @@ export const OrderReturnsPage: React.FC = () => {
               }
             >
               <SystemThead>
+                <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                 <SystemTh className="w-40">Mã Phiếu Hoàn</SystemTh>
                 <SystemTh className="w-32">Ngày Nhận & Kiểm</SystemTh>
                 <SystemTh className="w-44">Mã Đơn & Vận Đơn</SystemTh>
@@ -486,18 +491,19 @@ export const OrderReturnsPage: React.FC = () => {
               </SystemThead>
               <SystemTbody>
                 {isLoading ? (
-                  <SystemTableSkeleton cols={8} rows={7} />
+                  <SystemTableSkeleton cols={9} rows={7} />
                 ) : historyList.length === 0 ? (
                   <SystemTableEmpty
                     title="Chưa có phiếu nhận hoàn nào"
                     description="Các phiếu kiểm nhận hàng hoàn đã xử lý sẽ được lưu trữ tại đây."
-                    colSpan={8}
+                    colSpan={9}
                   />
                 ) : (
-                  historyList.map((item) => {
+                  historyList.map((item, index) => {
                     const totalSellable = item.items.reduce((s, i) => s + i.sellableQuantity, 0);
                     const totalDamaged = item.items.reduce((s, i) => s + i.damagedQuantity, 0);
                     const totalMissing = item.items.reduce((s, i) => s + i.missingQuantity, 0);
+                    const stt = (historyPage - 1) * historyLimit + index + 1;
 
                     return (
                       <SystemTr
@@ -508,6 +514,9 @@ export const OrderReturnsPage: React.FC = () => {
                         }}
                         className="cursor-pointer"
                       >
+                        <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                          {stt}
+                        </SystemTd>
                         <SystemTd className="font-semibold font-mono text-[#5865f2]">
                           {item.returnCode}
                         </SystemTd>

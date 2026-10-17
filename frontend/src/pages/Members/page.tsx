@@ -598,6 +598,7 @@ export const MembersPage: React.FC = () => {
           >
             <SystemThead>
               <SystemTr>
+                <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                 <SystemTh align="left">Nhân viên / Họ tên</SystemTh>
                 <SystemTh align="left">Email đăng nhập</SystemTh>
                 <SystemTh align="center">Vai trò</SystemTh>
@@ -608,10 +609,10 @@ export const MembersPage: React.FC = () => {
             </SystemThead>
             <SystemTbody>
               {isLoading ? (
-                <SystemTableSkeleton cols={6} rows={7} />
+                <SystemTableSkeleton cols={7} rows={7} />
               ) : paginatedMembers.length === 0 ? (
                 <SystemTableEmpty
-                  colSpan={6}
+                  colSpan={7}
                   title="Không tìm thấy nhân viên nào"
                   description={
                     searchTerm
@@ -620,13 +621,17 @@ export const MembersPage: React.FC = () => {
                   }
                 />
               ) : (
-                paginatedMembers.map((m) => {
+                paginatedMembers.map((m, index) => {
                   const roleInfo = ROLES.find((r) => r.value === m.role);
                   const allowedShops = m.allowedShopIds || [];
                   const isGlobal = allowedShops.length === 0;
+                  const stt = (page - 1) * limit + index + 1;
 
                   return (
                     <SystemTr key={m.id}>
+                      <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                        {stt}
+                      </SystemTd>
                       <SystemTd>
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-[#5865f2]/10 text-[#5865f2] flex items-center justify-center font-semibold text-xs shrink-0">

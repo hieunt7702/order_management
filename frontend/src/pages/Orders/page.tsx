@@ -1071,6 +1071,7 @@ export const OrdersPage: React.FC = () => {
                 />
               </div>
             </SystemTh>
+            <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
             <SystemTh className="w-56">Mã đơn / Shop</SystemTh>
             <SystemTh className="w-32">Ngày đặt</SystemTh>
             <SystemTh className="w-48">Khách hàng</SystemTh>
@@ -1082,16 +1083,17 @@ export const OrdersPage: React.FC = () => {
           </SystemThead>
           <SystemTbody>
             {isLoading ? (
-              <SystemTableSkeleton cols={9} rows={7} />
+              <SystemTableSkeleton cols={10} rows={7} />
             ) : orders.length === 0 ? (
               <SystemTableEmpty
                 title="Không có đơn hàng nào"
                 description="Không tìm thấy đơn hàng nào phù hợp với điều kiện tìm kiếm hoặc bộ lọc hiện tại."
-                colSpan={9}
+                colSpan={10}
               />
             ) : (
-              orders.map((o) => {
+              orders.map((o, index) => {
                 const pCfg = getPlatformStatusConfig(o.platformStatus);
+                const stt = (page - 1) * limit + index + 1;
 
                 return (
                   <SystemTr
@@ -1110,6 +1112,9 @@ export const OrdersPage: React.FC = () => {
                           onChange={() => handleToggleSelectOrder(o.id)}
                         />
                       </div>
+                    </SystemTd>
+                    <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                      {stt}
                     </SystemTd>
                     <SystemTd>
                       <div className="font-mono font-medium text-xs text-gray-900 dark:text-white hover:text-[#5865f2] truncate">

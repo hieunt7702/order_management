@@ -774,6 +774,7 @@ export const SupplierDebtsPage: React.FC = () => {
           <div className="hidden md:flex flex-1 flex-col min-h-0">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
+                <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                 <SystemTh className="w-52">Mã & Nhà Cung Cấp</SystemTh>
                 <SystemTh className="w-56">Liên Hệ / Ngân Hàng</SystemTh>
                 <SystemTh className="w-32 text-right">Nợ Đầu Kỳ</SystemTh>
@@ -787,15 +788,15 @@ export const SupplierDebtsPage: React.FC = () => {
               </SystemThead>
               <SystemTbody>
                 {isLoading ? (
-                  <SystemTableSkeleton cols={10} rows={7} />
+                  <SystemTableSkeleton cols={11} rows={7} />
                 ) : suppliers.length === 0 ? (
                   <SystemTableEmpty
                     title="Chưa có dữ liệu nhà cung cấp"
                     description="Không tìm thấy nhà cung cấp nào phù hợp với bộ lọc hiện tại."
-                    colSpan={10}
+                    colSpan={11}
                   />
                 ) : (
-                  suppliers.map((s) => {
+                  suppliers.map((s, index) => {
                     const isShopOwing = s.closingDebt > 0;
                     const isSupplierHolding = s.closingDebt < 0;
 
@@ -805,6 +806,9 @@ export const SupplierDebtsPage: React.FC = () => {
                         onClick={() => handleOpenStatement(s.id)}
                         className="cursor-pointer"
                       >
+                        <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                          {index + 1}
+                        </SystemTd>
                         <SystemTd>
                           <div className="font-semibold text-gray-900 dark:text-white hover:text-[#5865f2]">
                             {s.name}
@@ -1037,6 +1041,7 @@ export const SupplierDebtsPage: React.FC = () => {
           <div className="hidden md:flex flex-1 flex-col min-h-0">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
+                <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                 <SystemTh className="w-44">Mã Phiếu & Ngày</SystemTh>
                 <SystemTh className="w-48">Nhà Cung Cấp</SystemTh>
                 <SystemTh className="w-36 text-right">Số Tiền Thực Chi</SystemTh>
@@ -1048,20 +1053,23 @@ export const SupplierDebtsPage: React.FC = () => {
               </SystemThead>
               <SystemTbody>
                 {isLoading ? (
-                  <SystemTableSkeleton cols={8} rows={7} />
+                  <SystemTableSkeleton cols={9} rows={7} />
                 ) : payments.length === 0 ? (
                   <SystemTableEmpty
                     title="Chưa có phiếu thanh toán nào"
                     description="Các phiếu chi trả nợ hoặc đặt cọc sẽ hiển thị tại đây."
-                    colSpan={8}
+                    colSpan={9}
                   />
                 ) : (
-                  payments.map((p) => {
+                  payments.map((p, index) => {
                     const isPersonal = p.fundSource === 'PERSONAL_FUND';
                     const isPendingReimbursement = p.isReimbursementNeeded && p.reimbursementStatus === 'PENDING_REIMBURSEMENT';
 
                     return (
                       <SystemTr key={p.id}>
+                        <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                          {index + 1}
+                        </SystemTd>
                         <SystemTd>
                           <div className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">{p.paymentCode}</div>
                           <div className="text-[11px] text-gray-400 mt-0.5">
@@ -1281,6 +1289,7 @@ export const SupplierDebtsPage: React.FC = () => {
           <div className="hidden md:flex flex-1 flex-col min-h-0">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
+                <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                 <SystemTh className="w-40">Mã Phiếu Trả</SystemTh>
                 <SystemTh className="w-32">Ngày Trả</SystemTh>
                 <SystemTh className="w-48">Nhà Cung Cấp</SystemTh>
@@ -1292,16 +1301,19 @@ export const SupplierDebtsPage: React.FC = () => {
               </SystemThead>
               <SystemTbody>
                 {isLoading ? (
-                  <SystemTableSkeleton cols={8} rows={7} />
+                  <SystemTableSkeleton cols={9} rows={7} />
                 ) : returns.length === 0 ? (
                   <SystemTableEmpty
                     title="Chưa có phiếu trả hàng nào"
                     description="Các phiếu xuất trả hàng nhà cung cấp sẽ hiển thị tại đây."
-                    colSpan={8}
+                    colSpan={9}
                   />
                 ) : (
-                  returns.map((ret) => (
+                  returns.map((ret, index) => (
                     <SystemTr key={ret.id}>
+                      <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                        {index + 1}
+                      </SystemTd>
                       <SystemTd className="font-bold font-mono text-orange-600">{ret.returnCode}</SystemTd>
                       <SystemTd className="text-gray-500">
                         {new Date(ret.returnDate).toLocaleDateString('vi-VN')}

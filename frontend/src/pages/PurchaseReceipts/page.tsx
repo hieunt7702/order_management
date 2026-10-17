@@ -562,6 +562,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
           }
         >
           <SystemThead>
+            <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
             <SystemTh className="w-44">
               <div className="flex items-center gap-1.5">
                 <FileText size={12} className="text-gray-400 shrink-0" />
@@ -625,18 +626,19 @@ export const PurchaseReceiptsPage: React.FC = () => {
           </SystemThead>
           <SystemTbody>
             {isLoading ? (
-              <SystemTableSkeleton cols={10} rows={7} />
+              <SystemTableSkeleton cols={11} rows={7} />
             ) : receipts.length === 0 ? (
               <SystemTableEmpty
                 title="Không có phiếu nhập kho nào"
                 description="Không tìm thấy phiếu nhập nào phù hợp với bộ lọc hiện tại."
-                colSpan={10}
+                colSpan={11}
               />
             ) : (
-              receipts.map((r) => {
+              receipts.map((r, index) => {
                 const isOverdue = r.dueStatus === 'OVERDUE';
                 const isDueSoon = r.dueStatus === 'DUE_SOON';
                 const hasRemaining = Number(r.remainingAmount) > 0;
+                const stt = (page - 1) * limit + index + 1;
 
                 return (
                   <SystemTr
@@ -647,6 +649,9 @@ export const PurchaseReceiptsPage: React.FC = () => {
                     }}
                     className="cursor-pointer"
                   >
+                    <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                      {stt}
+                    </SystemTd>
                     {/* Mã & Ngày */}
                     <SystemTd>
                       <div className="font-semibold font-mono text-indigo-600 dark:text-indigo-400 hover:underline">

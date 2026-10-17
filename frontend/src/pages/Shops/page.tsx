@@ -542,6 +542,9 @@ export const ShopsPage: React.FC = () => {
             }
           >
             <SystemThead>
+              <SystemTh className="w-[60px] text-center" align="center">
+                STT
+              </SystemTh>
               <SystemTh className="w-[320px]" align="left">
                 <div className="flex items-center gap-1.5 font-semibold">
                   <Store size={13} className="text-orange-500 shrink-0" />
@@ -571,10 +574,10 @@ export const ShopsPage: React.FC = () => {
             </SystemThead>
             <SystemTbody>
               {isLoading ? (
-                <SystemTableSkeleton cols={5} rows={6} />
+                <SystemTableSkeleton cols={6} rows={6} />
               ) : paginatedShops.length === 0 ? (
                 <SystemTableEmpty
-                  colSpan={5}
+                  colSpan={6}
                   title="Không tìm thấy gian hàng nào"
                   description={
                     searchTerm
@@ -583,12 +586,16 @@ export const ShopsPage: React.FC = () => {
                   }
                 />
               ) : (
-                paginatedShops.map((shop) => {
+                paginatedShops.map((shop, index) => {
                   const defaultWh = warehouses.find((w) => w.id === shop.defaultWarehouseId);
                   const isActive = shop.isActive !== false;
+                  const stt = (page - 1) * limit + index + 1;
 
                   return (
                     <SystemTr key={shop.id}>
+                      <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                        {stt}
+                      </SystemTd>
                       <SystemTd>
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-xs border border-orange-500/20 shrink-0">

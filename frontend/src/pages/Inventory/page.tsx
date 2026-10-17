@@ -535,6 +535,7 @@ export const InventoryPage: React.FC = () => {
                     }
                   >
                   <SystemThead>
+                    <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                     <SystemTh className="w-44">SKU Biến thể</SystemTh>
                     <SystemTh className="w-64">Tên sản phẩm</SystemTh>
                     <SystemTh className="w-40">Kho</SystemTh>
@@ -546,15 +547,15 @@ export const InventoryPage: React.FC = () => {
                   </SystemThead>
                   <SystemTbody>
                     {isLoadingBalances ? (
-                      <SystemTableSkeleton cols={8} rows={7} />
+                      <SystemTableSkeleton cols={9} rows={7} />
                     ) : filteredBalances.length === 0 ? (
                       <SystemTableEmpty
                         title="Không có dữ liệu tồn kho"
                         description="Không tìm thấy SKU nào phù hợp với bộ lọc hiện tại. Hãy thực hiện Nhập kho để khởi tạo số dư."
-                        colSpan={8}
+                        colSpan={9}
                       />
                     ) : (
-                      paginatedBalances.map((b) => {
+                      paginatedBalances.map((b, index) => {
                         const onHand = b.onHand || 0;
                         const reserved = b.reserved || 0;
                         const available = b.available ?? onHand - reserved;
@@ -567,9 +568,13 @@ export const InventoryPage: React.FC = () => {
                         const minAlert = b.lowStockThreshold ?? vObj?.lowStockThreshold ?? vObj?.minStockAlert ?? 5;
                         const isLowStock = available <= minAlert;
                         const isNegative = available < 0;
+                        const stt = (balancePage - 1) * balanceLimit + index + 1;
 
                         return (
                           <SystemTr key={b.id || `${b.warehouseId}_${b.variantId}`}>
+                            <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                              {stt}
+                            </SystemTd>
                             <SystemTd>
                               <div className="font-mono font-bold text-[#5865f2]">
                                 {sku}
@@ -845,6 +850,7 @@ export const InventoryPage: React.FC = () => {
                   }
                 >
                   <SystemThead>
+                    <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                     <SystemTh className="w-40">Thời gian</SystemTh>
                     <SystemTh className="w-32">Loại bút toán</SystemTh>
                     <SystemTh className="w-44">SKU Biến thể</SystemTh>
@@ -856,15 +862,15 @@ export const InventoryPage: React.FC = () => {
                   </SystemThead>
                   <SystemTbody>
                     {isLoadingLedger ? (
-                      <SystemTableSkeleton cols={8} rows={7} />
+                      <SystemTableSkeleton cols={9} rows={7} />
                     ) : ledgerEntries.length === 0 ? (
                       <SystemTableEmpty
                         title="Chưa có bút toán nào"
                         description="Chưa có bản ghi biến động nào trong sổ cái kho."
-                        colSpan={8}
+                        colSpan={9}
                       />
                     ) : (
-                      paginatedLedger.map((l) => {
+                      paginatedLedger.map((l, index) => {
                         const isPositive = (l.deltaOnHand || l.quantityDelta || 0) > 0;
                         const delta = l.deltaOnHand ?? l.quantityDelta ?? 0;
                         const type = l.entryType || l.type || 'UNKNOWN';
@@ -873,9 +879,13 @@ export const InventoryPage: React.FC = () => {
                         const sku = l.sku || vObj?.sku || l.variantId;
                         const variantName = l.variantName || vObj?.name;
                         const warehouseName = l.warehouseName || wObj?.name || l.warehouseId;
+                        const stt = (ledgerPage - 1) * ledgerLimit + index + 1;
 
                         return (
                           <SystemTr key={l.id}>
+                            <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                              {stt}
+                            </SystemTd>
                             <SystemTd className="text-gray-500 font-mono text-[11px] whitespace-nowrap">
                               {new Date(l.createdAt).toLocaleString('vi-VN')}
                             </SystemTd>
@@ -1111,6 +1121,7 @@ export const InventoryPage: React.FC = () => {
                     }
                   >
                     <SystemThead>
+                      <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                       <SystemTh className="w-52">SKU & Biến thể</SystemTh>
                       <SystemTh className="w-36">Kho hàng</SystemTh>
                       <SystemTh className="w-40 text-right">Số dư Bảng Tồn (onHand)</SystemTh>
@@ -1120,7 +1131,7 @@ export const InventoryPage: React.FC = () => {
                     </SystemThead>
                     <SystemTbody>
                       {isReconciling ? (
-                        <SystemTableSkeleton cols={6} rows={6} />
+                        <SystemTableSkeleton cols={7} rows={6} />
                       ) : filteredItems.length === 0 ? (
                         <SystemTableEmpty
                           title={
@@ -1133,7 +1144,7 @@ export const InventoryPage: React.FC = () => {
                               ? 'Không có biến thể nào khớp với từ khóa tìm kiếm hoặc bộ lọc trạng thái hiện tại.'
                               : "Vui lòng bấm 'Chạy kiểm toán ngay' để quét và so khớp toàn bộ số dư với sổ cái bất biến."
                           }
-                          colSpan={6}
+                          colSpan={7}
                         />
                       ) : (
                         paginatedItems.map((r: any, idx: number) => {
@@ -1148,6 +1159,7 @@ export const InventoryPage: React.FC = () => {
                             r.calculatedFromLedger ??
                             r.ledgerCalculatedOnHand ??
                             0;
+                          const stt = (reconciliationPage - 1) * reconciliationLimit + idx + 1;
 
                           return (
                             <SystemTr
@@ -1158,6 +1170,9 @@ export const InventoryPage: React.FC = () => {
                                   : ''
                               }
                             >
+                              <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                                {stt}
+                              </SystemTd>
                               <SystemTd>
                                 <div className="font-mono font-bold text-xs text-gray-900 dark:text-white">
                                   {r.sku}

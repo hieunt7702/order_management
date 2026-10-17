@@ -222,6 +222,7 @@ export const SettingsPage: React.FC = () => {
             <table className="w-full text-left border-collapse text-xs">
               <SystemThead>
                 <SystemTr>
+                  <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                   <SystemTh align="left">Mã kho</SystemTh>
                   <SystemTh align="left">Tên kho</SystemTh>
                   <SystemTh align="left">Địa chỉ kho</SystemTh>
@@ -233,13 +234,16 @@ export const SettingsPage: React.FC = () => {
               <SystemTbody>
                 {warehouses.length === 0 ? (
                   <SystemTr>
-                    <SystemTd colSpan={6} align="center" className="py-8 text-gray-400">
+                    <SystemTd colSpan={7} align="center" className="py-8 text-gray-400">
                       Chưa có kho nào. Nhấn &quot;Thêm kho mới&quot; để tạo kho xuất hàng.
                     </SystemTd>
                   </SystemTr>
                 ) : (
-                  warehouses.map((wh) => (
+                  warehouses.map((wh, index) => (
                     <SystemTr key={wh.id}>
+                      <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                        {index + 1}
+                      </SystemTd>
                       <SystemTd className="font-mono font-medium text-[#5865f2]">
                         {wh.code}
                       </SystemTd>

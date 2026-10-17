@@ -1074,6 +1074,9 @@ export const ProductsPage: React.FC = () => {
                     }
                   >
                     <SystemThead>
+                      <SystemTh className="w-[50px] min-w-[50px] text-center" align="center">
+                        STT
+                      </SystemTh>
                       <SystemTh className="w-[260px] min-w-[240px]" align="left">
                         <div className="flex items-center gap-1.5 font-semibold">
                           <Package size={13} className="text-[#5865f2]" />
@@ -1124,10 +1127,10 @@ export const ProductsPage: React.FC = () => {
                     </SystemThead>
                     <SystemTbody>
                       {isLoadingProducts ? (
-                        <SystemTableSkeleton cols={8} rows={7} />
+                        <SystemTableSkeleton cols={9} rows={7} />
                       ) : displayedProducts.length === 0 ? (
                         <SystemTableEmpty
-                          colSpan={8}
+                          colSpan={9}
                           title="Không tìm thấy sản phẩm nào"
                           description={
                             searchTerm || mappingStatusFilter !== 'ALL'
@@ -1136,7 +1139,8 @@ export const ProductsPage: React.FC = () => {
                           }
                         />
                       ) : (
-                        displayedProducts.map((product) => {
+                        displayedProducts.map((product, pIdx) => {
+                          const stt = (page - 1) * limit + pIdx + 1;
                           const variants =
                             product.variants && product.variants.length > 0
                               ? product.variants
@@ -1161,6 +1165,16 @@ export const ProductsPage: React.FC = () => {
 
                             return (
                               <SystemTr key={variant.id}>
+                                {/* STT (RowSpan for first variant) */}
+                                {vIdx === 0 ? (
+                                  <td
+                                    rowSpan={variants.length}
+                                    className="py-3.5 px-2.5 text-center font-medium text-gray-500 dark:text-gray-400 text-xs align-top border-r border-gray-100 dark:border-gray-800/60"
+                                  >
+                                    {stt}
+                                  </td>
+                                ) : null}
+
                                 {/* Product Parent Info (RowSpan for first variant) */}
                                 {vIdx === 0 ? (
                                   <td
@@ -1512,6 +1526,9 @@ export const ProductsPage: React.FC = () => {
                           />
                         </div>
                       </SystemTh>
+                      <SystemTh className="w-[50px] text-center" align="center">
+                        STT
+                      </SystemTh>
                       <SystemTh className="w-[140px]" align="left">
                         <div className="flex items-center gap-1.5 font-semibold">
                           <Store size={13} className="text-orange-500" />
@@ -1550,18 +1567,19 @@ export const ProductsPage: React.FC = () => {
                     </SystemThead>
                     <SystemTbody>
                       {isLoadingMappings ? (
-                        <SystemTableSkeleton cols={7} rows={7} />
+                        <SystemTableSkeleton cols={8} rows={7} />
                       ) : filteredMappings.length === 0 ? (
                         <SystemTableEmpty
-                          colSpan={7}
+                          colSpan={8}
                           title="Không có sản phẩm sàn nào"
                           description="Sau khi tải lên file Excel Shopee hoặc phát sinh đơn hàng, các sản phẩm sàn sẽ hiển thị ở đây để gán vào SKU kho."
                         />
                       ) : (
-                        paginatedMappings.map((m) => {
+                        paginatedMappings.map((m, mIdx) => {
                           const isSelected = selectedListingIds.includes(m.id);
                           const internalVariant = m.variant || m.internalVariant;
                           const isMapped = m.isMapped !== false && Boolean(internalVariant);
+                          const stt = (mappingPage - 1) * mappingLimit + mIdx + 1;
 
                           return (
                             <SystemTr
@@ -1575,6 +1593,9 @@ export const ProductsPage: React.FC = () => {
                                     onChange={() => toggleSelectListing(m.id)}
                                   />
                                 </div>
+                              </SystemTd>
+                              <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                                {stt}
                               </SystemTd>
                               <SystemTd className="shrink-0">
                                 <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">

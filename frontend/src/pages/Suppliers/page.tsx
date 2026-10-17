@@ -451,6 +451,7 @@ export const SuppliersPage: React.FC = () => {
           }
         >
           <SystemThead>
+            <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
             <SystemTh className="w-56">Mã & Tên Nhà Cung Cấp</SystemTh>
             <SystemTh className="w-44">Thông tin liên hệ</SystemTh>
             <SystemTh className="w-56">Địa chỉ</SystemTh>
@@ -462,7 +463,7 @@ export const SuppliersPage: React.FC = () => {
           </SystemThead>
           <SystemTbody>
             {isLoading ? (
-              <SystemTableSkeleton cols={8} rows={7} />
+              <SystemTableSkeleton cols={9} rows={7} />
             ) : filteredSuppliers.length === 0 ? (
               <SystemTableEmpty
                 title="Không có nhà cung cấp nào"
@@ -471,16 +472,20 @@ export const SuppliersPage: React.FC = () => {
                     ? 'Không tìm thấy nhà cung cấp phù hợp với bộ lọc hiện tại.'
                     : 'Chưa có nhà cung cấp nào. Hãy bấm "Thêm nhà cung cấp mới" để khởi tạo danh bạ.'
                 }
-                colSpan={8}
+                colSpan={9}
               />
             ) : (
-              paginatedSuppliers.map((s) => {
+              paginatedSuppliers.map((s, index) => {
                 const closingDebt = s.closingDebt || 0;
                 const isPayable = closingDebt > 0;
                 const isAdvance = closingDebt < 0;
+                const stt = (page - 1) * limit + index + 1;
 
                 return (
                   <SystemTr key={s.id}>
+                    <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                      {stt}
+                    </SystemTd>
                     <SystemTd>
                       <div className="font-mono font-bold text-xs text-gray-900 dark:text-white flex items-center gap-1.5">
                         <span className="text-[#5865f2]">{s.code}</span>

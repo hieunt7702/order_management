@@ -264,6 +264,7 @@ export const SettlementsPage: React.FC = () => {
           }
         >
           <SystemThead>
+            <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
             <SystemTh className="w-52" align="left">
               <div className="flex items-center gap-1.5">
                 <Receipt size={12} className="text-gray-400 shrink-0" />
@@ -327,15 +328,15 @@ export const SettlementsPage: React.FC = () => {
           </SystemThead>
           <SystemTbody>
             {isLoading ? (
-              <SystemTableSkeleton cols={10} rows={7} />
+              <SystemTableSkeleton cols={11} rows={7} />
             ) : paginatedSettlements.length === 0 ? (
               <SystemTableEmpty
-                colSpan={10}
+                colSpan={11}
                 title="Không có bản ghi đối soát nào"
                 description="Thử tìm kiếm với từ khóa khác hoặc thay đổi bộ lọc trạng thái."
               />
             ) : (
-              paginatedSettlements.map((s) => {
+              paginatedSettlements.map((s, index) => {
                 const gross = s.grossAmount || s.order?.totalAmount || 0;
                 const fees = s.platformFees || 0;
                 const expected = s.expectedAmount || s.netAmount || 0;
@@ -343,9 +344,13 @@ export const SettlementsPage: React.FC = () => {
                 const hasActual = actual !== null && actual !== undefined;
                 const discrepancy = hasActual ? actual - expected : 0;
                 const isMatched = hasActual && Math.abs(discrepancy) < 1;
+                const stt = (page - 1) * limit + index + 1;
 
                 return (
                   <SystemTr key={s.id}>
+                    <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                      {stt}
+                    </SystemTd>
                     <SystemTd className="font-mono font-medium text-gray-900 dark:text-white">
                       {s.order?.externalOrderId || s.order?.internalOrderCode || s.order?.orderSn || s.orderId}
                     </SystemTd>

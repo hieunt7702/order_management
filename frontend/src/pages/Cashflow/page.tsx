@@ -1037,6 +1037,7 @@ export const CashflowPage: React.FC = () => {
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
+                  <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                   <SystemTh>Mã phiếu</SystemTh>
                   <SystemTh>Ngày</SystemTh>
                   <SystemTh>Khoản mục</SystemTh>
@@ -1051,17 +1052,22 @@ export const CashflowPage: React.FC = () => {
               </SystemThead>
               <SystemTbody>
                 {txLoading ? (
-                  <SystemTableSkeleton rows={8} cols={10} />
+                  <SystemTableSkeleton rows={8} cols={11} />
                 ) : transactions.length === 0 ? (
                   <SystemTableEmpty
                     title="Không có giao dịch nào"
                     description="Không tìm thấy bản ghi thu chi nào phù hợp với bộ lọc hiện tại."
-                    colSpan={10}
+                    colSpan={11}
                   />
                 ) : (
-                  transactions.map((tx) => (
-                    <SystemTr key={tx.id}>
-                      <SystemTd>
+                  transactions.map((tx, index) => {
+                    const stt = (txPage - 1) * txLimit + index + 1;
+                    return (
+                      <SystemTr key={tx.id}>
+                        <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                          {stt}
+                        </SystemTd>
+                        <SystemTd>
                         <div className="font-mono font-medium text-xs text-gray-900 dark:text-gray-100">
                           {tx.transactionCode}
                         </div>
@@ -1163,8 +1169,9 @@ export const CashflowPage: React.FC = () => {
                         </div>
                       </SystemTd>
                     </SystemTr>
-                  ))
-                )}
+                  );
+                })
+              )}
               </SystemTbody>
             </SystemTableWrapper>
 
@@ -1326,6 +1333,7 @@ export const CashflowPage: React.FC = () => {
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
+                  <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                   <SystemTh>Mã đơn Shopee</SystemTh>
                   <SystemTh>Shop</SystemTh>
                   <SystemTh>1. Giá trị hàng hóa</SystemTh>
@@ -1338,20 +1346,24 @@ export const CashflowPage: React.FC = () => {
               </SystemThead>
               <SystemTbody>
                 {reconLoading ? (
-                  <SystemTableSkeleton rows={8} cols={8} />
+                  <SystemTableSkeleton rows={8} cols={9} />
                 ) : reconItems.length === 0 ? (
                   <SystemTableEmpty
                     title="Chưa có dữ liệu đối soát"
                     description="Không tìm thấy đơn hàng đối soát nào phù hợp với bộ lọc."
-                    colSpan={8}
+                    colSpan={9}
                   />
                 ) : (
-                  reconItems.map((rec) => {
+                  reconItems.map((rec, index) => {
                     const est = Number(rec.estimatedPayout || 0);
                     const setl = Number(rec.settledPayout || 0);
                     const diff = setl > 0 ? setl - est : 0;
+                    const stt = (reconPage - 1) * reconLimit + index + 1;
                     return (
                       <SystemTr key={rec.id}>
+                        <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                          {stt}
+                        </SystemTd>
                         <SystemTd>
                           <div className="font-mono font-medium text-xs text-gray-900 dark:text-white">
                             {rec.externalOrderId}
@@ -1580,6 +1592,7 @@ export const CashflowPage: React.FC = () => {
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
+                  <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                   <SystemTh>Mã khoản mục</SystemTh>
                   <SystemTh>Tên khoản mục</SystemTh>
                   <SystemTh>Loại nghiệp vụ</SystemTh>
@@ -1590,8 +1603,11 @@ export const CashflowPage: React.FC = () => {
                 </SystemTr>
               </SystemThead>
               <SystemTbody>
-                {categories.map((cat) => (
+                {categories.map((cat, index) => (
                   <SystemTr key={cat.id}>
+                    <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
+                      {index + 1}
+                    </SystemTd>
                     <SystemTd>
                       <span className="font-mono font-medium text-xs text-gray-800 dark:text-gray-200">
                         {cat.code}
