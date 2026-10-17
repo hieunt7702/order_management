@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Wallet,
   ArrowDownLeft,
@@ -6,6 +7,7 @@ import {
   ArrowLeftRight,
   FileSpreadsheet,
   Plus,
+  Minus,
   RotateCcw,
   Landmark,
   Tag,
@@ -21,6 +23,16 @@ import {
   Check,
   Store,
   Activity,
+  Upload,
+  MoreHorizontal,
+  MoreVertical,
+  ChevronRight,
+  Clock,
+  Package,
+  FileText,
+  CreditCard,
+  Truck,
+  ArrowUpDown,
 } from 'lucide-react';
 import {
   cashflowApi,
@@ -55,6 +67,13 @@ import {
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
 import { toast } from '../../components/ui/Toast';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '../../components/ui/DropdownMenu';
 import { CreateTransactionModal } from './CreateTransactionModal';
 import { InternalTransferModal } from './InternalTransferModal';
 import { ImportSettlementModal } from './ImportSettlementModal';
@@ -70,15 +89,16 @@ type ActiveTab =
   | 'CATEGORIES';
 
 const CASHFLOW_TABS = [
-  { id: 'OVERVIEW', label: 'Tổng quan tiền', icon: TrendingUp },
-  { id: 'TRANSACTIONS', label: 'Sổ thu chi', icon: Receipt },
-  { id: 'RECONCILIATION', label: 'Đối soát tiền Shopee', icon: ShieldCheck },
-  { id: 'SUPPLIERS', label: 'Thanh toán NCC & Công nợ', icon: Building2 },
-  { id: 'ACCOUNTS', label: 'Tài khoản & Quỹ', icon: Landmark },
-  { id: 'CATEGORIES', label: 'Danh mục thu chi', icon: Tag },
+  { id: 'OVERVIEW', label: 'Tổng quan' },
+  { id: 'TRANSACTIONS', label: 'Sổ thu chi' },
+  { id: 'RECONCILIATION', label: 'Đối soát Shopee' },
+  { id: 'SUPPLIERS', label: 'Thanh toán NCC' },
+  { id: 'ACCOUNTS', label: 'Tài khoản & quỹ' },
+  { id: 'CATEGORIES', label: 'Danh mục thu chi' },
 ] as const;
 
 export const CashflowPage: React.FC = () => {
+  const navigate = useNavigate();
   const { selectedShopId: storeShopId, setSelectedShopId: setStoreShopId, shops: storeShops } =
     useWorkspaceStore();
 
@@ -91,8 +111,36 @@ export const CashflowPage: React.FC = () => {
 
   // Global Filters
   const [selectedShopId, setSelectedShopId] = useState<string>(storeShopId || 'ALL');
+  const [datePreset, setDatePreset] = useState<string>('ALL');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+
+  const handleDatePresetChange = (preset: string) => {
+    setDatePreset(preset);
+    const now = new Date();
+    if (preset === 'ALL') {
+      setStartDate('');
+      setEndDate('');
+    } else if (preset === 'TODAY') {
+      const todayStr = now.toISOString().slice(0, 10);
+      setStartDate(todayStr);
+      setEndDate(todayStr);
+    } else if (preset === 'LAST_7_DAYS') {
+      const past = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      setStartDate(past.toISOString().slice(0, 10));
+      setEndDate(now.toISOString().slice(0, 10));
+    } else if (preset === 'THIS_MONTH') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      setStartDate(firstDay.toISOString().slice(0, 10));
+      setEndDate(lastDay.toISOString().slice(0, 10));
+    } else if (preset === 'LAST_MONTH') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+      setStartDate(firstDay.toISOString().slice(0, 10));
+      setEndDate(lastDay.toISOString().slice(0, 10));
+    }
+  };
 
   // Transactions Tab State
   const [transactions, setTransactions] = useState<CashTransactionModel[]>([]);
@@ -290,164 +338,124 @@ export const CashflowPage: React.FC = () => {
     }
   };
 
-  const hasGlobalFilter = selectedShopId !== 'ALL' || startDate || endDate;
+  const recentList =
+    overview?.recentTransactions && overview.recentTransactions.length > 0
+      ? overview.recentTransactions
+      : transactions.slice(0, 5);
+
+  const displayAccounts =
+    accounts.length > 0
+      ? accounts
+      : overview?.accounts && overview.accounts.length > 0
+      ? overview.accounts
+      : [];
 
   return (
-    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-4 animate-in fade-in duration-300">
       {/* 1. Top Header */}
-      <div className="flex items-center justify-between gap-2 shrink-0">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
-            <Wallet size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
-            <span className="sm:hidden truncate">Thu chi & Quỹ</span>
-            <span className="hidden sm:inline truncate">Thu chi & Đối soát tiền</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+            Thu chi & đối soát
           </h1>
-          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
-            Quản lý dòng tiền, quỹ tiền mặt, ngân hàng, đối soát tiền sàn Shopee và công nợ nhà cung cấp
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Theo dõi dòng tiền, quản lý quỹ và đối soát thanh toán.
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <Button
-            size="sm"
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
             onClick={handleOpenIncome}
-            className="gap-1.5 px-2.5 sm:px-3 bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="px-3.5 py-2 bg-[#10b981] hover:bg-[#059669] text-white font-medium text-xs sm:text-sm rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
             title="Tạo phiếu thu tiền"
           >
-            <ArrowDownLeft size={14} className="stroke-[2.5]" />
-            <span className="hidden sm:inline">Thu tiền</span>
-            <span className="sm:hidden">Thu</span>
-          </Button>
+            <Plus size={16} className="stroke-[2.5]" />
+            <span>Thu tiền</span>
+          </button>
 
-          <Button
-            size="sm"
+          <button
+            type="button"
             onClick={() => handleOpenExpense()}
-            className="gap-1.5 px-2.5 sm:px-3 bg-rose-600 hover:bg-rose-700 text-white"
+            className="px-3.5 py-2 bg-[#4f46e5] hover:bg-[#4338ca] text-white font-medium text-xs sm:text-sm rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
             title="Tạo phiếu chi tiền"
           >
-            <ArrowUpRight size={14} className="stroke-[2.5]" />
-            <span className="hidden sm:inline">Chi tiền</span>
-            <span className="sm:hidden">Chi</span>
-          </Button>
+            <Minus size={16} className="stroke-[2.5]" />
+            <span>Chi tiền</span>
+          </button>
 
-          <Button
-            variant="outline"
-            size="sm"
+          <button
+            type="button"
             onClick={() => setIsTransferModalOpen(true)}
-            className="gap-1.5 p-2 sm:px-3"
+            className="px-3.5 py-2 bg-gray-100 dark:bg-[#161a26] hover:bg-gray-200 dark:hover:bg-[#1f2436] border border-gray-300 dark:border-[#262c3f] text-gray-700 dark:text-gray-200 font-medium text-xs sm:text-sm rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
             title="Chuyển tiền giữa các tài khoản & rút tiền Shopee"
           >
-            <ArrowLeftRight size={14} className="text-[#5865f2]" />
-            <span className="hidden sm:inline">Chuyển quỹ</span>
-          </Button>
+            <ArrowLeftRight size={14} className="text-gray-500 dark:text-gray-400" />
+            <span>Chuyển quỹ</span>
+          </button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsImportModalOpen(true)}
-            className="gap-1.5 p-2 sm:px-3"
-            title="Import file quyết toán Shopee"
-          >
-            <FileSpreadsheet size={14} className="text-emerald-600 dark:text-emerald-400" />
-            <span className="hidden sm:inline">Import đối soát</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              loadBaseData();
-              if (activeTab === 'TRANSACTIONS') loadTransactions();
-              if (activeTab === 'RECONCILIATION') loadReconciliation();
-            }}
-            className="gap-1.5 p-2 lg:px-3"
-            title="Làm mới dữ liệu"
-          >
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            <span className="hidden lg:inline">Làm mới</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-[#161a26] hover:bg-gray-200 dark:hover:bg-[#1f2436] border border-gray-300 dark:border-[#262c3f] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
+                title="Tùy chọn khác"
+              >
+                <MoreHorizontal size={16} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => setIsAccountModalOpen(true)}>
+                <Landmark size={14} className="mr-2 text-indigo-400" />
+                Tạo tài khoản / Quỹ mới
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsCategoryModalOpen(true)}>
+                <Tag size={14} className="mr-2 text-indigo-400" />
+                Tạo danh mục thu chi
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSyncOrders}>
+                <RefreshCw size={14} className="mr-2 text-emerald-400" />
+                Đồng bộ đơn hàng đối soát
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/supplier-debts')}>
+                <Building2 size={14} className="mr-2 text-rose-400" />
+                Xem công nợ nhà cung cấp
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      {/* 2. Top 5 KPI Summary Cards Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3 shrink-0">
-        <SystemMetricCard
-          title="Tổng số dư khả dụng"
-          value={`${(overview?.totals.totalNetBalance || 0).toLocaleString('vi-VN')}đ`}
-          subtitle="Tiền mặt, bank & ví sàn"
-          icon={Wallet}
-          colorScheme="blue"
-          isActive={activeTab === 'ACCOUNTS'}
-          onClick={() => setActiveTab('ACCOUNTS')}
-        />
-        <SystemMetricCard
-          title="Ví sàn Shopee"
-          value={`${(overview?.totals.totalPlatformWallet || 0).toLocaleString('vi-VN')}đ`}
-          subtitle="Đã quyết toán về ví"
-          icon={TrendingUp}
-          colorScheme="purple"
-          isActive={activeTab === 'RECONCILIATION'}
-          onClick={() => setActiveTab('RECONCILIATION')}
-        />
-        <SystemMetricCard
-          title="Dòng tiền trong kỳ"
-          value={`${(overview?.period.netOperatingCashflow || 0).toLocaleString('vi-VN')}đ`}
-          subtitle={`Thu: ${(overview?.period.periodIncome || 0).toLocaleString('vi-VN')}đ | Chi: ${(overview?.period.periodExpense || 0).toLocaleString('vi-VN')}đ`}
-          icon={DollarSign}
-          colorScheme="green"
-          isActive={activeTab === 'TRANSACTIONS'}
-          onClick={() => setActiveTab('TRANSACTIONS')}
-        />
-        <SystemMetricCard
-          title="Chờ Shopee quyết toán"
-          value={`${(overview?.outstanding.pendingPlatformMoney || 0).toLocaleString('vi-VN')}đ`}
-          subtitle={`${overview?.outstanding.pendingPlatformCount || 0} đơn đang giao/chờ tiền`}
-          icon={ShieldCheck}
-          colorScheme="orange"
-          isActive={activeTab === 'RECONCILIATION'}
-          onClick={() => setActiveTab('RECONCILIATION')}
-        />
-        <SystemMetricCard
-          title="Nợ NCC phải trả"
-          value={`${(overview?.outstanding.supplierDebt || 0).toLocaleString('vi-VN')}đ`}
-          subtitle={`${overview?.outstanding.unpaidReceiptsCount || 0} phiếu nhập chưa thanh toán`}
-          icon={Building2}
-          colorScheme="red"
-          isActive={activeTab === 'SUPPLIERS'}
-          onClick={() => setActiveTab('SUPPLIERS')}
-          className="col-span-2 lg:col-span-1"
-        />
+      {/* 2. Navigation Tabs (Horizontal Underline Style) */}
+      <div className="flex items-center gap-6 sm:gap-8 border-b border-gray-200 dark:border-[#22283a] overflow-x-auto scrollbar-none pt-1">
+        {CASHFLOW_TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as ActiveTab)}
+              className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap cursor-pointer border-0 bg-transparent ${
+                isActive
+                  ? 'text-gray-900 dark:text-white font-semibold'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <span>{tab.label}</span>
+              {isActive && (
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#6366f1] rounded-full" />
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* 3. Main Navigation & Global Filter Bar */}
-      <SystemFilter className="p-2.5 sm:p-3 flex-col lg:flex-row items-stretch lg:items-center">
-        <SystemFilterItem icon={Activity} label="Phân hệ:" className="w-full lg:w-auto">
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 max-w-full">
-            {CASHFLOW_TABS.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id as ActiveTab)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs whitespace-nowrap transition-colors cursor-pointer border-0 shrink-0 ${
-                    isActive
-                      ? 'bg-[#5865f2] text-white font-medium shadow-xs'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1a1b23] font-normal'
-                  }`}
-                >
-                  <Icon size={13} className="shrink-0" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </SystemFilterItem>
-
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto lg:ml-auto">
-          {/* Gian hàng Filter */}
-          <div className="w-full sm:w-48">
+      {/* 3. Global Filter Bar */}
+      <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg p-2.5 sm:p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xs">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+          {/* Store Filter */}
+          <div className="w-full sm:w-56">
             <Select
               value={selectedShopId}
               onChange={(val) => {
@@ -461,235 +469,458 @@ export const CashflowPage: React.FC = () => {
               ]}
               icon={Store}
               size="sm"
-              className="w-full"
+              className="w-full bg-gray-50 dark:bg-[#161a26] border-gray-200 dark:border-[#262c3f] text-gray-800 dark:text-gray-200"
             />
           </div>
 
-          {/* Date Range Picker */}
-          <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 h-8 text-xs w-full sm:w-auto">
-            <Calendar size={13} className="text-gray-400 shrink-0" />
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none font-normal min-w-0"
-              title="Từ ngày"
-            />
-            <span className="text-gray-400 text-xs">-</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none font-normal min-w-0"
-              title="Đến ngày"
+          {/* Date Presets Filter */}
+          <div className="w-full sm:w-56">
+            <Select
+              value={datePreset}
+              onChange={(val) => handleDatePresetChange(String(val || 'ALL'))}
+              options={[
+                { value: 'ALL', label: 'Khoảng thời gian', icon: Calendar },
+                { value: 'TODAY', label: 'Hôm nay', icon: Calendar },
+                { value: 'LAST_7_DAYS', label: '7 ngày qua', icon: Calendar },
+                { value: 'THIS_MONTH', label: 'Tháng này', icon: Calendar },
+                { value: 'LAST_MONTH', label: 'Tháng trước', icon: Calendar },
+              ]}
+              icon={Calendar}
+              size="sm"
+              className="w-full bg-gray-50 dark:bg-[#161a26] border-gray-200 dark:border-[#262c3f] text-gray-800 dark:text-gray-200"
             />
           </div>
-
-          {hasGlobalFilter && (
-            <SystemFilterReset
-              onClick={() => {
-                setSelectedShopId('ALL');
-                setStoreShopId('ALL');
-                setStartDate('');
-                setEndDate('');
-              }}
-            />
-          )}
         </div>
-      </SystemFilter>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <button
+            type="button"
+            onClick={() => {
+              loadBaseData();
+              if (activeTab === 'TRANSACTIONS') loadTransactions();
+              if (activeTab === 'RECONCILIATION') loadReconciliation();
+            }}
+            className="px-3.5 py-2 bg-gray-50 dark:bg-[#161a26] hover:bg-gray-100 dark:hover:bg-[#1f2436] border border-gray-200 dark:border-[#262c3f] text-gray-700 dark:text-gray-200 font-medium text-xs sm:text-sm rounded-lg flex items-center gap-2 cursor-pointer transition-colors shadow-xs"
+            title="Làm mới dữ liệu"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <span>Làm mới</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsImportModalOpen(true)}
+            className="px-3.5 py-2 bg-gray-50 dark:bg-[#161a26] hover:bg-gray-100 dark:hover:bg-[#1f2436] border border-gray-200 dark:border-[#262c3f] text-gray-700 dark:text-gray-200 font-medium text-xs sm:text-sm rounded-lg flex items-center gap-2 cursor-pointer transition-colors shadow-xs"
+            title="Import file quyết toán Shopee"
+          >
+            <Upload size={14} />
+            <span>Import đối soát</span>
+          </button>
+        </div>
+      </div>
 
       {/* 4. Tab Content */}
 
-      {/* -------------------- TAB 1: TỔNG QUAN TIỀN -------------------- */}
+      {/* -------------------- TAB 1: TỔNG QUAN -------------------- */}
       {activeTab === 'OVERVIEW' && (
-        <div className="space-y-3.5 animate-in fade-in duration-200">
-          {/* Quick Expense Shortcut Buttons */}
-          <div className="p-3.5 sm:p-4 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs">
-            <div className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5">
-              Ghi nhanh khoản chi thường dùng:
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => handleOpenExpense('CHI_VAT_TU_DONG_GOI')}
-                className="px-3 py-1.5 bg-gray-50 dark:bg-[#1a1b23] text-xs font-medium text-gray-700 dark:text-gray-300 rounded border border-gray-200 dark:border-gray-700 hover:border-[#5865f2] hover:text-[#5865f2] dark:hover:text-white transition-all flex items-center gap-1.5 shadow-none"
-              >
-                📦 Mua vật tư đóng gói (xốp, băng dính, thùng)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleOpenExpense('CHI_GIAY_MUC_IN')}
-                className="px-3 py-1.5 bg-gray-50 dark:bg-[#1a1b23] text-xs font-medium text-gray-700 dark:text-gray-300 rounded border border-gray-200 dark:border-gray-700 hover:border-[#5865f2] hover:text-[#5865f2] dark:hover:text-white transition-all flex items-center gap-1.5 shadow-none"
-              >
-                🖨️ Giấy in vận đơn & Mực in
-              </button>
-              <button
-                type="button"
-                onClick={() => handleOpenExpense('CHI_NHAP_HANG')}
-                className="px-3 py-1.5 bg-gray-50 dark:bg-[#1a1b23] text-xs font-medium text-gray-700 dark:text-gray-300 rounded border border-gray-200 dark:border-gray-700 hover:border-[#5865f2] hover:text-[#5865f2] dark:hover:text-white transition-all flex items-center gap-1.5 shadow-none"
-              >
-                🚚 Thanh toán tiền nhập hàng NCC
-              </button>
-              <button
-                type="button"
-                onClick={() => handleOpenExpense('CHI_VAN_CHUYEN_NGOAI')}
-                className="px-3 py-1.5 bg-gray-50 dark:bg-[#1a1b23] text-xs font-medium text-gray-700 dark:text-gray-300 rounded border border-gray-200 dark:border-gray-700 hover:border-[#5865f2] hover:text-[#5865f2] dark:hover:text-white transition-all flex items-center gap-1.5 shadow-none"
-              >
-                🛵 Phí xe ba gác, vận chuyển ngoài sàn
-              </button>
-              <button
-                type="button"
-                onClick={() => handleOpenExpense('CHI_HOAN_TIEN_KHACH')}
-                className="px-3 py-1.5 bg-gray-50 dark:bg-[#1a1b23] text-xs font-medium text-gray-700 dark:text-gray-300 rounded border border-gray-200 dark:border-gray-700 hover:border-[#5865f2] hover:text-[#5865f2] dark:hover:text-white transition-all flex items-center gap-1.5 shadow-none"
-              >
-                🤝 Hoàn tiền trực tiếp cho khách
-              </button>
-            </div>
-          </div>
-
-          {/* Accounts Overview Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {accounts.map((acc) => (
-              <div
-                key={acc.id}
-                className="p-4 sm:p-5 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs flex flex-col justify-between"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#5865f2] dark:text-[#7b85f5]">
-                      {acc.type === 'CASH'
-                        ? 'Quỹ tiền mặt'
-                        : acc.type === 'PLATFORM_WALLET'
-                        ? 'Ví sàn Shopee'
-                        : 'Tài khoản ngân hàng'}
-                    </span>
-                    <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white mt-0.5 truncate">
-                      {acc.name}
-                    </h3>
-                    {acc.accountNumber && (
-                      <p className="text-xs font-mono text-gray-500 dark:text-gray-400 truncate">
-                        {acc.accountNumber} {acc.bankName ? `(${acc.bankName})` : ''}
-                      </p>
-                    )}
-                  </div>
-                  <div className="p-2 rounded bg-gray-100 dark:bg-[#1a1b23] text-gray-600 dark:text-gray-400 shrink-0 ml-2">
-                    <Landmark size={18} />
-                  </div>
+        <div className="space-y-4 animate-in fade-in duration-200">
+          {/* Row 1: 4 KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {/* Card 1: Số dư hiện tại */}
+            <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg p-4 sm:p-5 flex items-center gap-3.5 shadow-xs">
+              <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-[#182642] text-blue-500 dark:text-[#38bdf8] flex items-center justify-center shrink-0">
+                <Wallet size={22} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">Số dư hiện tại</div>
+                <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight leading-tight mt-1 truncate">
+                  {(overview?.totals.totalNetBalance || 0).toLocaleString('vi-VN')} đ
                 </div>
-
-                <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-end justify-between">
-                  <div>
-                    <span className="text-[11px] text-gray-400">Số dư hiện tại:</span>
-                    <div className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-                      {Number(acc.currentBalance).toLocaleString('vi-VN')}đ
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsTransferModalOpen(true)}
-                    className="text-xs text-[#5865f2] hover:text-[#4752c4] font-medium flex items-center gap-1 cursor-pointer"
-                  >
-                    Chuyển tiền <ArrowLeftRight size={12} />
-                  </button>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                  Tiền mặt, ngân hàng & ví sàn
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* Card 2: Dòng tiền thuần trong kỳ */}
+            <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg p-4 sm:p-5 flex items-center gap-3.5 shadow-xs">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-[#102d25] text-emerald-600 dark:text-[#10b981] flex items-center justify-center shrink-0">
+                <ArrowUpDown size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">Dòng tiền thuần trong kỳ</div>
+                <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-[#10b981] tracking-tight leading-tight mt-1 truncate">
+                  {(overview?.period.netOperatingCashflow || 0) >= 0 ? '+' : ''}
+                  {(overview?.period.netOperatingCashflow || 0).toLocaleString('vi-VN')} đ
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                  Thu {(overview?.period.periodIncome || 0).toLocaleString('vi-VN')} đ · Chi {(overview?.period.periodExpense || 0).toLocaleString('vi-VN')} đ
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Chờ Shopee quyết toán */}
+            <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg p-4 sm:p-5 flex items-center gap-3.5 shadow-xs">
+              <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-[#382613] text-amber-600 dark:text-[#f59e0b] flex items-center justify-center shrink-0">
+                <Clock size={22} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">Chờ Shopee quyết toán</div>
+                <div className="text-xl sm:text-2xl font-bold text-amber-600 dark:text-[#f59e0b] tracking-tight leading-tight mt-1 truncate">
+                  {(overview?.outstanding.pendingPlatformMoney || 0).toLocaleString('vi-VN')} đ
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                  {overview?.outstanding.pendingPlatformCount || 0} đơn đang giao / chờ tiền
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('RECONCILIATION')}
+                  className="text-xs text-[#6366f1] hover:underline font-medium cursor-pointer block mt-1"
+                >
+                  Xem đối soát →
+                </button>
+              </div>
+            </div>
+
+            {/* Card 4: Nợ nhà cung cấp */}
+            <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg p-4 sm:p-5 flex items-center gap-3.5 shadow-xs">
+              <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-[#351821] text-rose-600 dark:text-[#f43f5e] flex items-center justify-center shrink-0">
+                <Building2 size={22} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">Nợ nhà cung cấp</div>
+                <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight leading-tight mt-1 truncate">
+                  {(overview?.outstanding.supplierDebt || 0).toLocaleString('vi-VN')} đ
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                  {overview?.outstanding.unpaidReceiptsCount || 0} phiếu nhập chưa thanh toán
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Recent Transactions Table */}
-          <div className="bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs overflow-hidden">
-            <div className="p-3.5 sm:p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+          {/* Row 2: Middle 2 Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+            {/* Left Card: Tài khoản & quỹ */}
+            <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg p-4 sm:p-5 flex flex-col justify-between shadow-xs">
+              <div>
+                <div className="flex items-center justify-between pb-3.5 mb-3 border-b border-gray-100 dark:border-[#22283a]/60">
+                  <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white flex items-center gap-2">
+                    <CreditCard size={18} className="text-[#6366f1]" />
+                    Tài khoản & quỹ
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('ACCOUNTS')}
+                    className="text-xs text-[#6366f1] hover:underline font-medium cursor-pointer"
+                  >
+                    Quản lý quỹ →
+                  </button>
+                </div>
+
+                <div className="space-y-2.5">
+                  {displayAccounts.length === 0 ? (
+                    <div className="text-center py-6 text-xs text-gray-400">
+                      Chưa có tài khoản nào được tạo.
+                    </div>
+                  ) : (
+                    displayAccounts.map((acc) => (
+                      <div
+                        key={acc.id}
+                        className="bg-gray-50 dark:bg-[#1a1f2e]/50 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/80 border border-gray-200 dark:border-[#22283a] rounded-lg p-3 flex items-center justify-between transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                              acc.type === 'CASH'
+                                ? 'bg-blue-500/10 text-blue-500 dark:text-blue-400'
+                                : acc.type === 'PLATFORM_WALLET'
+                                ? 'bg-amber-500/10 text-amber-500 dark:text-amber-400'
+                                : 'bg-indigo-500/10 text-indigo-500 dark:text-indigo-400'
+                            }`}
+                          >
+                            {acc.type === 'CASH' ? (
+                              <Wallet size={18} />
+                            ) : acc.type === 'PLATFORM_WALLET' ? (
+                              <Wallet size={18} />
+                            ) : (
+                              <Landmark size={18} />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                              {acc.name}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                              {acc.type === 'CASH'
+                                ? 'Tiền mặt'
+                                : acc.type === 'PLATFORM_WALLET'
+                                ? 'Đã quyết toán về ví'
+                                : `${acc.bankName || 'Ngân hàng'}${
+                                    acc.accountNumber
+                                      ? ' · ···· ' + acc.accountNumber.slice(-4)
+                                      : ''
+                                  }`}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0 ml-3">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {Number(acc.currentBalance || 0).toLocaleString('vi-VN')} đ
+                          </span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-white rounded hover:bg-gray-200 dark:hover:bg-gray-800/60 cursor-pointer"
+                              >
+                                <MoreVertical size={16} />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem onClick={() => setIsTransferModalOpen(true)}>
+                                <ArrowLeftRight size={14} className="mr-2 text-indigo-400" />
+                                Chuyển tiền từ ví này
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setActiveTab('ACCOUNTS')}>
+                                <Landmark size={14} className="mr-2 text-emerald-400" />
+                                Chi tiết tài khoản
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Footer: Chuyển tiền giữa các quỹ */}
+              <div
+                onClick={() => setIsTransferModalOpen(true)}
+                className="border-t border-gray-100 dark:border-[#22283a] pt-3.5 mt-3 flex items-center justify-between text-xs sm:text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white cursor-pointer group transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <ArrowLeftRight size={15} className="text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
+                  <span>Chuyển tiền giữa các quỹ</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
+              </div>
+            </div>
+
+            {/* Right Card: Ghi nhanh khoản chi */}
+            <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg p-4 sm:p-5 flex flex-col justify-between shadow-xs">
+              <div>
+                <div className="pb-3 mb-2.5">
+                  <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white flex items-center gap-2">
+                    <FileText size={18} className="text-[#6366f1]" />
+                    Ghi nhanh khoản chi
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Chọn khoản mục để lập phiếu chi
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div
+                    onClick={() => handleOpenExpense('CHI_VAT_TU_DONG_GOI')}
+                    className="bg-gray-50 dark:bg-[#1a1f2e]/50 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/80 border border-gray-200 dark:border-[#22283a] rounded-lg p-3 flex items-center justify-between cursor-pointer group transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                        <Package size={16} />
+                      </div>
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white">
+                        Vật tư đóng gói
+                      </span>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
+                  </div>
+
+                  <div
+                    onClick={() => handleOpenExpense('CHI_GIAY_MUC_IN')}
+                    className="bg-gray-50 dark:bg-[#1a1f2e]/50 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/80 border border-gray-200 dark:border-[#22283a] rounded-lg p-3 flex items-center justify-between cursor-pointer group transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                        <FileText size={16} />
+                      </div>
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white">
+                        Giấy in & mực in
+                      </span>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
+                  </div>
+
+                  <div
+                    onClick={() => handleOpenExpense('CHI_NHAP_HANG')}
+                    className="bg-gray-50 dark:bg-[#1a1f2e]/50 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/80 border border-gray-200 dark:border-[#22283a] rounded-lg p-3 flex items-center justify-between cursor-pointer group transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                        <CreditCard size={16} />
+                      </div>
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white">
+                        Thanh toán nhà cung cấp
+                      </span>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
+                  </div>
+
+                  <div
+                    onClick={() => handleOpenExpense('CHI_VAN_CHUYEN_NGOAI')}
+                    className="bg-gray-50 dark:bg-[#1a1f2e]/50 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/80 border border-gray-200 dark:border-[#22283a] rounded-lg p-3 flex items-center justify-between cursor-pointer group transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                        <Truck size={16} />
+                      </div>
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white">
+                        Vận chuyển ngoài sàn
+                      </span>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
+                  </div>
+
+                  <div
+                    onClick={() => handleOpenExpense('CHI_HOAN_TIEN_KHACH')}
+                    className="bg-gray-50 dark:bg-[#1a1f2e]/50 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/80 border border-gray-200 dark:border-[#22283a] rounded-lg p-3 flex items-center justify-between cursor-pointer group transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                        <RotateCcw size={16} />
+                      </div>
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white">
+                        Hoàn tiền cho khách
+                      </span>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 3: Giao dịch gần đây */}
+          <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg overflow-hidden shadow-xs">
+            <div className="p-4 sm:p-5 flex items-center justify-between border-b border-gray-200 dark:border-[#22283a]">
               <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white flex items-center gap-2">
-                <Receipt size={16} className="text-[#5865f2]" />
-                Giao dịch thu chi gần đây
+                <Receipt size={18} className="text-[#6366f1]" />
+                Giao dịch gần đây
               </h3>
               <button
                 type="button"
                 onClick={() => setActiveTab('TRANSACTIONS')}
-                className="text-xs font-medium text-[#5865f2] hover:underline cursor-pointer"
+                className="text-xs text-[#6366f1] hover:underline font-medium cursor-pointer"
               >
-                Xem tất cả trong sổ thu chi →
+                Xem sổ thu chi →
               </button>
             </div>
 
-            <SystemTableWrapper>
-              <SystemThead>
-                <SystemTr>
-                  <SystemTh>Mã phiếu</SystemTh>
-                  <SystemTh>Ngày</SystemTh>
-                  <SystemTh>Khoản mục</SystemTh>
-                  <SystemTh>Số tiền</SystemTh>
-                  <SystemTh>Tài khoản</SystemTh>
-                  <SystemTh>Đối tượng / Ghi chú</SystemTh>
-                  <SystemTh>Trạng thái</SystemTh>
-                </SystemTr>
-              </SystemThead>
-              <SystemTbody>
-                {(overview?.recentTransactions || []).length === 0 ? (
-                  <SystemTableEmpty
-                    title="Chưa có giao dịch"
-                    description="Chưa có phát sinh giao dịch thu chi nào gần đây."
-                    colSpan={7}
-                  />
-                ) : (
-                  (overview?.recentTransactions || []).map((tx) => (
-                    <SystemTr key={tx.id}>
-                      <SystemTd>
-                        <span className="font-mono font-medium text-xs text-gray-900 dark:text-gray-100">
-                          {tx.transactionCode}
-                        </span>
-                      </SystemTd>
-                      <SystemTd className="text-xs text-gray-500 whitespace-nowrap">
-                        {new Date(tx.transactionDate).toLocaleDateString('vi-VN')}
-                      </SystemTd>
-                      <SystemTd>
-                        <span className="font-medium text-xs text-gray-900 dark:text-white">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-gray-50 dark:bg-[#10141f]/80 text-gray-500 dark:text-gray-400 font-medium border-b border-gray-200 dark:border-[#22283a]">
+                  <tr>
+                    <th className="py-3 px-4">Mã phiếu / Ngày</th>
+                    <th className="py-3 px-4">Khoản mục</th>
+                    <th className="py-3 px-4">Số tiền</th>
+                    <th className="py-3 px-4">Tài khoản</th>
+                    <th className="py-3 px-4">Đối tượng / Ghi chú</th>
+                    <th className="py-3 px-4">Trạng thái</th>
+                    <th className="py-3 px-4 text-right">···</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-[#22283a]/60 text-gray-700 dark:text-gray-300">
+                  {recentList.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-gray-500">
+                        Chưa có phát sinh giao dịch nào gần đây.
+                      </td>
+                    </tr>
+                  ) : (
+                    recentList.map((tx) => (
+                      <tr key={tx.id} className="hover:bg-gray-50 dark:hover:bg-[#1a1f2e]/40 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="font-semibold text-gray-900 dark:text-white">{tx.transactionCode}</div>
+                          <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                            {new Date(tx.transactionDate).toLocaleDateString('vi-VN')}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 font-medium text-gray-800 dark:text-gray-200">
                           {tx.category?.name || '---'}
-                        </span>
-                      </SystemTd>
-                      <SystemTd className="whitespace-nowrap">
-                        <span
-                          className={`font-semibold text-xs ${
-                            tx.type === 'INCOME'
-                              ? 'text-emerald-600 dark:text-emerald-400'
-                              : tx.type === 'EXPENSE'
-                              ? 'text-rose-600 dark:text-rose-400'
-                              : 'text-[#5865f2] dark:text-[#7b85f5]'
-                          }`}
-                        >
-                          {tx.type === 'INCOME' ? '+' : tx.type === 'EXPENSE' ? '−' : ''}
-                          {Number(tx.amount).toLocaleString('vi-VN')}đ
-                        </span>
-                      </SystemTd>
-                      <SystemTd className="text-xs text-gray-600 dark:text-gray-300">
-                        {tx.fromAccount?.name || tx.toAccount?.name || 'Tiền cá nhân ứng hộ'}
-                      </SystemTd>
-                      <SystemTd className="text-xs text-gray-600 dark:text-gray-300 max-w-xs truncate">
-                        {tx.counterpartyName && <span className="font-medium">{tx.counterpartyName}: </span>}
-                        {tx.note || '---'}
-                      </SystemTd>
-                      <SystemTd>
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
-                            tx.status === 'CONFIRMED'
-                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span
+                            className={`font-semibold ${
+                              tx.type === 'INCOME' || tx.type === 'CAPITAL_IN'
+                                ? 'text-emerald-600 dark:text-[#10b981]'
+                                : 'text-rose-600 dark:text-[#f43f5e]'
+                            }`}
+                          >
+                            {tx.type === 'INCOME' || tx.type === 'CAPITAL_IN' ? '+' : '-'}
+                            {Number(tx.amount || 0).toLocaleString('vi-VN')} đ
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-gray-600 dark:text-gray-300">
+                          {tx.fromAccount?.name || tx.toAccount?.name || '---'}
+                        </td>
+                        <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
+                          {tx.counterpartyName || tx.note || '—'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              tx.status === 'CONFIRMED'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-[#064e3b]/80 dark:text-[#34d399] dark:border-[#065f46]'
+                                : tx.status === 'DRAFT'
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-[#78350f]/60 dark:text-[#fbbf24] dark:border-[#92400e]'
+                                : 'bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
+                            }`}
+                          >
+                            {tx.status === 'CONFIRMED'
+                              ? 'Đã xác nhận'
                               : tx.status === 'DRAFT'
-                              ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
-                              : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                          }`}
-                        >
-                          {tx.status === 'CONFIRMED'
-                            ? 'Đã xác nhận'
-                            : tx.status === 'DRAFT'
-                            ? 'Lưu nháp'
-                            : 'Đã hủy'}
-                        </span>
-                      </SystemTd>
-                    </SystemTr>
-                  ))
-                )}
-              </SystemTbody>
-            </SystemTableWrapper>
+                              ? 'Lưu nháp'
+                              : 'Đã hủy'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-white rounded hover:bg-gray-200 dark:hover:bg-gray-800/60 cursor-pointer"
+                              >
+                                <MoreHorizontal size={15} />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              {tx.status === 'DRAFT' && (
+                                <DropdownMenuItem onClick={() => handleConfirmTx(tx.id)}>
+                                  <Check size={14} className="mr-2 text-emerald-500" />
+                                  Xác nhận phiếu
+                                </DropdownMenuItem>
+                              )}
+                              {tx.status !== 'CANCELLED' && (
+                                <DropdownMenuItem onClick={() => handleCancelTx(tx.id)} className="text-rose-500">
+                                  <Trash2 size={14} className="mr-2" />
+                                  Hủy phiếu
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="p-3 sm:px-4 border-t border-gray-200 dark:border-[#22283a] bg-gray-50/50 dark:bg-[#10141f]/50 text-xs text-gray-500 dark:text-gray-400">
+              {recentList.length} giao dịch
+            </div>
           </div>
         </div>
       )}
