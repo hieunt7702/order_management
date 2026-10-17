@@ -34,6 +34,7 @@ import {
   Truck,
   ArrowUpDown,
   CircleDollarSign,
+  ArrowRight,
 } from 'lucide-react';
 import {
   cashflowApi,
@@ -531,74 +532,72 @@ export const CashflowPage: React.FC = () => {
       {activeTab === 'OVERVIEW' && (
         <div className="space-y-4 animate-in fade-in duration-200">
           {/* Row 1: 4 KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
             {/* Card 1: Số dư hiện tại */}
-            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-4 flex items-center gap-3.5 shadow-xs">
-              <div className="w-10 h-10 rounded bg-blue-50 dark:bg-[#182642] text-blue-500 dark:text-[#38bdf8] flex items-center justify-center shrink-0">
-                <Wallet size={20} />
+            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-3 sm:p-3.5 flex items-center gap-3 shadow-xs">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded bg-blue-50 dark:bg-[#182642] text-blue-500 dark:text-[#38bdf8] flex items-center justify-center shrink-0">
+                <Wallet size={18} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">Số dư hiện tại</div>
-                <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight leading-tight mt-1 truncate">
+                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-normal">Số dư hiện tại</div>
+                <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight leading-none mt-1 truncate">
                   {(overview?.totals.totalNetBalance || 0).toLocaleString('vi-VN')} đ
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
                   Tiền mặt, ngân hàng & ví sàn
                 </div>
               </div>
             </div>
 
             {/* Card 2: Dòng tiền thuần trong kỳ */}
-            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-4 flex items-center gap-3.5 shadow-xs">
-              <div className="w-10 h-10 rounded bg-emerald-50 dark:bg-[#102d25] text-emerald-600 dark:text-[#10b981] flex items-center justify-center shrink-0">
+            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-3 sm:p-3.5 flex items-center gap-3 shadow-xs">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded bg-emerald-50 dark:bg-[#102d25] text-emerald-600 dark:text-[#10b981] flex items-center justify-center shrink-0">
                 <ArrowUpDown size={18} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">Dòng tiền thuần trong kỳ</div>
-                <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-[#10b981] tracking-tight leading-tight mt-1 truncate">
+                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-normal">Dòng tiền thuần trong kỳ</div>
+                <div className="text-base sm:text-xl font-bold text-emerald-600 dark:text-[#10b981] tracking-tight leading-none mt-1 truncate">
                   {(overview?.period.netOperatingCashflow || 0) >= 0 ? '+' : ''}
                   {(overview?.period.netOperatingCashflow || 0).toLocaleString('vi-VN')} đ
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
                   Thu {(overview?.period.periodIncome || 0).toLocaleString('vi-VN')} đ · Chi {(overview?.period.periodExpense || 0).toLocaleString('vi-VN')} đ
                 </div>
               </div>
             </div>
 
             {/* Card 3: Chờ Shopee quyết toán */}
-            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-4 flex items-center gap-3.5 shadow-xs">
-              <div className="w-10 h-10 rounded bg-amber-50 dark:bg-[#382613] text-amber-600 dark:text-[#f59e0b] flex items-center justify-center shrink-0">
-                <Clock size={20} />
+            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-3 sm:p-3.5 flex items-center gap-3 shadow-xs">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded bg-amber-50 dark:bg-[#382613] text-amber-600 dark:text-[#f59e0b] flex items-center justify-center shrink-0">
+                <Clock size={18} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">Chờ Shopee quyết toán</div>
-                <div className="text-xl sm:text-2xl font-bold text-amber-600 dark:text-[#f59e0b] tracking-tight leading-tight mt-1 truncate">
+                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-normal">Chờ Shopee quyết toán</div>
+                <div className="text-base sm:text-xl font-bold text-amber-600 dark:text-[#f59e0b] tracking-tight leading-none mt-1 truncate">
                   {(overview?.outstanding.pendingPlatformMoney || 0).toLocaleString('vi-VN')} đ
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                  {overview?.outstanding.pendingPlatformCount || 0} đơn đang giao / chờ tiền
-                </div>
-                <button
-                  type="button"
+                <div
                   onClick={() => setActiveTab('RECONCILIATION')}
-                  className="text-xs text-[#5865f2] hover:underline font-medium cursor-pointer block mt-1"
+                  className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 truncate flex items-center gap-1 cursor-pointer hover:text-[#5865f2] dark:hover:text-[#5865f2] transition-colors group"
+                  title="Xem đối soát Shopee"
                 >
-                  Xem đối soát →
-                </button>
+                  <span className="truncate">{overview?.outstanding.pendingPlatformCount || 0} đơn đang giao / chờ tiền</span>
+                  <ArrowRight size={12} className="shrink-0 text-gray-400 group-hover:text-[#5865f2] group-hover:translate-x-0.5 transition-all" />
+                </div>
               </div>
             </div>
 
             {/* Card 4: Nợ nhà cung cấp */}
-            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-4 flex items-center gap-3.5 shadow-xs">
-              <div className="w-10 h-10 rounded bg-rose-50 dark:bg-[#351821] text-rose-600 dark:text-[#f43f5e] flex items-center justify-center shrink-0">
-                <Building2 size={20} />
+            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-3 sm:p-3.5 flex items-center gap-3 shadow-xs">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded bg-rose-50 dark:bg-[#351821] text-rose-600 dark:text-[#f43f5e] flex items-center justify-center shrink-0">
+                <Building2 size={18} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">Nợ nhà cung cấp</div>
-                <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight leading-tight mt-1 truncate">
+                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-normal">Nợ nhà cung cấp</div>
+                <div className="text-base sm:text-xl font-bold text-gray-900 dark:text-white tracking-tight leading-none mt-1 truncate">
                   {(overview?.outstanding.supplierDebt || 0).toLocaleString('vi-VN')} đ
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
                   {overview?.outstanding.unpaidReceiptsCount || 0} phiếu nhập chưa thanh toán
                 </div>
               </div>
