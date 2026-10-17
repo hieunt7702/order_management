@@ -633,13 +633,13 @@ export const SupplierDebtsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          <Button size="sm" variant="outline" onClick={handleOpenAddSupplier} className="gap-1.5 px-2 sm:px-3" title="Thêm NCC">
+          <Button size="sm" variant="outline" onClick={handleOpenAddSupplier} className="p-2 sm:px-3" title="Thêm NCC">
             <Plus size={14} /> <span className="hidden sm:inline">Thêm NCC</span>
           </Button>
-          <Button size="sm" variant="outline" onClick={handleOpenReturnModal} className="gap-1.5 px-2 sm:px-3 text-orange-600 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-950/20" title="Trả hàng NCC">
+          <Button size="sm" variant="outline" onClick={handleOpenReturnModal} className="p-2 sm:px-3 text-orange-600 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-950/20" title="Trả hàng NCC">
             <RotateCcw size={14} /> <span className="hidden sm:inline">Trả hàng NCC</span>
           </Button>
-          <Button size="sm" onClick={() => handleOpenPaymentModal()} className="gap-1.5 px-2.5 sm:px-3 bg-emerald-600 hover:bg-emerald-700 text-white" title="Lập phiếu chi trả">
+          <Button size="sm" onClick={() => handleOpenPaymentModal()} className="gap-1 px-2.5 sm:px-3 bg-emerald-600 hover:bg-emerald-700 text-white" title="Lập phiếu chi trả">
             <CreditCard size={14} />
             <span className="hidden sm:inline">Lập phiếu chi trả</span>
             <span className="sm:hidden">Chi trả</span>
@@ -648,7 +648,7 @@ export const SupplierDebtsPage: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={loadAllData}
-            className="gap-1.5 p-2 lg:px-3"
+            className="p-2 lg:px-3"
             title="Làm mới dữ liệu"
           >
             <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
@@ -658,13 +658,15 @@ export const SupplierDebtsPage: React.FC = () => {
       </div>
 
       {/* KPI Cards Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 shrink-0">
         <SystemMetricCard
           title="Tổng nợ phải trả NCC"
           value={`${summaryTotalPayable.toLocaleString('vi-VN')}đ`}
           subtitle="Nghĩa vụ phải trả"
           icon={Receipt}
           colorScheme="red"
+          isActive={activeTab === 'DEBT_LIST'}
+          onClick={() => setActiveTab('DEBT_LIST')}
         />
         <SystemMetricCard
           title="Ứng trước / Đặt cọc"
@@ -672,6 +674,8 @@ export const SupplierDebtsPage: React.FC = () => {
           subtitle="NCC đang giữ"
           icon={ArrowDownLeft}
           colorScheme="blue"
+          isActive={activeTab === 'PAYMENTS'}
+          onClick={() => setActiveTab('PAYMENTS')}
         />
         <SystemMetricCard
           title="Nợ quá hạn thanh toán"
@@ -679,6 +683,8 @@ export const SupplierDebtsPage: React.FC = () => {
           subtitle="Cần ưu tiên trả"
           icon={AlertTriangle}
           colorScheme="orange"
+          isActive={activeTab === 'REPORTS'}
+          onClick={() => setActiveTab('REPORTS')}
         />
         <SystemMetricCard
           title="Cá nhân chi hộ cần hoàn"
@@ -686,6 +692,8 @@ export const SupplierDebtsPage: React.FC = () => {
           subtitle="Shop nợ cá nhân"
           icon={UserCheck}
           colorScheme="purple"
+          isActive={activeTab === 'REPORTS'}
+          onClick={() => setActiveTab('REPORTS')}
         />
       </div>
 
@@ -693,56 +701,56 @@ export const SupplierDebtsPage: React.FC = () => {
       <div className="flex items-center gap-1 p-1 bg-gray-100/80 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded w-full sm:w-fit shrink-0 max-w-full overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab('DEBT_LIST')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 cursor-pointer border-0 shrink-0 ${
             activeTab === 'DEBT_LIST'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
           }`}
         >
-          <Building2 size={14} />
+          <Building2 size={13} />
           <span>Sổ Công Nợ NCC ({suppliers.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('PAYMENTS')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 cursor-pointer border-0 shrink-0 ${
             activeTab === 'PAYMENTS'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
           }`}
         >
-          <CreditCard size={14} />
+          <CreditCard size={13} />
           <span>Lịch Sử Thanh Toán ({payments.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('RETURNS')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 cursor-pointer border-0 shrink-0 ${
             activeTab === 'RETURNS'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
           }`}
         >
-          <RotateCcw size={14} />
+          <RotateCcw size={13} />
           <span>Phiếu Trả Hàng ({returns.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('REPORTS')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 cursor-pointer border-0 shrink-0 ${
             activeTab === 'REPORTS'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
           }`}
         >
-          <Clock size={14} />
+          <Clock size={13} />
           <span>Hạn Nợ & Hoàn Trả</span>
         </button>
       </div>
 
       {/* TAB 1: SỔ CÔNG NỢ NHÀ CUNG CẤP */}
       {activeTab === 'DEBT_LIST' && (
-        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3">
+        <div className="space-y-3">
           <div className="flex items-center justify-between gap-3 shrink-0">
             <div className="relative w-full max-w-sm">
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -904,7 +912,7 @@ export const SupplierDebtsPage: React.FC = () => {
           </div>
 
           {/* Mobile Card View (md:hidden) */}
-          <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5">
+          <div className="md:hidden space-y-2.5 pb-6">
             {isLoading ? (
               <div className="py-8 text-center text-xs text-gray-400 font-normal">
                 <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
@@ -1019,8 +1027,9 @@ export const SupplierDebtsPage: React.FC = () => {
 
       {/* TAB 2: LỊCH SỬ THANH TOÁN & NGUỒN TIỀN */}
       {activeTab === 'PAYMENTS' && (
-        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3">
-          <div className="flex flex-1 flex-col min-h-fit md:min-h-0">
+        <div className="space-y-3">
+          {/* Desktop Table View */}
+          <div className="hidden md:flex flex-1 flex-col min-h-0">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
                 <SystemTh className="w-44">Mã Phiếu & Ngày</SystemTh>
@@ -1137,13 +1146,134 @@ export const SupplierDebtsPage: React.FC = () => {
               </SystemTbody>
             </SystemTableWrapper>
           </div>
+
+          {/* Mobile Card View (md:hidden) */}
+          <div className="md:hidden space-y-2.5 pb-6">
+            {isLoading ? (
+              <div className="py-8 text-center text-xs text-gray-400 font-normal">
+                <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
+                Đang tải lịch sử thanh toán...
+              </div>
+            ) : payments.length === 0 ? (
+              <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 p-6">
+                <CreditCard className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Chưa có phiếu thanh toán nào</p>
+                <p className="text-[11px] text-gray-400">Các phiếu chi trả nợ hoặc đặt cọc sẽ hiển thị tại đây.</p>
+              </div>
+            ) : (
+              payments.map((p) => {
+                const isPersonal = p.fundSource === 'PERSONAL_FUND';
+                const isPendingReimbursement = p.isReimbursementNeeded && p.reimbursementStatus === 'PENDING_REIMBURSEMENT';
+
+                return (
+                  <div
+                    key={p.id}
+                    className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs"
+                  >
+                    {/* Header: Payment Code, Date & Amount */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-xs text-emerald-600 dark:text-emerald-400 font-mono truncate">
+                          {p.paymentCode}
+                        </div>
+                        <div className="text-[11px] text-gray-400 mt-0.5">
+                          {new Date(p.paymentDate).toLocaleDateString('vi-VN')}
+                          {p.referenceCode && <span className="ml-1.5 font-mono">UNC: {p.referenceCode}</span>}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                          {Number(p.amount).toLocaleString('vi-VN')}đ
+                        </div>
+                        <span
+                          className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium mt-0.5 ${
+                            isPersonal
+                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300'
+                              : p.fundSource === 'BANK_ACCOUNT'
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
+                              : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                          }`}
+                        >
+                          {isPersonal ? 'Cá nhân chi hộ' : p.fundSource === 'BANK_ACCOUNT' ? 'Tài khoản cty' : 'Quỹ tiền mặt'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Supplier & Payer Info */}
+                    <div className="text-xs space-y-1 pt-1 border-t border-gray-100 dark:border-gray-800">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-400 text-[11px]">Nhà cung cấp:</span>
+                        <span className="font-medium text-gray-900 dark:text-white truncate max-w-[200px]">{p.supplier?.name}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-400 text-[11px]">Người chi:</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{p.payerName}</span>
+                      </div>
+                      {Number(p.advanceAmount) > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-indigo-500 text-[11px]">Tiền dư / Đặt cọc:</span>
+                          <span className="font-mono font-semibold text-indigo-600 dark:text-indigo-400">
+                            {Number(p.advanceAmount).toLocaleString('vi-VN')}đ
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Allocations (if any) */}
+                    {p.allocations && p.allocations.length > 0 && (
+                      <div className="p-2 rounded bg-gray-50 dark:bg-[#1a1e28] border border-gray-100 dark:border-gray-800/60 space-y-1">
+                        <div className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Phân bổ phiếu nhập</div>
+                        {p.allocations.map((a) => (
+                          <div key={a.id} className="text-[11px] flex justify-between gap-2">
+                            <span className="font-mono text-gray-700 dark:text-gray-300">{a.receipt?.receiptCode}:</span>
+                            <span className="font-bold font-mono text-gray-900 dark:text-white">
+                              {Number(a.allocatedAmount).toLocaleString('vi-VN')}đ
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Actions Row */}
+                    <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-800/80">
+                      <div>
+                        {p.isReimbursementNeeded && (
+                          isPendingReimbursement ? (
+                            <button
+                              onClick={() => handleMarkReimbursed(p.id)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-950/60 dark:text-amber-200 cursor-pointer shadow-xs active:scale-95 transition-all"
+                            >
+                              Shop cần hoàn trả
+                            </button>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                              <Check className="w-3 h-3" /> Đã hoàn trả
+                            </span>
+                          )
+                        )}
+                      </div>
+                      <button
+                        title="Hủy phiếu chi"
+                        onClick={() => handleDeletePayment(p.id, p.paymentCode)}
+                        className="px-2.5 py-1 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors flex items-center gap-1 cursor-pointer font-medium ml-auto"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Hủy phiếu</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
 
       {/* TAB 3: TRẢ HÀNG NCC */}
       {activeTab === 'RETURNS' && (
-        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3">
-          <div className="flex flex-1 flex-col min-h-fit md:min-h-0">
+        <div className="space-y-3">
+          {/* Desktop Table View */}
+          <div className="hidden md:flex flex-1 flex-col min-h-0">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
                 <SystemTh className="w-40">Mã Phiếu Trả</SystemTh>
@@ -1199,12 +1329,90 @@ export const SupplierDebtsPage: React.FC = () => {
               </SystemTbody>
             </SystemTableWrapper>
           </div>
+
+          {/* Mobile Card View (md:hidden) */}
+          <div className="md:hidden space-y-2.5 pb-6">
+            {isLoading ? (
+              <div className="py-8 text-center text-xs text-gray-400 font-normal">
+                <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
+                Đang tải danh sách trả hàng...
+              </div>
+            ) : returns.length === 0 ? (
+              <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 p-6">
+                <RotateCcw className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Chưa có phiếu trả hàng nào</p>
+                <p className="text-[11px] text-gray-400">Các phiếu xuất trả hàng nhà cung cấp sẽ hiển thị tại đây.</p>
+              </div>
+            ) : (
+              returns.map((ret) => (
+                <div
+                  key={ret.id}
+                  className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs"
+                >
+                  {/* Header: Return Code & Date */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-xs text-orange-600 dark:text-orange-400 font-mono truncate">
+                        {ret.returnCode}
+                      </div>
+                      <div className="text-[11px] text-gray-400 mt-0.5">
+                        {new Date(ret.returnDate).toLocaleDateString('vi-VN')}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="font-mono font-bold text-xs text-orange-600 dark:text-orange-400">
+                        -{Number(ret.debtOffsetAmount).toLocaleString('vi-VN')}đ
+                      </div>
+                      <div className="text-[10px] text-gray-400">Giảm trừ nợ</div>
+                    </div>
+                  </div>
+
+                  {/* Supplier & Receipt */}
+                  <div className="text-xs space-y-1 pt-1 border-t border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-[11px]">Nhà cung cấp:</span>
+                      <span className="font-medium text-gray-900 dark:text-white truncate max-w-[200px]">{ret.supplier?.name}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-[11px]">Phiếu nhập gốc:</span>
+                      <span className="font-mono text-indigo-600 dark:text-indigo-400">
+                        {ret.receipt?.receiptCode || 'Không gắn phiếu'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-[11px]">Tổng giá trị hàng:</span>
+                      <span className="font-mono font-medium text-gray-800 dark:text-gray-200">
+                        {Number(ret.totalReturnAmount).toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                    {ret.reason && (
+                      <div className="text-[11px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[#1a1e28] p-2 rounded border border-gray-100 dark:border-gray-800/60 mt-1">
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Lý do: </span>{ret.reason}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action */}
+                  <div className="flex items-center justify-end pt-1 border-t border-gray-100 dark:border-gray-800/80">
+                    <button
+                      title="Hủy phiếu trả hàng"
+                      onClick={() => handleDeleteReturn(ret.id, ret.returnCode)}
+                      className="px-2.5 py-1 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors flex items-center gap-1 cursor-pointer font-medium"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Hủy phiếu</span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
 
       {/* TAB 4: BÁO CÁO CÔNG NỢ & HẠN NỢ */}
       {activeTab === 'REPORTS' && debtReports && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-6">
           {/* Overdue Debts */}
           <div className="bg-white dark:bg-[#14151a] p-4 rounded border border-gray-200 dark:border-gray-800 space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
@@ -1216,7 +1424,7 @@ export const SupplierDebtsPage: React.FC = () => {
               </span>
             </div>
 
-            <div className="space-y-2 max-h-80 overflow-y-auto">
+            <div className="space-y-2 md:max-h-80 md:overflow-y-auto custom-scrollbar">
               {(!debtReports.overdueList || debtReports.overdueList.length === 0) ? (
                 <p className="text-xs text-gray-400 italic py-4 text-center">Tuyệt vời! Không có khoản nợ nào quá hạn.</p>
               ) : (
@@ -1235,7 +1443,7 @@ export const SupplierDebtsPage: React.FC = () => {
                       </div>
                       <button
                         onClick={() => handleOpenPaymentModal(item.supplierId)}
-                        className="mt-1 px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-semibold"
+                        className="mt-1 px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-semibold cursor-pointer active:scale-95 transition-all"
                       >
                         Trả ngay
                       </button>
@@ -1257,7 +1465,7 @@ export const SupplierDebtsPage: React.FC = () => {
               </span>
             </div>
 
-            <div className="space-y-2 max-h-80 overflow-y-auto">
+            <div className="space-y-2 md:max-h-80 md:overflow-y-auto custom-scrollbar">
               {(!debtReports.reimbursementNeeds || debtReports.reimbursementNeeds.length === 0) ? (
                 <p className="text-xs text-gray-400 italic py-4 text-center">Không có khoản cá nhân chi hộ nào đang chờ hoàn tiền.</p>
               ) : (
@@ -1277,7 +1485,7 @@ export const SupplierDebtsPage: React.FC = () => {
                       </div>
                       <button
                         onClick={() => handleMarkReimbursed(item.paymentId)}
-                        className="mt-1 px-2 py-0.5 rounded bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-semibold"
+                        className="mt-1 px-2 py-0.5 rounded bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-semibold cursor-pointer active:scale-95 transition-all"
                       >
                         Xác nhận đã hoàn trả
                       </button>

@@ -425,6 +425,20 @@ export class OrdersService {
         },
       });
 
+      const pkg = order.packages?.[0];
+      if (pkg && order.orderItems && order.orderItems.length > 0) {
+        for (const oi of order.orderItems) {
+          await tx.packageItem.create({
+            data: {
+              tenantId,
+              packageId: pkg.id,
+              orderItemId: oi.id,
+              quantity: oi.quantity,
+            },
+          }).catch(() => {});
+        }
+      }
+
       await this.auditService.log({
         tenantId,
         userId,
@@ -469,14 +483,26 @@ export class OrdersService {
         },
       });
 
-      if (dto.trackingCode && order.packages && order.packages.length > 0) {
-        await tx.package.updateMany({
-          where: { orderId: id },
-          data: {
-            trackingCode: dto.trackingCode,
-            ...(dto.shippingCarrier ? { carrierName: dto.shippingCarrier } : {}),
-          },
-        });
+      if (dto.trackingCode) {
+        if (order.packages && order.packages.length > 0) {
+          await tx.package.updateMany({
+            where: { orderId: id },
+            data: {
+              trackingCode: dto.trackingCode,
+              ...(dto.shippingCarrier ? { carrierName: dto.shippingCarrier } : {}),
+            },
+          });
+        } else {
+          await tx.package.create({
+            data: {
+              tenantId,
+              orderId: id,
+              packageCode: dto.trackingCode,
+              trackingCode: dto.trackingCode,
+              carrierName: dto.shippingCarrier || order.shippingCarrier || 'SPX Express',
+            },
+          });
+        }
       }
 
       await this.auditService.log({

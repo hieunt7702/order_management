@@ -38,7 +38,7 @@ export const AppLayout: React.FC = () => {
 
         {/* Page Content */}
         <main
-          className={`flex-1 flex flex-col min-h-0 overflow-y-auto overscroll-y-contain custom-scrollbar ${isScanActive
+          className={`flex-1 flex flex-col min-h-0 overflow-y-auto overscroll-y-contain custom-scrollbar touch-pan-y [-webkit-overflow-scrolling:touch] ${isScanActive
             ? 'p-2.5 sm:p-3.5 md:px-5 md:py-4 pb-[calc(84px+env(safe-area-inset-bottom))] md:pb-6'
             : 'p-4 sm:p-5 md:px-6 md:py-5 pb-[calc(92px+env(safe-area-inset-bottom))] md:pb-6'
             }`}

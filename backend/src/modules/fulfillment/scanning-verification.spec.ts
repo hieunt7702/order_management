@@ -12,11 +12,20 @@ describe('Scenarios 9, 10, 11, 12, 13: Fulfillment Scanning & Dispatch Verificat
       package: {
         findMany: jest.fn(),
         findFirst: jest.fn(),
+        findUnique: jest.fn(),
+        create: jest.fn(),
         updateMany: jest.fn(),
         count: jest.fn(),
       },
       order: {
         update: jest.fn(),
+        findMany: jest.fn(),
+      },
+      warehouse: {
+        findFirst: jest.fn(),
+      },
+      packageItem: {
+        create: jest.fn(),
       },
       scanEvent: {
         create: jest.fn(),
@@ -212,4 +221,140 @@ describe('Scenarios 9, 10, 11, 12, 13: Fulfillment Scanning & Dispatch Verificat
       expect(mockInventoryService.dispatchStockForPackage).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('Đặc thù đối soát mã vận đơn Shopee (Tracking Code Reconciliation)', () => {
+    it('quét mã vận đơn thành công khi mã vận đơn được lưu trên Order dù Package trackingCode bị null', async () => {
+      const mockPkg = {
+        id: 'pkg-null-track',
+        packageCode: 'PKG-ORDER-123',
+        trackingCode: null, // Package chưa đồng bộ trackingCode
+        status: PackageStatus.READY,
+        order: {
+          id: 'ord-123',
+          externalOrderId: 'ORD-EXT-123',
+          trackingCode: 'SPXVN066144212957', // Có mã vận đơn trên Order
+          platformStatus: PlatformOrderStatus.READY_TO_SHIP,
+          fulfillmentStatus: FulfillmentStatus.RESERVED,
+          shopId: 'shop-1',
+          shop: { defaultWarehouseId: 'wh-1' },
+          packages: [{ id: 'pkg-null-track', status: PackageStatus.READY }],
+          orderItems: [{ id: 'oi-1', variantId: 'var-1', quantity: 1 }],
+        },
+        packageItems: [
+          {
+            quantity: 1,
+            orderItem: { variantId: 'var-1' },
+          },
+        ],
+      };
+
+      mockPrisma.package.findMany.mockResolvedValue([mockPkg]);
+      mockPrisma.package.updateMany.mockResolvedValue({ count: 1 });
+      mockPrisma.package.count.mockResolvedValue(0);
+
+      const res = await fulfillmentService.verifyDispatch('tenant-1', 'user-1', {
+        code: 'SPXVN066144212957',
+      });
+
+      expect(res.result).toBe(ScanResult.VERIFIED);
+      expect((res as any).package.trackingCode).toBe('SPXVN066144212957');
+      expect(mockInventoryService.dispatchStockForPackage).toHaveBeenCalledTimes(1);
+    });
+
+    it('quét thành công và tự động tạo package khi đơn hàng trong DB chưa có bản ghi package', async () => {
+      // package.findMany returns empty
+      mockPrisma.package.findMany.mockResolvedValue([]);
+
+      const mockOrderInDb = {
+        id: 'ord-no-pkg',
+        externalOrderId: 'ORD-NOPKG-999',
+        trackingCode: 'SPXVN999888777',
+        shippingCarrier: 'SPX Express',
+        platformStatus: PlatformOrderStatus.READY_TO_SHIP,
+        fulfillmentStatus: FulfillmentStatus.RESERVED,
+        shopId: 'shop-1',
+        shop: { defaultWarehouseId: 'wh-1' },
+        packages: [],
+        orderItems: [{ id: 'oi-1', variantId: 'var-1', quantity: 2 }],
+      };
+
+      // order.findMany returns the order
+      mockPrisma.order.findMany.mockResolvedValue([mockOrderInDb]);
+
+      const createdPkg = {
+        id: 'pkg-created-on-the-fly',
+        packageCode: 'SPXVN999888777',
+        trackingCode: 'SPXVN999888777',
+        carrierName: 'SPX Express',
+        status: PackageStatus.READY,
+        order: mockOrderInDb,
+        packageItems: [
+          {
+            quantity: 2,
+            orderItem: { variantId: 'var-1' },
+          },
+        ],
+      };
+
+      mockPrisma.package.create.mockResolvedValue(createdPkg);
+      mockPrisma.package.findUnique.mockResolvedValue(createdPkg);
+      mockPrisma.package.updateMany.mockResolvedValue({ count: 1 });
+      mockPrisma.package.count.mockResolvedValue(0);
+
+      const res = await fulfillmentService.verifyDispatch('tenant-1', 'user-1', {
+        code: 'SPXVN999888777',
+      });
+
+      expect(res.result).toBe(ScanResult.VERIFIED);
+      expect((res as any).package.packageCode).toBe('SPXVN999888777');
+      expect(mockPrisma.package.create).toHaveBeenCalled();
+    });
+
+    it('tự động fallback về kho khả dụng của Tenant khi Shop chưa cấu hình defaultWarehouseId', async () => {
+      const mockPkg = {
+        id: 'pkg-no-shop-wh',
+        packageCode: 'PKG-NO-WH',
+        trackingCode: 'SPXVN-NO-WH',
+        status: PackageStatus.READY,
+        order: {
+          id: 'ord-no-wh',
+          externalOrderId: 'ORD-NO-WH',
+          trackingCode: 'SPXVN-NO-WH',
+          platformStatus: PlatformOrderStatus.READY_TO_SHIP,
+          fulfillmentStatus: FulfillmentStatus.RESERVED,
+          shopId: 'shop-1',
+          shop: { defaultWarehouseId: null }, // Shop chưa cấu hình kho
+          packages: [{ id: 'pkg-no-shop-wh', status: PackageStatus.READY }],
+          orderItems: [{ id: 'oi-1', variantId: 'var-1', quantity: 1 }],
+        },
+        packageItems: [
+          {
+            quantity: 1,
+            orderItem: { variantId: 'var-1' },
+          },
+        ],
+      };
+
+      mockPrisma.package.findMany.mockResolvedValue([mockPkg]);
+      mockPrisma.warehouse.findFirst.mockResolvedValue({ id: 'wh-fallback-tenant-active' });
+      mockPrisma.package.updateMany.mockResolvedValue({ count: 1 });
+      mockPrisma.package.count.mockResolvedValue(0);
+
+      const res = await fulfillmentService.verifyDispatch('tenant-1', 'user-1', {
+        code: 'SPXVN-NO-WH',
+      });
+
+      expect(res.result).toBe(ScanResult.VERIFIED);
+      expect(mockInventoryService.dispatchStockForPackage).toHaveBeenCalledWith(
+        expect.anything(),
+        'tenant-1',
+        'wh-fallback-tenant-active',
+        expect.anything(),
+        'ord-no-wh',
+        'pkg-no-shop-wh',
+        'user-1',
+      );
+    });
+  });
 });
+

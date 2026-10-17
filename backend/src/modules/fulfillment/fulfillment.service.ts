@@ -15,6 +15,7 @@ import {
   FulfillmentStatus,
   VerificationStatus,
   InventoryMovementType,
+  WarehouseStatus,
 } from '@prisma/client';
 
 @Injectable()
@@ -29,7 +30,7 @@ export class FulfillmentService {
 
   normalizeCode(code: string): string {
     if (!code) return '';
-    return code.trim().replace(/[\r\n\t]/g, '');
+    return code.trim().replace(/[\r\n\t]/g, '').trim();
   }
 
   async verifyDispatch(
@@ -71,15 +72,16 @@ export class FulfillmentService {
         };
       }
     } else {
-      // Find candidate packages within tenant
-      const candidates = await this.prisma.package.findMany({
+      // Step 1: Find candidate packages within tenant (case-insensitive + check order.trackingCode)
+      let candidates = await this.prisma.package.findMany({
         where: {
           tenantId,
           OR: [
-            { packageCode: normalizedCode },
-            { trackingCode: normalizedCode },
-            { order: { externalOrderId: normalizedCode } },
-            { order: { internalOrderCode: normalizedCode } },
+            { packageCode: { equals: normalizedCode, mode: 'insensitive' } },
+            { trackingCode: { equals: normalizedCode, mode: 'insensitive' } },
+            { order: { trackingCode: { equals: normalizedCode, mode: 'insensitive' } } },
+            { order: { externalOrderId: { equals: normalizedCode, mode: 'insensitive' } } },
+            { order: { internalOrderCode: { equals: normalizedCode, mode: 'insensitive' } } },
           ],
         },
         include: {
@@ -95,6 +97,175 @@ export class FulfillmentService {
           },
         },
       });
+
+      // Step 2: Fallback - if no package found, query Order table directly
+      // This handles cases where an order exists in DB with trackingCode but no package row was created yet
+      if (candidates.length === 0) {
+        const matchingOrders = await this.prisma.order.findMany({
+          where: {
+            tenantId,
+            OR: [
+              { trackingCode: { equals: normalizedCode, mode: 'insensitive' } },
+              { externalOrderId: { equals: normalizedCode, mode: 'insensitive' } },
+              { internalOrderCode: { equals: normalizedCode, mode: 'insensitive' } },
+            ],
+          },
+          include: {
+            shop: true,
+            orderItems: { include: { variant: true } },
+            packages: {
+              include: {
+                packageItems: {
+                  include: { orderItem: { include: { variant: true } } },
+                },
+              },
+            },
+          },
+        });
+
+        if (matchingOrders.length > 1) {
+          await this.prisma.scanEvent.create({
+            data: {
+              tenantId,
+              rawCode,
+              normalizedCode,
+              scanResult: ScanResult.AMBIGUOUS_CODE,
+              deviceId: dto.deviceId,
+              performedByUserId: userId,
+              idempotencyKey,
+            },
+          });
+
+          return {
+            result: ScanResult.AMBIGUOUS_CODE,
+            message: `Mã quét khớp với ${matchingOrders.length} đơn hàng trong Workspace. Vui lòng kiểm tra lại.`,
+            candidates: matchingOrders.map((o) => ({
+              orderId: o.id,
+              externalOrderId: o.externalOrderId,
+              trackingCode: o.trackingCode,
+              shopName: o.shop?.name || '',
+              status: o.platformStatus,
+            })),
+          };
+        }
+
+        if (matchingOrders.length === 1) {
+          const matchedOrder = matchingOrders[0];
+          if (matchedOrder.packages && matchedOrder.packages.length > 0) {
+            candidates = matchedOrder.packages.map((pkg) => ({
+              ...pkg,
+              order: matchedOrder,
+            })) as any;
+          } else {
+            // Auto-create package for this order on the fly
+            const newPkgCode = matchedOrder.trackingCode || `PKG-${matchedOrder.externalOrderId}`;
+            const createdPackage = await this.prisma.package.create({
+              data: {
+                tenantId,
+                orderId: matchedOrder.id,
+                packageCode: newPkgCode,
+                trackingCode: matchedOrder.trackingCode || normalizedCode,
+                carrierName: matchedOrder.shippingCarrier || 'SPX Express',
+                status: PackageStatus.READY,
+              },
+            });
+
+            if (matchedOrder.orderItems && matchedOrder.orderItems.length > 0) {
+              for (const oi of matchedOrder.orderItems) {
+                try {
+                  await this.prisma.packageItem.create({
+                    data: {
+                      tenantId,
+                      packageId: createdPackage.id,
+                      orderItemId: oi.id,
+                      quantity: oi.quantity,
+                    },
+                  });
+                } catch {
+                  // Ignore duplicate/unlinked errors
+                }
+              }
+            }
+
+            const freshPackage = await this.prisma.package.findUnique({
+              where: { id: createdPackage.id },
+              include: {
+                order: {
+                  include: {
+                    shop: true,
+                    orderItems: { include: { variant: true } },
+                    packages: true,
+                  },
+                },
+                packageItems: {
+                  include: { orderItem: { include: { variant: true } } },
+                },
+              },
+            });
+
+            if (freshPackage) {
+              candidates = [freshPackage];
+            }
+          }
+        }
+      }
+
+      // Step 3: Fuzzy search if still not found and code length >= 6 (guards against untrimmed whitespace in DB)
+      if (candidates.length === 0 && normalizedCode.length >= 6) {
+        const fuzzyPackages = await this.prisma.package.findMany({
+          where: {
+            tenantId,
+            OR: [
+              { trackingCode: { contains: normalizedCode, mode: 'insensitive' } },
+              { order: { trackingCode: { contains: normalizedCode, mode: 'insensitive' } } },
+              { order: { externalOrderId: { contains: normalizedCode, mode: 'insensitive' } } },
+            ],
+          },
+          include: {
+            order: {
+              include: {
+                shop: true,
+                orderItems: { include: { variant: true } },
+                packages: true,
+              },
+            },
+            packageItems: {
+              include: { orderItem: { include: { variant: true } } },
+            },
+          },
+          take: 5,
+        });
+
+        if (fuzzyPackages.length === 1) {
+          candidates = fuzzyPackages;
+        } else if (fuzzyPackages.length > 1) {
+          await this.prisma.scanEvent.create({
+            data: {
+              tenantId,
+              rawCode,
+              normalizedCode,
+              scanResult: ScanResult.AMBIGUOUS_CODE,
+              deviceId: dto.deviceId,
+              performedByUserId: userId,
+              idempotencyKey,
+            },
+          });
+
+          return {
+            result: ScanResult.AMBIGUOUS_CODE,
+            message: `Mã quét khớp với ${fuzzyPackages.length} kiện hàng theo tìm kiếm tương tự. Vui lòng chọn kiện hàng cần xác nhận.`,
+            candidates: fuzzyPackages.map((c) => ({
+              packageId: c.id,
+              packageCode: c.packageCode,
+              trackingCode: c.trackingCode || c.order?.trackingCode,
+              externalOrderId: c.order?.externalOrderId,
+              shopName: c.order?.shop?.name || '',
+              carrierName: c.carrierName,
+              status: c.status,
+            })),
+          };
+        }
+      }
 
       if (candidates.length === 0) {
         // Log failed scan
@@ -136,9 +307,9 @@ export class FulfillmentService {
           candidates: candidates.map((c) => ({
             packageId: c.id,
             packageCode: c.packageCode,
-            trackingCode: c.trackingCode,
-            externalOrderId: c.order.externalOrderId,
-            shopName: c.order.shop.name,
+            trackingCode: c.trackingCode || c.order?.trackingCode,
+            externalOrderId: c.order?.externalOrderId,
+            shopName: c.order?.shop?.name || '',
             carrierName: c.carrierName,
             status: c.status,
           })),
@@ -149,7 +320,24 @@ export class FulfillmentService {
     }
 
     const order = targetPackage.order;
-    const warehouseId = dto.warehouseId || order.shop.defaultWarehouseId;
+    let warehouseId = dto.warehouseId || order?.shop?.defaultWarehouseId;
+
+    if (!warehouseId) {
+      const activeWarehouse = await this.prisma.warehouse.findFirst({
+        where: { tenantId, status: WarehouseStatus.ACTIVE },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (activeWarehouse) {
+        warehouseId = activeWarehouse.id;
+      }
+    }
+
+    if (!warehouseId) {
+      return {
+        result: ScanResult.INVALID_ORDER_STATUS,
+        message: 'Hệ thống chưa có Kho hàng khả dụng. Vui lòng cấu hình Kho hàng trong Workspace.',
+      };
+    }
 
     // Check if already dispatched (Double-layer protection: layer 2 check)
     if (targetPackage.status === PackageStatus.DISPATCHED) {
@@ -174,7 +362,7 @@ export class FulfillmentService {
         message: 'Kiện hàng này đã được xác nhận xuất kho trước đó',
         packageId: targetPackage.id,
         packageCode: targetPackage.packageCode,
-        trackingCode: targetPackage.trackingCode,
+        trackingCode: targetPackage.trackingCode || order.trackingCode,
         verifiedAt: targetPackage.verifiedAt,
         verifiedByUserId: targetPackage.verifiedByUserId,
         orderId: order.id,
@@ -182,7 +370,7 @@ export class FulfillmentService {
         package: {
           id: targetPackage.id,
           packageCode: targetPackage.packageCode,
-          trackingCode: targetPackage.trackingCode,
+          trackingCode: targetPackage.trackingCode || order.trackingCode,
           carrierName: targetPackage.carrierName,
           status: targetPackage.status,
           verifiedAt: targetPackage.verifiedAt,
@@ -191,6 +379,7 @@ export class FulfillmentService {
           id: order.id,
           externalOrderId: order.externalOrderId,
           internalOrderCode: order.internalOrderCode,
+          trackingCode: order.trackingCode || targetPackage.trackingCode,
           totalPackages: order.packages?.length || 1,
           verifiedPackages: order.packages?.filter((p: any) => p.status === PackageStatus.DISPATCHED)?.length || 1,
           verificationStatus: order.verificationStatus,
@@ -199,7 +388,10 @@ export class FulfillmentService {
     }
 
     // Check order conditions
-    if (order.platformStatus === PlatformOrderStatus.CANCELLED) {
+    if (
+      order.platformStatus === PlatformOrderStatus.CANCELLED ||
+      order.fulfillmentStatus === FulfillmentStatus.CANCELLED_RESTOCKED
+    ) {
       await this.prisma.scanEvent.create({
         data: {
           tenantId,
@@ -247,17 +439,22 @@ export class FulfillmentService {
       };
     }
 
-    if (!warehouseId) {
-      throw new BadRequestException('Shop hoặc yêu cầu quét chưa chỉ định kho hàng xuất');
-    }
-
     // Items to dispatch
-    const itemsToDispatch = targetPackage.packageItems
-      .filter((pi: any) => !!pi.orderItem.variantId)
+    let itemsToDispatch = (targetPackage.packageItems || [])
+      .filter((pi: any) => !!pi.orderItem?.variantId)
       .map((pi: any) => ({
         variantId: pi.orderItem.variantId,
         quantity: pi.quantity,
       }));
+
+    if (itemsToDispatch.length === 0 && order.orderItems && order.orderItems.length > 0) {
+      itemsToDispatch = order.orderItems
+        .filter((oi: any) => !!oi.variantId)
+        .map((oi: any) => ({
+          variantId: oi.variantId,
+          quantity: oi.quantity,
+        }));
+    }
 
     // EXECUTE DISPATCH TRANSACTION WITH ATOMIC ROW LOCKS
     return this.prisma.$transaction(async (tx) => {
@@ -271,6 +468,7 @@ export class FulfillmentService {
           status: PackageStatus.DISPATCHED,
           verifiedAt: new Date(),
           verifiedByUserId: userId,
+          ...(targetPackage.trackingCode ? {} : { trackingCode: order.trackingCode || normalizedCode }),
         },
       });
 
@@ -280,6 +478,24 @@ export class FulfillmentService {
           result: ScanResult.ALREADY_VERIFIED,
           message: 'Kiện hàng vừa được xác nhận xuất kho bởi thiết bị khác',
         };
+      }
+
+      // Link package items if they were missing on the package
+      if ((!targetPackage.packageItems || targetPackage.packageItems.length === 0) && order.orderItems?.length > 0) {
+        for (const oi of order.orderItems) {
+          try {
+            await tx.packageItem.create({
+              data: {
+                tenantId,
+                packageId: targetPackage.id,
+                orderItemId: oi.id,
+                quantity: oi.quantity,
+              },
+            });
+          } catch {
+            // Ignore duplicate/unlinked errors
+          }
+        }
       }
 
       // Deduct stock and write immutable ledger
@@ -303,8 +519,8 @@ export class FulfillmentService {
         },
       });
 
-      const totalPackages = order.packages.length;
-      const verifiedPackages = totalPackages - remainingUnverified;
+      const totalPackages = order.packages?.length || 1;
+      const verifiedPackages = Math.max(1, totalPackages - remainingUnverified);
       const allVerified = remainingUnverified === 0;
 
       await tx.order.update({
@@ -316,6 +532,7 @@ export class FulfillmentService {
           fulfillmentStatus: allVerified
             ? FulfillmentStatus.DISPATCHED
             : order.fulfillmentStatus,
+          ...(order.trackingCode ? {} : { trackingCode: targetPackage.trackingCode || normalizedCode }),
         },
       });
 
@@ -359,7 +576,8 @@ export class FulfillmentService {
         package: {
           id: targetPackage.id,
           packageCode: targetPackage.packageCode,
-          trackingCode: targetPackage.trackingCode,
+          trackingCode: targetPackage.trackingCode || order.trackingCode || normalizedCode,
+          carrierName: targetPackage.carrierName || order.shippingCarrier,
           status: PackageStatus.DISPATCHED,
           verifiedAt: new Date(),
         },
@@ -367,6 +585,7 @@ export class FulfillmentService {
           id: order.id,
           externalOrderId: order.externalOrderId,
           internalOrderCode: order.internalOrderCode,
+          trackingCode: order.trackingCode || targetPackage.trackingCode || normalizedCode,
           totalPackages,
           verifiedPackages,
           verificationStatus: allVerified

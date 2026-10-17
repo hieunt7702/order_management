@@ -97,6 +97,7 @@ export const ScanOrdersPage: React.FC = () => {
   // Refs
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isCameraRunningRef = useRef<boolean>(false);
+  const isPausedRef = useRef<boolean>(false);
   const lastScanTimeRef = useRef<number>(0);
   const lastDuplicateScanRef = useRef<{ code: string; time: number }>({ code: '', time: 0 });
 
@@ -202,13 +203,16 @@ export const ScanOrdersPage: React.FC = () => {
         cameraParam,
         config,
         (decodedText) => {
-          handleIncomingBarcode(decodedText);
+          if (!isPausedRef.current) {
+            handleIncomingBarcode(decodedText);
+          }
         },
         () => {},
       );
 
       setIsCameraActive(true);
       setIsCameraPaused(false);
+      isPausedRef.current = false;
       isCameraRunningRef.current = true;
 
       // Apply initial zoom 2x
@@ -238,17 +242,34 @@ export const ScanOrdersPage: React.FC = () => {
   };
 
   const togglePauseCamera = async () => {
-    if (!scannerRef.current) return;
-    try {
-      if (isCameraPaused) {
-        scannerRef.current.resume();
-        setIsCameraPaused(false);
-      } else {
-        scannerRef.current.pause();
-        setIsCameraPaused(true);
+    const nextPaused = !isCameraPaused;
+    setIsCameraPaused(nextPaused);
+    isPausedRef.current = nextPaused;
+
+    if (scannerRef.current && isCameraRunningRef.current) {
+      try {
+        if (nextPaused) {
+          const state = (scannerRef.current as any).getState?.();
+          // Html5QrcodeScannerState: SCANNING is 2
+          if (state === 2 || state === undefined) {
+            scannerRef.current.pause(true);
+          }
+        } else {
+          const state = (scannerRef.current as any).getState?.();
+          // Html5QrcodeScannerState: PAUSED is 3
+          if (state === 3 || state === undefined) {
+            scannerRef.current.resume();
+          }
+        }
+      } catch (err) {
+        console.warn('Toggle pause camera hardware stream:', err);
       }
-    } catch (err) {
-      console.warn('Toggle pause camera failed:', err);
+    }
+
+    if (nextPaused) {
+      toast.info('Đã tạm dừng nhận mã quét');
+    } else {
+      toast.success('Đã tiếp tục quét mã');
     }
   };
 
@@ -271,6 +292,9 @@ export const ScanOrdersPage: React.FC = () => {
 
   // CORE BATCH SCANNING HANDLER: Captures code into active session
   const handleIncomingBarcode = (rawText: string) => {
+    if (isPausedRef.current) {
+      return;
+    }
     const raw = (rawText || '').trim();
     if (!raw) return;
 
@@ -327,6 +351,11 @@ export const ScanOrdersPage: React.FC = () => {
         e.target instanceof HTMLTextAreaElement ||
         e.target instanceof HTMLSelectElement
       ) {
+        return;
+      }
+
+      if (isPausedRef.current) {
+        buffer = '';
         return;
       }
 
@@ -720,7 +749,9 @@ export const ScanOrdersPage: React.FC = () => {
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
             <div className="relative w-[82%] max-w-[320px] h-[130px] sm:h-[150px]">
               {/* Laser beam */}
-              <div className="laser-sweep-beam-active absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-[#3b82f6] to-transparent shadow-[0_0_12px_#3b82f6]" />
+              {!isCameraPaused && (
+                <div className="laser-sweep-beam-active absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-[#3b82f6] to-transparent shadow-[0_0_12px_#3b82f6]" />
+              )}
 
               {/* 4 Glowing Corner Angles */}
               <div className="absolute top-0 left-0 w-7 h-7 border-t-[3.5px] border-l-[3.5px] border-[#3b82f6] rounded-tl shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
@@ -731,18 +762,41 @@ export const ScanOrdersPage: React.FC = () => {
               {/* Centered Instruction Pill */}
               <div className="absolute -bottom-7 inset-x-0 flex justify-center">
                 <span className="px-3 py-1 rounded-full bg-black/80 backdrop-blur-md text-[11px] font-medium text-white shadow-md border border-white/10">
-                  Đưa mã vận đơn vào khung
+                  {isCameraPaused ? 'Quét đang tạm dừng' : 'Đưa mã vận đơn vào khung'}
                 </span>
               </div>
             </div>
           </div>
 
+          {/* Pause Overlay */}
+          {isCameraPaused && (
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-[3px] flex flex-col items-center justify-center text-center z-25 space-y-3 p-4 pointer-events-auto">
+              <div className="w-14 h-14 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center shadow-lg shadow-amber-500/10">
+                <Pause size={26} className="fill-current" />
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm font-bold text-white">Đang tạm dừng quét barcode</div>
+                <div className="text-xs text-gray-300 max-w-xs leading-relaxed">
+                  Đã khóa nhận diện từ camera và máy quét mã vạch.
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={togglePauseCamera}
+                className="mt-1 px-4 py-2 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-md shadow-blue-500/25 active:scale-95 transition-all"
+              >
+                <Play size={14} className="fill-current" />
+                <span>Tiếp tục quét</span>
+              </button>
+            </div>
+          )}
+
           {/* Top Floating Controls */}
           <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between z-20 pointer-events-auto">
             {/* Camera Mode Badge */}
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-white text-[11px] font-medium shadow-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{facingMode === 'environment' ? 'Camera sau' : 'Camera trước'}</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${isCameraPaused ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
+              <span>{isCameraPaused ? 'Đang tạm dừng' : (facingMode === 'environment' ? 'Camera sau' : 'Camera trước')}</span>
             </div>
 
             {/* Zoom & Torch Buttons */}
@@ -816,11 +870,11 @@ export const ScanOrdersPage: React.FC = () => {
             onClick={togglePauseCamera}
             className={`flex items-center justify-center gap-1.5 py-2 rounded border transition-all cursor-pointer active:scale-95 ${
               isCameraPaused
-                ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                ? 'bg-amber-500 text-white border-amber-400 shadow-sm shadow-amber-500/25 font-semibold'
                 : 'bg-[#2563eb] text-white border-blue-400 shadow-sm shadow-blue-500/20'
             }`}
           >
-            {isCameraPaused ? <Play size={13} /> : <Pause size={13} />}
+            {isCameraPaused ? <Play size={13} className="fill-current" /> : <Pause size={13} className="fill-current" />}
             <span>{isCameraPaused ? 'Tiếp tục' : 'Tạm dừng'}</span>
           </button>
         </div>
@@ -830,7 +884,9 @@ export const ScanOrdersPage: React.FC = () => {
       <div className="p-2.5 rounded bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs flex items-center gap-2.5">
         <div
           className={`w-2 h-2 rounded-full shrink-0 ${
-            lastScannedFeedback
+            isCameraPaused
+              ? 'bg-amber-400'
+              : lastScannedFeedback
               ? lastScannedFeedback.isDuplicate
                 ? 'bg-amber-400'
                 : 'bg-emerald-400 animate-ping'
@@ -839,7 +895,11 @@ export const ScanOrdersPage: React.FC = () => {
         />
         <div className="min-w-0 flex-1">
           <div className="text-xs font-semibold text-gray-900 dark:text-white">
-            {lastScannedFeedback ? (
+            {isCameraPaused ? (
+              <span className="text-amber-500 dark:text-amber-400">
+                Đang tạm dừng quét barcode (Bấm &apos;Tiếp tục&apos; để nhận mã)
+              </span>
+            ) : lastScannedFeedback ? (
               lastScannedFeedback.isDuplicate ? (
                 <span className="text-amber-500 dark:text-amber-400">
                   Mã đã có trong phiên (Trùng lặp) • {lastScannedFeedback.code}
@@ -854,7 +914,9 @@ export const ScanOrdersPage: React.FC = () => {
             )}
           </div>
           <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-            {lastScannedFeedback
+            {isCameraPaused
+              ? 'Máy quét phần cứng và camera đang tạm khóa. Không có mã nào được thêm vào phiên.'
+              : lastScannedFeedback
               ? `Quét lúc ${lastScannedFeedback.timestamp} • Sẵn sàng quét mã tiếp theo.`
               : 'Kết quả sẽ hiển thị sau khi quét.'}
           </div>
@@ -983,7 +1045,7 @@ export const ScanOrdersPage: React.FC = () => {
                           ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                           : isAlreadyVerified
                           ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                          : isNotFound
+                          : isNotFound || item.status === 'ERROR'
                           ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
                           : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
                       }`}
@@ -994,6 +1056,8 @@ export const ScanOrdersPage: React.FC = () => {
                         ? 'Đã quét trước'
                         : isNotFound
                         ? 'Không tìm thấy'
+                        : item.status === 'ERROR'
+                        ? 'Lỗi đối soát'
                         : 'Chờ đối soát'}
                     </span>
 

@@ -584,7 +584,7 @@ export class InventoryService {
     const sortedItems = [...items].sort((a, b) => a.variantId.localeCompare(b.variantId));
 
     for (const item of sortedItems) {
-      const balance = await tx.inventoryBalance.findUnique({
+      let balance = await tx.inventoryBalance.findUnique({
         where: {
           tenantId_warehouseId_variantId: {
             tenantId,
@@ -595,7 +595,15 @@ export class InventoryService {
       });
 
       if (!balance) {
-        throw new Error(`Không tìm thấy số dư tồn kho cho SKU ${item.variantId}`);
+        balance = await tx.inventoryBalance.create({
+          data: {
+            tenantId,
+            warehouseId,
+            variantId: item.variantId,
+            onHand: 0,
+            reserved: 0,
+          },
+        });
       }
 
       const newOnHand = Math.max(0, balance.onHand - item.quantity);

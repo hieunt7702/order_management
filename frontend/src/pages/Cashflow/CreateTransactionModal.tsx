@@ -317,6 +317,7 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      maxWidth="max-w-5xl"
       title={
         <div className="flex items-center gap-2 min-w-0">
           <span className="sm:hidden font-semibold truncate">
@@ -408,7 +409,7 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
           </div>
 
           <div className="flex flex-wrap gap-1.5 mb-2.5">
-            {filteredCategories.slice(0, 6).map((cat) => (
+            {filteredCategories.slice(0, 10).map((cat) => (
               <button
                 key={cat.id}
                 type="button"
@@ -716,37 +717,46 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
         </div>
 
         {/* 8. Ghi chú & Ảnh chứng từ */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-            Ghi chú nội dung thu / chi
-          </label>
-          <textarea
-            rows={2}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder={
-              currentCategory?.code === 'CHI_VAT_TU_DONG_GOI'
-                ? 'VD: Mua 10 cuộn băng dính dùng tại kho A'
-                : currentCategory?.code === 'CHI_GIAY_MUC_IN'
-                ? 'VD: Mua 5 cuộn giấy in A6 cho máy HPRT'
-                : 'Nhập ghi chú chi tiết...'
-            }
-            className="w-full px-3.5 py-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-            Link ảnh hóa đơn / Chứng từ chuyển khoản
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={voucherImage}
-              onChange={(e) => setVoucherImage(e.target.value)}
-              placeholder="https://... hoặc URL ảnh chụp hóa đơn"
-              className="flex-1 px-3.5 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+              Ghi chú nội dung thu / chi
+            </label>
+            <textarea
+              rows={2}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={
+                currentCategory?.code === 'CHI_VAT_TU_DONG_GOI'
+                  ? 'VD: Mua 10 cuộn băng dính dùng tại kho A'
+                  : currentCategory?.code === 'CHI_GIAY_MUC_IN'
+                  ? 'VD: Mua 5 cuộn giấy in A6 cho máy HPRT'
+                  : 'Nhập ghi chú chi tiết...'
+              }
+              className="w-full px-3.5 py-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+              Link ảnh hóa đơn / Chứng từ chuyển khoản
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={voucherImage}
+                onChange={(e) => setVoucherImage(e.target.value)}
+                placeholder="https://... hoặc URL ảnh chụp hóa đơn"
+                className="flex-1 px-3.5 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
+              />
+            </div>
+            {voucherImage && (
+              <div className="text-[11px] text-indigo-500 mt-1 truncate">
+                <a href={voucherImage} target="_blank" rel="noreferrer" className="hover:underline">
+                  Xem ảnh chứng từ mở tab mới ↗
+                </a>
+              </div>
+            )}
           </div>
         </div>
 
