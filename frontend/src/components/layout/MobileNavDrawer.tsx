@@ -89,7 +89,6 @@ export const MobileNavDrawer: React.FC = () => {
   const { user, currentTenant, logout } = useAuthStore();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [isDark, setIsDark] = useState<boolean>(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -150,10 +149,6 @@ export const MobileNavDrawer: React.FC = () => {
 
     return navigationGroups
       .map((group) => {
-        if (selectedCategory !== 'ALL' && group.id !== selectedCategory) {
-          return null;
-        }
-
         const filteredItems = group.items.filter((item) => {
           if (!query) return true;
           return (
@@ -172,7 +167,7 @@ export const MobileNavDrawer: React.FC = () => {
         };
       })
       .filter(Boolean) as typeof navigationGroups;
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery]);
 
   if (!isMobileMenuOpen) return null;
 
@@ -236,35 +231,6 @@ export const MobileNavDrawer: React.FC = () => {
                 <X size={14} />
               </button>
             )}
-          </div>
-
-          {/* Category Filter Pills */}
-          <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto scrollbar-none pb-0.5">
-            <button
-              type="button"
-              onClick={() => setSelectedCategory('ALL')}
-              className={`px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
-                selectedCategory === 'ALL'
-                  ? 'bg-[#5865f2] text-white shadow-xs'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
-            >
-              Tất cả
-            </button>
-            {navigationGroups.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                onClick={() => setSelectedCategory(g.id)}
-                className={`px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
-                  selectedCategory === g.id
-                    ? 'bg-[#5865f2] text-white shadow-xs'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
-              >
-                {g.title.split('&')[0].trim()}
-              </button>
-            ))}
           </div>
         </div>
 
