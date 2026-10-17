@@ -11,6 +11,7 @@ export type SystemMetricColorScheme =
 
 export interface SystemMetricCardProps {
   title: string;
+  mobileTitle?: string;
   value: number | string;
   subtitle?: string;
   /** Alias for subtitle — trend.value is used as the subtitle text */
@@ -25,6 +26,7 @@ export interface SystemMetricCardProps {
 
 export const SystemMetricCard: React.FC<SystemMetricCardProps> = ({
   title,
+  mobileTitle,
   value,
   subtitle,
   trend,
@@ -102,12 +104,29 @@ export const SystemMetricCard: React.FC<SystemMetricCardProps> = ({
     <button
       onClick={onClick}
       disabled={!onClick}
-      className={`w-full text-left bg-white dark:bg-[#1a1b23] border rounded p-3 sm:p-4 flex items-center gap-2.5 sm:gap-4 relative shadow-none transition-all ${
+      className={`w-full text-left bg-white dark:bg-[#1a1b23] border rounded p-2.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between sm:justify-start gap-1.5 sm:gap-4 relative shadow-none transition-all ${
         onClick ? 'cursor-pointer group' : 'cursor-default'
       } ${isActive ? scheme.borderActive : scheme.borderInactive} ${className}`}
     >
+      {/* Mobile Top Header: Title & Icon Badge */}
+      <div className="flex sm:hidden items-center justify-between w-full min-w-0 gap-1.5">
+        <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium truncate flex-1 min-w-0">
+          {mobileTitle || title}
+        </span>
+        {Icon && (
+          <div
+            className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+              isActive ? scheme.bgActive : scheme.bgInactive
+            }`}
+          >
+            <Icon className={`w-3.5 h-3.5 ${scheme.iconColor}`} strokeWidth={2} />
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Icon (sm and up) */}
       <div
-        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+        className={`hidden sm:flex w-10 h-10 sm:w-12 sm:h-12 rounded-full items-center justify-center shrink-0 transition-colors ${
           isActive ? scheme.bgActive : scheme.bgInactive
         }`}
       >
@@ -115,8 +134,11 @@ export const SystemMetricCard: React.FC<SystemMetricCardProps> = ({
           <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${scheme.iconColor}`} strokeWidth={2} />
         )}
       </div>
-      <div className="flex flex-col flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 mb-0.5 relative z-10">
+
+      {/* Main Info */}
+      <div className="flex flex-col flex-1 min-w-0 w-full">
+        {/* Desktop Title & Tooltip (sm and up) */}
+        <div className="hidden sm:flex items-center gap-1.5 mb-0.5 relative z-10">
           <span className="text-xs sm:text-[13px] text-gray-500 dark:text-gray-400 font-medium truncate">
             {title}
           </span>
@@ -130,22 +152,26 @@ export const SystemMetricCard: React.FC<SystemMetricCardProps> = ({
             </div>
           )}
         </div>
-        <div className="flex items-baseline gap-1 mt-0.5">
-          <span className="text-xl sm:text-[24px] xl:text-[28px] leading-none font-bold text-gray-900 dark:text-white truncate inline-block">
+
+        {/* Value Display - Full Width, responsive font size */}
+        <div className="flex items-baseline gap-1 mt-0.5 sm:mt-0 w-full overflow-hidden">
+          <span className="text-[15px] xs:text-base sm:text-[22px] xl:text-[28px] leading-tight sm:leading-none font-bold text-gray-900 dark:text-white truncate block w-full tracking-tight">
             <motion.div
               key={String(value)}
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="inline-block"
+              className="inline-block truncate max-w-full"
             >
               {value}
             </motion.div>
           </span>
         </div>
+
+        {/* Subtitle */}
         {resolvedSubtitle && (
           <span
-            className={`text-[11px] sm:text-[12px] font-medium mt-1 sm:mt-1.5 truncate ${
+            className={`text-[10px] sm:text-[12px] font-medium mt-0.5 sm:mt-1.5 truncate block ${
               isActive ? scheme.textColor : 'text-gray-400 dark:text-gray-500'
             }`}
           >

@@ -619,7 +619,7 @@ export const SupplierDebtsPage: React.FC = () => {
   const summaryPendingReimbursement = debtReports?.summary?.totalPendingReimbursement ?? 0;
 
   return (
-    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Top Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0 flex-1">
@@ -662,6 +662,7 @@ export const SupplierDebtsPage: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 shrink-0">
         <SystemMetricCard
           title="Tổng nợ phải trả NCC"
+          mobileTitle="Tổng nợ NCC"
           value={`${summaryTotalPayable.toLocaleString('vi-VN')}đ`}
           subtitle="Nghĩa vụ phải trả"
           icon={Receipt}
@@ -671,6 +672,7 @@ export const SupplierDebtsPage: React.FC = () => {
         />
         <SystemMetricCard
           title="Ứng trước / Đặt cọc"
+          mobileTitle="Ứng trước / Cọc"
           value={`${summaryTotalAdvance.toLocaleString('vi-VN')}đ`}
           subtitle="NCC đang giữ"
           icon={ArrowDownLeft}
@@ -680,6 +682,7 @@ export const SupplierDebtsPage: React.FC = () => {
         />
         <SystemMetricCard
           title="Nợ quá hạn thanh toán"
+          mobileTitle="Nợ quá hạn"
           value={`${summaryOverdue.toLocaleString('vi-VN')}đ`}
           subtitle="Cần ưu tiên trả"
           icon={AlertTriangle}
@@ -689,6 +692,7 @@ export const SupplierDebtsPage: React.FC = () => {
         />
         <SystemMetricCard
           title="Cá nhân chi hộ cần hoàn"
+          mobileTitle="Cá nhân chi hộ"
           value={`${summaryPendingReimbursement.toLocaleString('vi-VN')}đ`}
           subtitle="Shop nợ cá nhân"
           icon={UserCheck}
@@ -913,7 +917,7 @@ export const SupplierDebtsPage: React.FC = () => {
           </div>
 
           {/* Mobile Card View (md:hidden) */}
-          <div className="md:hidden space-y-2.5 pb-6">
+          <div className="md:hidden space-y-2.5 pb-24 sm:pb-6">
             {isLoading ? (
               <div className="py-8 text-center text-xs text-gray-400 font-normal">
                 <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
@@ -934,7 +938,7 @@ export const SupplierDebtsPage: React.FC = () => {
                   <div
                     key={s.id}
                     onClick={() => handleOpenStatement(s.id)}
-                    className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs cursor-pointer active:scale-[0.99] transition-all"
+                    className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs cursor-pointer hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
                   >
                     {/* Header: Supplier Name & Status */}
                     <div className="flex items-start justify-between gap-2">
@@ -1149,7 +1153,7 @@ export const SupplierDebtsPage: React.FC = () => {
           </div>
 
           {/* Mobile Card View (md:hidden) */}
-          <div className="md:hidden space-y-2.5 pb-6">
+          <div className="md:hidden space-y-2.5 pb-24 sm:pb-6">
             {isLoading ? (
               <div className="py-8 text-center text-xs text-gray-400 font-normal">
                 <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
@@ -1332,7 +1336,7 @@ export const SupplierDebtsPage: React.FC = () => {
           </div>
 
           {/* Mobile Card View (md:hidden) */}
-          <div className="md:hidden space-y-2.5 pb-6">
+          <div className="md:hidden space-y-2.5 pb-24 sm:pb-6">
             {isLoading ? (
               <div className="py-8 text-center text-xs text-gray-400 font-normal">
                 <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
@@ -1413,7 +1417,7 @@ export const SupplierDebtsPage: React.FC = () => {
 
       {/* TAB 4: BÁO CÁO CÔNG NỢ & HẠN NỢ */}
       {activeTab === 'REPORTS' && debtReports && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-24 sm:pb-6">
           {/* Overdue Debts */}
           <div className="bg-white dark:bg-[#14151a] p-4 rounded border border-gray-200 dark:border-gray-800 space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
@@ -1498,6 +1502,9 @@ export const SupplierDebtsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Mobile bottom spacer for floating navigation dock */}
+      <div className="h-10 md:hidden shrink-0" aria-hidden="true" />
 
       {/* MODAL: SAO KÊ DÒNG THỜI GIAN 360° */}
       <Modal
