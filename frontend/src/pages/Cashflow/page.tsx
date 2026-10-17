@@ -33,6 +33,7 @@ import {
   CreditCard,
   Truck,
   ArrowUpDown,
+  CircleDollarSign,
 } from 'lucide-react';
 import {
   cashflowApi,
@@ -353,56 +354,62 @@ export const CashflowPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-4 animate-in fade-in duration-300">
       {/* 1. Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
-            Thu chi & đối soát
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+            <CircleDollarSign size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
+            <span className="sm:hidden truncate">Thu chi & Quỹ</span>
+            <span className="hidden sm:inline truncate">Thu chi & Đối soát</span>
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
             Theo dõi dòng tiền, quản lý quỹ và đối soát thanh toán.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <Button
+            size="sm"
             onClick={handleOpenIncome}
-            className="px-3.5 py-2 bg-[#10b981] hover:bg-[#059669] text-white font-medium text-xs sm:text-sm rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            className="gap-1.5 px-2.5 sm:px-3 bg-emerald-600 hover:bg-emerald-700 text-white"
             title="Tạo phiếu thu tiền"
           >
-            <Plus size={16} className="stroke-[2.5]" />
-            <span>Thu tiền</span>
-          </button>
+            <Plus size={14} />
+            <span className="hidden sm:inline">Thu tiền</span>
+            <span className="sm:hidden">Thu</span>
+          </Button>
 
-          <button
-            type="button"
+          <Button
+            size="sm"
             onClick={() => handleOpenExpense()}
-            className="px-3.5 py-2 bg-[#4f46e5] hover:bg-[#4338ca] text-white font-medium text-xs sm:text-sm rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            className="gap-1.5 px-2.5 sm:px-3 bg-[#5865f2] hover:bg-[#4752c4] text-white"
             title="Tạo phiếu chi tiền"
           >
-            <Minus size={16} className="stroke-[2.5]" />
-            <span>Chi tiền</span>
-          </button>
+            <Minus size={14} />
+            <span className="hidden sm:inline">Chi tiền</span>
+            <span className="sm:hidden">Chi</span>
+          </Button>
 
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setIsTransferModalOpen(true)}
-            className="px-3.5 py-2 bg-gray-100 dark:bg-[#161a26] hover:bg-gray-200 dark:hover:bg-[#1f2436] border border-gray-300 dark:border-[#262c3f] text-gray-700 dark:text-gray-200 font-medium text-xs sm:text-sm rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
+            className="gap-1.5 px-2.5 sm:px-3"
             title="Chuyển tiền giữa các tài khoản & rút tiền Shopee"
           >
             <ArrowLeftRight size={14} className="text-gray-500 dark:text-gray-400" />
-            <span>Chuyển quỹ</span>
-          </button>
+            <span className="hidden sm:inline">Chuyển quỹ</span>
+          </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-[#161a26] hover:bg-gray-200 dark:hover:bg-[#1f2436] border border-gray-300 dark:border-[#262c3f] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-8 h-8 p-0"
                 title="Tùy chọn khác"
               >
-                <MoreHorizontal size={16} />
-              </button>
+                <MoreHorizontal size={14} />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onClick={() => setIsAccountModalOpen(true)}>
@@ -428,7 +435,7 @@ export const CashflowPage: React.FC = () => {
       </div>
 
       {/* 2. Navigation Tabs (Horizontal Underline Style) */}
-      <div className="flex items-center gap-6 sm:gap-8 border-b border-gray-200 dark:border-[#22283a] overflow-x-auto scrollbar-none pt-1">
+      <div className="flex items-center gap-6 sm:gap-8 border-b border-gray-200 dark:border-gray-800 overflow-x-auto scrollbar-none">
         {CASHFLOW_TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -436,23 +443,20 @@ export const CashflowPage: React.FC = () => {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as ActiveTab)}
-              className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap cursor-pointer border-0 bg-transparent ${
+              className={`pb-2.5 pt-1 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap cursor-pointer border-b-2 -mb-[1px] outline-none ${
                 isActive
-                  ? 'text-gray-900 dark:text-white font-semibold'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  ? 'border-[#5865f2] text-[#5865f2] dark:text-[#5865f2] font-semibold'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-700'
               }`}
             >
               <span>{tab.label}</span>
-              {isActive && (
-                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#6366f1] rounded-full" />
-              )}
             </button>
           );
         })}
       </div>
 
       {/* 3. Global Filter Bar */}
-      <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg p-2.5 sm:p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xs">
+      <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-2.5 sm:p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xs">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
           {/* Store Filter */}
           <div className="w-full sm:w-56">
@@ -493,29 +497,31 @@ export const CashflowPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               loadBaseData();
               if (activeTab === 'TRANSACTIONS') loadTransactions();
               if (activeTab === 'RECONCILIATION') loadReconciliation();
             }}
-            className="px-3.5 py-2 bg-gray-50 dark:bg-[#161a26] hover:bg-gray-100 dark:hover:bg-[#1f2436] border border-gray-200 dark:border-[#262c3f] text-gray-700 dark:text-gray-200 font-medium text-xs sm:text-sm rounded-lg flex items-center gap-2 cursor-pointer transition-colors shadow-xs"
+            className="gap-1.5"
             title="Làm mới dữ liệu"
           >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
             <span>Làm mới</span>
-          </button>
+          </Button>
 
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setIsImportModalOpen(true)}
-            className="px-3.5 py-2 bg-gray-50 dark:bg-[#161a26] hover:bg-gray-100 dark:hover:bg-[#1f2436] border border-gray-200 dark:border-[#262c3f] text-gray-700 dark:text-gray-200 font-medium text-xs sm:text-sm rounded-lg flex items-center gap-2 cursor-pointer transition-colors shadow-xs"
+            className="gap-1.5"
             title="Import file quyết toán Shopee"
           >
-            <Upload size={14} />
+            <Upload size={13} />
             <span>Import đối soát</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -527,9 +533,9 @@ export const CashflowPage: React.FC = () => {
           {/* Row 1: 4 KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {/* Card 1: Số dư hiện tại */}
-            <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg p-4 sm:p-5 flex items-center gap-3.5 shadow-xs">
-              <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-[#182642] text-blue-500 dark:text-[#38bdf8] flex items-center justify-center shrink-0">
-                <Wallet size={22} />
+            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-4 flex items-center gap-3.5 shadow-xs">
+              <div className="w-10 h-10 rounded bg-blue-50 dark:bg-[#182642] text-blue-500 dark:text-[#38bdf8] flex items-center justify-center shrink-0">
+                <Wallet size={20} />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">Số dư hiện tại</div>
@@ -543,9 +549,9 @@ export const CashflowPage: React.FC = () => {
             </div>
 
             {/* Card 2: Dòng tiền thuần trong kỳ */}
-            <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg p-4 sm:p-5 flex items-center gap-3.5 shadow-xs">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-[#102d25] text-emerald-600 dark:text-[#10b981] flex items-center justify-center shrink-0">
-                <ArrowUpDown size={20} />
+            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-4 flex items-center gap-3.5 shadow-xs">
+              <div className="w-10 h-10 rounded bg-emerald-50 dark:bg-[#102d25] text-emerald-600 dark:text-[#10b981] flex items-center justify-center shrink-0">
+                <ArrowUpDown size={18} />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">Dòng tiền thuần trong kỳ</div>
@@ -560,9 +566,9 @@ export const CashflowPage: React.FC = () => {
             </div>
 
             {/* Card 3: Chờ Shopee quyết toán */}
-            <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg p-4 sm:p-5 flex items-center gap-3.5 shadow-xs">
-              <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-[#382613] text-amber-600 dark:text-[#f59e0b] flex items-center justify-center shrink-0">
-                <Clock size={22} />
+            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-4 flex items-center gap-3.5 shadow-xs">
+              <div className="w-10 h-10 rounded bg-amber-50 dark:bg-[#382613] text-amber-600 dark:text-[#f59e0b] flex items-center justify-center shrink-0">
+                <Clock size={20} />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">Chờ Shopee quyết toán</div>
@@ -575,7 +581,7 @@ export const CashflowPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setActiveTab('RECONCILIATION')}
-                  className="text-xs text-[#6366f1] hover:underline font-medium cursor-pointer block mt-1"
+                  className="text-xs text-[#5865f2] hover:underline font-medium cursor-pointer block mt-1"
                 >
                   Xem đối soát →
                 </button>
@@ -583,9 +589,9 @@ export const CashflowPage: React.FC = () => {
             </div>
 
             {/* Card 4: Nợ nhà cung cấp */}
-            <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg p-4 sm:p-5 flex items-center gap-3.5 shadow-xs">
-              <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-[#351821] text-rose-600 dark:text-[#f43f5e] flex items-center justify-center shrink-0">
-                <Building2 size={22} />
+            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-4 flex items-center gap-3.5 shadow-xs">
+              <div className="w-10 h-10 rounded bg-rose-50 dark:bg-[#351821] text-rose-600 dark:text-[#f43f5e] flex items-center justify-center shrink-0">
+                <Building2 size={20} />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-xs text-gray-500 dark:text-gray-400 font-normal">Nợ nhà cung cấp</div>
@@ -602,17 +608,17 @@ export const CashflowPage: React.FC = () => {
           {/* Row 2: Middle 2 Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
             {/* Left Card: Tài khoản & quỹ */}
-            <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg p-4 sm:p-5 flex flex-col justify-between shadow-xs">
+            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-4 sm:p-5 flex flex-col justify-between shadow-xs">
               <div>
-                <div className="flex items-center justify-between pb-3.5 mb-3 border-b border-gray-100 dark:border-[#22283a]/60">
+                <div className="flex items-center justify-between pb-3.5 mb-3 border-b border-gray-100 dark:border-gray-800">
                   <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white flex items-center gap-2">
-                    <CreditCard size={18} className="text-[#6366f1]" />
+                    <CreditCard size={18} className="text-[#5865f2]" />
                     Tài khoản & quỹ
                   </h3>
                   <button
                     type="button"
                     onClick={() => setActiveTab('ACCOUNTS')}
-                    className="text-xs text-[#6366f1] hover:underline font-medium cursor-pointer"
+                    className="text-xs text-[#5865f2] hover:underline font-medium cursor-pointer"
                   >
                     Quản lý quỹ →
                   </button>
@@ -627,11 +633,11 @@ export const CashflowPage: React.FC = () => {
                     displayAccounts.map((acc) => (
                       <div
                         key={acc.id}
-                        className="bg-gray-50 dark:bg-[#1a1f2e]/50 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/80 border border-gray-200 dark:border-[#22283a] rounded-lg p-3 flex items-center justify-between transition-colors"
+                        className="bg-gray-50/70 dark:bg-[#1a1f2e]/40 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/70 border border-gray-200 dark:border-gray-800 rounded p-2.5 sm:p-3 flex items-center justify-between transition-colors"
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div
-                            className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                            className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${
                               acc.type === 'CASH'
                                 ? 'bg-blue-500/10 text-blue-500 dark:text-blue-400'
                                 : acc.type === 'PLATFORM_WALLET'
@@ -640,11 +646,11 @@ export const CashflowPage: React.FC = () => {
                             }`}
                           >
                             {acc.type === 'CASH' ? (
-                              <Wallet size={18} />
+                              <Wallet size={16} />
                             ) : acc.type === 'PLATFORM_WALLET' ? (
-                              <Wallet size={18} />
+                              <Wallet size={16} />
                             ) : (
-                              <Landmark size={18} />
+                              <Landmark size={16} />
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -699,7 +705,7 @@ export const CashflowPage: React.FC = () => {
               {/* Footer: Chuyển tiền giữa các quỹ */}
               <div
                 onClick={() => setIsTransferModalOpen(true)}
-                className="border-t border-gray-100 dark:border-[#22283a] pt-3.5 mt-3 flex items-center justify-between text-xs sm:text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white cursor-pointer group transition-colors"
+                className="border-t border-gray-100 dark:border-gray-800 pt-3.5 mt-3 flex items-center justify-between text-xs sm:text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white cursor-pointer group transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <ArrowLeftRight size={15} className="text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" />
@@ -710,11 +716,11 @@ export const CashflowPage: React.FC = () => {
             </div>
 
             {/* Right Card: Ghi nhanh khoản chi */}
-            <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg p-4 sm:p-5 flex flex-col justify-between shadow-xs">
+            <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-4 sm:p-5 flex flex-col justify-between shadow-xs">
               <div>
                 <div className="pb-3 mb-2.5">
                   <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white flex items-center gap-2">
-                    <FileText size={18} className="text-[#6366f1]" />
+                    <FileText size={18} className="text-[#5865f2]" />
                     Ghi nhanh khoản chi
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -725,10 +731,10 @@ export const CashflowPage: React.FC = () => {
                 <div className="space-y-2">
                   <div
                     onClick={() => handleOpenExpense('CHI_VAT_TU_DONG_GOI')}
-                    className="bg-gray-50 dark:bg-[#1a1f2e]/50 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/80 border border-gray-200 dark:border-[#22283a] rounded-lg p-3 flex items-center justify-between cursor-pointer group transition-colors"
+                    className="bg-gray-50/70 dark:bg-[#1a1f2e]/40 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/70 border border-gray-200 dark:border-gray-800 rounded p-2.5 sm:p-3 flex items-center justify-between cursor-pointer group transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                      <div className="w-8 h-8 rounded bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
                         <Package size={16} />
                       </div>
                       <span className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white">
@@ -740,10 +746,10 @@ export const CashflowPage: React.FC = () => {
 
                   <div
                     onClick={() => handleOpenExpense('CHI_GIAY_MUC_IN')}
-                    className="bg-gray-50 dark:bg-[#1a1f2e]/50 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/80 border border-gray-200 dark:border-[#22283a] rounded-lg p-3 flex items-center justify-between cursor-pointer group transition-colors"
+                    className="bg-gray-50/70 dark:bg-[#1a1f2e]/40 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/70 border border-gray-200 dark:border-gray-800 rounded p-2.5 sm:p-3 flex items-center justify-between cursor-pointer group transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                      <div className="w-8 h-8 rounded bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
                         <FileText size={16} />
                       </div>
                       <span className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white">
@@ -755,10 +761,10 @@ export const CashflowPage: React.FC = () => {
 
                   <div
                     onClick={() => handleOpenExpense('CHI_NHAP_HANG')}
-                    className="bg-gray-50 dark:bg-[#1a1f2e]/50 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/80 border border-gray-200 dark:border-[#22283a] rounded-lg p-3 flex items-center justify-between cursor-pointer group transition-colors"
+                    className="bg-gray-50/70 dark:bg-[#1a1f2e]/40 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/70 border border-gray-200 dark:border-gray-800 rounded p-2.5 sm:p-3 flex items-center justify-between cursor-pointer group transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                      <div className="w-8 h-8 rounded bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
                         <CreditCard size={16} />
                       </div>
                       <span className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white">
@@ -770,10 +776,10 @@ export const CashflowPage: React.FC = () => {
 
                   <div
                     onClick={() => handleOpenExpense('CHI_VAN_CHUYEN_NGOAI')}
-                    className="bg-gray-50 dark:bg-[#1a1f2e]/50 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/80 border border-gray-200 dark:border-[#22283a] rounded-lg p-3 flex items-center justify-between cursor-pointer group transition-colors"
+                    className="bg-gray-50/70 dark:bg-[#1a1f2e]/40 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/70 border border-gray-200 dark:border-gray-800 rounded p-2.5 sm:p-3 flex items-center justify-between cursor-pointer group transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                      <div className="w-8 h-8 rounded bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
                         <Truck size={16} />
                       </div>
                       <span className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white">
@@ -785,10 +791,10 @@ export const CashflowPage: React.FC = () => {
 
                   <div
                     onClick={() => handleOpenExpense('CHI_HOAN_TIEN_KHACH')}
-                    className="bg-gray-50 dark:bg-[#1a1f2e]/50 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/80 border border-gray-200 dark:border-[#22283a] rounded-lg p-3 flex items-center justify-between cursor-pointer group transition-colors"
+                    className="bg-gray-50/70 dark:bg-[#1a1f2e]/40 hover:bg-gray-100 dark:hover:bg-[#1a1f2e]/70 border border-gray-200 dark:border-gray-800 rounded p-2.5 sm:p-3 flex items-center justify-between cursor-pointer group transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                      <div className="w-8 h-8 rounded bg-gray-200/60 dark:bg-gray-800/80 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
                         <RotateCcw size={16} />
                       </div>
                       <span className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white">
@@ -803,16 +809,16 @@ export const CashflowPage: React.FC = () => {
           </div>
 
           {/* Row 3: Giao dịch gần đây */}
-          <div className="bg-white dark:bg-[#131722]/90 border border-gray-200 dark:border-[#22283a] rounded-lg overflow-hidden shadow-xs">
-            <div className="p-4 sm:p-5 flex items-center justify-between border-b border-gray-200 dark:border-[#22283a]">
+          <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded overflow-hidden shadow-xs">
+            <div className="p-4 sm:p-5 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
               <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white flex items-center gap-2">
-                <Receipt size={18} className="text-[#6366f1]" />
+                <Receipt size={18} className="text-[#5865f2]" />
                 Giao dịch gần đây
               </h3>
               <button
                 type="button"
                 onClick={() => setActiveTab('TRANSACTIONS')}
-                className="text-xs text-[#6366f1] hover:underline font-medium cursor-pointer"
+                className="text-xs text-[#5865f2] hover:underline font-medium cursor-pointer"
               >
                 Xem sổ thu chi →
               </button>
