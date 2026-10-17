@@ -207,7 +207,7 @@ export const DashboardPage: React.FC = () => {
 
                       {/* Bottom Sheet Drawer */}
                       <div
-                        className="relative z-10 w-full max-h-[85vh] bg-white dark:bg-[#161b26] border-t border-gray-200 dark:border-gray-800 rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200"
+                        className="relative z-10 w-full max-h-[85vh] bg-white dark:bg-[#161b26] border-t border-gray-200 dark:border-gray-800 rounded-t shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200"
                         style={{
                           paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
                         }}
@@ -217,7 +217,7 @@ export const DashboardPage: React.FC = () => {
                           <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-2.5" />
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2 min-w-0">
-                              <div className="w-7 h-7 rounded-lg bg-[#5865f2]/10 dark:bg-[#5865f2]/20 flex items-center justify-center shrink-0">
+                              <div className="w-7 h-7 rounded bg-[#5865f2]/10 dark:bg-[#5865f2]/20 flex items-center justify-center shrink-0">
                                 <ListFilter size={15} className="text-[#5865f2]" />
                               </div>
                               <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate">
@@ -268,7 +268,7 @@ export const DashboardPage: React.FC = () => {
                               onClick={() =>
                                 setSelectedStatuses(['COMPLETED', 'TO_CONFIRM_RECEIVE'])
                               }
-                              className={`py-1.5 px-2 rounded-lg text-xs font-medium transition-all cursor-pointer border text-center flex items-center justify-center gap-1 active:scale-95 truncate ${
+                              className={`py-1.5 px-2 rounded text-xs font-medium transition-all cursor-pointer border text-center flex items-center justify-center gap-1 active:scale-95 truncate ${
                                 selectedStatuses.length === 2 &&
                                 selectedStatuses.includes('COMPLETED') &&
                                 selectedStatuses.includes('TO_CONFIRM_RECEIVE')
@@ -284,7 +284,7 @@ export const DashboardPage: React.FC = () => {
                               onClick={() =>
                                 setSelectedStatuses(['READY_TO_SHIP', 'SHIPPED', 'RETRY_SHIP'])
                               }
-                              className={`py-1.5 px-2 rounded-lg text-xs font-medium transition-all cursor-pointer border text-center flex items-center justify-center gap-1 active:scale-95 truncate ${
+                              className={`py-1.5 px-2 rounded text-xs font-medium transition-all cursor-pointer border text-center flex items-center justify-center gap-1 active:scale-95 truncate ${
                                 selectedStatuses.length === 3 &&
                                 selectedStatuses.includes('READY_TO_SHIP') &&
                                 selectedStatuses.includes('SHIPPED') &&
@@ -306,7 +306,7 @@ export const DashboardPage: React.FC = () => {
                                   'IN_CANCEL',
                                 ])
                               }
-                              className={`py-1.5 px-2 rounded-lg text-xs font-medium transition-all cursor-pointer border text-center flex items-center justify-center gap-1 active:scale-95 truncate ${
+                              className={`py-1.5 px-2 rounded text-xs font-medium transition-all cursor-pointer border text-center flex items-center justify-center gap-1 active:scale-95 truncate ${
                                 selectedStatuses.length === 4 &&
                                 selectedStatuses.includes('CANCELLED') &&
                                 selectedStatuses.includes('TO_RETURN') &&
@@ -330,7 +330,7 @@ export const DashboardPage: React.FC = () => {
                               <div
                                 key={st.id}
                                 onClick={() => toggleStatus(st.id)}
-                                className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all cursor-pointer select-none active:scale-[0.99] ${
+                                className={`flex items-center justify-between px-3 py-2.5 rounded transition-all cursor-pointer select-none active:scale-[0.99] ${
                                   isSelected
                                     ? 'bg-indigo-50/80 dark:bg-[#5865f2]/15 border border-[#5865f2]/40 text-gray-900 dark:text-white shadow-2xs'
                                     : 'bg-gray-50/50 dark:bg-white/[0.02] hover:bg-gray-100/70 dark:hover:bg-white/[0.05] border border-transparent'
@@ -376,7 +376,7 @@ export const DashboardPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => setSelectedStatuses([])}
-                                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 text-xs font-medium cursor-pointer active:scale-95 transition-all whitespace-nowrap"
+                                className="px-3 py-2 rounded border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 text-xs font-medium cursor-pointer active:scale-95 transition-all whitespace-nowrap"
                               >
                                 Đặt lại
                               </button>
@@ -384,7 +384,7 @@ export const DashboardPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setIsStatusDropdownOpen(false)}
-                              className="px-5 py-2 rounded-lg bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold cursor-pointer shadow-md shadow-[#5865f2]/25 active:scale-95 transition-all whitespace-nowrap"
+                              className="px-5 py-2 rounded bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold cursor-pointer shadow-md shadow-[#5865f2]/25 active:scale-95 transition-all whitespace-nowrap"
                             >
                               Áp dụng
                             </button>
@@ -396,7 +396,7 @@ export const DashboardPage: React.FC = () => {
                   )
                 : (
                     /* Desktop Dropdown Popover */
-                    <div className="absolute right-0 top-full mt-1.5 z-50 w-[350px] rounded-xl bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 shadow-xl p-3 text-xs animate-in fade-in zoom-in-95 duration-150">
+                    <div className="absolute right-0 top-full mt-1.5 z-50 w-[350px] rounded bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 shadow-xl p-3 text-xs animate-in fade-in zoom-in-95 duration-150">
                       {/* Header */}
                       <div className="pb-2.5 mb-2.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2">
                         <span className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 truncate min-w-0">
@@ -489,7 +489,7 @@ export const DashboardPage: React.FC = () => {
                             <div
                               key={st.id}
                               onClick={() => toggleStatus(st.id)}
-                              className={`flex items-center justify-between p-2 rounded-lg transition-colors cursor-pointer select-none ${
+                              className={`flex items-center justify-between p-2 rounded transition-colors cursor-pointer select-none ${
                                 isSelected
                                   ? 'bg-indigo-50/70 dark:bg-[#5865f2]/10 border border-[#5865f2]/30'
                                   : 'hover:bg-gray-50 dark:hover:bg-white/[0.02] border border-transparent'
@@ -526,7 +526,7 @@ export const DashboardPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setIsStatusDropdownOpen(false)}
-                          className="px-3.5 py-1.5 rounded-lg bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold cursor-pointer shrink-0 shadow-xs active:scale-95 transition-all whitespace-nowrap"
+                          className="px-3.5 py-1.5 rounded bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold cursor-pointer shrink-0 shadow-xs active:scale-95 transition-all whitespace-nowrap"
                         >
                           Áp dụng
                         </button>

@@ -585,7 +585,7 @@ export const OrderReturnsPage: React.FC = () => {
           <form onSubmit={handleSubmitInspection} className="flex flex-col flex-1 min-h-0">
             <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5 text-xs sm:text-sm">
               {/* Header Info */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800">
                 <div>
                   <label className="block text-xs font-semibold mb-1">Kho tiếp nhận nhập lại *</label>
                   <select
@@ -635,7 +635,7 @@ export const OrderReturnsPage: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-x-auto text-xs">
+                <div className="border border-gray-200 dark:border-gray-800 rounded overflow-x-auto text-xs">
                   <table className="w-full text-left">
                     <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
                       <tr>
@@ -784,7 +784,7 @@ export const OrderReturnsPage: React.FC = () => {
       >
         {selectedHistoryDetail && (
           <div className="space-y-3 sm:space-y-4 p-3 sm:p-5 max-h-[78vh] sm:max-h-[75vh] overflow-y-auto text-xs">
-            <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded">
               <div>
                 <span className="text-gray-400 block">Mã đơn hàng:</span>
                 <span className="font-bold text-gray-900 dark:text-white font-mono text-sm">
@@ -803,7 +803,7 @@ export const OrderReturnsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+            <div className="border border-gray-200 dark:border-gray-800 rounded overflow-hidden">
               <div className="bg-gray-100 dark:bg-gray-800 p-2.5 font-bold text-gray-700 dark:text-gray-300">
                 Sản phẩm trong phiếu nhập hoàn
               </div>

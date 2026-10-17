@@ -189,7 +189,7 @@ export function DropdownMenuContent({
         ...style,
       }}
       className={cn(
-        'min-w-[160px] max-w-[calc(100vw-16px)] sm:max-w-[260px] rounded-lg bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 p-1 text-gray-900 dark:text-gray-100 shadow-xl animate-fade-in outline-none',
+        'min-w-[160px] max-w-[calc(100vw-16px)] sm:max-w-[260px] rounded bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 p-1 text-gray-900 dark:text-gray-100 shadow-xl animate-fade-in outline-none',
         className,
       )}
       onClick={(e) => {
@@ -236,7 +236,7 @@ export function DropdownMenuItem({
       role="menuitem"
       onClick={handleClick}
       className={cn(
-        'flex items-center gap-2 px-2.5 py-1.5 text-xs font-normal rounded-md transition-colors cursor-pointer select-none outline-none leading-snug',
+        'flex items-center gap-2 px-2.5 py-1.5 text-xs font-normal rounded transition-colors cursor-pointer select-none outline-none leading-snug',
         variantClasses[variant] || variantClasses.default,
         className,
       )}

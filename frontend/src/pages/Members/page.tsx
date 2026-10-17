@@ -394,7 +394,7 @@ export const MembersPage: React.FC = () => {
               {Array.from({ length: 8 }).map((_, i) => (
                 <div
                   key={i}
-                  className="p-4 rounded-lg bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 animate-pulse space-y-3"
+                  className="p-4 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 animate-pulse space-y-3"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800" />
@@ -409,7 +409,7 @@ export const MembersPage: React.FC = () => {
               ))}
             </div>
           ) : paginatedMembers.length === 0 ? (
-            <div className="p-8 text-center bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded-lg">
+            <div className="p-8 text-center bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded">
               <Users size={36} className="mx-auto text-gray-400 mb-2" />
               <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                 Không tìm thấy nhân viên nào
@@ -431,7 +431,7 @@ export const MembersPage: React.FC = () => {
                 return (
                   <div
                     key={m.id}
-                    className="p-4 rounded-lg bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 hover:border-[#5865f2]/40 hover:shadow-sm transition-all duration-200 flex flex-col justify-between group"
+                    className="p-4 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 hover:border-[#5865f2]/40 hover:shadow-sm transition-all duration-200 flex flex-col justify-between group"
                   >
                     <div>
                       {/* Top: Avatar + Role Badge + Dropdown */}
@@ -785,7 +785,7 @@ export const MembersPage: React.FC = () => {
                   required
                   value={addForm.employeeCode}
                   onChange={(e) => setAddForm({ ...addForm, employeeCode: e.target.value.toUpperCase() })}
-                  className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -805,7 +805,7 @@ export const MembersPage: React.FC = () => {
                       fullName: name,
                     }));
                   }}
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -819,7 +819,7 @@ export const MembersPage: React.FC = () => {
                   placeholder="kho@congty.com"
                   value={addForm.email}
                   onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -833,7 +833,7 @@ export const MembersPage: React.FC = () => {
                   placeholder="Tối thiểu 8 ký tự"
                   value={addForm.password}
                   onChange={(e) => setAddForm({ ...addForm, password: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -883,7 +883,7 @@ export const MembersPage: React.FC = () => {
                 </div>
 
                 {!addForm.allShops && (
-                  <div className="mt-3 p-3 bg-gray-50 dark:bg-[#131720] rounded-lg border border-gray-200 dark:border-gray-700 space-y-1.5 max-h-40 overflow-y-auto">
+                  <div className="mt-3 p-3 bg-gray-50 dark:bg-[#131720] rounded border border-gray-200 dark:border-gray-700 space-y-1.5 max-h-40 overflow-y-auto">
                     {shops.map((s) => (
                       <label
                         key={s.id}
@@ -993,7 +993,7 @@ export const MembersPage: React.FC = () => {
                 </div>
 
                 {!editForm.allShops && (
-                  <div className="mt-3 p-3 bg-gray-50 dark:bg-[#131720] rounded-lg border border-gray-200 dark:border-gray-700 space-y-1.5 max-h-40 overflow-y-auto">
+                  <div className="mt-3 p-3 bg-gray-50 dark:bg-[#131720] rounded border border-gray-200 dark:border-gray-700 space-y-1.5 max-h-40 overflow-y-auto">
                     {shops.map((s) => (
                       <label
                         key={s.id}
@@ -1048,7 +1048,7 @@ export const MembersPage: React.FC = () => {
         >
           <div className="flex flex-col flex-1 min-h-0">
             <ModalBody className="space-y-3 p-3 sm:p-5">
-              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 flex items-start gap-2.5 text-xs text-red-800 dark:text-red-300">
+              <div className="p-3 rounded bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 flex items-start gap-2.5 text-xs text-red-800 dark:text-red-300">
                 <AlertTriangle size={16} className="shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
                 <div>
                   <p className="font-semibold">Hành động không thể hoàn tác:</p>

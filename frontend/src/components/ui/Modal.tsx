@@ -76,10 +76,10 @@ export const Modal: React.FC<ModalProps> = ({
       <div
         ref={modalRef}
         className={cn(
-          'bg-white dark:bg-[#181b22] rounded-xl sm:rounded w-full shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh] max-h-[90dvh] sm:max-h-[90vh]',
+          'bg-white dark:bg-[#181b22] rounded sm:rounded w-full shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh] max-h-[90dvh] sm:max-h-[90vh]',
           '[&>form]:flex [&>form]:flex-col [&>form]:flex-1 [&>form]:min-h-0 [&>form]:overflow-hidden [&>form]:space-y-0',
           mobilePlacement === 'bottom'
-            ? 'rounded-t-2xl sm:rounded-xl rounded-b-none sm:rounded-b-xl border-b-0 sm:border-b max-h-[88vh] max-h-[88dvh] sm:max-h-[90vh] animate-modal-sheet sm:animate-modal-center'
+            ? 'rounded-t sm:rounded rounded-b-none sm:rounded-b border-b-0 sm:border-b max-h-[88vh] max-h-[88dvh] sm:max-h-[90vh] animate-modal-sheet sm:animate-modal-center'
             : 'animate-modal-center',
           resolvedMaxWidth,
           className,
@@ -96,7 +96,7 @@ export const Modal: React.FC<ModalProps> = ({
         <div className="px-3.5 sm:px-5 py-3 sm:py-3.5 bg-white dark:bg-[#181b22] border-b border-gray-200 dark:border-gray-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             {Icon && (
-              <div className="w-8 h-8 rounded-lg sm:rounded bg-[#5865f2]/10 dark:bg-[#5865f2]/20 text-[#5865f2] flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded sm:rounded bg-[#5865f2]/10 dark:bg-[#5865f2]/20 text-[#5865f2] flex items-center justify-center shrink-0">
                 <Icon size={16} strokeWidth={1.8} />
               </div>
             )}
@@ -116,7 +116,7 @@ export const Modal: React.FC<ModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer active:scale-95 shrink-0"
+              className="w-8 h-8 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer active:scale-95 shrink-0"
               title="Đóng (Esc)"
             >
               <X size={16} />
@@ -180,7 +180,7 @@ export const ModalButton: React.FC<ModalButtonProps> = ({
   className = '',
 }) => {
   const baseClasses =
-    'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-1.5 min-h-[38px] sm:min-h-[32px] text-xs sm:text-sm font-medium rounded-lg sm:rounded transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-95';
+    'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-1.5 min-h-[38px] sm:min-h-[32px] text-xs sm:text-sm font-medium rounded sm:rounded transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-95';
 
   const variantClasses = {
     secondary:

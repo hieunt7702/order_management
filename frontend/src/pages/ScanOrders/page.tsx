@@ -509,7 +509,7 @@ export const ScanOrdersPage: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="w-8 h-8 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex items-center justify-center cursor-pointer active:scale-95 transition-all shrink-0 shadow-xs"
+            className="w-8 h-8 rounded bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex items-center justify-center cursor-pointer active:scale-95 transition-all shrink-0 shadow-xs"
             title="Quay lại"
           >
             <ChevronLeft size={18} />
@@ -522,7 +522,7 @@ export const ScanOrdersPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsFocusMode(!isFocusMode)}
-          className="w-8 h-8 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex items-center justify-center cursor-pointer active:scale-95 transition-all shrink-0 shadow-xs"
+          className="w-8 h-8 rounded bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex items-center justify-center cursor-pointer active:scale-95 transition-all shrink-0 shadow-xs"
           title={isFocusMode ? 'Thu nhỏ' : 'Toàn màn hình'}
         >
           {isFocusMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
@@ -532,9 +532,9 @@ export const ScanOrdersPage: React.FC = () => {
       {/* 2. SHOP & KHO DROPDOWN SELECTORS */}
       <div className="grid grid-cols-2 gap-2.5">
         {/* Shop Selector Card */}
-        <div className="relative p-2.5 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs flex items-center justify-between transition-colors">
+        <div className="relative p-2.5 rounded bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs flex items-center justify-between transition-colors">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-500 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded bg-blue-500/10 text-blue-500 dark:text-blue-400 flex items-center justify-center shrink-0">
               <Store size={15} />
             </div>
             <div className="min-w-0">
@@ -563,9 +563,9 @@ export const ScanOrdersPage: React.FC = () => {
         </div>
 
         {/* Warehouse Selector Card */}
-        <div className="relative p-2.5 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs flex items-center justify-between transition-colors">
+        <div className="relative p-2.5 rounded bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs flex items-center justify-between transition-colors">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 flex items-center justify-center shrink-0">
               <Warehouse size={15} />
             </div>
             <div className="min-w-0">
@@ -592,11 +592,11 @@ export const ScanOrdersPage: React.FC = () => {
       </div>
 
       {/* 3. ACTIVE SESSION STATUS & 3 METRIC PILLS */}
-      <div className="p-3 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs space-y-2.5">
+      <div className="p-3 rounded bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs space-y-2.5">
         {/* Session Info Line */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <div className="w-8 h-8 rounded-lg bg-[#2563eb]/10 dark:bg-[#2563eb]/20 text-[#2563eb] dark:text-[#3b82f6] flex items-center justify-center shrink-0 border border-[#2563eb]/20">
+            <div className="w-8 h-8 rounded bg-[#2563eb]/10 dark:bg-[#2563eb]/20 text-[#2563eb] dark:text-[#3b82f6] flex items-center justify-center shrink-0 border border-[#2563eb]/20">
               <FileText size={16} />
             </div>
             <div className="min-w-0 flex-1">
@@ -628,8 +628,8 @@ export const ScanOrdersPage: React.FC = () => {
         {/* 3 Metric Pills */}
         <div className="grid grid-cols-3 gap-2">
           {/* Đã quét */}
-          <div className="p-2 rounded-lg bg-gray-50 dark:bg-[#1c2230] border border-gray-100 dark:border-gray-800/80 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-500/10 dark:bg-blue-500/15 text-blue-500 dark:text-blue-400 grid place-items-center shrink-0">
+          <div className="p-2 rounded bg-gray-50 dark:bg-[#1c2230] border border-gray-100 dark:border-gray-800/80 flex items-center gap-2">
+            <div className="w-7 h-7 rounded bg-blue-500/10 dark:bg-blue-500/15 text-blue-500 dark:text-blue-400 grid place-items-center shrink-0">
               <ScanLine size={14} />
             </div>
             <div className="min-w-0">
@@ -643,8 +643,8 @@ export const ScanOrdersPage: React.FC = () => {
           </div>
 
           {/* Chờ đối soát */}
-          <div className="p-2 rounded-lg bg-gray-50 dark:bg-[#1c2230] border border-gray-100 dark:border-gray-800/80 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-amber-500/10 dark:bg-amber-500/15 text-amber-500 dark:text-amber-400 grid place-items-center shrink-0">
+          <div className="p-2 rounded bg-gray-50 dark:bg-[#1c2230] border border-gray-100 dark:border-gray-800/80 flex items-center gap-2">
+            <div className="w-7 h-7 rounded bg-amber-500/10 dark:bg-amber-500/15 text-amber-500 dark:text-amber-400 grid place-items-center shrink-0">
               <Clock size={14} />
             </div>
             <div className="min-w-0">
@@ -658,8 +658,8 @@ export const ScanOrdersPage: React.FC = () => {
           </div>
 
           {/* Thành công */}
-          <div className="p-2 rounded-lg bg-gray-50 dark:bg-[#1c2230] border border-gray-100 dark:border-gray-800/80 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 grid place-items-center shrink-0">
+          <div className="p-2 rounded bg-gray-50 dark:bg-[#1c2230] border border-gray-100 dark:border-gray-800/80 flex items-center gap-2">
+            <div className="w-7 h-7 rounded bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 grid place-items-center shrink-0">
               <CheckCircle2 size={14} />
             </div>
             <div className="min-w-0">
@@ -676,7 +676,7 @@ export const ScanOrdersPage: React.FC = () => {
 
       {/* 4. CAMERA VIEWFINDER & LIVE SCANNER */}
       <div
-        className={`rounded-lg bg-black border overflow-hidden relative shadow-md transition-all duration-300 ${
+        className={`rounded bg-black border overflow-hidden relative shadow-md transition-all duration-300 ${
           scanFlash === 'success'
             ? 'border-emerald-500 shadow-[0_0_24px_rgba(16,185,129,0.35)] ring-2 ring-emerald-500/60'
             : scanFlash === 'warning'
@@ -723,10 +723,10 @@ export const ScanOrdersPage: React.FC = () => {
               <div className="laser-sweep-beam-active absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-[#3b82f6] to-transparent shadow-[0_0_12px_#3b82f6]" />
 
               {/* 4 Glowing Corner Angles */}
-              <div className="absolute top-0 left-0 w-7 h-7 border-t-[3.5px] border-l-[3.5px] border-[#3b82f6] rounded-tl-lg shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
-              <div className="absolute top-0 right-0 w-7 h-7 border-t-[3.5px] border-r-[3.5px] border-[#3b82f6] rounded-tr-lg shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
-              <div className="absolute bottom-0 left-0 w-7 h-7 border-b-[3.5px] border-l-[3.5px] border-[#3b82f6] rounded-bl-lg shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
-              <div className="absolute bottom-0 right-0 w-7 h-7 border-b-[3.5px] border-r-[3.5px] border-[#3b82f6] rounded-br-lg shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+              <div className="absolute top-0 left-0 w-7 h-7 border-t-[3.5px] border-l-[3.5px] border-[#3b82f6] rounded-tl shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+              <div className="absolute top-0 right-0 w-7 h-7 border-t-[3.5px] border-r-[3.5px] border-[#3b82f6] rounded-tr shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+              <div className="absolute bottom-0 left-0 w-7 h-7 border-b-[3.5px] border-l-[3.5px] border-[#3b82f6] rounded-bl shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+              <div className="absolute bottom-0 right-0 w-7 h-7 border-b-[3.5px] border-r-[3.5px] border-[#3b82f6] rounded-br shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
 
               {/* Centered Instruction Pill */}
               <div className="absolute -bottom-7 inset-x-0 flex justify-center">
@@ -781,7 +781,7 @@ export const ScanOrdersPage: React.FC = () => {
               <button
                 type="button"
                 onClick={startCamera}
-                className="px-3.5 py-1.5 rounded-lg bg-[#2563eb] text-white text-xs font-semibold cursor-pointer"
+                className="px-3.5 py-1.5 rounded bg-[#2563eb] text-white text-xs font-semibold cursor-pointer"
               >
                 Thử lại camera
               </button>
@@ -794,7 +794,7 @@ export const ScanOrdersPage: React.FC = () => {
           <button
             type="button"
             onClick={handleSwitchCamera}
-            className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#1c2230] text-gray-200 hover:text-white active:scale-95 transition-all cursor-pointer"
+            className="flex items-center justify-center gap-1.5 py-2 rounded bg-[#1c2230] text-gray-200 hover:text-white active:scale-95 transition-all cursor-pointer"
           >
             <RefreshCw size={13} />
             <span>Đổi camera</span>
@@ -802,7 +802,7 @@ export const ScanOrdersPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className={`flex items-center justify-center gap-1.5 py-2 rounded-lg border transition-all cursor-pointer active:scale-95 ${
+            className={`flex items-center justify-center gap-1.5 py-2 rounded border transition-all cursor-pointer active:scale-95 ${
               soundEnabled
                 ? 'bg-[#1c2230] border-gray-700/80 text-gray-200'
                 : 'bg-red-500/10 border-red-500/30 text-red-400'
@@ -814,7 +814,7 @@ export const ScanOrdersPage: React.FC = () => {
           <button
             type="button"
             onClick={togglePauseCamera}
-            className={`flex items-center justify-center gap-1.5 py-2 rounded-lg border transition-all cursor-pointer active:scale-95 ${
+            className={`flex items-center justify-center gap-1.5 py-2 rounded border transition-all cursor-pointer active:scale-95 ${
               isCameraPaused
                 ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
                 : 'bg-[#2563eb] text-white border-blue-400 shadow-sm shadow-blue-500/20'
@@ -827,7 +827,7 @@ export const ScanOrdersPage: React.FC = () => {
       </div>
 
       {/* 5. LIVE STATUS BANNER */}
-      <div className="p-2.5 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs flex items-center gap-2.5">
+      <div className="p-2.5 rounded bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs flex items-center gap-2.5">
         <div
           className={`w-2 h-2 rounded-full shrink-0 ${
             lastScannedFeedback
@@ -868,7 +868,7 @@ export const ScanOrdersPage: React.FC = () => {
           type="button"
           onClick={handleExportCurrentSession}
           disabled={!activeSession || activeSession.items.length === 0}
-          className="h-9 px-3.5 rounded-lg bg-white dark:bg-[#161a23] hover:bg-gray-50 dark:hover:bg-[#1c2230] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 active:scale-95 shrink-0 shadow-xs"
+          className="h-9 px-3.5 rounded bg-white dark:bg-[#161a23] hover:bg-gray-50 dark:hover:bg-[#1c2230] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 active:scale-95 shrink-0 shadow-xs"
           title="Tải danh sách mã quét CSV"
         >
           <Download size={14} className="text-[#2563eb] dark:text-blue-400" />
@@ -880,7 +880,7 @@ export const ScanOrdersPage: React.FC = () => {
           type="button"
           onClick={handleSubmitBatch}
           disabled={!activeSession || activeSession.items.length === 0 || isVerifyingBatch}
-          className="flex-1 h-9 px-4 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50 active:scale-[0.98]"
+          className="flex-1 h-9 px-4 rounded bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50 active:scale-[0.98]"
         >
           {isVerifyingBatch ? (
             <>
@@ -920,8 +920,8 @@ export const ScanOrdersPage: React.FC = () => {
 
         {/* Empty state or list */}
         {displayedItems.length === 0 ? (
-          <div className="p-6 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 text-center space-y-2 shadow-xs">
-            <div className="w-10 h-10 mx-auto rounded-lg bg-gray-100 dark:bg-gray-800/60 text-gray-400 dark:text-gray-400 grid place-items-center">
+          <div className="p-6 rounded bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 text-center space-y-2 shadow-xs">
+            <div className="w-10 h-10 mx-auto rounded bg-gray-100 dark:bg-gray-800/60 text-gray-400 dark:text-gray-400 grid place-items-center">
               <Package size={22} className="stroke-[1.5]" />
             </div>
             <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">
@@ -941,7 +941,7 @@ export const ScanOrdersPage: React.FC = () => {
               return (
                 <div
                   key={item.id}
-                  className="p-2.5 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2 shadow-xs hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+                  className="p-2.5 rounded bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2 shadow-xs hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="font-mono text-xs font-bold text-gray-400 w-5 text-right shrink-0">

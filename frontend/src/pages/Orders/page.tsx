@@ -948,7 +948,7 @@ export const OrdersPage: React.FC = () => {
 
       {/* Return process notice banner */}
       {activeTab === 'TO_RETURN' && (
-        <div className="p-3.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-800 dark:text-amber-200">
+        <div className="p-3.5 rounded bg-amber-500/10 border border-amber-500/20 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-800 dark:text-amber-200">
           <div className="flex items-center gap-2.5">
             <RotateCcw className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <div>
@@ -1260,7 +1260,7 @@ export const OrdersPage: React.FC = () => {
         )}
 
         {/* Mobile Pagination */}
-        <div className="rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+        <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
           <SystemPagination
             page={page - 1}
             totalPages={totalPages}
@@ -1357,7 +1357,7 @@ export const OrdersPage: React.FC = () => {
                         externalOrderId: e.target.value.toUpperCase(),
                       })
                     }
-                    className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
               </div>
@@ -1379,7 +1379,7 @@ export const OrdersPage: React.FC = () => {
                         recipientName: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
                 <div>
@@ -1396,7 +1396,7 @@ export const OrdersPage: React.FC = () => {
                         recipientPhone: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
               </div>
@@ -1416,7 +1416,7 @@ export const OrdersPage: React.FC = () => {
                       recipientAddress: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -1436,7 +1436,7 @@ export const OrdersPage: React.FC = () => {
                         shippingCarrier: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
                 <div>
@@ -1453,7 +1453,7 @@ export const OrdersPage: React.FC = () => {
                         trackingCode: e.target.value.toUpperCase(),
                       })
                     }
-                    className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
                 <div>
@@ -1470,7 +1470,7 @@ export const OrdersPage: React.FC = () => {
                     }
                     placeholder="0"
                     suffix="đ"
-                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
               </div>
@@ -1495,7 +1495,7 @@ export const OrdersPage: React.FC = () => {
                   {createOrderForm.items.map((item, idx) => (
                     <div
                       key={idx}
-                      className="p-3 bg-gray-50 dark:bg-[#14151a] rounded-lg border border-gray-200 dark:border-gray-800 space-y-2.5 relative"
+                      className="p-3 bg-gray-50 dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 space-y-2.5 relative"
                     >
                       {createOrderForm.items.length > 1 && (
                         <button
@@ -1552,7 +1552,7 @@ export const OrdersPage: React.FC = () => {
                                 items: next,
                               });
                             }}
-                            className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                            className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                           />
                         </div>
                         <div>
@@ -1571,7 +1571,7 @@ export const OrdersPage: React.FC = () => {
                                 items: next,
                               });
                             }}
-                            className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                            className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                           />
                         </div>
                       </div>
@@ -1593,7 +1593,7 @@ export const OrdersPage: React.FC = () => {
                                 items: next,
                               });
                             }}
-                            className="w-full px-2.5 py-1.5 text-xs font-mono uppercase bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                            className="w-full px-2.5 py-1.5 text-xs font-mono uppercase bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                           />
                         </div>
                         <div>
@@ -1614,7 +1614,7 @@ export const OrdersPage: React.FC = () => {
                                 items: next,
                               });
                             }}
-                            className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                            className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                           />
                         </div>
                         <div>
@@ -1633,7 +1633,7 @@ export const OrdersPage: React.FC = () => {
                             }}
                             placeholder="0"
                             suffix="đ"
-                            inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                            inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                           />
                         </div>
                       </div>
@@ -1657,12 +1657,12 @@ export const OrdersPage: React.FC = () => {
                       note: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
               {/* Order Total Preview */}
-              <div className="p-3 bg-gray-50 dark:bg-[#14151a] rounded-lg border border-gray-200 dark:border-gray-800 flex items-center justify-between text-xs">
+              <div className="p-3 bg-gray-50 dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 flex items-center justify-between text-xs">
                 <span className="text-gray-500 font-medium">Tổng giá trị đơn hàng tính toán:</span>
                 <span className="font-bold text-sm text-[#5865f2]">
                   {formatCurrency(
@@ -1725,7 +1725,7 @@ export const OrdersPage: React.FC = () => {
                         recipientName: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
                 <div>
@@ -1741,7 +1741,7 @@ export const OrdersPage: React.FC = () => {
                         recipientPhone: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
               </div>
@@ -1759,7 +1759,7 @@ export const OrdersPage: React.FC = () => {
                       recipientAddress: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -1777,7 +1777,7 @@ export const OrdersPage: React.FC = () => {
                         shippingCarrier: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
                 <div>
@@ -1793,7 +1793,7 @@ export const OrdersPage: React.FC = () => {
                         trackingCode: e.target.value.toUpperCase(),
                       })
                     }
-                    className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
               </div>
@@ -1813,7 +1813,7 @@ export const OrdersPage: React.FC = () => {
                     }
                     placeholder="0"
                     suffix="đ"
-                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
                 <div>
@@ -1830,7 +1830,7 @@ export const OrdersPage: React.FC = () => {
                     }
                     placeholder="0"
                     suffix="đ"
-                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
               </div>
@@ -1871,7 +1871,7 @@ export const OrdersPage: React.FC = () => {
                       note: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
             </ModalBody>
@@ -2105,7 +2105,7 @@ export const OrdersPage: React.FC = () => {
           <form onSubmit={handleSubmitReturn} className="flex flex-col flex-1 min-h-0">
             <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5">
               {/* Order Context Banner */}
-              <div className="p-3 rounded-lg bg-gray-50 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 text-xs grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 rounded bg-gray-50 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 text-xs grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <span className="text-gray-400 block font-normal">Mã đơn Shopee</span>
                   <span className="font-mono font-medium text-gray-900 dark:text-white">
@@ -2133,11 +2133,11 @@ export const OrdersPage: React.FC = () => {
               </div>
 
               {/* Mode Selection Tabs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1 bg-gray-100 dark:bg-gray-800/80 rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1 bg-gray-100 dark:bg-gray-800/80 rounded">
                 <button
                   type="button"
                   onClick={() => setReturnMode('MARK_IN_TRANSIT')}
-                  className={`py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  className={`py-2 px-3 rounded text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                     returnMode === 'MARK_IN_TRANSIT'
                       ? 'bg-white dark:bg-[#1f232b] text-amber-600 dark:text-amber-400 shadow-xs'
                       : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
@@ -2159,7 +2159,7 @@ export const OrdersPage: React.FC = () => {
                     }
                     setReturnMode('INSPECT_AND_RECEIVE');
                   }}
-                  className={`py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  className={`py-2 px-3 rounded text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                     returnMode === 'INSPECT_AND_RECEIVE'
                       ? 'bg-white dark:bg-[#1f232b] text-[#5865f2] dark:text-indigo-400 shadow-xs'
                       : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
@@ -2173,7 +2173,7 @@ export const OrdersPage: React.FC = () => {
               {/* Mode 1 Description & Form */}
               {returnMode === 'MARK_IN_TRANSIT' && (
                 <div className="space-y-3.5">
-                  <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+                  <div className="p-3 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
                     <AlertTriangle size={16} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                     <div>
                       <p className="font-semibold">Quy tắc bảo vệ sổ cái kho:</p>
@@ -2193,7 +2193,7 @@ export const OrdersPage: React.FC = () => {
                       <select
                         value={returnForm.reason}
                         onChange={(e) => setReturnForm({ ...returnForm, reason: e.target.value })}
-                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
+                        className="w-full px-3 py-2 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
                       >
                         <option value="Khách từ chối nhận hàng (Giao thất bại)">Khách từ chối nhận hàng (Giao thất bại)</option>
                         <option value="Khách yêu cầu Trả hàng / Hoàn tiền trên Shopee">Khách yêu cầu Trả hàng / Hoàn tiền trên Shopee</option>
@@ -2212,7 +2212,7 @@ export const OrdersPage: React.FC = () => {
                         value={returnForm.note}
                         onChange={(e) => setReturnForm({ ...returnForm, note: e.target.value })}
                         placeholder="VD: Khách báo đi công tác không nhận, shipper chuyển hoàn..."
-                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
+                        className="w-full px-3 py-2 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
                       />
                     </div>
                   </div>
@@ -2222,7 +2222,7 @@ export const OrdersPage: React.FC = () => {
               {/* Mode 2: INSPECT AND RECEIVE FORM */}
               {returnMode === 'INSPECT_AND_RECEIVE' && (
                 <div className="space-y-4">
-                  <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 flex items-start gap-2.5 text-xs text-emerald-800 dark:text-emerald-300">
+                  <div className="p-3 rounded bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 flex items-start gap-2.5 text-xs text-emerald-800 dark:text-emerald-300">
                     <CheckCircle2 size={16} className="shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
                     <div>
                       <p className="font-semibold">Quy trình kiểm tra & cộng tồn kho thực tế:</p>
@@ -2243,7 +2243,7 @@ export const OrdersPage: React.FC = () => {
                         value={returnForm.warehouseId}
                         onChange={(e) => setReturnForm({ ...returnForm, warehouseId: e.target.value })}
                         required
-                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
+                        className="w-full px-3 py-2 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
                       >
                         <option value="">-- Chọn kho nhận hàng --</option>
                         {warehouses.map((w) => (
@@ -2263,7 +2263,7 @@ export const OrdersPage: React.FC = () => {
                         required
                         value={returnForm.receivedDate}
                         onChange={(e) => setReturnForm({ ...returnForm, receivedDate: e.target.value })}
-                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
+                        className="w-full px-3 py-2 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
                       />
                     </div>
 
@@ -2277,7 +2277,7 @@ export const OrdersPage: React.FC = () => {
                         value={returnForm.inspectorName}
                         onChange={(e) => setReturnForm({ ...returnForm, inspectorName: e.target.value })}
                         placeholder="VD: Nguyễn Văn A (Thủ kho)"
-                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
+                        className="w-full px-3 py-2 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
                       />
                     </div>
                   </div>
@@ -2292,7 +2292,7 @@ export const OrdersPage: React.FC = () => {
                         value={returnForm.trackingCode}
                         onChange={(e) => setReturnForm({ ...returnForm, trackingCode: e.target.value })}
                         placeholder="Mã vận đơn hàng hoàn về..."
-                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 font-mono focus:outline-none focus:border-[#5865f2]"
+                        className="w-full px-3 py-2 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 font-mono focus:outline-none focus:border-[#5865f2]"
                       />
                     </div>
 
@@ -2305,7 +2305,7 @@ export const OrdersPage: React.FC = () => {
                         value={returnForm.reason}
                         onChange={(e) => setReturnForm({ ...returnForm, reason: e.target.value })}
                         placeholder="VD: Hộp nguyên seal, tem vận chuyển còn nguyên..."
-                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
+                        className="w-full px-3 py-2 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
                       />
                     </div>
                   </div>
@@ -2322,7 +2322,7 @@ export const OrdersPage: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800">
+                    <div className="overflow-x-auto rounded border border-gray-200 dark:border-gray-800">
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
                           <tr className="bg-gray-50 dark:bg-gray-900/80 text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800 font-semibold">
@@ -2425,7 +2425,7 @@ export const OrdersPage: React.FC = () => {
                     </div>
 
                     {/* Summary row */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-gray-50 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded bg-gray-50 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 text-xs">
                       <span className="font-semibold text-gray-700 dark:text-gray-300">
                         Tổng kết nhận hàng hoàn:
                       </span>

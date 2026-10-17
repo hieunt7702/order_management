@@ -109,7 +109,7 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
         <ModalBody className="space-y-3 sm:space-y-3.5 text-xs p-3 sm:p-5">
           {/* 1. THÔNG TIN CƠ BẢN */}
-          <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
+          <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
             <div className="flex items-center gap-1.5 pb-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
               <Building2 className="w-3.5 h-3.5 text-[#5865f2]" />
               <span>Thông tin đối tác</span>
@@ -127,7 +127,7 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   placeholder="NCC001"
-                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-semibold"
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-semibold"
                 />
               </div>
 
@@ -143,7 +143,7 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="VD: Công ty TNHH SX & TM An Phát"
-                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
                 />
               </div>
             </div>
@@ -159,7 +159,7 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="0912 345 678"
-                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                 />
               </div>
               <div>
@@ -172,7 +172,7 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="supplier@company.vn"
-                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                 />
               </div>
             </div>
@@ -187,13 +187,13 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="VD: Cụm Công nghiệp Triều Khúc, Tân Triều, Thanh Trì, Hà Nội"
-                className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
               />
             </div>
           </div>
 
           {/* 2. TÀI KHOẢN NGÂN HÀNG */}
-          <div className="p-3.5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-xl border border-indigo-100 dark:border-indigo-900/40 space-y-2.5">
+          <div className="p-3.5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded border border-indigo-100 dark:border-indigo-900/40 space-y-2.5">
             <div className="flex items-center gap-1.5 pb-2 border-b border-indigo-100 dark:border-indigo-900/30 text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">
               <CreditCard className="w-3.5 h-3.5" />
               <span>Tài khoản nhận thanh toán</span>
@@ -210,7 +210,7 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
                   placeholder="MB, VCB, ACB..."
-                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                 />
               </div>
 
@@ -224,7 +224,7 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
                   value={bankAccount}
                   onChange={(e) => setBankAccount(e.target.value)}
                   placeholder="0123456789..."
-                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 font-mono font-medium focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20"
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 font-mono font-medium focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20"
                 />
               </div>
 
@@ -238,7 +238,7 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
                   value={bankBeneficiary}
                   onChange={(e) => setBankBeneficiary(e.target.value)}
                   placeholder="NGUYEN VAN A"
-                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 uppercase focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 uppercase focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                 />
               </div>
             </div>
@@ -255,7 +255,7 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Ghi chú về chiết khấu, thời gian giao hàng..."
-              className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+              className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
             />
           </div>
         </ModalBody>

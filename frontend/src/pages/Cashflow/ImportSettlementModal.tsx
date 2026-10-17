@@ -238,7 +238,7 @@ export const ImportSettlementModal: React.FC<ImportSettlementModalProps> = ({
     >
       <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5 max-h-[78vh] sm:max-h-[75vh] overflow-y-auto text-xs sm:text-sm">
         {/* Hướng dẫn nguyên tắc quan trọng */}
-        <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-emerald-800 dark:text-emerald-200 flex items-start gap-2.5">
+        <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded text-xs text-emerald-800 dark:text-emerald-200 flex items-start gap-2.5">
           <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
           <div>
             <div className="font-bold mb-0.5">Quy tắc chuẩn hóa dòng tiền sàn Shopee:</div>
@@ -257,7 +257,7 @@ export const ImportSettlementModal: React.FC<ImportSettlementModalProps> = ({
             <select
               value={selectedShopId}
               onChange={(e) => setSelectedShopId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold focus:outline-none"
+              className="w-full px-3.5 py-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold focus:outline-none"
             >
               <option value="">-- Chọn Shop --</option>
               {shops.map((s) => (
@@ -287,7 +287,7 @@ export const ImportSettlementModal: React.FC<ImportSettlementModalProps> = ({
               disabled={!creditToWallet}
               value={targetAccountId}
               onChange={(e) => setTargetAccountId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:outline-none disabled:opacity-50"
+              className="w-full px-3.5 py-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:outline-none disabled:opacity-50"
             >
               {platformAccounts.length > 0 ? (
                 platformAccounts.map((acc) => (
@@ -331,12 +331,12 @@ export const ImportSettlementModal: React.FC<ImportSettlementModalProps> = ({
 Ví dụ cột:
 Mã đơn hàng	Tổng tiền người mua trả	Số tiền thực nhận	Phí cố định	Phí dịch vụ	Phí thanh toán
 241015ABCDEF1	150000	135000	6000	4500	4500`}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            className="w-full px-3.5 py-2.5 rounded border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 font-mono text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
           />
         </div>
 
         {parsingError && (
-          <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+          <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800 rounded text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             {parsingError}
           </div>
@@ -344,7 +344,7 @@ Mã đơn hàng	Tổng tiền người mua trả	Số tiền thực nhận	Phí 
 
         {/* Preview kết quả trích xuất */}
         {parsedRows.length > 0 && (
-          <div className="p-3.5 bg-slate-100 dark:bg-slate-800/60 rounded-xl space-y-2 border border-slate-200 dark:border-slate-700">
+          <div className="p-3.5 bg-slate-100 dark:bg-slate-800/60 rounded space-y-2 border border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
               <span>Đã nhận diện: {parsedRows.length} đơn hàng</span>
               <span className="text-emerald-600 dark:text-emerald-400">
@@ -352,7 +352,7 @@ Mã đơn hàng	Tổng tiền người mua trả	Số tiền thực nhận	Phí 
               </span>
             </div>
 
-            <div className="max-h-36 overflow-y-auto text-[11px] divide-y divide-slate-200 dark:divide-slate-700 font-mono bg-white dark:bg-slate-900 rounded-lg p-2">
+            <div className="max-h-36 overflow-y-auto text-[11px] divide-y divide-slate-200 dark:divide-slate-700 font-mono bg-white dark:bg-slate-900 rounded p-2">
               {parsedRows.slice(0, 10).map((r, i) => (
                 <div key={i} className="py-1 flex justify-between items-center">
                   <span className="font-semibold text-slate-800 dark:text-slate-200">
@@ -380,25 +380,25 @@ Mã đơn hàng	Tổng tiền người mua trả	Số tiền thực nhận	Phí 
 
         {/* Kết quả đối soát sau khi bấm Submit */}
         {importResult && (
-          <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-xl space-y-2">
+          <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded space-y-2">
             <div className="font-bold text-sm text-emerald-800 dark:text-emerald-200 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               Kết quả đối soát thành công:
             </div>
             <div className="grid grid-cols-3 gap-2 text-xs">
-              <div className="p-2 bg-white dark:bg-slate-900 rounded-lg text-center">
+              <div className="p-2 bg-white dark:bg-slate-900 rounded text-center">
                 <div className="text-slate-400">Khớp hoàn toàn</div>
                 <div className="text-emerald-600 font-bold text-base">
                   {importResult.matchedCount}
                 </div>
               </div>
-              <div className="p-2 bg-white dark:bg-slate-900 rounded-lg text-center">
+              <div className="p-2 bg-white dark:bg-slate-900 rounded text-center">
                 <div className="text-slate-400">Cần kiểm tra</div>
                 <div className="text-amber-600 font-bold text-base">
                   {importResult.needsCheckCount}
                 </div>
               </div>
-              <div className="p-2 bg-white dark:bg-slate-900 rounded-lg text-center">
+              <div className="p-2 bg-white dark:bg-slate-900 rounded text-center">
                 <div className="text-slate-400">Chưa tìm thấy đơn</div>
                 <div className="text-rose-600 font-bold text-base">
                   {importResult.unmatchedCount}
@@ -418,7 +418,7 @@ Mã đơn hàng	Tổng tiền người mua trả	Số tiền thực nhận	Phí 
           type="button"
           disabled={submitting || parsedRows.length === 0}
           onClick={handleSubmit}
-          className="flex-1 sm:flex-initial min-h-[38px] sm:min-h-[32px] px-3.5 sm:px-5 py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 disabled:opacity-50 rounded-lg sm:rounded-xl shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          className="flex-1 sm:flex-initial min-h-[38px] sm:min-h-[32px] px-3.5 sm:px-5 py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 disabled:opacity-50 rounded sm:rounded shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
         >
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           {submitting ? (

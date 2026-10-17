@@ -257,10 +257,10 @@ export const CashflowPage: React.FC = () => {
   return (
     <div className="space-y-6 pb-20 max-w-7xl mx-auto">
       {/* 1. Header & Quick Mobile Action Bar */}
-      <div className="flex items-center justify-between gap-2 bg-white dark:bg-slate-900 p-3 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm shrink-0">
+      <div className="flex items-center justify-between gap-2 bg-white dark:bg-slate-900 p-3 sm:p-5 rounded border border-slate-200/80 dark:border-slate-800 shadow-sm shrink-0">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 sm:gap-2.5">
-            <div className="p-1.5 sm:p-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-500/20 shrink-0">
+            <div className="p-1.5 sm:p-2.5 rounded bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-500/20 shrink-0">
               <Wallet className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
             <div className="min-w-0 flex-1 truncate">
@@ -281,7 +281,7 @@ export const CashflowPage: React.FC = () => {
           <button
             type="button"
             onClick={handleOpenIncome}
-            className="h-8 sm:h-9 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-sm active:scale-95 transition-all"
+            className="h-8 sm:h-9 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 rounded sm:rounded font-semibold text-xs sm:text-sm text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-sm active:scale-95 transition-all"
             title="Thu tiền"
           >
             <ArrowDownLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
@@ -292,7 +292,7 @@ export const CashflowPage: React.FC = () => {
           <button
             type="button"
             onClick={() => handleOpenExpense()}
-            className="h-8 sm:h-9 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm text-white bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 shadow-sm active:scale-95 transition-all"
+            className="h-8 sm:h-9 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 rounded sm:rounded font-semibold text-xs sm:text-sm text-white bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 shadow-sm active:scale-95 transition-all"
             title="Chi tiền"
           >
             <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
@@ -303,7 +303,7 @@ export const CashflowPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsTransferModalOpen(true)}
-            className="h-8 sm:h-9 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 active:scale-95 transition-all"
+            className="h-8 sm:h-9 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 rounded sm:rounded font-semibold text-xs sm:text-sm text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 active:scale-95 transition-all"
             title="Chuyển tiền giữa các tài khoản & rút tiền Shopee"
           >
             <ArrowLeftRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-500" />
@@ -314,7 +314,7 @@ export const CashflowPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsImportModalOpen(true)}
-            className="h-8 sm:h-9 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm text-indigo-700 dark:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 active:scale-95 transition-all"
+            className="h-8 sm:h-9 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 rounded sm:rounded font-semibold text-xs sm:text-sm text-indigo-700 dark:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 active:scale-95 transition-all"
             title="Import file quyết toán"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600 dark:text-indigo-400" />
@@ -339,7 +339,7 @@ export const CashflowPage: React.FC = () => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as ActiveTab)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold shrink-0 whitespace-nowrap transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded text-sm font-semibold shrink-0 whitespace-nowrap transition-all ${
                 isActive
                   ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800'
@@ -390,7 +390,7 @@ export const CashflowPage: React.FC = () => {
           </div>
 
           {/* Quick Expense Shortcut Buttons */}
-          <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded border border-slate-200 dark:border-slate-800">
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">
               Ghi nhanh khoản chi thường dùng:
             </div>
@@ -398,35 +398,35 @@ export const CashflowPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleOpenExpense('CHI_VAT_TU_DONG_GOI')}
-                className="px-3 py-1.5 bg-white dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 transition-all flex items-center gap-1.5 shadow-sm"
+                className="px-3 py-1.5 bg-white dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 transition-all flex items-center gap-1.5 shadow-sm"
               >
                 📦 Mua vật tư đóng gói (xốp, băng dính, thùng)
               </button>
               <button
                 type="button"
                 onClick={() => handleOpenExpense('CHI_GIAY_MUC_IN')}
-                className="px-3 py-1.5 bg-white dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 transition-all flex items-center gap-1.5 shadow-sm"
+                className="px-3 py-1.5 bg-white dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 transition-all flex items-center gap-1.5 shadow-sm"
               >
                 🖨️ Giấy in vận đơn & Mực in
               </button>
               <button
                 type="button"
                 onClick={() => handleOpenExpense('CHI_NHAP_HANG')}
-                className="px-3 py-1.5 bg-white dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 transition-all flex items-center gap-1.5 shadow-sm"
+                className="px-3 py-1.5 bg-white dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 transition-all flex items-center gap-1.5 shadow-sm"
               >
                 🚚 Thanh toán tiền nhập hàng NCC
               </button>
               <button
                 type="button"
                 onClick={() => handleOpenExpense('CHI_VAN_CHUYEN_NGOAI')}
-                className="px-3 py-1.5 bg-white dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 transition-all flex items-center gap-1.5 shadow-sm"
+                className="px-3 py-1.5 bg-white dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 transition-all flex items-center gap-1.5 shadow-sm"
               >
                 🛵 Phí xe ba gác, vận chuyển ngoài sàn
               </button>
               <button
                 type="button"
                 onClick={() => handleOpenExpense('CHI_HOAN_TIEN_KHACH')}
-                className="px-3 py-1.5 bg-white dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 transition-all flex items-center gap-1.5 shadow-sm"
+                className="px-3 py-1.5 bg-white dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 transition-all flex items-center gap-1.5 shadow-sm"
               >
                 🤝 Hoàn tiền trực tiếp cho khách
               </button>
@@ -438,7 +438,7 @@ export const CashflowPage: React.FC = () => {
             {accounts.map((acc) => (
               <div
                 key={acc.id}
-                className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between"
+                className="p-5 bg-white dark:bg-slate-900 rounded border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between"
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -456,7 +456,7 @@ export const CashflowPage: React.FC = () => {
                       <p className="text-xs font-mono text-slate-500">{acc.accountNumber}</p>
                     )}
                   </div>
-                  <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                  <div className="p-2.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                     <Landmark className="w-5 h-5" />
                   </div>
                 </div>
@@ -483,7 +483,7 @@ export const CashflowPage: React.FC = () => {
           </div>
 
           {/* Giao dịch gần nhất */}
-          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded border border-slate-200/80 dark:border-slate-800 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
                 <Receipt className="w-5 h-5 text-indigo-500" />
@@ -576,7 +576,7 @@ export const CashflowPage: React.FC = () => {
       {activeTab === 'TRANSACTIONS' && (
         <div className="space-y-4 animate-fadeIn">
           {/* Filters Bar */}
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded border border-slate-200/80 dark:border-slate-800 space-y-3">
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
               <div>
                 <input
@@ -584,7 +584,7 @@ export const CashflowPage: React.FC = () => {
                   value={txSearch}
                   onChange={(e) => setTxSearch(e.target.value)}
                   placeholder="Tìm mã phiếu, UNC, tên đối tượng..."
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none"
+                  className="w-full px-3 py-2 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none"
                 />
               </div>
 
@@ -592,7 +592,7 @@ export const CashflowPage: React.FC = () => {
                 <select
                   value={txFilterType}
                   onChange={(e) => setTxFilterType(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none"
+                  className="w-full px-3 py-2 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none"
                 >
                   <option value="ALL">-- Tất cả loại --</option>
                   <option value="EXPENSE">Khoản chi</option>
@@ -607,7 +607,7 @@ export const CashflowPage: React.FC = () => {
                 <select
                   value={txFilterCategoryId}
                   onChange={(e) => setTxFilterCategoryId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none"
+                  className="w-full px-3 py-2 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none"
                 >
                   <option value="ALL">-- Tất cả khoản mục --</option>
                   {categories.map((c) => (
@@ -622,7 +622,7 @@ export const CashflowPage: React.FC = () => {
                 <select
                   value={txFilterAccountId}
                   onChange={(e) => setTxFilterAccountId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none"
+                  className="w-full px-3 py-2 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none"
                 >
                   <option value="ALL">-- Tất cả tài khoản --</option>
                   {accounts.map((a) => (
@@ -637,7 +637,7 @@ export const CashflowPage: React.FC = () => {
                 <select
                   value={txFilterStatus}
                   onChange={(e) => setTxFilterStatus(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none"
+                  className="w-full px-3 py-2 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none"
                 >
                   <option value="ALL">-- Tất cả trạng thái --</option>
                   <option value="CONFIRMED">Đã xác nhận</option>
@@ -649,7 +649,7 @@ export const CashflowPage: React.FC = () => {
           </div>
 
           {/* Transactions Table */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
@@ -740,7 +740,7 @@ export const CashflowPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleConfirmTx(tx.id)}
-                            className="p-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg"
+                            className="p-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded"
                             title="Xác nhận phiếu nháp này"
                           >
                             <Check className="w-4 h-4" />
@@ -750,7 +750,7 @@ export const CashflowPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleCancelTx(tx.id)}
-                            className="p-1.5 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg"
+                            className="p-1.5 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded"
                             title="Hủy phiếu (hoàn trả số dư)"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -761,7 +761,7 @@ export const CashflowPage: React.FC = () => {
                             href={tx.voucherImage}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 rounded-lg"
+                            className="p-1.5 text-xs text-indigo-600 hover:bg-indigo-50 rounded"
                             title="Xem ảnh chứng từ"
                           >
                             <Eye className="w-4 h-4" />
@@ -781,7 +781,7 @@ export const CashflowPage: React.FC = () => {
       {activeTab === 'RECONCILIATION' && (
         <div className="space-y-4 animate-fadeIn">
           {/* Important Rules Alert */}
-          <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800/50 rounded flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
               <ShieldCheck className="w-6 h-6 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
               <div>
@@ -800,7 +800,7 @@ export const CashflowPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSyncOrders}
-                className="flex-1 md:flex-none px-3.5 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 transition-colors flex items-center justify-center gap-1.5"
+                className="flex-1 md:flex-none px-3.5 py-2 text-xs font-semibold rounded bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 transition-colors flex items-center justify-center gap-1.5"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span className="hidden lg:inline">Đồng bộ đơn mới</span>
@@ -809,7 +809,7 @@ export const CashflowPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsImportModalOpen(true)}
-                className="flex-1 md:flex-none px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-md transition-colors flex items-center justify-center gap-1.5"
+                className="flex-1 md:flex-none px-4 py-2 text-xs font-semibold rounded bg-indigo-600 text-white hover:bg-indigo-700 shadow-md transition-colors flex items-center justify-center gap-1.5"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" />
                 Import File Quyết Toán
@@ -820,7 +820,7 @@ export const CashflowPage: React.FC = () => {
           {/* 4 Financial Columns Metric Overview */}
           {reconSummary && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <div className="p-4 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800">
                 <span className="text-[11px] font-semibold text-slate-400 uppercase">
                   1. Giá trị hàng hóa
                 </span>
@@ -830,7 +830,7 @@ export const CashflowPage: React.FC = () => {
                 <p className="text-[11px] text-slate-500">Tổng tiền sản phẩm theo đơn</p>
               </div>
 
-              <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <div className="p-4 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800">
                 <span className="text-[11px] font-semibold text-slate-400 uppercase">
                   2. Tiền dự kiến nhận
                 </span>
@@ -840,7 +840,7 @@ export const CashflowPage: React.FC = () => {
                 <p className="text-[11px] text-slate-500">Tạm tính trừ các loại phí sàn</p>
               </div>
 
-              <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <div className="p-4 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800">
                 <span className="text-[11px] font-semibold text-slate-400 uppercase">
                   3. Tiền đã quyết toán
                 </span>
@@ -850,7 +850,7 @@ export const CashflowPage: React.FC = () => {
                 <p className="text-[11px] text-slate-500">Xác nhận từ file quyết toán</p>
               </div>
 
-              <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <div className="p-4 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800">
                 <span className="text-[11px] font-semibold text-slate-400 uppercase">
                   4. Điều chỉnh / Hoàn tiền
                 </span>
@@ -863,14 +863,14 @@ export const CashflowPage: React.FC = () => {
           )}
 
           {/* Filter Status & Search */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded border border-slate-200/80 dark:border-slate-800">
             <div className="flex items-center gap-2">
               <input
                 type="text"
                 value={reconSearch}
                 onChange={(e) => setReconSearch(e.target.value)}
                 placeholder="Tìm mã đơn Shopee (Order SN), mã vận đơn..."
-                className="px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 w-72 focus:outline-none"
+                className="px-3.5 py-2 text-xs rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 w-72 focus:outline-none"
               />
             </div>
 
@@ -886,7 +886,7 @@ export const CashflowPage: React.FC = () => {
                   key={s.key}
                   type="button"
                   onClick={() => setReconStatusFilter(s.key)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded transition-all ${
                     reconStatusFilter === s.key
                       ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
@@ -899,7 +899,7 @@ export const CashflowPage: React.FC = () => {
           </div>
 
           {/* Reconciliation Table with 4 Essential Financial Columns */}
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
@@ -987,7 +987,7 @@ export const CashflowPage: React.FC = () => {
       {/* -------------------- TAB 4: THANH TOÁN NCC & CÔNG NỢ -------------------- */}
       {activeTab === 'SUPPLIERS' && (
         <div className="space-y-4 animate-fadeIn">
-          <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+          <div className="p-4 bg-white dark:bg-slate-900 rounded border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
             <div>
               <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-indigo-500" />
@@ -1001,14 +1001,14 @@ export const CashflowPage: React.FC = () => {
             <button
               type="button"
               onClick={() => handleOpenExpense('CHI_NHAP_HANG')}
-              className="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition-all flex items-center gap-1.5"
+              className="px-4 py-2 text-xs font-semibold rounded bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition-all flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               Tạo phiếu thanh toán NCC
             </button>
           </div>
 
-          <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+          <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
             <span className="font-bold">Quy tắc phân bổ & Chi hộ cá nhân:</span>
             <ul className="list-disc pl-5 mt-1 space-y-1">
               <li>Một lần chuyển tiền có thể phân bổ cho một hoặc nhiều phiếu nhập kho.</li>
@@ -1032,7 +1032,7 @@ export const CashflowPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsTransferModalOpen(true)}
-                className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-all flex items-center gap-1.5"
+                className="px-3.5 py-2 text-xs font-semibold rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 transition-all flex items-center gap-1.5"
               >
                 <ArrowLeftRight className="w-4 h-4 text-indigo-500" />
                 Chuyển tiền nội bộ
@@ -1040,7 +1040,7 @@ export const CashflowPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsAccountModalOpen(true)}
-                className="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition-all flex items-center gap-1.5"
+                className="px-4 py-2 text-xs font-semibold rounded bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition-all flex items-center gap-1.5"
               >
                 <Plus className="w-4 h-4" />
                 Thêm tài khoản mới
@@ -1052,7 +1052,7 @@ export const CashflowPage: React.FC = () => {
             {accounts.map((acc) => (
               <div
                 key={acc.id}
-                className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4"
+                className="p-5 bg-white dark:bg-slate-900 rounded border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4"
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -1066,12 +1066,12 @@ export const CashflowPage: React.FC = () => {
                       <p className="text-xs font-mono text-slate-500">{acc.accountNumber} ({acc.bankName})</p>
                     )}
                   </div>
-                  <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600">
+                  <div className="p-2.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600">
                     <Landmark className="w-5 h-5" />
                   </div>
                 </div>
 
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded">
                   <span className="text-[11px] text-slate-400">Số dư hiện tại:</span>
                   <div className="text-2xl font-black text-slate-900 dark:text-white">
                     {Number(acc.currentBalance).toLocaleString('vi-VN')}đ
@@ -1102,14 +1102,14 @@ export const CashflowPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsCategoryModalOpen(true)}
-              className="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition-all flex items-center gap-1.5"
+              className="px-4 py-2 text-xs font-semibold rounded bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition-all flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               Thêm khoản mục
             </button>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>

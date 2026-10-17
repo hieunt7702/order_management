@@ -102,7 +102,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="VD: TK_MB, TM_KHO_2"
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold uppercase focus:outline-none"
+                className="w-full px-3.5 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold uppercase focus:outline-none"
               />
             </div>
 
@@ -113,7 +113,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as CashAccountType)}
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
+                className="w-full px-3.5 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
               >
                 <option value="BANK">Tài khoản Ngân hàng</option>
                 <option value="CASH">Quỹ tiền mặt tại kho</option>
@@ -133,7 +133,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="VD: MB Bank - Tài khoản chính shop"
-              className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
+              className="w-full px-3.5 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
             />
           </div>
 
@@ -148,7 +148,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
                   placeholder="MB Bank, VCB, Techcombank..."
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
+                  className="w-full px-3.5 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
                 />
               </div>
 
@@ -161,7 +161,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
                   placeholder="88889999..."
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
+                  className="w-full px-3.5 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
                 />
               </div>
             </div>
@@ -175,7 +175,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               <select
                 value={shopId}
                 onChange={(e) => setShopId(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
+                className="w-full px-3.5 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
               >
                 <option value="">-- Chọn shop sở hữu ví --</option>
                 {shops.map((s) => (
@@ -207,7 +207,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Ghi chú về mục đích sử dụng tài khoản này..."
-              className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
+              className="w-full px-3.5 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
             />
           </div>
         </ModalBody>
@@ -225,7 +225,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           <button
             type="submit"
             disabled={submitting}
-            className="px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg sm:rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 flex-1 sm:flex-none active:scale-95 cursor-pointer"
+            className="px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded sm:rounded shadow-xs transition-all flex items-center justify-center gap-1.5 flex-1 sm:flex-none active:scale-95 cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>{submitting ? 'Đang tạo...' : 'Tạo tài khoản'}</span>

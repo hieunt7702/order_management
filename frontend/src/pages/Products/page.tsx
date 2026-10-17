@@ -1903,7 +1903,7 @@ export const ProductsPage: React.FC = () => {
                     placeholder="VD: Áo Thun Nam Cotton 100%"
                     value={createProductForm.name}
                     onChange={(e) => handleProductNameChange(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
                 <div>
@@ -1937,7 +1937,7 @@ export const ProductsPage: React.FC = () => {
                         sku: e.target.value.toUpperCase(),
                       })
                     }
-                    className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
               </div>
@@ -1953,7 +1953,7 @@ export const ProductsPage: React.FC = () => {
                   onChange={(e) =>
                     setCreateProductForm({ ...createProductForm, description: e.target.value })
                   }
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -1995,7 +1995,7 @@ export const ProductsPage: React.FC = () => {
                 </div>
 
                 {createProductForm.variants.length === 0 ? (
-                  <div className="p-4 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-lg text-xs text-gray-400 space-y-1">
+                  <div className="p-4 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded text-xs text-gray-400 space-y-1">
                     <p className="font-medium text-gray-600 dark:text-gray-300">
                       Chưa có biến thể nào được tạo thủ công.
                     </p>
@@ -2008,7 +2008,7 @@ export const ProductsPage: React.FC = () => {
                     {createProductForm.variants.map((v, idx) => (
                       <div
                         key={idx}
-                        className="p-3 bg-gray-50/80 dark:bg-[#131720]/80 rounded-lg border border-gray-200/70 dark:border-gray-800 space-y-2.5"
+                        className="p-3 bg-gray-50/80 dark:bg-[#131720]/80 rounded border border-gray-200/70 dark:border-gray-800 space-y-2.5"
                       >
                         <div className="flex items-center justify-between pb-1.5 border-b border-gray-200/50 dark:border-gray-800">
                           <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
@@ -2040,7 +2040,7 @@ export const ProductsPage: React.FC = () => {
                                 next[idx].name = e.target.value;
                                 setCreateProductForm({ ...createProductForm, variants: next });
                               }}
-                              className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white"
+                              className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white"
                             />
                           </div>
                           <div>
@@ -2056,7 +2056,7 @@ export const ProductsPage: React.FC = () => {
                                 next[idx].sku = e.target.value;
                                 setCreateProductForm({ ...createProductForm, variants: next });
                               }}
-                              className="w-full px-2.5 py-1.5 text-xs font-mono uppercase bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white"
+                              className="w-full px-2.5 py-1.5 text-xs font-mono uppercase bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white"
                             />
                           </div>
                           <div>
@@ -2071,7 +2071,7 @@ export const ProductsPage: React.FC = () => {
                                 next[idx].barcode = e.target.value;
                                 setCreateProductForm({ ...createProductForm, variants: next });
                               }}
-                              className="w-full px-2.5 py-1.5 text-xs font-mono bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white"
+                              className="w-full px-2.5 py-1.5 text-xs font-mono bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white"
                             />
                           </div>
                         </div>
@@ -2090,7 +2090,7 @@ export const ProductsPage: React.FC = () => {
                               }}
                               placeholder="0"
                               suffix="đ"
-                              inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white"
+                              inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white"
                             />
                           </div>
                           <div>
@@ -2106,7 +2106,7 @@ export const ProductsPage: React.FC = () => {
                               }}
                               placeholder="0"
                               suffix="đ"
-                              inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white"
+                              inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white"
                             />
                           </div>
                           <div>
@@ -2122,7 +2122,7 @@ export const ProductsPage: React.FC = () => {
                                 next[idx].minStockAlert = parseInt(e.target.value, 10) || 5;
                                 setCreateProductForm({ ...createProductForm, variants: next });
                               }}
-                              className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white"
+                              className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white"
                             />
                           </div>
                         </div>
@@ -2172,7 +2172,7 @@ export const ProductsPage: React.FC = () => {
                   onChange={(e) =>
                     setEditVariantForm({ ...editVariantForm, name: e.target.value })
                   }
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -2187,7 +2187,7 @@ export const ProductsPage: React.FC = () => {
                   onChange={(e) =>
                     setEditVariantForm({ ...editVariantForm, barcode: e.target.value })
                   }
-                  className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -2206,7 +2206,7 @@ export const ProductsPage: React.FC = () => {
                     }
                     placeholder="0"
                     suffix="đ"
-                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
                 <div>
@@ -2223,7 +2223,7 @@ export const ProductsPage: React.FC = () => {
                     }
                     placeholder="0"
                     suffix="đ"
-                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
               </div>
@@ -2242,7 +2242,7 @@ export const ProductsPage: React.FC = () => {
                       minStockAlert: parseInt(e.target.value, 10) || 0,
                     })
                   }
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
             </ModalBody>
@@ -2286,7 +2286,7 @@ export const ProductsPage: React.FC = () => {
                   onChange={(e) =>
                     setEditProductForm({ ...editProductForm, name: e.target.value })
                   }
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -2301,7 +2301,7 @@ export const ProductsPage: React.FC = () => {
                     setEditProductForm({ ...editProductForm, description: e.target.value })
                   }
                   placeholder="Mô tả tóm tắt sản phẩm..."
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
             </ModalBody>
@@ -2424,7 +2424,7 @@ export const ProductsPage: React.FC = () => {
           <form onSubmit={handleSaveMapping} className="flex flex-col flex-1 min-h-0">
             <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5">
               {/* Product Info Summary Box */}
-              <div className="p-3.5 bg-gray-50/80 dark:bg-[#131720]/80 rounded-lg border border-gray-200/70 dark:border-gray-800 text-xs space-y-2">
+              <div className="p-3.5 bg-gray-50/80 dark:bg-[#131720]/80 rounded border border-gray-200/70 dark:border-gray-800 text-xs space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-500 font-medium">Shop:</span>
                   <span className="font-bold text-gray-900 dark:text-white">
@@ -2511,7 +2511,7 @@ export const ProductsPage: React.FC = () => {
 
               {/* Quick Create Variant Subform */}
               {isQuickCreateOpen && (
-                <div className="p-4 bg-gradient-to-b from-[#5865f2]/5 to-transparent dark:from-[#5865f2]/10 rounded-lg border-2 border-[#5865f2]/30 space-y-3 animate-fade-in">
+                <div className="p-4 bg-gradient-to-b from-[#5865f2]/5 to-transparent dark:from-[#5865f2]/10 rounded border-2 border-[#5865f2]/30 space-y-3 animate-fade-in">
                   <div className="flex items-center justify-between pb-2 border-b border-indigo-100 dark:border-indigo-900/40">
                     <span className="text-xs font-bold text-[#5865f2] dark:text-indigo-400 flex items-center gap-1.5">
                       <Plus size={14} /> Thêm nhanh SKU kho nội bộ
@@ -2538,7 +2538,7 @@ export const ProductsPage: React.FC = () => {
                           setQuickCreateForm({ ...quickCreateForm, name: e.target.value })
                         }
                         placeholder="VD: Ensure Gold Lon Đơn"
-                        className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                        className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                       />
                     </div>
 
@@ -2558,7 +2558,7 @@ export const ProductsPage: React.FC = () => {
                             })
                           }
                           placeholder="VD: ENS_GOLD_1"
-                          className="w-full px-2.5 py-1.5 text-xs font-mono font-semibold bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white uppercase focus:outline-none focus:border-[#5865f2]"
+                          className="w-full px-2.5 py-1.5 text-xs font-mono font-semibold bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white uppercase focus:outline-none focus:border-[#5865f2]"
                         />
                       </div>
                       <div>
@@ -2575,7 +2575,7 @@ export const ProductsPage: React.FC = () => {
                             })
                           }
                           placeholder="Mặc định / 7 Lon"
-                          className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                          className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                         />
                       </div>
                     </div>
@@ -2595,7 +2595,7 @@ export const ProductsPage: React.FC = () => {
                           }
                           placeholder="0"
                           suffix="đ"
-                          inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                          inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                         />
                       </div>
                       <div>
@@ -2612,7 +2612,7 @@ export const ProductsPage: React.FC = () => {
                           }
                           placeholder="0"
                           suffix="đ"
-                          inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                          inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                         />
                       </div>
                     </div>
@@ -2629,7 +2629,7 @@ export const ProductsPage: React.FC = () => {
                         type="button"
                         disabled={isCreatingQuickVariant}
                         onClick={handleQuickCreateVariant}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#5865f2] hover:bg-[#4752c4] rounded-lg shadow-xs cursor-pointer disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#5865f2] hover:bg-[#4752c4] rounded shadow-xs cursor-pointer disabled:opacity-50"
                       >
                         {isCreatingQuickVariant ? (
                           <RefreshCw size={13} className="animate-spin" />
@@ -2644,7 +2644,7 @@ export const ProductsPage: React.FC = () => {
               )}
 
               {/* Multiplier / Quy cách đóng gói */}
-              <div className="p-3.5 bg-amber-500/10 dark:bg-amber-500/10 rounded-lg border border-amber-500/20 space-y-2">
+              <div className="p-3.5 bg-amber-500/10 dark:bg-amber-500/10 rounded border border-amber-500/20 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
                     Hệ số nhân quy đổi sản phẩm (Multiplier) *
@@ -2658,7 +2658,7 @@ export const ProductsPage: React.FC = () => {
                       onChange={(e) =>
                         setMappingMultiplier(Math.max(1, parseInt(e.target.value, 10) || 1))
                       }
-                      className="w-18 px-2 py-1 text-xs font-mono font-bold text-center bg-white dark:bg-[#131720] border border-amber-400 dark:border-amber-700 rounded-lg text-amber-900 dark:text-amber-200 focus:outline-none"
+                      className="w-18 px-2 py-1 text-xs font-mono font-bold text-center bg-white dark:bg-[#131720] border border-amber-400 dark:border-amber-700 rounded text-amber-900 dark:text-amber-200 focus:outline-none"
                     />
                     <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
                       sản phẩm / đơn
@@ -2730,7 +2730,7 @@ export const ProductsPage: React.FC = () => {
               </div>
 
               {/* Table of selected items with individual multipliers */}
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <div className="border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
                 <div className="bg-gray-50/80 dark:bg-gray-800/40 p-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
                   Danh sách sản phẩm sàn được gán & Hệ số quy đổi tương ứng:
                 </div>
@@ -2773,7 +2773,7 @@ export const ProductsPage: React.FC = () => {
                                 [item.id]: Math.max(1, parseInt(e.target.value, 10) || 1),
                               })
                             }
-                            className="w-16 px-2 py-1 text-xs font-mono font-bold text-center bg-white dark:bg-[#131720] border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                            className="w-16 px-2 py-1 text-xs font-mono font-bold text-center bg-white dark:bg-[#131720] border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                           />
                         </div>
                       </div>
@@ -2781,7 +2781,7 @@ export const ProductsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 text-[11px] text-blue-800 dark:text-blue-300">
+              <div className="p-3 rounded bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 text-[11px] text-blue-800 dark:text-blue-300">
                 Sau khi xác nhận, toàn bộ đơn hàng của các sản phẩm này (kể cả các đơn đã import) sẽ được tự động gom về SKU kho đã chọn và tính toán số lượng tồn kho theo đúng hệ số quy đổi đã thiết lập.
               </div>
             </ModalBody>

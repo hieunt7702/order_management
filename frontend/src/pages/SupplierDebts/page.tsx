@@ -911,7 +911,7 @@ export const SupplierDebtsPage: React.FC = () => {
                 Đang tải công nợ nhà cung cấp...
               </div>
             ) : suppliers.length === 0 ? (
-              <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+              <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 p-6">
                 <Building2 className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
                 <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Chưa có nhà cung cấp nào</p>
                 <p className="text-[11px] text-gray-400">Không tìm thấy nhà cung cấp nào phù hợp với bộ lọc.</p>
@@ -925,7 +925,7 @@ export const SupplierDebtsPage: React.FC = () => {
                   <div
                     key={s.id}
                     onClick={() => handleOpenStatement(s.id)}
-                    className="p-3.5 rounded-lg bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs cursor-pointer active:scale-[0.99] transition-all"
+                    className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs cursor-pointer active:scale-[0.99] transition-all"
                   >
                     {/* Header: Supplier Name & Status */}
                     <div className="flex items-start justify-between gap-2">
@@ -1206,7 +1206,7 @@ export const SupplierDebtsPage: React.FC = () => {
       {activeTab === 'REPORTS' && debtReports && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Overdue Debts */}
-          <div className="bg-white dark:bg-[#14151a] p-4 rounded-xl border border-gray-200 dark:border-gray-800 space-y-3">
+          <div className="bg-white dark:bg-[#14151a] p-4 rounded border border-gray-200 dark:border-gray-800 space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
               <span className="font-bold text-sm text-rose-600 flex items-center gap-1.5">
                 <AlertTriangle className="w-4 h-4" /> Phiếu Nhập Nợ Đã Quá Hạn ({debtReports.overdueList?.length || 0})
@@ -1221,7 +1221,7 @@ export const SupplierDebtsPage: React.FC = () => {
                 <p className="text-xs text-gray-400 italic py-4 text-center">Tuyệt vời! Không có khoản nợ nào quá hạn.</p>
               ) : (
                 debtReports.overdueList.map((item) => (
-                  <div key={item.receiptId} className="p-3 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 rounded-lg flex justify-between items-center text-xs">
+                  <div key={item.receiptId} className="p-3 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 rounded flex justify-between items-center text-xs">
                     <div>
                       <div className="font-bold text-gray-900 dark:text-white font-mono">{item.receiptCode}</div>
                       <div className="text-[11px] text-gray-500">{item.supplierName}</div>
@@ -1247,7 +1247,7 @@ export const SupplierDebtsPage: React.FC = () => {
           </div>
 
           {/* Pending Personal Reimbursements */}
-          <div className="bg-white dark:bg-[#14151a] p-4 rounded-xl border border-gray-200 dark:border-gray-800 space-y-3">
+          <div className="bg-white dark:bg-[#14151a] p-4 rounded border border-gray-200 dark:border-gray-800 space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
               <span className="font-bold text-sm text-purple-600 flex items-center gap-1.5">
                 <UserCheck className="w-4 h-4" /> Tiền Cá Nhân Chi Hộ Cần Shop Hoàn Trả ({debtReports.reimbursementNeeds?.length || 0})
@@ -1262,7 +1262,7 @@ export const SupplierDebtsPage: React.FC = () => {
                 <p className="text-xs text-gray-400 italic py-4 text-center">Không có khoản cá nhân chi hộ nào đang chờ hoàn tiền.</p>
               ) : (
                 debtReports.reimbursementNeeds.map((item) => (
-                  <div key={item.paymentId} className="p-3 bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40 rounded-lg flex justify-between items-center text-xs">
+                  <div key={item.paymentId} className="p-3 bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40 rounded flex justify-between items-center text-xs">
                     <div>
                       <div className="font-bold text-gray-900 dark:text-white">
                         {item.payerName} chi hộ NCC {item.supplierName}
@@ -1301,7 +1301,7 @@ export const SupplierDebtsPage: React.FC = () => {
           <div className="flex flex-col flex-1 min-h-0">
             <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5 text-xs sm:text-sm">
               {/* Filter Date Range */}
-              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded text-xs">
                 <div className="flex flex-wrap items-center gap-2">
                   <span>Từ:</span>
                   <input
@@ -1331,7 +1331,7 @@ export const SupplierDebtsPage: React.FC = () => {
               </div>
 
               {/* Timeline Ledger Table */}
-              <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-x-auto text-xs">
+              <div className="border border-gray-200 dark:border-gray-800 rounded overflow-x-auto text-xs">
                 <table className="w-full text-left min-w-[550px]">
                   <thead className="bg-gray-100 dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300">
                     <tr>
@@ -1411,7 +1411,7 @@ export const SupplierDebtsPage: React.FC = () => {
         <form onSubmit={handleSavePayment} className="flex flex-col flex-1 min-h-0">
           <ModalBody className="space-y-3 sm:space-y-4 text-xs sm:text-sm p-3 sm:p-5">
             {/* 1. THÔNG TIN THANH TOÁN & ĐỐI TÁC */}
-            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3.5">
+            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3.5">
               <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
                 <Building2 className="w-3.5 h-3.5 text-[#5865f2]" />
                 <span className="sm:hidden">Thông tin thanh toán & NCC</span>
@@ -1478,7 +1478,7 @@ export const SupplierDebtsPage: React.FC = () => {
                       handleAutoAllocate(amt);
                     }}
                     suffix="đ"
-                    inputClassName="w-full bg-white dark:bg-[#1a1b23] border border-emerald-500/60 dark:border-emerald-600/70 rounded-lg px-2.5 py-1.5 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    inputClassName="w-full bg-white dark:bg-[#1a1b23] border border-emerald-500/60 dark:border-emerald-600/70 rounded px-2.5 py-1.5 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                   />
                   {(() => {
                     const curSupplier = suppliers.find((s) => s.id === paymentForm.supplierId);
@@ -1511,7 +1511,7 @@ export const SupplierDebtsPage: React.FC = () => {
                     type="date"
                     value={paymentForm.paymentDate}
                     onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
-                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
                   />
                 </div>
 
@@ -1527,7 +1527,7 @@ export const SupplierDebtsPage: React.FC = () => {
                     placeholder="VD: Chị Hồng, Kế toán..."
                     value={paymentForm.payerName}
                     onChange={(e) => setPaymentForm({ ...paymentForm, payerName: e.target.value })}
-                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
                   />
                 </div>
 
@@ -1582,7 +1582,7 @@ export const SupplierDebtsPage: React.FC = () => {
                     placeholder="Mã chuyển khoản / UNC / PC..."
                     value={paymentForm.referenceCode}
                     onChange={(e) => setPaymentForm({ ...paymentForm, referenceCode: e.target.value.toUpperCase() })}
-                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 text-xs font-mono uppercase text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs font-mono uppercase text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
                   />
                 </div>
               </div>
@@ -1590,7 +1590,7 @@ export const SupplierDebtsPage: React.FC = () => {
 
             {/* Personal fund note */}
             {paymentForm.fundSource === 'PERSONAL_FUND' && (
-              <div className="p-3 bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-900/40 rounded-xl flex items-start gap-2.5 text-xs text-purple-900 dark:text-purple-200">
+              <div className="p-3 bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-900/40 rounded flex items-start gap-2.5 text-xs text-purple-900 dark:text-purple-200">
                 <Info className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
                   <span className="font-semibold text-purple-900 dark:text-purple-200">
@@ -1605,7 +1605,7 @@ export const SupplierDebtsPage: React.FC = () => {
             )}
 
             {/* Allocations Section */}
-            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
+            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center gap-2">
                   <Receipt className="w-3.5 h-3.5 text-[#5865f2] shrink-0" />
@@ -1622,7 +1622,7 @@ export const SupplierDebtsPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleAutoAllocate(paymentForm.amount)}
-                      className="px-2 py-1 text-[11px] sm:text-xs font-medium rounded-lg text-[#5865f2] bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/70 transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap active:scale-95"
+                      className="px-2 py-1 text-[11px] sm:text-xs font-medium rounded text-[#5865f2] bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/70 transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap active:scale-95"
                     >
                       <RefreshCw size={11} />
                       <span>Tự động FIFO</span>
@@ -1635,7 +1635,7 @@ export const SupplierDebtsPage: React.FC = () => {
                           allocations: unpaidReceipts.map((r) => ({ receiptId: r.id, amount: 0 })),
                         }));
                       }}
-                      className="px-2 py-1 text-[11px] sm:text-xs font-medium rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer whitespace-nowrap active:scale-95"
+                      className="px-2 py-1 text-[11px] sm:text-xs font-medium rounded text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer whitespace-nowrap active:scale-95"
                     >
                       Xóa
                     </button>
@@ -1644,7 +1644,7 @@ export const SupplierDebtsPage: React.FC = () => {
               </div>
 
               {unpaidReceipts.length === 0 ? (
-                <div className="p-4 sm:p-5 text-center rounded-lg bg-white dark:bg-[#1a1b23] border border-dashed border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400">
+                <div className="p-4 sm:p-5 text-center rounded bg-white dark:bg-[#1a1b23] border border-dashed border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400">
                   <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1.5 opacity-80" />
                   <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
                     Nhà cung cấp này hiện không có phiếu nhập nào chưa thanh toán.
@@ -1665,7 +1665,7 @@ export const SupplierDebtsPage: React.FC = () => {
                       return (
                         <div
                           key={r.id}
-                          className="p-2.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 rounded-xl space-y-2 text-xs shadow-xs"
+                          className="p-2.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 rounded space-y-2 text-xs shadow-xs"
                         >
                           <div className="flex items-center justify-between pb-1.5 border-b border-gray-100 dark:border-gray-800">
                             <span className="font-bold text-[#5865f2] dark:text-indigo-400 font-mono">
@@ -1692,12 +1692,12 @@ export const SupplierDebtsPage: React.FC = () => {
                                 value={allocAmount}
                                 onChange={(val) => handleAllocationAmountChange(r.id, val)}
                                 className="flex-1"
-                                inputClassName="text-right border-indigo-200 dark:border-indigo-800/70 font-mono font-bold text-[#5865f2] dark:text-indigo-400 text-xs py-1 px-2 rounded-lg h-[34px] focus:ring-1 focus:ring-[#5865f2]"
+                                inputClassName="text-right border-indigo-200 dark:border-indigo-800/70 font-mono font-bold text-[#5865f2] dark:text-indigo-400 text-xs py-1 px-2 rounded h-[34px] focus:ring-1 focus:ring-[#5865f2]"
                               />
                               <button
                                 type="button"
                                 onClick={() => handleAllocationAmountChange(r.id, remaining)}
-                                className="text-[11px] px-2 h-[34px] rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-[#5865f2] dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-semibold transition-all cursor-pointer shrink-0 active:scale-95"
+                                className="text-[11px] px-2 h-[34px] rounded bg-indigo-50 dark:bg-indigo-950/60 text-[#5865f2] dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-semibold transition-all cursor-pointer shrink-0 active:scale-95"
                                 title="Phân bổ toàn bộ khoản nợ phiếu này"
                               >
                                 Đủ
@@ -1710,7 +1710,7 @@ export const SupplierDebtsPage: React.FC = () => {
                   </div>
 
                   {/* Desktop Table View (>= sm) */}
-                  <div className="hidden sm:block border border-gray-200/80 dark:border-gray-800 rounded-lg overflow-hidden bg-white dark:bg-[#1a1b23]">
+                  <div className="hidden sm:block border border-gray-200/80 dark:border-gray-800 rounded overflow-hidden bg-white dark:bg-[#1a1b23]">
                     <div className="overflow-x-auto max-h-56">
                       <table className="w-full text-left text-xs">
                         <thead className="bg-gray-50 dark:bg-gray-800/80 text-gray-600 dark:text-gray-400 sticky top-0 border-b border-gray-200 dark:border-gray-700">
@@ -1778,7 +1778,7 @@ export const SupplierDebtsPage: React.FC = () => {
 
                 if (isOverAllocated) {
                   return (
-                    <div className="p-2.5 sm:p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 rounded-lg flex items-center justify-between text-xs text-rose-700 dark:text-rose-300">
+                    <div className="p-2.5 sm:p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 rounded flex items-center justify-between text-xs text-rose-700 dark:text-rose-300">
                       <div className="flex items-center gap-1.5">
                         <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                         <span className="text-[11px] sm:text-xs">
@@ -1794,7 +1794,7 @@ export const SupplierDebtsPage: React.FC = () => {
 
                 if (excess > 0 && paymentForm.amount > 0) {
                   return (
-                    <div className="p-2.5 sm:p-3 bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/40 rounded-lg flex justify-between items-center text-xs">
+                    <div className="p-2.5 sm:p-3 bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/40 rounded flex justify-between items-center text-xs">
                       <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
                         <Info className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
                         <span className="text-[11px] sm:text-xs truncate">Khoản dư ghi nhận làm Tiền Đặt Cọc / Ứng Trước:</span>
@@ -1808,7 +1808,7 @@ export const SupplierDebtsPage: React.FC = () => {
 
                 if (totalAlloc > 0 && totalAlloc === paymentForm.amount) {
                   return (
-                    <div className="p-2.5 bg-emerald-50/80 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-900/30 rounded-lg flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400">
+                    <div className="p-2.5 bg-emerald-50/80 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-900/30 rounded flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400">
                       <div className="flex items-center gap-1.5">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                         <span className="text-[11px] sm:text-xs">Đã phân bổ khớp 100% số tiền chi trả cho các phiếu nợ.</span>
@@ -1833,7 +1833,7 @@ export const SupplierDebtsPage: React.FC = () => {
                 placeholder="Nội dung thanh toán, số UNC, ủy nhiệm chi, chứng từ kèm theo..."
                 value={paymentForm.note}
                 onChange={(e) => setPaymentForm({ ...paymentForm, note: e.target.value })}
-                className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
               />
             </div>
           </ModalBody>
@@ -1889,7 +1889,7 @@ export const SupplierDebtsPage: React.FC = () => {
         <form onSubmit={handleSaveSupplier} className="flex flex-col flex-1 min-h-0">
           <ModalBody className="space-y-3 sm:space-y-4 text-xs sm:text-sm p-3 sm:p-5">
             {/* 1. THÔNG TIN ĐỐI TÁC CƠ BẢN */}
-            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
+            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
                 <Building2 className="w-3.5 h-3.5 text-[#5865f2]" />
                 <span>Thông tin định danh đối tác</span>
@@ -1925,7 +1925,7 @@ export const SupplierDebtsPage: React.FC = () => {
                       setSupplierForm({ ...supplierForm, code: e.target.value.toUpperCase() })
                     }
                     placeholder="NCC001"
-                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 text-xs font-mono uppercase font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs font-mono uppercase font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
                   />
                 </div>
 
@@ -1940,7 +1940,7 @@ export const SupplierDebtsPage: React.FC = () => {
                     value={supplierForm.name}
                     onChange={(e) => setSupplierForm({ ...supplierForm, name: e.target.value })}
                     placeholder="VD: Xưởng May An Phát, Công ty TNHH Hưng Thịnh..."
-                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
                   />
                 </div>
               </div>
@@ -1956,7 +1956,7 @@ export const SupplierDebtsPage: React.FC = () => {
                     value={supplierForm.phone}
                     onChange={(e) => setSupplierForm({ ...supplierForm, phone: e.target.value })}
                     placeholder="0912 345 678"
-                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
                   />
                 </div>
 
@@ -1970,7 +1970,7 @@ export const SupplierDebtsPage: React.FC = () => {
                     value={supplierForm.email}
                     onChange={(e) => setSupplierForm({ ...supplierForm, email: e.target.value })}
                     placeholder="supplier@company.vn"
-                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
                   />
                 </div>
               </div>
@@ -1985,13 +1985,13 @@ export const SupplierDebtsPage: React.FC = () => {
                   value={supplierForm.address}
                   onChange={(e) => setSupplierForm({ ...supplierForm, address: e.target.value })}
                   placeholder="VD: Cụm Công nghiệp Triều Khúc, Tân Triều, Thanh Trì, Hà Nội"
-                  className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                  className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
                 />
               </div>
             </div>
 
             {/* 2. TÀI KHOẢN NGÂN HÀNG THANH TOÁN */}
-            <div className="p-3.5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-xl border border-indigo-100 dark:border-indigo-900/40 space-y-3">
+            <div className="p-3.5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded border border-indigo-100 dark:border-indigo-900/40 space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-indigo-100 dark:border-indigo-900/30 text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">
                 <CreditCard className="w-3.5 h-3.5" />
                 <span>Tài khoản ngân hàng / Nhận chuyển khoản</span>
@@ -2010,7 +2010,7 @@ export const SupplierDebtsPage: React.FC = () => {
                     onChange={(e) =>
                       setSupplierForm({ ...supplierForm, bankName: e.target.value })
                     }
-                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
                   />
                 </div>
 
@@ -2026,7 +2026,7 @@ export const SupplierDebtsPage: React.FC = () => {
                     onChange={(e) =>
                       setSupplierForm({ ...supplierForm, bankAccount: e.target.value })
                     }
-                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 text-xs font-mono font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs font-mono font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
                   />
                 </div>
 
@@ -2042,14 +2042,14 @@ export const SupplierDebtsPage: React.FC = () => {
                     onChange={(e) =>
                       setSupplierForm({ ...supplierForm, bankBeneficiary: e.target.value })
                     }
-                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5 text-xs uppercase text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs uppercase text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
                   />
                 </div>
               </div>
             </div>
 
             {/* 3. THIẾT LẬP CÔNG NỢ ĐẦU KỲ */}
-            <div className="p-3.5 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border border-amber-100 dark:border-amber-900/40 space-y-2.5">
+            <div className="p-3.5 bg-amber-50/50 dark:bg-amber-950/20 rounded border border-amber-100 dark:border-amber-900/40 space-y-2.5">
               <div className="flex items-center gap-2 pb-1.5 border-b border-amber-100 dark:border-amber-900/30 text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">
                 <DollarSign className="w-3.5 h-3.5" />
                 <span>Số dư công nợ ban đầu</span>
@@ -2063,7 +2063,7 @@ export const SupplierDebtsPage: React.FC = () => {
                   value={supplierForm.openingDebt}
                   onChange={(val) => setSupplierForm({ ...supplierForm, openingDebt: val })}
                   suffix="đ"
-                  inputClassName="py-1.5 px-3 font-mono text-sm font-semibold text-gray-900 dark:text-white rounded-lg"
+                  inputClassName="py-1.5 px-3 font-mono text-sm font-semibold text-gray-900 dark:text-white rounded"
                 />
                 <div className="flex items-center gap-1.5 mt-2 text-[11px] text-gray-500 dark:text-gray-400">
                   <Info size={13} className="text-amber-500 shrink-0" />
@@ -2122,7 +2122,7 @@ export const SupplierDebtsPage: React.FC = () => {
         <form onSubmit={handleSaveReturn} className="flex flex-col flex-1 min-h-0">
           <ModalBody className="space-y-3 sm:space-y-4 text-xs sm:text-sm p-3 sm:p-5">
             {/* 1. THÔNG TIN ĐỐI TÁC & KHO XUẤT */}
-            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
+            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
                 <Building2 className="w-3.5 h-3.5 text-[#5865f2]" />
                 <span>Thông tin xuất trả & Đối tác</span>
@@ -2198,7 +2198,7 @@ export const SupplierDebtsPage: React.FC = () => {
             </div>
 
             {/* 2. DANH SÁCH SẢN PHẨM XUẤT TRẢ */}
-            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
+            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800 gap-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider truncate min-w-0">
                   <Boxes size={14} className="text-[#5865f2] shrink-0" />
@@ -2207,7 +2207,7 @@ export const SupplierDebtsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleAddReturnItemRow}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#5865f2] dark:text-indigo-400 hover:bg-[#5865f2]/10 rounded-lg border border-[#5865f2]/30 transition-colors cursor-pointer shrink-0 whitespace-nowrap active:scale-95"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#5865f2] dark:text-indigo-400 hover:bg-[#5865f2]/10 rounded border border-[#5865f2]/30 transition-colors cursor-pointer shrink-0 whitespace-nowrap active:scale-95"
                 >
                   <Plus size={13} />
                   <span>Thêm sản phẩm</span>
@@ -2215,7 +2215,7 @@ export const SupplierDebtsPage: React.FC = () => {
               </div>
 
               {/* Table Header (Desktop) */}
-              <div className="hidden sm:grid grid-cols-12 gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800/80 rounded-lg text-[11px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+              <div className="hidden sm:grid grid-cols-12 gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800/80 rounded text-[11px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                 <div className="col-span-5">Sản phẩm & Biến thể / SKU *</div>
                 <div className="col-span-2 text-center">Số lượng</div>
                 <div className="col-span-2 text-right">Đơn giá hoàn (đ)</div>
@@ -2230,7 +2230,7 @@ export const SupplierDebtsPage: React.FC = () => {
                   return (
                     <div
                       key={idx}
-                      className="p-3 sm:p-2 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/80 rounded-xl sm:rounded-lg space-y-2.5 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2 sm:items-center shadow-xs"
+                      className="p-3 sm:p-2 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/80 rounded sm:rounded space-y-2.5 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2 sm:items-center shadow-xs"
                     >
                       {/* Mobile Row Header: Item index & Delete action */}
                       <div className="sm:hidden flex items-center justify-between pb-1.5 border-b border-gray-100 dark:border-gray-800">
@@ -2287,7 +2287,7 @@ export const SupplierDebtsPage: React.FC = () => {
                             onChange={(e) =>
                               handleReturnItemChange(idx, 'quantity', Math.max(1, parseInt(e.target.value) || 1))
                             }
-                            className="w-full text-center font-bold text-xs h-[34px] sm:h-[30px] bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20"
+                            className="w-full text-center font-bold text-xs h-[34px] sm:h-[30px] bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded sm:rounded text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20"
                           />
                         </div>
 
@@ -2299,7 +2299,7 @@ export const SupplierDebtsPage: React.FC = () => {
                             value={row.unitPrice}
                             onChange={(val) => handleReturnItemChange(idx, 'unitPrice', val)}
                             suffix="đ"
-                            inputClassName="text-right font-mono text-xs h-[34px] sm:h-[30px] p-2 sm:p-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded text-gray-900 dark:text-white"
+                            inputClassName="text-right font-mono text-xs h-[34px] sm:h-[30px] p-2 sm:p-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded sm:rounded text-gray-900 dark:text-white"
                           />
                         </div>
                       </div>
@@ -2333,7 +2333,7 @@ export const SupplierDebtsPage: React.FC = () => {
             </div>
 
             {/* 3. TỔNG TIỀN GIẢM TRỪ NỢ & LÝ DO */}
-            <div className="p-3 sm:p-3.5 bg-orange-50/50 dark:bg-orange-950/20 rounded-xl border border-orange-200/80 dark:border-orange-900/40 space-y-2.5 sm:space-y-3">
+            <div className="p-3 sm:p-3.5 bg-orange-50/50 dark:bg-orange-950/20 rounded border border-orange-200/80 dark:border-orange-900/40 space-y-2.5 sm:space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
                 <div>
                   <div className="flex items-center justify-between mb-1.5 gap-2">
@@ -2364,7 +2364,7 @@ export const SupplierDebtsPage: React.FC = () => {
                     value={returnForm.debtOffsetAmount}
                     onChange={(val) => setReturnForm({ ...returnForm, debtOffsetAmount: val })}
                     suffix="đ"
-                    inputClassName="border-orange-400 dark:border-orange-600 font-bold font-mono text-orange-600 dark:text-orange-400 text-sm py-2 sm:py-1.5 px-3 bg-white dark:bg-[#1a1b23] rounded-lg shadow-xs"
+                    inputClassName="border-orange-400 dark:border-orange-600 font-bold font-mono text-orange-600 dark:text-orange-400 text-sm py-2 sm:py-1.5 px-3 bg-white dark:bg-[#1a1b23] rounded shadow-xs"
                   />
                   <div className="flex items-center gap-1.5 mt-2 text-[11px] text-gray-500 dark:text-gray-400">
                     <Info size={12} className="text-orange-500 shrink-0" />
@@ -2414,7 +2414,7 @@ export const SupplierDebtsPage: React.FC = () => {
                     value={returnForm.reason}
                     onChange={(e) => setReturnForm({ ...returnForm, reason: e.target.value })}
                     placeholder="VD: Hàng lỗi vải, rách bao bì khi kiểm đếm..."
-                    className="w-full px-3 py-2 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                    className="w-full px-3 py-2 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                   />
                 </div>
               </div>

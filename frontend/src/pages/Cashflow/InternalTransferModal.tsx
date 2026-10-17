@@ -138,7 +138,7 @@ export const InternalTransferModal: React.FC<InternalTransferModalProps> = ({
       <form onSubmit={handleSubmit}>
         <ModalBody className="space-y-3.5 sm:space-y-4 p-3 sm:p-6 max-h-[85vh] overflow-y-auto text-xs sm:text-sm">
           {/* Nguyên tắc kế toán quan trọng */}
-          <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl flex items-start gap-2.5 text-xs text-blue-800 dark:text-blue-300">
+          <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded flex items-start gap-2.5 text-xs text-blue-800 dark:text-blue-300">
             <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <div>
               <span className="font-bold">Nguyên tắc không tính thu hai lần:</span> Khi rút tiền từ
@@ -149,14 +149,14 @@ export const InternalTransferModal: React.FC<InternalTransferModalProps> = ({
 
           {/* Chọn tài khoản nguồn & đích */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded border border-slate-200 dark:border-slate-800">
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                 Tài khoản nguồn (Tiền ra) <span className="text-rose-500">*</span>
               </label>
               <select
                 value={fromAccountId}
                 onChange={(e) => setFromAccountId(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold focus:outline-none"
+                className="w-full px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold focus:outline-none"
               >
                 <option value="">-- Chọn tài khoản nguồn --</option>
                 {accounts.map((acc) => (
@@ -175,14 +175,14 @@ export const InternalTransferModal: React.FC<InternalTransferModalProps> = ({
               )}
             </div>
 
-            <div className="p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded border border-slate-200 dark:border-slate-800">
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                 Tài khoản đích (Tiền vào) <span className="text-emerald-500">*</span>
               </label>
               <select
                 value={toAccountId}
                 onChange={(e) => setToAccountId(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold focus:outline-none"
+                className="w-full px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold focus:outline-none"
               >
                 <option value="">-- Chọn tài khoản đích --</option>
                 {accounts.map((acc) => (
@@ -250,7 +250,7 @@ export const InternalTransferModal: React.FC<InternalTransferModalProps> = ({
                 type="date"
                 value={transferDate}
                 onChange={(e) => setTransferDate(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
               />
             </div>
 
@@ -263,7 +263,7 @@ export const InternalTransferModal: React.FC<InternalTransferModalProps> = ({
                 value={referenceCode}
                 onChange={(e) => setReferenceCode(e.target.value)}
                 placeholder="VD: FT26088219901"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
+                className="w-full px-3.5 py-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
               />
             </div>
           </div>
@@ -278,7 +278,7 @@ export const InternalTransferModal: React.FC<InternalTransferModalProps> = ({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="VD: Rút tiền doanh thu tuần 42 từ ví Shopee về tài khoản MB Bank"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
+              className="w-full px-3.5 py-2.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
             />
           </div>
         </ModalBody>
@@ -296,7 +296,7 @@ export const InternalTransferModal: React.FC<InternalTransferModalProps> = ({
           <button
             type="submit"
             disabled={submitting}
-            className="px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg sm:rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 flex-1 sm:flex-none active:scale-95 cursor-pointer"
+            className="px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded sm:rounded shadow-xs transition-all flex items-center justify-center gap-1.5 flex-1 sm:flex-none active:scale-95 cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span className="sm:hidden">{submitting ? 'Đang chuyển...' : 'Chuyển tiền'}</span>

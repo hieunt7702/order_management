@@ -479,7 +479,7 @@ export const SettlementsPage: React.FC = () => {
                   type="text"
                   disabled
                   value={selectedSettlement?.order?.externalOrderId || selectedSettlement?.order?.internalOrderCode || selectedSettlement?.order?.orderSn || recordForm.orderId}
-                  className="w-full px-3 py-2 text-xs font-mono bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                  className="w-full px-3 py-2 text-xs font-mono bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed"
                 />
               </div>
 
@@ -499,7 +499,7 @@ export const SettlementsPage: React.FC = () => {
                   }
                   placeholder="0"
                   suffix="đ"
-                  inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#5865f2]"
+                  inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -515,7 +515,7 @@ export const SettlementsPage: React.FC = () => {
                   onChange={(e) =>
                     setRecordForm({ ...recordForm, payoutDate: e.target.value })
                   }
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -531,7 +531,7 @@ export const SettlementsPage: React.FC = () => {
                   onChange={(e) =>
                     setRecordForm({ ...recordForm, referenceCode: e.target.value })
                   }
-                  className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -545,7 +545,7 @@ export const SettlementsPage: React.FC = () => {
                   placeholder="Ghi chú thêm nếu có chênh lệch..."
                   value={recordForm.note}
                   onChange={(e) => setRecordForm({ ...recordForm, note: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
             </ModalBody>

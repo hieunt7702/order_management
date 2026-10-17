@@ -340,10 +340,10 @@ export const ShopsPage: React.FC = () => {
               {Array.from({ length: 8 }).map((_, i) => (
                 <div
                   key={i}
-                  className="p-4 rounded-lg bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 animate-pulse space-y-3"
+                  className="p-4 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 animate-pulse space-y-3"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-800" />
+                    <div className="w-10 h-10 rounded bg-gray-200 dark:bg-gray-800" />
                     <div className="flex-1 space-y-1.5">
                       <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4" />
                       <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-1/2" />
@@ -355,7 +355,7 @@ export const ShopsPage: React.FC = () => {
               ))}
             </div>
           ) : paginatedShops.length === 0 ? (
-            <div className="p-8 text-center bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded-lg">
+            <div className="p-8 text-center bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded">
               <Store size={36} className="mx-auto text-gray-400 mb-2" />
               <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                 Không tìm thấy gian hàng nào
@@ -375,13 +375,13 @@ export const ShopsPage: React.FC = () => {
                 return (
                   <div
                     key={shop.id}
-                    className="p-4 rounded-lg bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 hover:border-[#5865f2]/40 hover:shadow-sm transition-all duration-200 flex flex-col justify-between group"
+                    className="p-4 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 hover:border-[#5865f2]/40 hover:shadow-sm transition-all duration-200 flex flex-col justify-between group"
                   >
                     <div>
                       {/* Header: Platform Avatar + Title + Menu */}
                       <div className="flex items-start justify-between gap-2.5">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-10 h-10 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-sm border border-orange-500/20 shrink-0">
+                          <div className="w-10 h-10 rounded bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-sm border border-orange-500/20 shrink-0">
                             {shop.platform?.[0] || 'S'}
                           </div>
                           <div className="min-w-0">
@@ -722,7 +722,7 @@ export const ShopsPage: React.FC = () => {
                   placeholder="VD: SHOP_HN_01"
                   value={createForm.code}
                   onChange={(e) => setCreateForm({ ...createForm, code: e.target.value })}
-                  className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -736,7 +736,7 @@ export const ShopsPage: React.FC = () => {
                   placeholder="VD: Cửa hàng Thời trang Shopee Hà Nội"
                   value={createForm.name}
                   onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -815,7 +815,7 @@ export const ShopsPage: React.FC = () => {
                   required
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
 
@@ -892,7 +892,7 @@ export const ShopsPage: React.FC = () => {
         >
           <div className="flex flex-col flex-1 min-h-0">
             <ModalBody className="space-y-3 p-3 sm:p-5">
-              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+              <div className="p-3 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
                 <AlertTriangle size={16} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                 <div>
                   <p className="font-semibold">Lưu ý về tính toàn vẹn dữ liệu:</p>

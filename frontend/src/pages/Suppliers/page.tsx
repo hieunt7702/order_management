@@ -754,7 +754,7 @@ export const SuppliersPage: React.FC = () => {
           <form onSubmit={handleCreateSubmit} className="flex flex-col flex-1 min-h-0">
             <ModalBody className="space-y-3 sm:space-y-3.5 text-xs p-3 sm:p-5">
               {/* 1. THÔNG TIN CƠ BẢN */}
-              <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
+              <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
                 <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
                   <Building2 className="w-3.5 h-3.5 text-[#5865f2]" />
                   <span>Thông tin định danh</span>
@@ -772,7 +772,7 @@ export const SuppliersPage: React.FC = () => {
                       value={createForm.code}
                       onChange={(e) => setCreateForm({ ...createForm, code: e.target.value.toUpperCase() })}
                       placeholder="NCC001"
-                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-semibold"
+                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-semibold"
                     />
                   </div>
                   <div className="sm:col-span-2">
@@ -786,7 +786,7 @@ export const SuppliersPage: React.FC = () => {
                       value={createForm.name}
                       onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                       placeholder="VD: Công ty TNHH Phân Phối Hàng Tiêu Dùng Á Châu"
-                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
+                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
                     />
                   </div>
                 </div>
@@ -802,7 +802,7 @@ export const SuppliersPage: React.FC = () => {
                       value={createForm.phone}
                       onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
                       placeholder="0912 345 678"
-                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                     />
                   </div>
                   <div>
@@ -815,7 +815,7 @@ export const SuppliersPage: React.FC = () => {
                       value={createForm.email}
                       onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
                       placeholder="supplier@company.vn"
-                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                     />
                   </div>
                 </div>
@@ -830,13 +830,13 @@ export const SuppliersPage: React.FC = () => {
                     value={createForm.address}
                     onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
                     placeholder="VD: Cụm Công nghiệp Triều Khúc, Tân Triều, Thanh Trì, Hà Nội"
-                    className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                    className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                   />
                 </div>
               </div>
 
               {/* 2. TÀI KHOẢN NGÂN HÀNG */}
-              <div className="p-3.5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-xl border border-indigo-100 dark:border-indigo-900/40 space-y-2.5">
+              <div className="p-3.5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded border border-indigo-100 dark:border-indigo-900/40 space-y-2.5">
                 <div className="flex items-center gap-1.5 pb-2 border-b border-indigo-100 dark:border-indigo-900/30 text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">
                   <CreditCard className="w-3.5 h-3.5" />
                   <span>Tài khoản nhận thanh toán</span>
@@ -853,7 +853,7 @@ export const SuppliersPage: React.FC = () => {
                       value={createForm.bankName}
                       onChange={(e) => setCreateForm({ ...createForm, bankName: e.target.value })}
                       placeholder="MB, VCB, ACB..."
-                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                     />
                   </div>
                   <div>
@@ -866,7 +866,7 @@ export const SuppliersPage: React.FC = () => {
                       value={createForm.bankAccount}
                       onChange={(e) => setCreateForm({ ...createForm, bankAccount: e.target.value })}
                       placeholder="0123456789..."
-                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 font-mono font-medium focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20"
+                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 font-mono font-medium focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20"
                     />
                   </div>
                   <div>
@@ -879,7 +879,7 @@ export const SuppliersPage: React.FC = () => {
                       value={createForm.bankBeneficiary}
                       onChange={(e) => setCreateForm({ ...createForm, bankBeneficiary: e.target.value })}
                       placeholder="NGUYEN VAN A"
-                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 uppercase focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 uppercase focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                     />
                   </div>
                 </div>
@@ -897,7 +897,7 @@ export const SuppliersPage: React.FC = () => {
                     onChange={(val) => setCreateForm({ ...createForm, openingDebt: val })}
                     placeholder="0"
                     suffix="đ"
-                    inputClassName="px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
+                    inputClassName="px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
                   />
                 </div>
                 <div>
@@ -928,7 +928,7 @@ export const SuppliersPage: React.FC = () => {
                   onChange={(e) => setCreateForm({ ...createForm, note: e.target.value })}
                   placeholder="Ghi chú thêm về điều khoản công nợ, thời hạn thanh toán..."
                   rows={2}
-                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal resize-none"
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal resize-none"
                 />
               </div>
             </ModalBody>
@@ -981,7 +981,7 @@ export const SuppliersPage: React.FC = () => {
           <form onSubmit={handleEditSubmit} className="flex flex-col flex-1 min-h-0">
             <ModalBody className="space-y-3 sm:space-y-3.5 text-xs p-3 sm:p-5">
               {/* 1. THÔNG TIN CƠ BẢN */}
-              <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
+              <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
                 <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
                   <Building2 className="w-3.5 h-3.5 text-[#5865f2]" />
                   <span>Thông tin đối tác</span>
@@ -997,7 +997,7 @@ export const SuppliersPage: React.FC = () => {
                     required
                     value={editForm.name}
                     onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                    className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
+                    className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
                   />
                 </div>
 
@@ -1011,7 +1011,7 @@ export const SuppliersPage: React.FC = () => {
                       type="text"
                       value={editForm.phone}
                       onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                     />
                   </div>
                   <div>
@@ -1023,7 +1023,7 @@ export const SuppliersPage: React.FC = () => {
                       type="email"
                       value={editForm.email}
                       onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                     />
                   </div>
                 </div>
@@ -1037,13 +1037,13 @@ export const SuppliersPage: React.FC = () => {
                     type="text"
                     value={editForm.address}
                     onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                    className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                    className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                   />
                 </div>
               </div>
 
               {/* 2. TÀI KHOẢN NGÂN HÀNG */}
-              <div className="p-3.5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-xl border border-indigo-100 dark:border-indigo-900/40 space-y-2.5">
+              <div className="p-3.5 bg-indigo-50/50 dark:bg-indigo-950/20 rounded border border-indigo-100 dark:border-indigo-900/40 space-y-2.5">
                 <div className="flex items-center gap-1.5 pb-2 border-b border-indigo-100 dark:border-indigo-900/30 text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">
                   <CreditCard className="w-3.5 h-3.5" />
                   <span>Tài khoản nhận thanh toán</span>
@@ -1060,7 +1060,7 @@ export const SuppliersPage: React.FC = () => {
                       value={editForm.bankName}
                       onChange={(e) => setEditForm({ ...editForm, bankName: e.target.value })}
                       placeholder="Ngân hàng"
-                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                     />
                   </div>
                   <div>
@@ -1073,7 +1073,7 @@ export const SuppliersPage: React.FC = () => {
                       value={editForm.bankAccount}
                       onChange={(e) => setEditForm({ ...editForm, bankAccount: e.target.value })}
                       placeholder="Số tài khoản"
-                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 font-mono focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
+                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 font-mono focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
                     />
                   </div>
                   <div>
@@ -1086,7 +1086,7 @@ export const SuppliersPage: React.FC = () => {
                       value={editForm.bankBeneficiary}
                       onChange={(e) => setEditForm({ ...editForm, bankBeneficiary: e.target.value })}
                       placeholder="Chủ tài khoản"
-                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 uppercase focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 uppercase focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                     />
                   </div>
                 </div>
@@ -1104,7 +1104,7 @@ export const SuppliersPage: React.FC = () => {
                     onChange={(val) => setEditForm({ ...editForm, openingDebt: val })}
                     placeholder="0"
                     suffix="đ"
-                    inputClassName="px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
+                    inputClassName="px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-medium"
                   />
                 </div>
                 <div>
@@ -1134,7 +1134,7 @@ export const SuppliersPage: React.FC = () => {
                   value={editForm.note}
                   onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}
                   rows={2}
-                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal resize-none"
+                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal resize-none"
                 />
               </div>
             </ModalBody>

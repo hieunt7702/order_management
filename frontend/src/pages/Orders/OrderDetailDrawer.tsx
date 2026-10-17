@@ -317,7 +317,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
               </h3>
               <div className="space-y-2 text-xs">
                 {order.orderReturns.map((ret: any) => (
-                  <div key={ret.id} className="p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 space-y-2">
+                  <div key={ret.id} className="p-3 rounded bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-mono font-bold text-amber-700 dark:text-amber-300">
                         {ret.returnCode}
@@ -461,7 +461,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                   placeholder="Nhập lý do hủy..."
-                  className="w-full p-2.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
+                  className="w-full p-2.5 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
             </ModalBody>
@@ -511,7 +511,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                   value={returnNote}
                   onChange={(e) => setReturnNote(e.target.value)}
                   placeholder="Ghi chú kiểm tra tình trạng hàng..."
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#131720] text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
             </ModalBody>

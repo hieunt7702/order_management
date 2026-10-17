@@ -419,7 +419,7 @@ export const Select: React.FC<SelectProps> = ({
             {/* Bottom Sheet Drawer */}
             <div
               ref={sheetRef}
-              className="relative z-10 w-full max-h-[85vh] bg-white dark:bg-[#161b26] border-t border-gray-200 dark:border-gray-700/80 rounded-t-2xl shadow-[0_-12px_40px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-slide-up"
+              className="relative z-10 w-full max-h-[85vh] bg-white dark:bg-[#161b26] border-t border-gray-200 dark:border-gray-700/80 rounded-t shadow-[0_-12px_40px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-slide-up"
               style={{
                 paddingBottom:
                   'calc(1.25rem + env(safe-area-inset-bottom, 0px))',
@@ -464,7 +464,7 @@ export const Select: React.FC<SelectProps> = ({
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder="Tìm kiếm..."
-                      className="w-full pl-9 pr-8 py-2 text-sm font-normal rounded-lg bg-white dark:bg-[#1a202c] border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-[#5865f2]"
+                      className="w-full pl-9 pr-8 py-2 text-sm font-normal rounded bg-white dark:bg-[#1a202c] border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-[#5865f2]"
                     />
                     {searchTerm && (
                       <button

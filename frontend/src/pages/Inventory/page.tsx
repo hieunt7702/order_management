@@ -673,7 +673,7 @@ export const InventoryPage: React.FC = () => {
                     Đang tải số dư tồn kho...
                   </div>
                 ) : filteredBalances.length === 0 ? (
-                  <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+                  <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 p-6">
                     <Boxes className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
                     <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Không có dữ liệu tồn kho</p>
                     <p className="text-[11px] text-gray-400">Không tìm thấy SKU nào phù hợp với bộ lọc hiện tại.</p>
@@ -696,7 +696,7 @@ export const InventoryPage: React.FC = () => {
                     return (
                       <div
                         key={b.id || `${b.warehouseId}_${b.variantId}`}
-                        className="p-3.5 rounded-lg bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs"
+                        className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs"
                       >
                         {/* Card Header: SKU & Status Badge */}
                         <div className="flex items-start justify-between gap-2">
@@ -819,7 +819,7 @@ export const InventoryPage: React.FC = () => {
 
             return (
               <div className="flex-1 flex flex-col min-h-fit md:min-h-0 gap-3">
-                <div className="bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-800/40 p-3 rounded-lg flex items-start gap-3 shrink-0">
+                <div className="bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-800/40 p-3 rounded flex items-start gap-3 shrink-0">
                   <History className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                   <div className="text-xs text-blue-800 dark:text-blue-300">
                     <span className="font-bold">Sổ cái biến động kho bất biến (Append-Only Ledger):</span>{' '}
@@ -1304,7 +1304,7 @@ export const InventoryPage: React.FC = () => {
                         quantity: parseInt(e.target.value, 10) || 1,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#5865f2]"
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white font-bold focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
                 <div>
@@ -1321,7 +1321,7 @@ export const InventoryPage: React.FC = () => {
                     }
                     placeholder="0"
                     suffix="đ"
-                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    inputClassName="px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                   />
                 </div>
               </div>
@@ -1354,7 +1354,7 @@ export const InventoryPage: React.FC = () => {
                   onChange={(e) =>
                     setReceiveForm({ ...receiveForm, referenceCode: e.target.value })
                   }
-                  className="w-full px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
                 <p className="text-[10px] text-gray-400 mt-1">
                   Mã phiếu tự động sinh theo ngày và định danh duy nhất (có thể sửa lại theo hóa đơn nhà cung cấp)
@@ -1370,7 +1370,7 @@ export const InventoryPage: React.FC = () => {
                   placeholder="Ghi chú chi tiết đợt nhập..."
                   value={receiveForm.note}
                   onChange={(e) => setReceiveForm({ ...receiveForm, note: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
             </ModalBody>
@@ -1466,7 +1466,7 @@ export const InventoryPage: React.FC = () => {
                       quantityChange: parseInt(e.target.value, 10) || 0,
                     })
                   }
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white font-mono font-bold focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white font-mono font-bold focus:outline-none focus:border-[#5865f2]"
                   placeholder="VD: -2 hoặc +5"
                 />
               </div>
@@ -1496,7 +1496,7 @@ export const InventoryPage: React.FC = () => {
                   placeholder="Ghi chú thêm về biên bản kiểm kê hoặc đối tượng chịu trách nhiệm..."
                   value={adjustForm.note}
                   onChange={(e) => setAdjustForm({ ...adjustForm, note: e.target.value })}
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
               </div>
             </ModalBody>

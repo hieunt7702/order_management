@@ -826,7 +826,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
             Đang tải danh sách phiếu nhập...
           </div>
         ) : receipts.length === 0 ? (
-          <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+          <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 p-6">
             <PackagePlus className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
             <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Chưa có phiếu nhập kho nào</p>
             <p className="text-[11px] text-gray-400">Bấm &quot;Tạo phiếu nhập mới&quot; để ghi nhận hàng thực tế từ Nhà phân phối.</p>
@@ -844,7 +844,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   setSelectedReceiptDetail(r);
                   setIsDetailModalOpen(true);
                 }}
-                className="p-3.5 rounded-lg bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs cursor-pointer active:scale-[0.99] transition-all"
+                className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs cursor-pointer active:scale-[0.99] transition-all"
               >
                 {/* Header: Receipt code & status badge */}
                 <div className="flex items-center justify-between gap-2">
@@ -1315,7 +1315,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   return (
                     <div
                       key={idx}
-                      className="p-3 bg-white dark:bg-gray-800/90 rounded-lg border border-gray-200 dark:border-gray-700/80 shadow-xs space-y-2.5"
+                      className="p-3 bg-white dark:bg-gray-800/90 rounded border border-gray-200 dark:border-gray-700/80 shadow-xs space-y-2.5"
                     >
                       {/* Header with Item # and Delete Button */}
                       <div className="flex items-center justify-between pb-1.5 border-b border-gray-100 dark:border-gray-700/60">
@@ -1781,7 +1781,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
       >
         <form onSubmit={handleQuickPaySubmit} className="space-y-4">
           <ModalBody className="space-y-3 p-3 sm:p-5 text-xs sm:text-sm">
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-900/30 flex justify-between">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-200 dark:border-amber-900/30 flex justify-between">
               <div>
                 <div className="text-xs text-gray-500 flex items-center gap-1">
                   <Building2 size={12} />
@@ -1825,7 +1825,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   placeholder="Chị Hồng, Bạn, Kế toán..."
                   value={quickPayForm.payerName}
                   onChange={(e) => setQuickPayForm({ ...quickPayForm, payerName: e.target.value })}
-                  className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-xs"
+                  className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-xs"
                 />
               </div>
 
@@ -1837,7 +1837,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 <select
                   value={quickPayForm.fundSource}
                   onChange={(e) => setQuickPayForm({ ...quickPayForm, fundSource: e.target.value as any })}
-                  className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-xs"
+                  className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-xs"
                 >
                   <option value="CASH_FUND">Quỹ tiền mặt</option>
                   <option value="BANK_ACCOUNT">Tài khoản công ty</option>
@@ -1856,7 +1856,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 placeholder="Ví dụ: FT260101589..."
                 value={quickPayForm.referenceCode}
                 onChange={(e) => setQuickPayForm({ ...quickPayForm, referenceCode: e.target.value })}
-                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-xs"
+                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-xs"
               />
             </div>
 
@@ -1869,7 +1869,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 type="text"
                 value={quickPayForm.note}
                 onChange={(e) => setQuickPayForm({ ...quickPayForm, note: e.target.value })}
-                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-xs"
+                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-xs"
               />
             </div>
           </ModalBody>
