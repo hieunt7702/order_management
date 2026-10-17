@@ -198,13 +198,10 @@ export const PurchaseReceiptsPage: React.FC = () => {
       });
 
       const resp = (res as any)?.data || res;
-      if (resp && resp.data) {
-        setReceipts(resp.data);
-        setTotal(resp.meta?.total || 0);
-        setTotalPages(resp.meta?.totalPages || 1);
-      } else {
-        setReceipts(Array.isArray(resp) ? resp : []);
-      }
+      const list = resp?.items || resp?.data || (Array.isArray(resp) ? resp : []);
+      setReceipts(Array.isArray(list) ? list : []);
+      setTotal(resp?.total || resp?.meta?.total || (Array.isArray(list) ? list.length : 0));
+      setTotalPages(resp?.totalPages || resp?.meta?.totalPages || 1);
     } catch (err) {
       console.error('Lỗi tải danh sách phiếu nhập:', err);
     } finally {

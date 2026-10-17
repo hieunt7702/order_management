@@ -10,7 +10,14 @@ import {
   UpdatePurchaseReceiptDto,
   PurchaseReceiptFilterDto,
 } from './dto/purchase-receipt.dto';
-import { Prisma, InventoryMovementType } from '@prisma/client';
+import {
+  Prisma,
+  InventoryMovementType,
+  CashAccountType,
+  CashCategoryType,
+  CashTransactionType,
+  CashTransactionStatus,
+} from '@prisma/client';
 
 @Injectable()
 export class PurchaseReceiptsService {
@@ -228,6 +235,73 @@ export class PurchaseReceiptsService {
             paymentStatus: newPaymentStatus,
           },
         });
+
+        // Ghi nhận vào Sổ thu chi (CashTransaction)
+        let fromAccountId: string | null = null;
+        if (dto.immediateFundSource === 'CASH_FUND') {
+          const cashAcc = await tx.cashAccount.findFirst({
+            where: { tenantId, type: CashAccountType.CASH, isActive: true },
+            orderBy: { createdAt: 'asc' },
+          });
+          if (cashAcc) fromAccountId = cashAcc.id;
+        } else if (dto.immediateFundSource === 'BANK_ACCOUNT') {
+          const bankAcc = await tx.cashAccount.findFirst({
+            where: { tenantId, type: CashAccountType.BANK, isActive: true },
+            orderBy: { createdAt: 'asc' },
+          });
+          if (bankAcc) fromAccountId = bankAcc.id;
+        }
+
+        let category = await tx.cashCategory.findFirst({
+          where: { tenantId, code: 'CHI_NHAP_HANG' },
+        });
+        if (!category) {
+          category = await tx.cashCategory.findFirst({
+            where: { tenantId, type: CashCategoryType.EXPENSE },
+          });
+        }
+        if (!category) {
+          category = await tx.cashCategory.create({
+            data: {
+              tenantId,
+              code: 'CHI_NHAP_HANG',
+              name: 'Thanh toán nhập hàng',
+              type: CashCategoryType.EXPENSE,
+              isSystemDefault: true,
+            },
+          });
+        }
+
+        const immediateTxAmount = new Prisma.Decimal(dto.immediatePaymentAmount);
+        await tx.cashTransaction.create({
+          data: {
+            tenantId,
+            transactionCode: paymentCode,
+            type: CashTransactionType.EXPENSE,
+            categoryId: category.id,
+            fromAccountId,
+            amount: immediateTxAmount,
+            transactionDate: new Date(),
+            paymentMethod: dto.immediatePaymentMethod || 'BANK_TRANSFER',
+            status: CashTransactionStatus.CONFIRMED,
+            counterpartyName: supplier.name,
+            performedByName: dto.immediatePayerName?.trim() || null,
+            referenceCode: receiptCode,
+            note: `Thanh toán ngay khi nhập hàng phiếu ${receiptCode}`,
+            relatedEntityType: 'SUPPLIER_PAYMENT',
+            relatedEntityId: payment.id,
+            createdById: userId,
+            confirmedById: userId,
+            confirmedAt: new Date(),
+          },
+        });
+
+        if (fromAccountId) {
+          await tx.cashAccount.update({
+            where: { id: fromAccountId },
+            data: { currentBalance: { decrement: immediateTxAmount } },
+          });
+        }
       }
 
       return receipt;
@@ -244,7 +318,12 @@ export class PurchaseReceiptsService {
       ...(filter.supplierId && { supplierId: filter.supplierId }),
       ...(filter.shopId && { shopId: filter.shopId }),
       ...(filter.warehouseId && { warehouseId: filter.warehouseId }),
-      ...(filter.paymentStatus && { paymentStatus: filter.paymentStatus }),
+      ...(filter.paymentStatus && {
+        paymentStatus:
+          typeof filter.paymentStatus === 'string' && filter.paymentStatus.includes(',')
+            ? { in: filter.paymentStatus.split(',') as any }
+            : filter.paymentStatus,
+      }),
       ...(filter.receivingStatus && { receivingStatus: filter.receivingStatus }),
       ...(filter.search && {
         OR: [
@@ -313,6 +392,7 @@ export class PurchaseReceiptsService {
 
     return {
       items,
+      data: items,
       total,
       page,
       limit,

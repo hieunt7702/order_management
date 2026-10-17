@@ -15,6 +15,10 @@ import {
   FundSourceType,
   ReimbursementStatus,
   PurchasePaymentStatus,
+  CashAccountType,
+  CashCategoryType,
+  CashTransactionType,
+  CashTransactionStatus,
 } from '@prisma/client';
 
 @Injectable()
@@ -156,6 +160,95 @@ export class SupplierPaymentsService {
             },
           });
         }
+      }
+
+      // 3. Tự động ghi nhận vào Sổ thu chi (CashTransaction) để đồng bộ dữ liệu tài chính
+      let fromAccountId: string | null = null;
+      let toAccountId: string | null = null;
+
+      if (dto.fundSource === FundSourceType.CASH_FUND) {
+        const cashAcc = await tx.cashAccount.findFirst({
+          where: { tenantId, type: CashAccountType.CASH, isActive: true },
+          orderBy: { createdAt: 'asc' },
+        });
+        if (cashAcc) fromAccountId = cashAcc.id;
+      } else if (dto.fundSource === FundSourceType.BANK_ACCOUNT) {
+        const bankAcc = await tx.cashAccount.findFirst({
+          where: { tenantId, type: CashAccountType.BANK, isActive: true },
+          orderBy: { createdAt: 'asc' },
+        });
+        if (bankAcc) fromAccountId = bankAcc.id;
+      }
+
+      const isRefund = paymentType === SupplierPaymentType.REFUND_RECEIVED;
+      const targetCategoryCode = isRefund ? 'THU_NCC_HOAN_TIEN' : 'CHI_NHAP_HANG';
+      const targetCategoryType = isRefund ? CashCategoryType.INCOME : CashCategoryType.EXPENSE;
+
+      let category = await tx.cashCategory.findFirst({
+        where: { tenantId, code: targetCategoryCode },
+      });
+      if (!category) {
+        category = await tx.cashCategory.findFirst({
+          where: { tenantId, type: targetCategoryType },
+        });
+      }
+      if (!category) {
+        category = await tx.cashCategory.create({
+          data: {
+            tenantId,
+            code: targetCategoryCode,
+            name: isRefund ? 'Nhà cung cấp hoàn tiền' : 'Thanh toán nhập hàng',
+            type: targetCategoryType,
+            isSystemDefault: true,
+          },
+        });
+      }
+
+      if (isRefund) {
+        toAccountId = fromAccountId;
+        fromAccountId = null;
+      }
+
+      const txAmount = new Prisma.Decimal(dto.amount);
+      await tx.cashTransaction.create({
+        data: {
+          tenantId,
+          transactionCode: paymentCode,
+          type: isRefund ? CashTransactionType.INCOME : CashTransactionType.EXPENSE,
+          categoryId: category.id,
+          fromAccountId,
+          toAccountId,
+          amount: txAmount,
+          transactionDate: dto.paymentDate ? new Date(dto.paymentDate) : new Date(),
+          paymentMethod:
+            dto.paymentMethod ||
+            (dto.fundSource === FundSourceType.CASH_FUND ? 'CASH' : 'BANK_TRANSFER'),
+          status: CashTransactionStatus.CONFIRMED,
+          counterpartyName: supplier.name,
+          performedByName: dto.payerName?.trim() || null,
+          referenceCode: dto.referenceCode?.trim() || paymentCode,
+          voucherImage: dto.voucherImage?.trim() || null,
+          note: dto.note?.trim() || `Thanh toán nợ nhà cung cấp ${supplier.name}`,
+          relatedEntityType: 'SUPPLIER_PAYMENT',
+          relatedEntityId: payment.id,
+          createdById: userId,
+          confirmedById: userId,
+          confirmedAt: new Date(),
+        },
+      });
+
+      // Cập nhật số dư tài khoản tiền nếu không phải tiền cá nhân chi hộ
+      if (fromAccountId) {
+        await tx.cashAccount.update({
+          where: { id: fromAccountId },
+          data: { currentBalance: { decrement: txAmount } },
+        });
+      }
+      if (toAccountId) {
+        await tx.cashAccount.update({
+          where: { id: toAccountId },
+          data: { currentBalance: { increment: txAmount } },
+        });
       }
 
       return payment;
@@ -324,7 +417,29 @@ export class SupplierPaymentsService {
         where: { paymentId: id },
       });
 
-      // 3. Xóa phiếu chi
+      // 3. Khôi phục số dư và xóa CashTransaction tương ứng nếu có
+      const relatedTx = await tx.cashTransaction.findFirst({
+        where: { tenantId, relatedEntityType: 'SUPPLIER_PAYMENT', relatedEntityId: id },
+      });
+      if (relatedTx) {
+        if (relatedTx.fromAccountId) {
+          await tx.cashAccount.update({
+            where: { id: relatedTx.fromAccountId },
+            data: { currentBalance: { increment: relatedTx.amount } },
+          });
+        }
+        if (relatedTx.toAccountId) {
+          await tx.cashAccount.update({
+            where: { id: relatedTx.toAccountId },
+            data: { currentBalance: { decrement: relatedTx.amount } },
+          });
+        }
+        await tx.cashTransaction.delete({
+          where: { id: relatedTx.id },
+        });
+      }
+
+      // 4. Xóa phiếu chi
       await tx.supplierPayment.delete({
         where: { id },
       });

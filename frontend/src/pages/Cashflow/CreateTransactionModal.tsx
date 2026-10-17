@@ -131,7 +131,8 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
         suppliersApi.findAll({ limit: 100 }),
       ]);
       setShops(Array.isArray(shopsRes) ? shopsRes : (shopsRes as any)?.data || []);
-      setSuppliers(supRes?.data || []);
+      const supList = Array.isArray(supRes) ? supRes : (supRes as any)?.data || [];
+      setSuppliers(Array.isArray(supList) ? supList : []);
     } catch (e) {
       console.error('Error loading shops/suppliers', e);
     }
@@ -156,11 +157,11 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
     try {
       const res = await purchaseReceiptsApi.findAll({
         supplierId: supId,
-        paymentStatus: 'UNPAID',
+        paymentStatus: 'UNPAID,PARTIALLY_PAID',
         limit: 50,
       });
-      const list = res?.data || [];
-      setUnpaidReceipts(list);
+      const list = (res as any)?.items || (res as any)?.data || (Array.isArray(res) ? res : []);
+      setUnpaidReceipts(Array.isArray(list) ? list : []);
 
       // Auto fill counterparty name
       const sup = suppliers.find((s) => s.id === supId);

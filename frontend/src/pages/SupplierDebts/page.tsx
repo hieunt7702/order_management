@@ -401,7 +401,8 @@ export const SupplierDebtsPage: React.FC = () => {
         limit: 100,
       });
       const data = (res as any)?.data || res;
-      const receiptsList: PurchaseReceiptModel[] = data?.data || (Array.isArray(data) ? data : []);
+      const receiptsList: PurchaseReceiptModel[] =
+        data?.items || data?.data || (Array.isArray(data) ? data : []);
       // Filter out those with 0 remaining
       const outstanding = receiptsList.filter((r) => Number(r.remainingAmount) > 0);
       setUnpaidReceipts(outstanding);
