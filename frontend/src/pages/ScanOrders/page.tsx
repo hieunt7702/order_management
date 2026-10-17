@@ -4,59 +4,51 @@ import {
   ScanLine,
   CheckCircle2,
   AlertTriangle,
-  XCircle,
   RotateCcw,
   Volume2,
   VolumeX,
   FileText,
   Package,
-  Search,
   Maximize2,
   Minimize2,
-  Copy,
   Pause,
   Play,
-  Camera,
-  Keyboard,
   ChevronRight,
+  ChevronLeft,
+  ChevronDown,
   RefreshCw,
   Zap,
   ZapOff,
   Download,
   Trash2,
-  Eye,
-  Building2,
   UploadCloud,
-  ArrowRight,
-  Sparkles,
   Clock,
+  Store,
+  Warehouse,
 } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
-import { useScanSessionStore, ScanSession, SessionItem } from '../../stores/scanSessionStore';
+import { useScanSessionStore, SessionItem } from '../../stores/scanSessionStore';
 import { playSuccessSound, playErrorSound, playWarningSound } from '../../utils/sound';
 import { SessionsHistoryModal } from './SessionsHistoryModal';
 import { OrderDetailDrawer } from '../Orders/OrderDetailDrawer';
 import { ordersApi } from '../../services/ordersApi';
 import { fulfillmentApi } from '../../services/fulfillmentApi';
 import { toast } from '../../components/ui/Toast';
-import { Select } from '../../components/ui/Select';
 
 export const ScanOrdersPage: React.FC = () => {
   const navigate = useNavigate();
-  const { selectedWarehouseId, warehouses, setSelectedWarehouseId } = useWorkspaceStore();
+  const { selectedShopId, shops, setSelectedShopId, selectedWarehouseId, warehouses, setSelectedWarehouseId } =
+    useWorkspaceStore();
 
   // Scan Session Store
   const {
-    sessions,
     activeSessionId,
     loadSessionsFromStorage,
     getActiveSession,
-    createNewSession,
     setActiveSession,
     addBarcodeToActiveSession,
     removeItemFromActiveSession,
-    clearActiveSessionItems,
     submitSession,
     isVerifyingBatch,
   } = useScanSessionStore();
@@ -77,18 +69,13 @@ export const ScanOrdersPage: React.FC = () => {
 
   // Focus mode / Fullscreen
   const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
-
-  // Tab & Input modes
-  const [activeInputTab, setActiveInputTab] = useState<'camera' | 'manual'>('camera');
-  const [barcodeInput, setBarcodeInput] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState<string>('');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
   // Camera state & Zoom (DEFAULT 2X)
-  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+  const [, setIsCameraActive] = useState<boolean>(false);
   const [isCameraPaused, setIsCameraPaused] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string>('');
-  const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>([]);
+  const [, setCameras] = useState<Array<{ id: string; label: string }>>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [torchOn, setTorchOn] = useState<boolean>(false);
@@ -108,44 +95,10 @@ export const ScanOrdersPage: React.FC = () => {
   } | null>(null);
 
   // Refs
-  const inputRef = useRef<HTMLInputElement | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isCameraRunningRef = useRef<boolean>(false);
   const lastScanTimeRef = useRef<number>(0);
   const lastDuplicateScanRef = useRef<{ code: string; time: number }>({ code: '', time: 0 });
-  const cameraTabRef = useRef<HTMLDivElement | null>(null);
-
-  const scrollToCameraTab = (smooth = true) => {
-    if (window.innerWidth < 1024 && cameraTabRef.current) {
-      cameraTabRef.current.scrollIntoView({
-        behavior: smooth ? 'smooth' : 'auto',
-        block: 'start',
-      });
-    }
-  };
-
-  // Auto scroll to camera tab on mobile mount
-  useEffect(() => {
-    if (window.innerWidth < 1024) {
-      const scrollTimer = setTimeout(() => {
-        scrollToCameraTab(true);
-      }, 350);
-      return () => clearTimeout(scrollTimer);
-    }
-  }, []);
-
-  // Auto focus input
-  useEffect(() => {
-    if (activeInputTab === 'manual') {
-      focusInput();
-    }
-  }, [activeInputTab]);
-
-  const focusInput = () => {
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 150);
-  };
 
   // List cameras
   useEffect(() => {
@@ -168,17 +121,13 @@ export const ScanOrdersPage: React.FC = () => {
       });
   }, []);
 
-  // Initialize camera
+  // Initialize camera directly on mount
   useEffect(() => {
-    if (activeInputTab === 'camera') {
-      startCamera();
-    } else {
-      stopCamera();
-    }
+    startCamera();
     return () => {
       stopCamera();
     };
-  }, [selectedCameraId, facingMode, activeInputTab]);
+  }, [selectedCameraId, facingMode]);
 
   // Apply Zoom
   const applyZoom = async (newZoom: number) => {
@@ -268,9 +217,7 @@ export const ScanOrdersPage: React.FC = () => {
       }, 350);
     } catch (err) {
       console.warn('Cannot start camera:', err);
-      setCameraError(
-        'Không thể mở camera. Vui lòng cấp quyền truy cập Camera cho trình duyệt hoặc chuyển sang tab Nhập mã.',
-      );
+      setCameraError('Không thể mở camera. Vui lòng cấp quyền camera trong cài đặt trình duyệt.');
       setIsCameraActive(false);
       isCameraRunningRef.current = false;
     }
@@ -306,7 +253,7 @@ export const ScanOrdersPage: React.FC = () => {
   };
 
   const toggleTorch = async () => {
-    if (!scannerRef.current || !isCameraActive) return;
+    if (!scannerRef.current) return;
     try {
       await scannerRef.current.applyVideoConstraints({
         advanced: [{ torch: !torchOn } as any],
@@ -322,7 +269,7 @@ export const ScanOrdersPage: React.FC = () => {
     setSelectedCameraId('');
   };
 
-  // CORE BATCH SCANNING HANDLER: Captures code into active session without immediate order approval
+  // CORE BATCH SCANNING HANDLER: Captures code into active session
   const handleIncomingBarcode = (rawText: string) => {
     const raw = (rawText || '').trim();
     if (!raw) return;
@@ -338,7 +285,7 @@ export const ScanOrdersPage: React.FC = () => {
     const timestamp = new Date().toLocaleTimeString('vi-VN');
 
     if (res.isDuplicate) {
-      // Prevent repeated duplicate alerts/sounds for the same barcode within 3 seconds
+      // Prevent repeated duplicate alerts for the same barcode within 3 seconds
       const isSameDuplicateRecent =
         lastDuplicateScanRef.current.code === raw.toUpperCase() &&
         now - lastDuplicateScanRef.current.time < 3000;
@@ -368,16 +315,41 @@ export const ScanOrdersPage: React.FC = () => {
     }
   };
 
-  const handleManualScanSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const code = barcodeInput.trim();
-    if (!code) return;
+  // Background hardware USB / Bluetooth barcode scanner listener
+  useEffect(() => {
+    let buffer = '';
+    let lastKeyTime = 0;
 
-    lastDuplicateScanRef.current = { code: '', time: 0 };
-    handleIncomingBarcode(code);
-    setBarcodeInput('');
-    focusInput();
-  };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Do not capture if user is focusing a modal input
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      const currentTime = Date.now();
+      if (currentTime - lastKeyTime > 120) {
+        buffer = '';
+      }
+      lastKeyTime = currentTime;
+
+      if (e.key === 'Enter') {
+        if (buffer.length >= 3) {
+          handleIncomingBarcode(buffer);
+          buffer = '';
+          e.preventDefault();
+        }
+      } else if (e.key.length === 1) {
+        buffer += e.key;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [soundEnabled, activeSessionId]);
 
   // Primary action: Confirm & Verify Batch against Orders
   const handleSubmitBatch = async () => {
@@ -410,11 +382,6 @@ export const ScanOrdersPage: React.FC = () => {
       if (soundEnabled) playErrorSound();
       toast.error('Lỗi khi gửi đối soát', err.message || 'Vui lòng thử lại');
     }
-  };
-
-  const handleCreateNewSessionClick = () => {
-    const fresh = createNewSession(undefined, selectedWarehouseId || undefined);
-    toast.success(`Đã tạo ${fresh.name}`);
   };
 
   const handleCopyCode = (code: string) => {
@@ -454,10 +421,7 @@ export const ScanOrdersPage: React.FC = () => {
 
     try {
       toast.info(`Đang hoàn tác xuất kho mã "${item.code}"...`);
-      await fulfillmentApi.reverseDispatch(
-        item.packageId,
-        'Hủy đơn tại kho / Đổi kiện cho đơn khác'
-      );
+      await fulfillmentApi.reverseDispatch(item.packageId, 'Hủy đơn tại kho / Đổi kiện cho đơn khác');
       toast.success(`Đã hoàn tác mã "${item.code}", tồn kho đã được cộng lại!`);
       removeItemFromActiveSession(item.id);
       if (soundEnabled) playWarningSound();
@@ -504,160 +468,205 @@ export const ScanOrdersPage: React.FC = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success('Đã xuất danh sách mã quét');
+    toast.success('Đã tải danh sách mã quét');
   };
-
-  // Filter items in session
-  const displayedItems = (activeSession?.items || []).filter(
-    (item) =>
-      item.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.orderId && item.orderId.toLowerCase().includes(searchTerm.toLowerCase())),
-  );
 
   const pendingItemsCount = (activeSession?.items || []).filter((i) => i.status === 'PENDING').length;
   const verifiedItemsCount = (activeSession?.items || []).filter((i) => i.status === 'VERIFIED').length;
-  const issuesItemsCount = (activeSession?.items || []).filter(
-    (i) => i.status === 'NOT_FOUND' || i.status === 'ALREADY_VERIFIED' || i.status === 'ERROR',
-  ).length;
+  const displayedItems = activeSession?.items || [];
+
+  // Clean session title: "Phiên quét #1 (01:41 17-10)" -> "Phiên Quét 1"
+  const formatSessionTitle = (rawName?: string) => {
+    if (!rawName) return 'Phiên Quét 1';
+    const match = rawName.match(/phiên\s+quét\s+#?(\d+)/i);
+    if (match) {
+      return `Phiên Quét ${match[1]}`;
+    }
+    return rawName.replace(/\s*\(\d{2}:\d{2}\s+\d{2}[-/]\d{2}\)/i, '').trim();
+  };
+
+  const formattedStartTime = activeSession
+    ? new Date(activeSession.createdAt).toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }) +
+      ', ' +
+      new Date(activeSession.createdAt).toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+      })
+    : '--:--, --/--';
 
   return (
     <div
-      className={`w-full flex flex-col space-y-3 sm:space-y-4 animate-in fade-in duration-300 pb-36 sm:pb-40 ${
-        isFocusMode ? 'fixed inset-0 z-50 bg-[#0c0e14] p-3 sm:p-5 overflow-y-auto' : ''
+      className={`w-full max-w-xl mx-auto flex flex-col space-y-3 animate-in fade-in duration-300 pb-16 ${
+        isFocusMode ? 'fixed inset-0 z-50 bg-[#0c0e14] p-3 sm:p-4 overflow-y-auto max-w-none' : ''
       }`}
     >
-      {/* 1. TOP HEADER & SESSION SELECTOR */}
-      <div className="flex items-center justify-between gap-2.5 shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-lg bg-[#5865f2]/10 border border-[#5865f2]/20 text-[#5865f2] flex items-center justify-center shrink-0">
-            <ScanLine size={19} />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-tight truncate">
-                Quét xuất hàng
-              </h1>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 animate-pulse" />
-                Sẵn sàng
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate hidden sm:block">
-              Gom mã trong phiên, sau đó bấm Xác nhận để đối soát đơn hàng.
-            </p>
-          </div>
+      {/* 1. TOP HEADER NAVIGATION */}
+      <div className="flex items-center justify-between gap-3 shrink-0 pt-0.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="w-8 h-8 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex items-center justify-center cursor-pointer active:scale-95 transition-all shrink-0 shadow-xs"
+            title="Quay lại"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <h1 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
+            Quét xuất hàng
+          </h1>
         </div>
 
-        {/* Mobile Fullscreen Button */}
         <button
           type="button"
           onClick={() => setIsFocusMode(!isFocusMode)}
-          className="sm:hidden w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-white shrink-0"
+          className="w-8 h-8 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex items-center justify-center cursor-pointer active:scale-95 transition-all shrink-0 shadow-xs"
           title={isFocusMode ? 'Thu nhỏ' : 'Toàn màn hình'}
         >
-          {isFocusMode ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+          {isFocusMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
         </button>
       </div>
 
-      {/* 2. ACTIVE SESSION STATUS CARD & STATS */}
-      <div className="p-3 sm:p-4 rounded-lg bg-white dark:bg-[#131722] border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-gray-100 dark:border-gray-800/80">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-[#5865f2]/10 text-[#5865f2] flex items-center justify-center shrink-0 border border-[#5865f2]/20">
-              <FileText size={16} />
+      {/* 2. SHOP & KHO DROPDOWN SELECTORS */}
+      <div className="grid grid-cols-2 gap-2.5">
+        {/* Shop Selector Card */}
+        <div className="relative p-2.5 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs flex items-center justify-between transition-colors">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-500 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <Store size={15} />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] text-gray-500 dark:text-gray-400 block leading-tight">Shop</span>
+              <span className="text-xs font-semibold text-gray-900 dark:text-white block leading-tight truncate">
+                {selectedShopId === 'ALL'
+                  ? 'Tất cả shop'
+                  : shops.find((s) => s.id === selectedShopId)?.name || 'Tất cả shop'}
+              </span>
+            </div>
+          </div>
+          <ChevronDown size={13} className="text-gray-400 shrink-0 pointer-events-none" />
+          <select
+            value={selectedShopId}
+            onChange={(e) => setSelectedShopId(e.target.value)}
+            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            title="Chọn Shop"
+          >
+            <option value="ALL">Tất cả shop</option>
+            {shops.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Warehouse Selector Card */}
+        <div className="relative p-2.5 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs flex items-center justify-between transition-colors">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <Warehouse size={15} />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] text-gray-500 dark:text-gray-400 block leading-tight">Kho</span>
+              <span className="text-xs font-semibold text-gray-900 dark:text-white block leading-tight truncate">
+                {warehouses.find((w) => w.id === selectedWarehouseId)?.name || 'Kho tổng'}
+              </span>
+            </div>
+          </div>
+          <ChevronDown size={13} className="text-gray-400 shrink-0 pointer-events-none" />
+          <select
+            value={selectedWarehouseId}
+            onChange={(e) => setSelectedWarehouseId(e.target.value)}
+            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            title="Chọn Kho"
+          >
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* 3. ACTIVE SESSION STATUS & 3 METRIC PILLS */}
+      <div className="p-3 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs space-y-2.5">
+        {/* Session Info Line */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="w-8 h-8 rounded-lg bg-[#2563eb]/10 dark:bg-[#2563eb]/20 text-[#2563eb] dark:text-[#3b82f6] flex items-center justify-center shrink-0 border border-[#2563eb]/20">
+              <FileText size={16} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="font-bold text-sm text-gray-900 dark:text-white truncate">
-                  {activeSession?.name || 'Phiên quét'}
+                  {formatSessionTitle(activeSession?.name)}
                 </span>
-                <span className="font-mono text-xs text-gray-400 font-bold">
-                  ({activeSession?.sessionCode})
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Sẵn sàng
                 </span>
-                {/* Status icon only with color - no text label to break layout */}
-                {activeSession?.status === 'DRAFT' ? (
-                  <span
-                    title="Đang quét dở"
-                    className="grid place-items-center w-5 h-5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 shrink-0 leading-none"
-                  >
-                    <Clock size={12} className="stroke-[2.2] block shrink-0" />
-                  </span>
-                ) : (
-                  <span
-                    title="Đã đối soát"
-                    className="grid place-items-center w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 shrink-0 leading-none"
-                  >
-                    <CheckCircle2 size={12} className="stroke-[2.2] block shrink-0" />
-                  </span>
-                )}
               </div>
-              <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-gray-400">
-                <Clock size={11} className="shrink-0" />
-                <span>
-                  Bắt đầu lúc{' '}
-                  {activeSession
-                    ? new Date(activeSession.createdAt).toLocaleTimeString('vi-VN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : '--:--'}
-                </span>
+              <div className="text-[11px] text-gray-500 dark:text-gray-400 font-mono mt-0.5 truncate">
+                {activeSession?.sessionCode} • Bắt đầu {formattedStartTime}
               </div>
             </div>
           </div>
 
-          {/* Quick Session Switcher Dropdown */}
-          <div className="flex items-center gap-2 self-end sm:self-center">
-            <button
-              type="button"
-              onClick={() => setIsHistoryModalOpen(true)}
-              className="text-xs text-[#2563eb] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-            >
-              <span>Đổi phiên khác</span>
-              <ChevronRight size={13} />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsHistoryModalOpen(true)}
+            className="text-xs text-[#2563eb] dark:text-[#3b82f6] hover:underline font-semibold flex items-center gap-0.5 cursor-pointer shrink-0"
+          >
+            <span>Đổi phiên</span>
+            <ChevronRight size={13} />
+          </button>
         </div>
 
         {/* 3 Metric Pills */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <div className="p-2 sm:p-2.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/30 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-blue-500/10 text-blue-500 grid place-items-center shrink-0">
-              <ScanLine size={14} className="block shrink-0" />
+        <div className="grid grid-cols-3 gap-2">
+          {/* Đã quét */}
+          <div className="p-2 rounded-lg bg-gray-50 dark:bg-[#1c2230] border border-gray-100 dark:border-gray-800/80 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-blue-500/10 dark:bg-blue-500/15 text-blue-500 dark:text-blue-400 grid place-items-center shrink-0">
+              <ScanLine size={14} />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 block truncate">
+              <span className="text-[10px] text-gray-500 dark:text-gray-400 block truncate leading-tight">
                 Đã quét
               </span>
-              <span className="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-tight font-mono">
+              <span className="text-sm sm:text-base font-bold text-gray-900 dark:text-white font-mono leading-none">
                 {activeSession?.items.length || 0}
               </span>
             </div>
           </div>
 
-          <div className="p-2 sm:p-2.5 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-amber-500/10 text-amber-500 grid place-items-center shrink-0">
-              <Clock size={14} className="block shrink-0" />
+          {/* Chờ đối soát */}
+          <div className="p-2 rounded-lg bg-gray-50 dark:bg-[#1c2230] border border-gray-100 dark:border-gray-800/80 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-amber-500/10 dark:bg-amber-500/15 text-amber-500 dark:text-amber-400 grid place-items-center shrink-0">
+              <Clock size={14} />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 block truncate">
+              <span className="text-[10px] text-gray-500 dark:text-gray-400 block truncate leading-tight">
                 Chờ đối soát
               </span>
-              <span className="text-sm sm:text-base font-bold text-amber-600 dark:text-amber-400 leading-tight font-mono">
+              <span className="text-sm sm:text-base font-bold text-amber-600 dark:text-amber-400 font-mono leading-none">
                 {pendingItemsCount}
               </span>
             </div>
           </div>
 
-          <div className="p-2 sm:p-2.5 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-emerald-500/10 text-emerald-500 grid place-items-center shrink-0">
-              <CheckCircle2 size={14} className="block shrink-0" />
+          {/* Thành công */}
+          <div className="p-2 rounded-lg bg-gray-50 dark:bg-[#1c2230] border border-gray-100 dark:border-gray-800/80 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 grid place-items-center shrink-0">
+              <CheckCircle2 size={14} />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 block truncate">
+              <span className="text-[10px] text-gray-500 dark:text-gray-400 block truncate leading-tight">
                 Thành công
               </span>
-              <span className="text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400 leading-tight font-mono">
+              <span className="text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400 font-mono leading-none">
                 {verifiedItemsCount}
               </span>
             </div>
@@ -665,529 +674,357 @@ export const ScanOrdersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. MAIN WORKSPACE: Camera & Input on Left / Live List on Right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 flex-1 min-h-0">
-        {/* LEFT COLUMN: Camera & Scanner Controls (7 cols on PC) */}
-        <div className="lg:col-span-7 flex flex-col space-y-3">
-          {/* Input Mode Selector Bar */}
-          <div
-            ref={cameraTabRef}
-            id="camera-barcode-tab"
-            className="scroll-mt-3 sm:scroll-mt-4 p-1 bg-gray-100 dark:bg-[#1a1e2b] rounded-lg border border-gray-200 dark:border-gray-800 grid grid-cols-2 gap-1"
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setActiveInputTab('camera');
-                setTimeout(() => scrollToCameraTab(true), 50);
-              }}
-              className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                activeInputTab === 'camera'
-                  ? 'bg-[#2563eb] text-white shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-white'
-              }`}
-            >
-              <Camera size={14} />
-              <span>Camera Barcode</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveInputTab('manual')}
-              className={`flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                activeInputTab === 'manual'
-                  ? 'bg-[#2563eb] text-white shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-white'
-              }`}
-            >
-              <Keyboard size={14} />
-              <span>Máy quét USB / Nhập tay</span>
-            </button>
-          </div>
+      {/* 4. CAMERA VIEWFINDER & LIVE SCANNER */}
+      <div
+        className={`rounded-lg bg-black border overflow-hidden relative shadow-md transition-all duration-300 ${
+          scanFlash === 'success'
+            ? 'border-emerald-500 shadow-[0_0_24px_rgba(16,185,129,0.35)] ring-2 ring-emerald-500/60'
+            : scanFlash === 'warning'
+            ? 'border-amber-500 shadow-[0_0_24px_rgba(245,158,11,0.35)] ring-2 ring-amber-500/60'
+            : scanFlash === 'error'
+            ? 'border-rose-500 shadow-[0_0_24px_rgba(244,63,94,0.35)] ring-2 ring-rose-500/60'
+            : 'border-gray-800'
+        }`}
+      >
+        <style>{`
+          #barcode-camera-reader #qr-shaded-region,
+          #barcode-camera-reader svg,
+          #barcode-camera-reader path {
+            display: none !important;
+          }
+          #barcode-camera-reader {
+            border: none !important;
+            width: 100% !important;
+            height: 100% !important;
+          }
+          #barcode-camera-reader video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+          }
+          @keyframes laserSweepBeam {
+            0% { top: 6%; opacity: 0.8; }
+            50% { top: 92%; opacity: 1; }
+            100% { top: 6%; opacity: 0.8; }
+          }
+          .laser-sweep-beam-active {
+            animation: laserSweepBeam 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          }
+        `}</style>
 
-          {/* CAMERA VIEWPORT - EXPANDED & WIDENED ON MOBILE */}
-          {activeInputTab === 'camera' && (
-            <div
-              className={`rounded-lg bg-black border overflow-hidden relative transition-all duration-300 ${
-                scanFlash === 'success'
-                  ? 'border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)] ring-2 ring-emerald-500/60'
-                  : scanFlash === 'warning'
-                  ? 'border-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.4)] ring-2 ring-amber-500/60'
-                  : scanFlash === 'error'
-                  ? 'border-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.4)] ring-2 ring-rose-500/60'
-                  : 'border-gray-800'
-              }`}
-            >
-              {/* CSS for camera display & laser beam */}
-              <style>{`
-                #barcode-camera-reader #qr-shaded-region,
-                #barcode-camera-reader svg,
-                #barcode-camera-reader path {
-                  display: none !important;
-                }
-                #barcode-camera-reader {
-                  border: none !important;
-                  width: 100% !important;
-                  height: 100% !important;
-                }
-                #barcode-camera-reader video {
-                  width: 100% !important;
-                  height: 100% !important;
-                  object-fit: cover !important;
-                }
-                @keyframes laserSweepBeam {
-                  0% { top: 6%; opacity: 0.8; }
-                  50% { top: 92%; opacity: 1; }
-                  100% { top: 6%; opacity: 0.8; }
-                }
-                .laser-sweep-beam-active {
-                  animation: laserSweepBeam 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-                }
-              `}</style>
+        {/* Viewport Box */}
+        <div className="relative w-full h-[260px] sm:h-[300px] bg-black overflow-hidden flex items-center justify-center">
+          <div id="barcode-camera-reader" className="w-full h-full" />
 
-              {/* Viewport Box (Generous Height and Width) */}
-              <div className="relative w-full h-[270px] sm:h-[320px] md:h-[350px] bg-black overflow-hidden flex items-center justify-center">
-                {/* HTML5 QR Code Mount */}
-                <div id="barcode-camera-reader" className="w-full h-full" />
+          {/* Center Target Box */}
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
+            <div className="relative w-[82%] max-w-[320px] h-[130px] sm:h-[150px]">
+              {/* Laser beam */}
+              <div className="laser-sweep-beam-active absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-[#3b82f6] to-transparent shadow-[0_0_12px_#3b82f6]" />
 
-                {/* TARGET VIEWFINDER BOX (WIDE FOR FAST MOBILE SCANNING) */}
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
-                  <div className="relative w-[84%] max-w-[340px] h-[130px] sm:h-[160px]">
-                    {/* Glowing scanning laser beam */}
-                    <div className="laser-sweep-beam-active absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-[#3b82f6] to-transparent shadow-[0_0_12px_#3b82f6]" />
+              {/* 4 Glowing Corner Angles */}
+              <div className="absolute top-0 left-0 w-7 h-7 border-t-[3.5px] border-l-[3.5px] border-[#3b82f6] rounded-tl-lg shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+              <div className="absolute top-0 right-0 w-7 h-7 border-t-[3.5px] border-r-[3.5px] border-[#3b82f6] rounded-tr-lg shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+              <div className="absolute bottom-0 left-0 w-7 h-7 border-b-[3.5px] border-l-[3.5px] border-[#3b82f6] rounded-bl-lg shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+              <div className="absolute bottom-0 right-0 w-7 h-7 border-b-[3.5px] border-r-[3.5px] border-[#3b82f6] rounded-br-lg shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
 
-                    {/* 4 Glowing Corner Angles */}
-                    <div className="absolute top-0 left-0 w-8 h-8 border-t-[3.5px] border-l-[3.5px] border-[#3b82f6] rounded-tl-lg shadow-[0_0_10px_rgba(59,130,246,0.6)]" />
-                    <div className="absolute top-0 right-0 w-8 h-8 border-t-[3.5px] border-r-[3.5px] border-[#3b82f6] rounded-tr-lg shadow-[0_0_10px_rgba(59,130,246,0.6)]" />
-                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b-[3.5px] border-l-[3.5px] border-[#3b82f6] rounded-bl-lg shadow-[0_0_10px_rgba(59,130,246,0.6)]" />
-                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-[3.5px] border-r-[3.5px] border-[#3b82f6] rounded-br-lg shadow-[0_0_10px_rgba(59,130,246,0.6)]" />
-
-                    {/* Centered Instruction Pill */}
-                    <div className="absolute -bottom-7 inset-x-0 flex justify-center">
-                      <span className="px-3 py-1 rounded-full bg-black/75 backdrop-blur-md text-[11px] font-medium text-white shadow-md border border-white/10">
-                        Đưa mã vận đơn vào khung
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Floating Top Overlays */}
-                <div className="absolute top-3 inset-x-3 flex items-center justify-between z-20 pointer-events-auto">
-                  {/* Left: Camera Badge */}
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-white text-[11px] font-medium shadow-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <Camera size={12} className="text-emerald-400" />
-                    <span className="truncate max-w-[130px]">
-                      {facingMode === 'environment' ? 'Camera sau' : 'Camera trước'}
-                    </span>
-                  </div>
-
-                  {/* Right: Quick Action Controls */}
-                  <div className="flex items-center gap-1.5">
-                    {/* Zoom Toggle Button */}
-                    <button
-                      type="button"
-                      onClick={handleToggleZoom}
-                      className="w-7 h-7 rounded-full bg-[#2563eb] text-white border border-blue-400/40 flex items-center justify-center font-mono text-[11px] font-bold shadow-sm active:scale-95 transition-all cursor-pointer"
-                      title={`Thu phóng: ${zoom}x. Bấm để đổi`}
-                    >
-                      {zoom}x
-                    </button>
-
-                    {/* Flashlight Torch */}
-                    <button
-                      type="button"
-                      onClick={toggleTorch}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center border backdrop-blur-md transition-all active:scale-95 cursor-pointer shadow-sm ${
-                        torchOn
-                          ? 'bg-amber-500 text-white border-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
-                          : 'bg-black/60 text-white border-white/20 hover:bg-black/80'
-                      }`}
-                      title={torchOn ? 'Tắt đèn Flash' : 'Bật đèn Flash'}
-                    >
-                      {torchOn ? <Zap size={13} className="fill-current" /> : <ZapOff size={13} />}
-                    </button>
-
-                    {/* Flip Camera */}
-                    <button
-                      type="button"
-                      onClick={handleSwitchCamera}
-                      className="w-7 h-7 rounded-full bg-black/60 text-white border border-white/20 hover:bg-black/80 active:scale-95 flex items-center justify-center backdrop-blur-md transition-all cursor-pointer shadow-sm"
-                      title="Đổi camera trước/sau"
-                    >
-                      <RefreshCw size={13} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Error overlay if camera blocked */}
-                {cameraError && (
-                  <div className="absolute inset-0 bg-black/90 p-5 flex flex-col items-center justify-center text-center z-30 space-y-3">
-                    <AlertTriangle size={32} className="text-amber-500" />
-                    <p className="text-xs text-gray-300 max-w-sm">{cameraError}</p>
-                    <button
-                      type="button"
-                      onClick={startCamera}
-                      className="px-3.5 py-1.5 rounded-lg bg-[#2563eb] text-white text-xs font-semibold cursor-pointer"
-                    >
-                      Thử lại camera
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Bottom Camera Toolbar (Balanced 3 equal buttons) */}
-              <div className="grid grid-cols-3 gap-1.5 p-2 bg-gray-900 border-t border-gray-800 text-xs font-medium">
-                <button
-                  type="button"
-                  onClick={handleSwitchCamera}
-                  className="flex items-center justify-center gap-1.5 py-2 rounded-md bg-gray-800 text-gray-200 hover:bg-gray-700 active:scale-95 transition-all cursor-pointer"
-                >
-                  <RefreshCw size={13} />
-                  <span>Đổi camera</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSoundEnabled(!soundEnabled)}
-                  className={`flex items-center justify-center gap-1.5 py-2 rounded-md border transition-all cursor-pointer active:scale-95 ${
-                    soundEnabled
-                      ? 'border-blue-500/40 bg-blue-500/20 text-blue-400'
-                      : 'border-gray-700 bg-gray-800 text-gray-400'
-                  }`}
-                >
-                  {soundEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
-                  <span>{soundEnabled ? 'Âm thanh bật' : 'Âm thanh tắt'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={togglePauseCamera}
-                  className={`flex items-center justify-center gap-1.5 py-2 rounded-md border transition-all cursor-pointer active:scale-95 ${
-                    isCameraPaused
-                      ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
-                      : 'bg-gray-800 text-gray-200 border-gray-700 hover:bg-gray-700'
-                  }`}
-                >
-                  {isCameraPaused ? <Play size={13} /> : <Pause size={13} />}
-                  <span>{isCameraPaused ? 'Tiếp tục' : 'Tạm dừng'}</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* MANUAL BARCODE INPUT BOX */}
-          <div className="p-3.5 rounded-lg bg-white dark:bg-[#131722] border border-gray-200 dark:border-gray-800 space-y-2 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                <Keyboard size={14} className="text-gray-400" />
-                Nhập mã thủ công / Máy quét súng USB
-              </span>
-            </div>
-
-            <form onSubmit={handleManualScanSubmit} className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <ScanLine className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder="Nhập mã vận đơn hoặc mã đơn hàng..."
-                  value={barcodeInput}
-                  onChange={(e) => setBarcodeInput(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-[#1a1e2b] border border-gray-200 dark:border-gray-700/80 rounded-lg text-xs font-mono text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={!barcodeInput.trim()}
-                className="px-4 py-2 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] disabled:opacity-40 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 shadow-sm"
-              >
-                <span>Thêm</span>
-                <span className="text-[10px]">↵</span>
-              </button>
-            </form>
-          </div>
-
-          {/* LIVE SCAN FEEDBACK BANNER */}
-          {lastScannedFeedback && (
-            <div
-              className={`p-3 rounded-lg border flex items-center justify-between gap-2.5 transition-all animate-in fade-in ${
-                lastScannedFeedback.isDuplicate
-                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200'
-                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                    lastScannedFeedback.isDuplicate
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-emerald-500 text-white'
-                  }`}
-                >
-                  {lastScannedFeedback.isDuplicate ? (
-                    <AlertTriangle size={15} />
-                  ) : (
-                    <CheckCircle2 size={15} />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[11px] font-semibold">
-                    {lastScannedFeedback.isDuplicate
-                      ? 'Mã đã có trong phiên (Trùng lặp)'
-                      : 'Đã thêm mã vào phiên quét'}
-                  </div>
-                  <div className="font-mono text-xs font-bold truncate">
-                    {lastScannedFeedback.code}
-                  </div>
-                </div>
-              </div>
-              <span className="text-[10px] text-gray-500 dark:text-gray-400 shrink-0 font-mono">
-                {lastScannedFeedback.timestamp}
-              </span>
-            </div>
-          )}
-
-          {/* PROMINENT ACTION: SUBMIT & VERIFY BATCH */}
-          <div className="p-3.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg space-y-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-bold text-xs sm:text-sm">Xác nhận & Cập nhật đơn hàng</h4>
-                <p className="text-[11px] text-blue-100 mt-0.5">
-                  Gửi toàn bộ danh sách {activeSession?.items.length || 0} mã trong phiên lên hệ thống đối soát.
-                </p>
-              </div>
-              <Sparkles size={20} className="text-yellow-300 opacity-80 shrink-0 hidden sm:block" />
-            </div>
-
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                type="button"
-                disabled={!activeSession || activeSession.items.length === 0 || isVerifyingBatch}
-                onClick={handleSubmitBatch}
-                className="flex-1 py-2.5 px-4 rounded-lg bg-white text-[#2563eb] hover:bg-blue-50 active:scale-[0.98] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
-              >
-                {isVerifyingBatch ? (
-                  <>
-                    <RefreshCw size={15} className="animate-spin" />
-                    <span>Đang đối soát đơn hàng...</span>
-                  </>
-                ) : (
-                  <>
-                    <UploadCloud size={16} />
-                    <span>
-                      Gửi đối soát ngay ({activeSession?.items.length || 0} mã)
-                    </span>
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleExportCurrentSession}
-                disabled={!activeSession || activeSession.items.length === 0}
-                className="p-2.5 rounded-lg bg-white/20 hover:bg-white/30 text-white disabled:opacity-40 transition-colors cursor-pointer shrink-0"
-                title="Xuất danh sách mã ra file CSV"
-              >
-                <Download size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: SCANNED ITEMS LIST IN ACTIVE SESSION (5 cols on PC) */}
-        <div className="lg:col-span-5 flex flex-col space-y-3">
-          <div className="p-3.5 rounded-lg bg-white dark:bg-[#131722] border border-gray-200 dark:border-gray-800 flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3 shadow-sm">
-            {/* Header: Title & Clear */}
-            <div className="flex items-center justify-between gap-2 shrink-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white">
-                  Danh sách mã trong phiên
-                </h3>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#5865f2]/10 text-[#5865f2] font-mono">
-                  {activeSession?.items.length || 0} mã
+              {/* Centered Instruction Pill */}
+              <div className="absolute -bottom-7 inset-x-0 flex justify-center">
+                <span className="px-3 py-1 rounded-full bg-black/80 backdrop-blur-md text-[11px] font-medium text-white shadow-md border border-white/10">
+                  Đưa mã vận đơn vào khung
                 </span>
               </div>
+            </div>
+          </div>
 
-              {activeSession && activeSession.items.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (confirm('Bạn có chắc chắn muốn xóa tất cả mã trong phiên này?')) {
-                      clearActiveSessionItems();
-                      toast.info('Đã xóa tất cả mã trong phiên');
-                    }
-                  }}
-                  className="text-xs text-rose-500 hover:text-rose-600 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
-                >
-                  <Trash2 size={13} />
-                  <span>Xóa hết</span>
-                </button>
-              )}
+          {/* Top Floating Controls */}
+          <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between z-20 pointer-events-auto">
+            {/* Camera Mode Badge */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-white text-[11px] font-medium shadow-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>{facingMode === 'environment' ? 'Camera sau' : 'Camera trước'}</span>
             </div>
 
-            {/* Search filter within session */}
-            <div className="relative shrink-0">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Tìm mã vận đơn trong phiên..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-gray-50 dark:bg-[#1a1e2b] border border-gray-200 dark:border-gray-700/80 rounded-lg text-xs font-mono text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20"
-              />
-            </div>
+            {/* Zoom & Torch Buttons */}
+            <div className="flex items-center gap-1.5">
+              {/* Zoom button */}
+              <button
+                type="button"
+                onClick={handleToggleZoom}
+                className="w-7 h-7 rounded-full bg-black/70 text-white border border-white/20 flex items-center justify-center font-mono text-[11px] font-bold shadow-xs active:scale-95 transition-all cursor-pointer backdrop-blur-md"
+                title={`Thu phóng: ${zoom}x. Bấm để đổi`}
+              >
+                {zoom}x
+              </button>
 
-            {/* Scanned Items Scroll List */}
-            <div className="flex-1 overflow-y-auto space-y-2 pr-0.5 custom-scrollbar min-h-[260px] max-h-[500px]">
-              {displayedItems.length === 0 ? (
-                <div className="py-12 text-center text-xs text-gray-400 space-y-2">
-                  <Package size={36} className="mx-auto text-gray-500 opacity-40" />
-                  <p className="font-medium text-gray-500 dark:text-gray-400">
-                    {searchTerm ? 'Không tìm thấy mã nào phù hợp' : 'Chưa có mã quét nào trong phiên này'}
-                  </p>
-                  <p className="text-[11px] text-gray-400 max-w-xs mx-auto">
-                    Hãy đưa mã vận đơn vào trước Camera hoặc quét bằng máy quét súng để thêm vào danh sách.
-                  </p>
-                </div>
+              {/* Torch button */}
+              <button
+                type="button"
+                onClick={toggleTorch}
+                className={`w-7 h-7 rounded-full flex items-center justify-center border backdrop-blur-md transition-all active:scale-95 cursor-pointer shadow-xs ${
+                  torchOn
+                    ? 'bg-amber-500 text-white border-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
+                    : 'bg-black/70 text-white border-white/20 hover:bg-black/90'
+                }`}
+                title={torchOn ? 'Tắt đèn Flash' : 'Bật đèn Flash'}
+              >
+                {torchOn ? <Zap size={13} className="fill-current" /> : <ZapOff size={13} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Camera Error Alert */}
+          {cameraError && (
+            <div className="absolute inset-0 bg-black/90 p-5 flex flex-col items-center justify-center text-center z-30 space-y-3">
+              <AlertTriangle size={30} className="text-amber-500" />
+              <p className="text-xs text-gray-300 max-w-sm">{cameraError}</p>
+              <button
+                type="button"
+                onClick={startCamera}
+                className="px-3.5 py-1.5 rounded-lg bg-[#2563eb] text-white text-xs font-semibold cursor-pointer"
+              >
+                Thử lại camera
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* 3 Camera Toolbar Buttons */}
+        <div className="grid grid-cols-3 gap-1.5 p-2 bg-[#12151e] border-t border-gray-800 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={handleSwitchCamera}
+            className="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#1c2230] text-gray-200 hover:text-white active:scale-95 transition-all cursor-pointer"
+          >
+            <RefreshCw size={13} />
+            <span>Đổi camera</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className={`flex items-center justify-center gap-1.5 py-2 rounded-lg border transition-all cursor-pointer active:scale-95 ${
+              soundEnabled
+                ? 'bg-[#1c2230] border-gray-700/80 text-gray-200'
+                : 'bg-red-500/10 border-red-500/30 text-red-400'
+            }`}
+          >
+            {soundEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
+            <span>Âm thanh</span>
+          </button>
+          <button
+            type="button"
+            onClick={togglePauseCamera}
+            className={`flex items-center justify-center gap-1.5 py-2 rounded-lg border transition-all cursor-pointer active:scale-95 ${
+              isCameraPaused
+                ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                : 'bg-[#2563eb] text-white border-blue-400 shadow-sm shadow-blue-500/20'
+            }`}
+          >
+            {isCameraPaused ? <Play size={13} /> : <Pause size={13} />}
+            <span>{isCameraPaused ? 'Tiếp tục' : 'Tạm dừng'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 5. LIVE STATUS BANNER */}
+      <div className="p-2.5 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs flex items-center gap-2.5">
+        <div
+          className={`w-2 h-2 rounded-full shrink-0 ${
+            lastScannedFeedback
+              ? lastScannedFeedback.isDuplicate
+                ? 'bg-amber-400'
+                : 'bg-emerald-400 animate-ping'
+              : 'bg-emerald-400 animate-pulse'
+          }`}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-semibold text-gray-900 dark:text-white">
+            {lastScannedFeedback ? (
+              lastScannedFeedback.isDuplicate ? (
+                <span className="text-amber-500 dark:text-amber-400">
+                  Mã đã có trong phiên (Trùng lặp) • {lastScannedFeedback.code}
+                </span>
               ) : (
-                displayedItems.map((item, index) => {
-                  const isVerified = item.status === 'VERIFIED';
-                  const isAlreadyVerified = item.status === 'ALREADY_VERIFIED';
-                  const isNotFound = item.status === 'NOT_FOUND';
-                  const isPending = item.status === 'PENDING';
+                <span className="text-emerald-600 dark:text-emerald-400">
+                  Đã thêm mã vào phiên • {lastScannedFeedback.code}
+                </span>
+              )
+            ) : (
+              'Sẵn sàng nhận mã tiếp theo'
+            )}
+          </div>
+          <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+            {lastScannedFeedback
+              ? `Quét lúc ${lastScannedFeedback.timestamp} • Sẵn sàng quét mã tiếp theo.`
+              : 'Kết quả sẽ hiển thị sau khi quét.'}
+          </div>
+        </div>
+      </div>
 
-                  return (
-                    <div
-                      key={item.id}
-                      className="p-2.5 sm:p-3 rounded-lg bg-gray-50 dark:bg-[#1a1e2b] border border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2.5 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {/* STT Index */}
-                        <span className="font-mono text-xs font-bold text-gray-400 w-5 text-right shrink-0">
-                          #{displayedItems.length - index}
-                        </span>
+      {/* 6. ACTION BUTTONS: TẢI XUỐNG & GỬI ĐỐI SOÁT (PLINKED DIRECTLY ABOVE KẾT QUẢ PHIÊN) */}
+      <div className="flex items-center gap-2 pt-0.5">
+        {/* Nút Tải xuống / Xuất CSV */}
+        <button
+          type="button"
+          onClick={handleExportCurrentSession}
+          disabled={!activeSession || activeSession.items.length === 0}
+          className="h-9 px-3.5 rounded-lg bg-white dark:bg-[#161a23] hover:bg-gray-50 dark:hover:bg-[#1c2230] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 active:scale-95 shrink-0 shadow-xs"
+          title="Tải danh sách mã quét CSV"
+        >
+          <Download size={14} className="text-[#2563eb] dark:text-blue-400" />
+          <span>Tải xuống</span>
+        </button>
 
-                        {/* Status Icon */}
-                        <div
-                          className={`w-7 h-7 rounded-full grid place-items-center shrink-0 leading-none ${
-                            isVerified
-                              ? 'bg-emerald-500/10 text-emerald-500'
-                              : isAlreadyVerified
-                              ? 'bg-amber-500/10 text-amber-500'
-                              : isNotFound
-                              ? 'bg-rose-500/10 text-rose-500'
-                              : 'bg-blue-500/10 text-blue-500'
-                          }`}
-                        >
-                          {isVerified ? (
-                            <CheckCircle2 size={15} className="block shrink-0" />
-                          ) : isAlreadyVerified ? (
-                            <AlertTriangle size={15} className="block shrink-0" />
-                          ) : isNotFound ? (
-                            <XCircle size={15} className="block shrink-0" />
-                          ) : (
-                            <Clock size={15} className="block shrink-0" />
-                          )}
-                        </div>
+        {/* Nút Gửi đối soát */}
+        <button
+          type="button"
+          onClick={handleSubmitBatch}
+          disabled={!activeSession || activeSession.items.length === 0 || isVerifyingBatch}
+          className="flex-1 h-9 px-4 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50 active:scale-[0.98]"
+        >
+          {isVerifyingBatch ? (
+            <>
+              <RefreshCw size={14} className="animate-spin" />
+              <span>Đang gửi đối soát...</span>
+            </>
+          ) : (
+            <>
+              <UploadCloud size={15} />
+              <span>Gửi đối soát ({activeSession?.items.length || 0})</span>
+            </>
+          )}
+        </button>
+      </div>
 
-                        {/* Barcode & Info */}
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span
-                              onClick={() => handleCopyCode(item.code)}
-                              className="font-mono font-bold text-xs text-gray-900 dark:text-white truncate cursor-pointer hover:text-[#2563eb]"
-                              title="Bấm để sao chép"
-                            >
-                              {item.code}
-                            </span>
-                            <span className="text-[10px] text-gray-400 font-mono">
-                              {item.scannedAt}
-                            </span>
-                          </div>
+      {/* 7. SESSION RESULTS LIST */}
+      <div className="space-y-2 pt-1">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">
+              Kết quả phiên
+            </h3>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#2563eb]/10 dark:bg-[#2563eb]/20 text-[#2563eb] dark:text-[#3b82f6] font-mono">
+              {activeSession?.items.length || 0}
+            </span>
+          </div>
 
-                          <div className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate mt-0.5">
-                            <span className="truncate">
-                              {item.message || (isPending ? 'Đang gom trong phiên (Chưa gửi)' : 'Đã đối soát')}
-                            </span>
-                            {item.orderId && (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenOrderDetail(item.orderId)}
-                                className="text-[#2563eb] hover:underline font-semibold ml-1 shrink-0"
-                              >
-                                Xem đơn →
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+          <button
+            type="button"
+            onClick={() => setIsHistoryModalOpen(true)}
+            className="text-xs text-[#2563eb] dark:text-[#3b82f6] hover:underline font-semibold flex items-center gap-0.5 cursor-pointer"
+          >
+            <span>Xem tất cả</span>
+            <ChevronRight size={13} />
+          </button>
+        </div>
 
-                      {/* Status Badge & Actions */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Empty state or list */}
+        {displayedItems.length === 0 ? (
+          <div className="p-6 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 text-center space-y-2 shadow-xs">
+            <div className="w-10 h-10 mx-auto rounded-lg bg-gray-100 dark:bg-gray-800/60 text-gray-400 dark:text-gray-400 grid place-items-center">
+              <Package size={22} className="stroke-[1.5]" />
+            </div>
+            <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">
+              Chưa có mã nào được quét
+            </div>
+            <div className="text-[11px] text-gray-500 dark:text-gray-400">
+              Quét mã trên kiện hàng để bắt đầu.
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-0.5 custom-scrollbar">
+            {displayedItems.map((item, index) => {
+              const isVerified = item.status === 'VERIFIED';
+              const isAlreadyVerified = item.status === 'ALREADY_VERIFIED';
+              const isNotFound = item.status === 'NOT_FOUND';
+
+              return (
+                <div
+                  key={item.id}
+                  className="p-2.5 rounded-lg bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2 shadow-xs hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-mono text-xs font-bold text-gray-400 w-5 text-right shrink-0">
+                      #{displayedItems.length - index}
+                    </span>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                            isVerified
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                              : isAlreadyVerified
-                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                              : isNotFound
-                              ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                              : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                          }`}
+                          onClick={() => handleCopyCode(item.code)}
+                          className="font-mono font-bold text-xs text-gray-900 dark:text-white truncate cursor-pointer hover:text-[#2563eb]"
+                          title="Bấm để sao chép"
                         >
-                          {isVerified
-                            ? 'Thành công'
-                            : isAlreadyVerified
-                            ? 'Đã quét trước'
-                            : isNotFound
-                            ? 'Không tìm thấy'
-                            : 'Chờ đối soát'}
+                          {item.code}
                         </span>
-
-                        {/* Fast 1-Tap Hoàn tác nếu đã xác nhận xuất kho */}
-                        {isVerified && item.packageId && (
+                        <span className="text-[10px] text-gray-400 font-mono">{item.scannedAt}</span>
+                      </div>
+                      <div className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate mt-0.5">
+                        <span className="truncate">
+                          {item.message || (item.status === 'PENDING' ? 'Chờ đối soát' : 'Đã đối soát')}
+                        </span>
+                        {item.orderId && (
                           <button
                             type="button"
-                            onClick={() => handleReverseItem(item)}
-                            className="h-6 px-1.5 rounded flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-900/40 transition-colors cursor-pointer"
-                            title="Hoàn tác xuất kho (cộng lại tồn vào kho)"
+                            onClick={() => handleOpenOrderDetail(item.orderId)}
+                            className="text-[#2563eb] hover:underline font-semibold ml-1 shrink-0"
                           >
-                            <RotateCcw size={12} />
-                            <span>Hoàn tác</span>
-                          </button>
-                        )}
-
-                        {/* Quick Delete Single Barcode nếu chưa gửi đối soát hoặc lỗi */}
-                        {!isVerified && (
-                          <button
-                            type="button"
-                            onClick={() => removeItemFromActiveSession(item.id)}
-                            className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
-                            title="Xóa mã này khỏi phiên"
-                          >
-                            <Trash2 size={13} />
+                            Xem đơn →
                           </button>
                         )}
                       </div>
                     </div>
-                  );
-                })
-              )}
-            </div>
+                  </div>
 
-            {/* Footer Summary Strip */}
-            <div className="pt-2.5 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 flex items-center justify-between shrink-0">
-              <span>
-                {pendingItemsCount} chờ đối soát • {verifiedItemsCount} thành công
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsHistoryModalOpen(true)}
-                className="text-[#2563eb] hover:underline font-semibold text-xs"
-              >
-                Xem tất cả phiên ({sessions.length})
-              </button>
-            </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${
+                        isVerified
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                          : isAlreadyVerified
+                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                          : isNotFound
+                          ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                          : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                      }`}
+                    >
+                      {isVerified
+                        ? 'Thành công'
+                        : isAlreadyVerified
+                        ? 'Đã quét trước'
+                        : isNotFound
+                        ? 'Không tìm thấy'
+                        : 'Chờ đối soát'}
+                    </span>
+
+                    {isVerified && item.packageId && (
+                      <button
+                        type="button"
+                        onClick={() => handleReverseItem(item)}
+                        className="h-6 px-1.5 rounded flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 border border-rose-200 dark:border-rose-900/40 transition-colors cursor-pointer"
+                        title="Hoàn tác xuất kho"
+                      >
+                        <RotateCcw size={11} />
+                        <span>Hoàn tác</span>
+                      </button>
+                    )}
+
+                    {!isVerified && (
+                      <button
+                        type="button"
+                        onClick={() => removeItemFromActiveSession(item.id)}
+                        className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-rose-500 transition-colors cursor-pointer"
+                        title="Xóa mã này"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        )}
       </div>
 
       {/* SESSIONS HISTORY MODAL */}

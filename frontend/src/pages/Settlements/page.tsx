@@ -153,13 +153,13 @@ export const SettlementsPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div>
-          <h1 className="text-lg md:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
-            <Receipt size={20} className="text-[#5865f2]" />
-            Đối soát tài chính
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+            <Receipt size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
+            <span className="truncate">Đối soát tài chính</span>
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
             Tách biệt xác minh hàng thực tế và đối soát tiền thực nhận từ sàn Shopee
           </p>
         </div>
@@ -168,10 +168,11 @@ export const SettlementsPage: React.FC = () => {
           variant="outline"
           size="sm"
           onClick={loadSettlements}
-          className="p-2 self-start sm:self-auto"
+          className="h-8 w-8 sm:w-auto p-0 sm:px-2.5 sm:py-1 gap-1 text-xs shrink-0"
           title="Làm mới dữ liệu"
         >
           <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+          <span className="hidden lg:inline text-xs">Làm mới</span>
         </Button>
       </div>
 
@@ -452,13 +453,23 @@ export const SettlementsPage: React.FC = () => {
         <Modal
           isOpen={isRecordModalOpen}
           onClose={() => setIsRecordModalOpen(false)}
-          title="Ghi nhận tiền thực nhận Shopee"
-          subtitle="Cập nhật số tiền chuyển khoản thực tế từ sàn và mã giao dịch ngân hàng đối soát"
+          title={
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="sm:hidden font-semibold truncate">Ghi nhận tiền về</span>
+              <span className="hidden sm:inline font-semibold truncate">Ghi nhận tiền thực nhận Shopee</span>
+            </div>
+          }
+          subtitle={
+            <div className="min-w-0 truncate">
+              <span className="sm:hidden truncate">Cập nhật số tiền chuyển khoản thực tế</span>
+              <span className="hidden sm:inline truncate">Cập nhật số tiền chuyển khoản thực tế từ sàn và mã giao dịch ngân hàng đối soát</span>
+            </div>
+          }
           icon={CreditCard}
           maxWidth="max-w-md"
         >
           <form onSubmit={handleRecordSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
                   <Receipt size={13} className="text-[#5865f2]" />
@@ -539,16 +550,20 @@ export const SettlementsPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsRecordModalOpen(false)}
-                className="gap-1.5"
+                className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
               >
                 <X size={14} />
                 <span>Hủy</span>
               </ModalButton>
-              <ModalButton variant="primary" type="submit" className="gap-1.5">
+              <ModalButton
+                variant="primary"
+                type="submit"
+                className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 font-semibold text-xs active:scale-95 justify-center"
+              >
                 <CheckCircle size={14} />
                 <span>Lưu đối soát</span>
               </ModalButton>

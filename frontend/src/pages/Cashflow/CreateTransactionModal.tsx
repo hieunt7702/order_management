@@ -317,12 +317,27 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      size="2xl"
-      title={type === 'INCOME' ? 'Tạo phiếu thu tiền' : 'Tạo phiếu chi tiền'}
-      subtitle="Quản lý dòng tiền chính xác, minh bạch, liên kết đơn hàng & công nợ"
+      title={
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="sm:hidden font-semibold truncate">
+            {type === 'INCOME' ? 'Phiếu thu tiền' : 'Phiếu chi tiền'}
+          </span>
+          <span className="hidden sm:inline font-semibold truncate">
+            {type === 'INCOME' ? 'Tạo phiếu thu tiền' : 'Tạo phiếu chi tiền'}
+          </span>
+        </div>
+      }
+      subtitle={
+        <div className="min-w-0 truncate">
+          <span className="sm:hidden truncate">Quản lý dòng tiền & công nợ</span>
+          <span className="hidden sm:inline truncate">
+            Quản lý dòng tiền chính xác, minh bạch, liên kết đơn hàng & công nợ
+          </span>
+        </div>
+      }
       icon={type === 'INCOME' ? ArrowDownLeft : ArrowUpRight}
     >
-      <ModalBody className="space-y-5 p-6 max-h-[80vh] overflow-y-auto">
+      <ModalBody className="space-y-3.5 sm:space-y-5 p-3 sm:p-6 max-h-[80vh] sm:max-h-[78vh] overflow-y-auto text-xs sm:text-sm">
         {/* 1. Chọn loại nghiệp vụ (Segmented Control) */}
         <div>
           <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
@@ -751,21 +766,27 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
         )}
       </ModalBody>
 
-      <ModalFooter className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800">
-        <ModalButton variant="secondary" onClick={onClose} disabled={submitting}>
+      <ModalFooter className="flex items-center justify-between sm:justify-end gap-2 sm:gap-2.5 p-3 sm:p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800 w-full">
+        <ModalButton
+          variant="secondary"
+          onClick={onClose}
+          disabled={submitting}
+          className="flex-none px-3.5 py-2 sm:py-1.5 text-xs font-semibold"
+        >
           Đóng
         </ModalButton>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 flex-1 sm:flex-none justify-end">
           {/* Nút 1: Lưu nháp */}
           <button
             type="button"
             disabled={submitting}
             onClick={() => handleSubmit('DRAFT')}
-            className="px-4 py-2 text-sm font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 rounded-xl transition-all shadow-sm flex items-center gap-1.5"
+            className="px-3 py-2 sm:py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 rounded-lg sm:rounded-xl transition-all shadow-xs flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
           >
-            <Clock className="w-4 h-4 text-slate-500" />
-            Lưu nháp
+            <Clock className="w-3.5 h-3.5 text-slate-500" />
+            <span className="hidden sm:inline">Lưu nháp</span>
+            <span className="sm:hidden">Nháp</span>
           </button>
 
           {/* Nút 2: Xác nhận thu/chi */}
@@ -773,18 +794,26 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
             type="button"
             disabled={submitting}
             onClick={() => handleSubmit('CONFIRMED')}
-            className={`px-5 py-2 text-sm font-semibold text-white rounded-xl shadow-md transition-all flex items-center gap-1.5 ${
+            className={`px-3.5 sm:px-5 py-2 sm:py-1.5 text-xs sm:text-sm font-semibold text-white rounded-lg sm:rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 flex-1 sm:flex-none active:scale-95 cursor-pointer ${
               type === 'INCOME'
                 ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
                 : 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20'
             }`}
           >
-            <CheckCircle2 className="w-4 h-4" />
-            {submitting
-              ? 'Đang xử lý...'
-              : type === 'INCOME'
-              ? 'Xác nhận Đã thu tiền'
-              : 'Xác nhận Đã chi tiền'}
+            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            {submitting ? (
+              'Đang xử lý...'
+            ) : type === 'INCOME' ? (
+              <>
+                <span className="sm:hidden">Thu tiền</span>
+                <span className="hidden sm:inline">Xác nhận Đã thu tiền</span>
+              </>
+            ) : (
+              <>
+                <span className="sm:hidden">Chi tiền</span>
+                <span className="hidden sm:inline">Xác nhận Đã chi tiền</span>
+              </>
+            )}
           </button>
         </div>
       </ModalFooter>

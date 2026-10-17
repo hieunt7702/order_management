@@ -620,38 +620,39 @@ export const SupplierDebtsPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-base sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
-            <Wallet size={20} className="text-[#5865f2]" />
-            <span className="sm:hidden">Công nợ NCC</span>
-            <span className="hidden sm:inline">Công Nợ & Thanh Toán Nhà Cung Cấp</span>
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-sm sm:text-xl font-semibold sm:font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+            <Wallet size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
+            <span className="sm:hidden truncate">Công nợ NCC</span>
+            <span className="hidden sm:inline truncate">Công Nợ & Thanh Toán Nhà Cung Cấp</span>
           </h1>
-          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-            <span className="sm:hidden">Theo dõi số dư nợ & thanh toán</span>
-            <span className="hidden sm:inline">Số dư cuối kỳ = Nợ đầu kỳ + Phát sinh phải trả − Giảm trừ trả hàng − Tiền đã trả + Tiền NCC hoàn lại</span>
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
+            Số dư cuối kỳ = Nợ đầu kỳ + Phát sinh phải trả − Giảm trừ trả hàng − Tiền đã trả + Tiền NCC hoàn lại
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={handleOpenAddSupplier} className="gap-1.5">
-            <Plus size={14} /> <span>Thêm NCC</span>
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <Button size="sm" variant="outline" onClick={handleOpenAddSupplier} className="gap-1.5 px-2 sm:px-3" title="Thêm NCC">
+            <Plus size={14} /> <span className="hidden sm:inline">Thêm NCC</span>
           </Button>
-          <Button size="sm" variant="outline" onClick={handleOpenReturnModal} className="gap-1.5 text-orange-600 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-950/20">
-            <RotateCcw size={14} /> <span>Trả hàng NCC</span>
+          <Button size="sm" variant="outline" onClick={handleOpenReturnModal} className="gap-1.5 px-2 sm:px-3 text-orange-600 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-950/20" title="Trả hàng NCC">
+            <RotateCcw size={14} /> <span className="hidden sm:inline">Trả hàng NCC</span>
           </Button>
-          <Button size="sm" onClick={() => handleOpenPaymentModal()} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
-            <CreditCard size={14} /> <span>Lập phiếu chi trả</span>
+          <Button size="sm" onClick={() => handleOpenPaymentModal()} className="gap-1.5 px-2.5 sm:px-3 bg-emerald-600 hover:bg-emerald-700 text-white" title="Lập phiếu chi trả">
+            <CreditCard size={14} />
+            <span className="hidden sm:inline">Lập phiếu chi trả</span>
+            <span className="sm:hidden">Chi trả</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={loadAllData}
-            className="gap-1.5"
+            className="gap-1.5 p-2 lg:px-3"
             title="Làm mới dữ liệu"
           >
             <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-            <span>Làm mới</span>
+            <span className="hidden lg:inline">Làm mới</span>
           </Button>
         </div>
       </div>
@@ -1290,86 +1291,98 @@ export const SupplierDebtsPage: React.FC = () => {
       )}
 
       {/* MODAL: SAO KÊ DÒNG THỜI GIAN 360° */}
-      <Modal isOpen={isStatementOpen} onClose={() => setIsStatementOpen(false)} title={`Sao Kê Đối Soát 360°: ${statementData?.supplier?.name || ''}`} size="xl">
+      <Modal
+        isOpen={isStatementOpen}
+        onClose={() => setIsStatementOpen(false)}
+        title={<><span className="sm:hidden">Sao kê: {statementData?.supplier?.name}</span><span className="hidden sm:inline">{`Sao Kê Đối Soát 360°: ${statementData?.supplier?.name || ''}`}</span></>}
+        size="xl"
+      >
         {statementData && (
-          <div className="space-y-4 max-h-[75vh] overflow-y-auto">
-            {/* Filter Date Range */}
-            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-xs">
-              <div className="flex items-center gap-2">
-                <span>Từ ngày:</span>
-                <input
-                  type="date"
-                  value={statementDateRange.startDate}
-                  onChange={(e) => setStatementDateRange({ ...statementDateRange, startDate: e.target.value })}
-                  className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1"
-                />
-                <span>Đến ngày:</span>
-                <input
-                  type="date"
-                  value={statementDateRange.endDate}
-                  onChange={(e) => setStatementDateRange({ ...statementDateRange, endDate: e.target.value })}
-                  className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1"
-                />
-                <Button size="sm" onClick={handleFilterStatement} className="text-xs">
-                  Lọc sao kê
-                </Button>
+          <div className="flex flex-col flex-1 min-h-0">
+            <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5 text-xs sm:text-sm">
+              {/* Filter Date Range */}
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span>Từ:</span>
+                  <input
+                    type="date"
+                    value={statementDateRange.startDate}
+                    onChange={(e) => setStatementDateRange({ ...statementDateRange, startDate: e.target.value })}
+                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1 text-xs"
+                  />
+                  <span>Đến:</span>
+                  <input
+                    type="date"
+                    value={statementDateRange.endDate}
+                    onChange={(e) => setStatementDateRange({ ...statementDateRange, endDate: e.target.value })}
+                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1 text-xs"
+                  />
+                  <Button size="sm" onClick={handleFilterStatement} className="text-xs">
+                    Lọc sao kê
+                  </Button>
+                </div>
+
+                <div className="text-right font-mono">
+                  <span className="text-gray-500">Số dư nợ: </span>
+                  <span className={`font-bold text-sm ${statementData.supplier.closingDebt > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                    {statementData.supplier.closingDebt.toLocaleString('vi-VN')}đ
+                  </span>
+                </div>
               </div>
 
-              <div className="text-right font-mono">
-                <span className="text-gray-500">Số dư nợ hiện tại: </span>
-                <span className={`font-bold text-sm ${statementData.supplier.closingDebt > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                  {statementData.supplier.closingDebt.toLocaleString('vi-VN')}đ
-                </span>
-              </div>
-            </div>
-
-            {/* Timeline Ledger Table */}
-            <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden text-xs">
-              <table className="w-full text-left">
-                <thead className="bg-gray-100 dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300">
-                  <tr>
-                    <th className="p-2.5">Thời Gian</th>
-                    <th className="p-2.5">Loại & Mã Giao Dịch</th>
-                    <th className="p-2.5">Nội Dung Nghiệp Vụ</th>
-                    <th className="p-2.5 text-right text-rose-600">Phát Sinh Nợ (+)</th>
-                    <th className="p-2.5 text-right text-emerald-600">Giảm Nợ (-)</th>
-                    <th className="p-2.5 text-right font-bold">Số Dư Lũy Kế</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-mono">
-                  {statementData.transactions.length === 0 ? (
+              {/* Timeline Ledger Table */}
+              <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-x-auto text-xs">
+                <table className="w-full text-left min-w-[550px]">
+                  <thead className="bg-gray-100 dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300">
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-gray-400 font-sans">
-                        Chưa có giao dịch nào trong khoảng thời gian này
-                      </td>
+                      <th className="p-2.5">Thời Gian</th>
+                      <th className="p-2.5">Loại & Mã Giao Dịch</th>
+                      <th className="p-2.5">Nội Dung Nghiệp Vụ</th>
+                      <th className="p-2.5 text-right text-rose-600">Phát Sinh Nợ (+)</th>
+                      <th className="p-2.5 text-right text-emerald-600">Giảm Nợ (-)</th>
+                      <th className="p-2.5 text-right font-bold">Số Dư Lũy Kế</th>
                     </tr>
-                  ) : (
-                    statementData.transactions.map((tx, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                        <td className="p-2.5 text-gray-500 font-sans">
-                          {new Date(tx.date).toLocaleDateString('vi-VN')}
-                        </td>
-                        <td className="p-2.5 font-bold">
-                          {tx.code}
-                        </td>
-                        <td className="p-2.5 font-sans text-gray-800 dark:text-gray-200">
-                          {tx.description}
-                        </td>
-                        <td className="p-2.5 text-right text-rose-600">
-                          {tx.increaseDebt > 0 ? `+${tx.increaseDebt.toLocaleString('vi-VN')}đ` : '-'}
-                        </td>
-                        <td className="p-2.5 text-right text-emerald-600">
-                          {tx.decreaseDebt > 0 ? `-${tx.decreaseDebt.toLocaleString('vi-VN')}đ` : '-'}
-                        </td>
-                        <td className={`p-2.5 text-right font-bold ${tx.runningBalance > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                          {tx.runningBalance.toLocaleString('vi-VN')}đ
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-mono">
+                    {statementData.transactions.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-8 text-center text-gray-400 font-sans">
+                          Chưa có giao dịch nào trong khoảng thời gian này
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ) : (
+                      statementData.transactions.map((tx, idx) => (
+                        <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                          <td className="p-2.5 text-gray-500 font-sans">
+                            {new Date(tx.date).toLocaleDateString('vi-VN')}
+                          </td>
+                          <td className="p-2.5 font-bold">
+                            {tx.code}
+                          </td>
+                          <td className="p-2.5 font-sans text-gray-800 dark:text-gray-200">
+                            {tx.description}
+                          </td>
+                          <td className="p-2.5 text-right text-rose-600">
+                            {tx.increaseDebt > 0 ? `+${tx.increaseDebt.toLocaleString('vi-VN')}đ` : '-'}
+                          </td>
+                          <td className="p-2.5 text-right text-emerald-600">
+                            {tx.decreaseDebt > 0 ? `-${tx.decreaseDebt.toLocaleString('vi-VN')}đ` : '-'}
+                          </td>
+                          <td className={`p-2.5 text-right font-bold ${tx.runningBalance > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                            {tx.runningBalance.toLocaleString('vi-VN')}đ
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </ModalBody>
+            <ModalFooter className="flex items-center justify-end w-full">
+              <ModalButton variant="secondary" onClick={() => setIsStatementOpen(false)} className="w-full sm:w-auto">
+                Đóng
+              </ModalButton>
+            </ModalFooter>
           </div>
         )}
       </Modal>
@@ -1378,21 +1391,34 @@ export const SupplierDebtsPage: React.FC = () => {
       <Modal
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
-        title="Lập Phiếu Chi Thanh Toán Nhà Cung Cấp"
-        subtitle="Ghi nhận dòng tiền thanh toán giảm trừ công nợ hoặc đặt cọc trước cho nhà cung cấp"
+        title={
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="sm:hidden font-semibold truncate">Phiếu chi trả nợ NCC</span>
+            <span className="hidden sm:inline font-semibold truncate">Lập Phiếu Chi Thanh Toán Nhà Cung Cấp</span>
+          </div>
+        }
+        subtitle={
+          <div className="min-w-0 truncate">
+            <span className="sm:hidden truncate">Chi trả giảm trừ công nợ / đặt cọc</span>
+            <span className="hidden sm:inline truncate">
+              Ghi nhận dòng tiền thanh toán giảm trừ công nợ hoặc đặt cọc trước cho nhà cung cấp
+            </span>
+          </div>
+        }
         icon={CreditCard}
         size="2xl"
       >
-        <form onSubmit={handleSavePayment} className="space-y-4">
-          <ModalBody className="space-y-4 max-h-[75vh] overflow-y-auto text-xs sm:text-sm">
+        <form onSubmit={handleSavePayment} className="flex flex-col flex-1 min-h-0">
+          <ModalBody className="space-y-3 sm:space-y-4 text-xs sm:text-sm p-3 sm:p-5">
             {/* 1. THÔNG TIN THANH TOÁN & ĐỐI TÁC */}
-            <div className="p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-3.5">
+            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3.5">
               <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
                 <Building2 className="w-3.5 h-3.5 text-[#5865f2]" />
-                <span>Thông tin thanh toán & Nhà cung cấp</span>
+                <span className="sm:hidden">Thông tin thanh toán & NCC</span>
+                <span className="hidden sm:inline">Thông tin thanh toán & Nhà cung cấp</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                 {/* Field 1: Nhà cung cấp */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
@@ -1443,7 +1469,7 @@ export const SupplierDebtsPage: React.FC = () => {
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                     <DollarSign size={13} className="text-emerald-600 dark:text-emerald-400" />
-                    <span>Số tiền thực tế chi ra (đ) *</span>
+                    <span>Số tiền thực tế chi (đ) *</span>
                   </label>
                   <CurrencyInput
                     value={paymentForm.amount}
@@ -1466,7 +1492,7 @@ export const SupplierDebtsPage: React.FC = () => {
                           setPaymentForm((prev) => ({ ...prev, amount: curSupplier.closingDebt }));
                           handleAutoAllocate(curSupplier.closingDebt);
                         }}
-                        className="text-[11px] text-[#5865f2] hover:underline mt-1 cursor-pointer flex items-center gap-1 font-medium"
+                        className="text-[11px] text-[#5865f2] hover:underline mt-1 cursor-pointer flex items-center gap-1 font-medium active:scale-95 transition-transform"
                       >
                         <span>Chi đủ nợ ({curSupplier.closingDebt.toLocaleString('vi-VN')}đ)</span>
                       </button>
@@ -1478,7 +1504,8 @@ export const SupplierDebtsPage: React.FC = () => {
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                     <Calendar size={13} className="text-blue-500" />
-                    <span>Ngày chi tiền</span>
+                    <span className="sm:hidden">Ngày chi</span>
+                    <span className="hidden sm:inline">Ngày chi tiền</span>
                   </label>
                   <input
                     type="date"
@@ -1544,7 +1571,7 @@ export const SupplierDebtsPage: React.FC = () => {
                         const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
                         setPaymentForm((prev) => ({ ...prev, referenceCode: `PC-${dateStr}-${rand}` }));
                       }}
-                      className="text-[11px] text-[#5865f2] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                      className="text-[11px] text-[#5865f2] hover:underline flex items-center gap-1 cursor-pointer font-medium active:scale-95 transition-transform"
                     >
                       <RefreshCw size={10} />
                       <span>Đổi mã</span>
@@ -1578,26 +1605,27 @@ export const SupplierDebtsPage: React.FC = () => {
             )}
 
             {/* Allocations Section */}
-            <div className="p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-3">
+            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center gap-2">
-                  <Receipt className="w-3.5 h-3.5 text-[#5865f2]" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200">
-                    Phân bổ số tiền cho các phiếu nhập nợ
+                  <Receipt className="w-3.5 h-3.5 text-[#5865f2] shrink-0" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-800 dark:text-gray-200 truncate">
+                    <span className="sm:hidden">Phân bổ phiếu nợ</span>
+                    <span className="hidden sm:inline">Phân bổ số tiền cho các phiếu nhập nợ</span>
                   </span>
-                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 shrink-0">
                     {unpaidReceipts.length} phiếu nợ
                   </span>
                 </div>
                 {unpaidReceipts.length > 0 && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 self-end sm:self-auto">
                     <button
                       type="button"
                       onClick={() => handleAutoAllocate(paymentForm.amount)}
-                      className="px-2.5 py-1 text-xs font-medium rounded-lg text-[#5865f2] bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/70 transition-colors flex items-center gap-1 cursor-pointer"
+                      className="px-2 py-1 text-[11px] sm:text-xs font-medium rounded-lg text-[#5865f2] bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/70 transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap active:scale-95"
                     >
                       <RefreshCw size={11} />
-                      <span>Tự động phân bổ (FIFO)</span>
+                      <span>Tự động FIFO</span>
                     </button>
                     <button
                       type="button"
@@ -1607,16 +1635,16 @@ export const SupplierDebtsPage: React.FC = () => {
                           allocations: unpaidReceipts.map((r) => ({ receiptId: r.id, amount: 0 })),
                         }));
                       }}
-                      className="px-2.5 py-1 text-xs font-medium rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                      className="px-2 py-1 text-[11px] sm:text-xs font-medium rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer whitespace-nowrap active:scale-95"
                     >
-                      Xóa phân bổ
+                      Xóa
                     </button>
                   </div>
                 )}
               </div>
 
               {unpaidReceipts.length === 0 ? (
-                <div className="p-5 text-center rounded-lg bg-white dark:bg-[#1a1b23] border border-dashed border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400">
+                <div className="p-4 sm:p-5 text-center rounded-lg bg-white dark:bg-[#1a1b23] border border-dashed border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400">
                   <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1.5 opacity-80" />
                   <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
                     Nhà cung cấp này hiện không có phiếu nhập nào chưa thanh toán.
@@ -1626,63 +1654,120 @@ export const SupplierDebtsPage: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                <div className="border border-gray-200/80 dark:border-gray-800 rounded-lg overflow-hidden bg-white dark:bg-[#1a1b23]">
-                  <div className="overflow-x-auto max-h-56">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-gray-50 dark:bg-gray-800/80 text-gray-600 dark:text-gray-400 sticky top-0 border-b border-gray-200 dark:border-gray-700">
-                        <tr>
-                          <th className="px-3 py-2 font-semibold">Mã Phiếu Nhập</th>
-                          <th className="px-3 py-2 font-semibold">Ngày Nhập</th>
-                          <th className="px-3 py-2 text-right font-semibold">Tổng Phải Trả</th>
-                          <th className="px-3 py-2 text-right font-semibold">Còn Nợ</th>
-                          <th className="px-3 py-2 text-right font-semibold w-40">Tiền Phân Bổ (đ)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-mono">
-                        {unpaidReceipts.map((r) => {
-                          const alloc = paymentForm.allocations.find((a) => a.receiptId === r.id);
-                          const allocAmount = alloc ? alloc.amount : 0;
-                          const remaining = Number(r.remainingAmount);
+                <>
+                  {/* Mobile Cards View (< sm) */}
+                  <div className="sm:hidden space-y-2">
+                    {unpaidReceipts.map((r) => {
+                      const alloc = paymentForm.allocations.find((a) => a.receiptId === r.id);
+                      const allocAmount = alloc ? alloc.amount : 0;
+                      const remaining = Number(r.remainingAmount);
 
-                          return (
-                            <tr key={r.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                              <td className="px-3 py-2 font-bold text-[#5865f2] dark:text-indigo-400 font-mono">
-                                {r.receiptCode}
-                              </td>
-                              <td className="px-3 py-2 text-gray-500 font-sans">
-                                {new Date(r.receiptDate).toLocaleDateString('vi-VN')}
-                              </td>
-                              <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300">
-                                {Number(r.payableAmount).toLocaleString('vi-VN')}đ
-                              </td>
-                              <td className="px-3 py-2 text-right font-bold text-rose-600 dark:text-rose-400">
-                                {remaining.toLocaleString('vi-VN')}đ
-                              </td>
-                              <td className="px-3 py-2 text-right">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <CurrencyInput
-                                    value={allocAmount}
-                                    onChange={(val) => handleAllocationAmountChange(r.id, val)}
-                                    className="w-28"
-                                    inputClassName="text-right border-indigo-200 dark:border-indigo-800/70 font-mono font-bold text-[#5865f2] dark:text-indigo-400 text-xs py-1 px-2 rounded focus:ring-1 focus:ring-[#5865f2]"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => handleAllocationAmountChange(r.id, remaining)}
-                                    className="text-[10px] px-1.5 py-1 rounded bg-indigo-50 dark:bg-indigo-950/60 text-[#5865f2] dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-sans font-semibold transition-colors cursor-pointer shrink-0"
-                                    title="Phân bổ toàn bộ khoản nợ phiếu này"
-                                  >
-                                    Đủ
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                      return (
+                        <div
+                          key={r.id}
+                          className="p-2.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 rounded-xl space-y-2 text-xs shadow-xs"
+                        >
+                          <div className="flex items-center justify-between pb-1.5 border-b border-gray-100 dark:border-gray-800">
+                            <span className="font-bold text-[#5865f2] dark:text-indigo-400 font-mono">
+                              {r.receiptCode}
+                            </span>
+                            <span className="text-[11px] text-gray-500 font-sans">
+                              {new Date(r.receiptDate).toLocaleDateString('vi-VN')}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-gray-500">
+                              Phải trả: {Number(r.payableAmount).toLocaleString('vi-VN')}đ
+                            </span>
+                            <span className="font-bold text-rose-600 dark:text-rose-400 font-mono">
+                              Còn nợ: {remaining.toLocaleString('vi-VN')}đ
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-gray-100 dark:border-gray-800">
+                            <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">
+                              Phân bổ:
+                            </span>
+                            <div className="flex items-center gap-1.5 flex-1 max-w-[170px] justify-end">
+                              <CurrencyInput
+                                value={allocAmount}
+                                onChange={(val) => handleAllocationAmountChange(r.id, val)}
+                                className="flex-1"
+                                inputClassName="text-right border-indigo-200 dark:border-indigo-800/70 font-mono font-bold text-[#5865f2] dark:text-indigo-400 text-xs py-1 px-2 rounded-lg h-[34px] focus:ring-1 focus:ring-[#5865f2]"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleAllocationAmountChange(r.id, remaining)}
+                                className="text-[11px] px-2 h-[34px] rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-[#5865f2] dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-semibold transition-all cursor-pointer shrink-0 active:scale-95"
+                                title="Phân bổ toàn bộ khoản nợ phiếu này"
+                              >
+                                Đủ
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
+
+                  {/* Desktop Table View (>= sm) */}
+                  <div className="hidden sm:block border border-gray-200/80 dark:border-gray-800 rounded-lg overflow-hidden bg-white dark:bg-[#1a1b23]">
+                    <div className="overflow-x-auto max-h-56">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-gray-50 dark:bg-gray-800/80 text-gray-600 dark:text-gray-400 sticky top-0 border-b border-gray-200 dark:border-gray-700">
+                          <tr>
+                            <th className="px-3 py-2 font-semibold">Mã Phiếu Nhập</th>
+                            <th className="px-3 py-2 font-semibold">Ngày Nhập</th>
+                            <th className="px-3 py-2 text-right font-semibold">Tổng Phải Trả</th>
+                            <th className="px-3 py-2 text-right font-semibold">Còn Nợ</th>
+                            <th className="px-3 py-2 text-right font-semibold w-40">Tiền Phân Bổ (đ)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-mono">
+                          {unpaidReceipts.map((r) => {
+                            const alloc = paymentForm.allocations.find((a) => a.receiptId === r.id);
+                            const allocAmount = alloc ? alloc.amount : 0;
+                            const remaining = Number(r.remainingAmount);
+
+                            return (
+                              <tr key={r.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                                <td className="px-3 py-2 font-bold text-[#5865f2] dark:text-indigo-400 font-mono">
+                                  {r.receiptCode}
+                                </td>
+                                <td className="px-3 py-2 text-gray-500 font-sans">
+                                  {new Date(r.receiptDate).toLocaleDateString('vi-VN')}
+                                </td>
+                                <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300">
+                                  {Number(r.payableAmount).toLocaleString('vi-VN')}đ
+                                </td>
+                                <td className="px-3 py-2 text-right font-bold text-rose-600 dark:text-rose-400">
+                                  {remaining.toLocaleString('vi-VN')}đ
+                                </td>
+                                <td className="px-3 py-2 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <CurrencyInput
+                                      value={allocAmount}
+                                      onChange={(val) => handleAllocationAmountChange(r.id, val)}
+                                      className="w-28"
+                                      inputClassName="text-right border-indigo-200 dark:border-indigo-800/70 font-mono font-bold text-[#5865f2] dark:text-indigo-400 text-xs py-1 px-2 rounded focus:ring-1 focus:ring-[#5865f2]"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAllocationAmountChange(r.id, remaining)}
+                                      className="text-[10px] px-1.5 py-1 rounded bg-indigo-50 dark:bg-indigo-950/60 text-[#5865f2] dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 font-sans font-semibold transition-colors cursor-pointer shrink-0 active:scale-95"
+                                      title="Phân bổ toàn bộ khoản nợ phiếu này"
+                                    >
+                                      Đủ
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
               )}
 
               {/* Summary Calculation */}
@@ -1693,14 +1778,14 @@ export const SupplierDebtsPage: React.FC = () => {
 
                 if (isOverAllocated) {
                   return (
-                    <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 rounded-lg flex items-center justify-between text-xs text-rose-700 dark:text-rose-300">
-                      <div className="flex items-center gap-2">
+                    <div className="p-2.5 sm:p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 rounded-lg flex items-center justify-between text-xs text-rose-700 dark:text-rose-300">
+                      <div className="flex items-center gap-1.5">
                         <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                        <span>
-                          Tổng tiền phân bổ ({totalAlloc.toLocaleString('vi-VN')}đ) đang vượt quá số tiền chi ({paymentForm.amount.toLocaleString('vi-VN')}đ)!
+                        <span className="text-[11px] sm:text-xs">
+                          Tiền phân bổ vượt quá số tiền chi ({paymentForm.amount.toLocaleString('vi-VN')}đ)!
                         </span>
                       </div>
-                      <span className="font-bold font-mono">
+                      <span className="font-bold font-mono text-[11px] sm:text-xs shrink-0">
                         -{(totalAlloc - paymentForm.amount).toLocaleString('vi-VN')}đ
                       </span>
                     </div>
@@ -1709,12 +1794,12 @@ export const SupplierDebtsPage: React.FC = () => {
 
                 if (excess > 0 && paymentForm.amount > 0) {
                   return (
-                    <div className="p-3 bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/40 rounded-lg flex justify-between items-center text-xs">
-                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                    <div className="p-2.5 sm:p-3 bg-indigo-50/80 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/40 rounded-lg flex justify-between items-center text-xs">
+                      <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
                         <Info className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                        <span>Khoản tiền dư chưa phân bổ (Lưu làm Tiền Đặt Cọc / Ứng Trước tại NCC):</span>
+                        <span className="text-[11px] sm:text-xs truncate">Khoản dư ghi nhận làm Tiền Đặt Cọc / Ứng Trước:</span>
                       </div>
-                      <span className="font-bold font-mono text-indigo-600 dark:text-indigo-400 text-sm">
+                      <span className="font-bold font-mono text-indigo-600 dark:text-indigo-400 text-xs sm:text-sm shrink-0 ml-2">
                         +{excess.toLocaleString('vi-VN')}đ
                       </span>
                     </div>
@@ -1724,11 +1809,11 @@ export const SupplierDebtsPage: React.FC = () => {
                 if (totalAlloc > 0 && totalAlloc === paymentForm.amount) {
                   return (
                     <div className="p-2.5 bg-emerald-50/80 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-900/30 rounded-lg flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>Đã phân bổ khớp 100% số tiền chi trả cho các phiếu nợ.</span>
+                        <span className="text-[11px] sm:text-xs">Đã phân bổ khớp 100% số tiền chi trả cho các phiếu nợ.</span>
                       </div>
-                      <span className="font-mono font-bold">{totalAlloc.toLocaleString('vi-VN')}đ</span>
+                      <span className="font-mono font-bold text-xs shrink-0">{totalAlloc.toLocaleString('vi-VN')}đ</span>
                     </div>
                   );
                 }
@@ -1753,12 +1838,12 @@ export const SupplierDebtsPage: React.FC = () => {
             </div>
           </ModalBody>
 
-          <ModalFooter>
+          <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
             <ModalButton
               type="button"
               variant="outline"
               onClick={() => setIsPaymentModalOpen(false)}
-              className="gap-1.5"
+              className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
             >
               <X size={14} />
               <span>Hủy</span>
@@ -1766,10 +1851,11 @@ export const SupplierDebtsPage: React.FC = () => {
             <ModalButton
               type="submit"
               variant="primary"
-              className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+              className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs active:scale-95 transition-all text-xs justify-center"
             >
               <CheckCircle2 size={14} />
-              <span>Xác nhận Lập Phiếu Chi</span>
+              <span className="sm:hidden">Lập Phiếu Chi</span>
+              <span className="hidden sm:inline">Xác nhận Lập Phiếu Chi</span>
             </ModalButton>
           </ModalFooter>
         </form>
@@ -1779,15 +1865,31 @@ export const SupplierDebtsPage: React.FC = () => {
       <Modal
         isOpen={isAddSupplierModalOpen}
         onClose={() => setIsAddSupplierModalOpen(false)}
-        title={editingSupplier ? 'Chỉnh Sửa Nhà Cung Cấp' : 'Thêm Nhà Cung Cấp Mới'}
-        subtitle="Quản lý thông tin đối tác cung ứng, liên hệ và tài khoản thanh toán"
+        title={
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="sm:hidden font-semibold truncate">
+              {editingSupplier ? 'Sửa Nhà Cung Cấp' : 'Thêm Nhà Cung Cấp'}
+            </span>
+            <span className="hidden sm:inline font-semibold truncate">
+              {editingSupplier ? 'Chỉnh Sửa Nhà Cung Cấp' : 'Thêm Nhà Cung Cấp Mới'}
+            </span>
+          </div>
+        }
+        subtitle={
+          <div className="min-w-0 truncate">
+            <span className="sm:hidden truncate">Thông tin đối tác & tài khoản thanh toán</span>
+            <span className="hidden sm:inline truncate">
+              Quản lý thông tin đối tác cung ứng, liên hệ và tài khoản thanh toán
+            </span>
+          </div>
+        }
         icon={Building2}
         size="lg"
       >
-        <form onSubmit={handleSaveSupplier} className="space-y-4">
-          <ModalBody className="space-y-4 text-xs sm:text-sm">
+        <form onSubmit={handleSaveSupplier} className="flex flex-col flex-1 min-h-0">
+          <ModalBody className="space-y-3 sm:space-y-4 text-xs sm:text-sm p-3 sm:p-5">
             {/* 1. THÔNG TIN ĐỐI TÁC CƠ BẢN */}
-            <div className="p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-3">
+            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
                 <Building2 className="w-3.5 h-3.5 text-[#5865f2]" />
                 <span>Thông tin định danh đối tác</span>
@@ -1973,19 +2075,24 @@ export const SupplierDebtsPage: React.FC = () => {
             </div>
           </ModalBody>
 
-          <ModalFooter>
+          <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
             <ModalButton
               type="button"
               variant="outline"
               onClick={() => setIsAddSupplierModalOpen(false)}
-              className="gap-1.5"
+              className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
             >
               <X size={14} />
               <span>Hủy</span>
             </ModalButton>
-            <ModalButton type="submit" variant="primary" className="gap-1.5">
+            <ModalButton
+              type="submit"
+              variant="primary"
+              className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 font-semibold shadow-xs active:scale-95 transition-all text-xs justify-center"
+            >
               <Check size={14} />
-              <span>{editingSupplier ? 'Cập Nhật Nhà Cung Cấp' : 'Lưu Nhà Cung Cấp'}</span>
+              <span className="sm:hidden">{editingSupplier ? 'Cập nhật' : 'Lưu NCC'}</span>
+              <span className="hidden sm:inline">{editingSupplier ? 'Cập Nhật Nhà Cung Cấp' : 'Lưu Nhà Cung Cấp'}</span>
             </ModalButton>
           </ModalFooter>
         </form>
@@ -1995,21 +2102,33 @@ export const SupplierDebtsPage: React.FC = () => {
       <Modal
         isOpen={isReturnModalOpen}
         onClose={() => setIsReturnModalOpen(false)}
-        title="Lập Phiếu Trả Hàng Cho Nhà Cung Cấp"
-        subtitle="Xuất trả hàng lỗi / hỏng / thừa về nhà cung cấp và ghi nhận giảm trừ công nợ trực tiếp"
+        title={
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="sm:hidden font-semibold truncate">Phiếu trả hàng NCC</span>
+            <span className="hidden sm:inline font-semibold truncate">Lập Phiếu Trả Hàng Cho Nhà Cung Cấp</span>
+          </div>
+        }
+        subtitle={
+          <div className="min-w-0 truncate">
+            <span className="sm:hidden truncate">Xuất trả hàng lỗi & giảm trừ công nợ</span>
+            <span className="hidden sm:inline truncate">
+              Xuất trả hàng lỗi / hỏng / thừa về nhà cung cấp và ghi nhận giảm trừ công nợ trực tiếp
+            </span>
+          </div>
+        }
         icon={RotateCcw}
         size="2xl"
       >
-        <form onSubmit={handleSaveReturn} className="space-y-4">
-          <ModalBody className="space-y-4 text-xs sm:text-sm max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleSaveReturn} className="flex flex-col flex-1 min-h-0">
+          <ModalBody className="space-y-3 sm:space-y-4 text-xs sm:text-sm p-3 sm:p-5">
             {/* 1. THÔNG TIN ĐỐI TÁC & KHO XUẤT */}
-            <div className="p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-3">
+            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
               <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
                 <Building2 className="w-3.5 h-3.5 text-[#5865f2]" />
                 <span>Thông tin xuất trả & Đối tác</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                     <Building2 size={13} className="text-[#5865f2]" />
@@ -2079,16 +2198,16 @@ export const SupplierDebtsPage: React.FC = () => {
             </div>
 
             {/* 2. DANH SÁCH SẢN PHẨM XUẤT TRẢ */}
-            <div className="p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
-                <div className="flex items-center gap-2 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-                  <Boxes size={14} className="text-[#5865f2]" />
-                  <span>Sản phẩm xuất trả lại ({returnForm.items.length})</span>
+            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800 gap-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider truncate min-w-0">
+                  <Boxes size={14} className="text-[#5865f2] shrink-0" />
+                  <span className="truncate">Sản phẩm xuất trả ({returnForm.items.length})</span>
                 </div>
                 <button
                   type="button"
                   onClick={handleAddReturnItemRow}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#5865f2] dark:text-indigo-400 hover:bg-[#5865f2]/10 rounded border border-[#5865f2]/30 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#5865f2] dark:text-indigo-400 hover:bg-[#5865f2]/10 rounded-lg border border-[#5865f2]/30 transition-colors cursor-pointer shrink-0 whitespace-nowrap active:scale-95"
                 >
                   <Plus size={13} />
                   <span>Thêm sản phẩm</span>
@@ -2111,8 +2230,26 @@ export const SupplierDebtsPage: React.FC = () => {
                   return (
                     <div
                       key={idx}
-                      className="p-3 sm:p-2 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/80 rounded-lg space-y-2.5 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2 sm:items-center shadow-xs"
+                      className="p-3 sm:p-2 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/80 rounded-xl sm:rounded-lg space-y-2.5 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2 sm:items-center shadow-xs"
                     >
+                      {/* Mobile Row Header: Item index & Delete action */}
+                      <div className="sm:hidden flex items-center justify-between pb-1.5 border-b border-gray-100 dark:border-gray-800">
+                        <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                          Mục #{idx + 1}
+                        </span>
+                        {returnForm.items.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveReturnItemRow(idx)}
+                            className="inline-flex items-center gap-1 text-[11px] text-rose-500 hover:text-rose-600 font-medium px-2 py-0.5 rounded bg-rose-50 dark:bg-rose-950/30 active:scale-95 transition-all cursor-pointer"
+                          >
+                            <Trash2 size={12} />
+                            <span>Xóa dòng</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Product select */}
                       <div className="col-span-5">
                         <label className="sm:hidden block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
                           Sản phẩm & Biến thể *
@@ -2137,43 +2274,48 @@ export const SupplierDebtsPage: React.FC = () => {
                         />
                       </div>
 
-                      <div className="col-span-2">
-                        <label className="sm:hidden block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                          Số lượng trả
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={row.quantity}
-                          onChange={(e) =>
-                            handleReturnItemChange(idx, 'quantity', Math.max(1, parseInt(e.target.value) || 1))
-                          }
-                          className="w-full text-center font-bold text-xs h-[30px] bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20"
-                        />
+                      {/* Mobile 2-column group: Quantity & Unit Price */}
+                      <div className="grid grid-cols-2 gap-2 sm:contents">
+                        <div className="col-span-2">
+                          <label className="sm:hidden block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                            Số lượng trả
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={row.quantity}
+                            onChange={(e) =>
+                              handleReturnItemChange(idx, 'quantity', Math.max(1, parseInt(e.target.value) || 1))
+                            }
+                            className="w-full text-center font-bold text-xs h-[34px] sm:h-[30px] bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20"
+                          />
+                        </div>
+
+                        <div className="col-span-2">
+                          <label className="sm:hidden block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                            Đơn giá hoàn (đ)
+                          </label>
+                          <CurrencyInput
+                            value={row.unitPrice}
+                            onChange={(val) => handleReturnItemChange(idx, 'unitPrice', val)}
+                            suffix="đ"
+                            inputClassName="text-right font-mono text-xs h-[34px] sm:h-[30px] p-2 sm:p-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded text-gray-900 dark:text-white"
+                          />
+                        </div>
                       </div>
 
-                      <div className="col-span-2">
-                        <label className="sm:hidden block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                          Đơn giá (đ)
-                        </label>
-                        <CurrencyInput
-                          value={row.unitPrice}
-                          onChange={(val) => handleReturnItemChange(idx, 'unitPrice', val)}
-                          suffix="đ"
-                          inputClassName="text-right font-mono text-xs h-[30px] p-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white"
-                        />
-                      </div>
-
-                      <div className="col-span-2 text-right">
-                        <label className="sm:hidden block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                          Thành tiền
-                        </label>
-                        <div className="font-mono font-bold text-xs text-gray-900 dark:text-white pt-1 sm:pt-0">
+                      {/* Line Total */}
+                      <div className="col-span-2 sm:text-right flex items-center justify-between sm:justify-end pt-1.5 sm:pt-0 border-t sm:border-t-0 border-gray-100 dark:border-gray-800">
+                        <span className="sm:hidden text-[11px] font-semibold text-gray-500">
+                          Thành tiền:
+                        </span>
+                        <div className="font-mono font-bold text-xs text-orange-600 dark:text-orange-400 sm:text-gray-900 sm:dark:text-white">
                           {lineTotal.toLocaleString('vi-VN')} đ
                         </div>
                       </div>
 
-                      <div className="col-span-1 text-center flex justify-end sm:justify-center">
+                      {/* Desktop Delete button */}
+                      <div className="hidden sm:flex col-span-1 text-center justify-center">
                         <button
                           type="button"
                           onClick={() => handleRemoveReturnItemRow(idx)}
@@ -2191,13 +2333,13 @@ export const SupplierDebtsPage: React.FC = () => {
             </div>
 
             {/* 3. TỔNG TIỀN GIẢM TRỪ NỢ & LÝ DO */}
-            <div className="p-3.5 bg-orange-50/50 dark:bg-orange-950/20 rounded-xl border border-orange-200/80 dark:border-orange-900/40 space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+            <div className="p-3 sm:p-3.5 bg-orange-50/50 dark:bg-orange-950/20 rounded-xl border border-orange-200/80 dark:border-orange-900/40 space-y-2.5 sm:space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start">
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                      <DollarSign size={13} className="text-orange-500" />
-                      <span>Khoản tiền giảm trừ nợ NCC (đ) *</span>
+                  <div className="flex items-center justify-between mb-1.5 gap-2">
+                    <label className="text-xs font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 truncate min-w-0">
+                      <DollarSign size={13} className="text-orange-500 shrink-0" />
+                      <span className="truncate">Khoản tiền giảm nợ NCC (đ) *</span>
                     </label>
                     {(() => {
                       const totalGoods = returnForm.items.reduce(
@@ -2209,9 +2351,9 @@ export const SupplierDebtsPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setReturnForm({ ...returnForm, debtOffsetAmount: totalGoods })}
-                            className="text-[10px] text-orange-600 dark:text-orange-400 hover:underline font-semibold cursor-pointer"
+                            className="text-[10px] text-orange-600 dark:text-orange-400 hover:underline font-semibold cursor-pointer shrink-0 whitespace-nowrap active:opacity-75"
                           >
-                            Bằng tổng tiền hàng
+                            = Tổng tiền hàng
                           </button>
                         );
                       }
@@ -2222,12 +2364,12 @@ export const SupplierDebtsPage: React.FC = () => {
                     value={returnForm.debtOffsetAmount}
                     onChange={(val) => setReturnForm({ ...returnForm, debtOffsetAmount: val })}
                     suffix="đ"
-                    inputClassName="border-orange-400 dark:border-orange-600 font-bold font-mono text-orange-600 dark:text-orange-400 text-sm py-1.5 px-3 bg-white dark:bg-[#1a1b23] rounded-lg shadow-xs"
+                    inputClassName="border-orange-400 dark:border-orange-600 font-bold font-mono text-orange-600 dark:text-orange-400 text-sm py-2 sm:py-1.5 px-3 bg-white dark:bg-[#1a1b23] rounded-lg shadow-xs"
                   />
                   <div className="flex items-center gap-1.5 mt-2 text-[11px] text-gray-500 dark:text-gray-400">
                     <Info size={12} className="text-orange-500 shrink-0" />
-                    <span>
-                      Tổng giá trị hàng xuất trả:{' '}
+                    <span className="truncate">
+                      Tổng giá trị hàng xuất:{' '}
                       <strong className="font-mono text-gray-900 dark:text-white">
                         {returnForm.items
                           .reduce((sum, it) => sum + (it.quantity || 0) * (it.unitPrice || 0), 0)
@@ -2240,7 +2382,7 @@ export const SupplierDebtsPage: React.FC = () => {
 
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                    <FileText size={13} className="text-gray-500" />
+                    <FileText size={13} className="text-gray-500 shrink-0" />
                     <span>Lý do xuất trả hàng</span>
                   </label>
 
@@ -2256,7 +2398,7 @@ export const SupplierDebtsPage: React.FC = () => {
                         key={reasonTag}
                         type="button"
                         onClick={() => setReturnForm({ ...returnForm, reason: reasonTag })}
-                        className={`text-[11px] px-2.5 py-0.5 rounded-full border transition-all cursor-pointer ${
+                        className={`text-[11px] px-2.5 py-1 rounded-full border transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
                           returnForm.reason === reasonTag
                             ? 'bg-orange-500 text-white border-orange-500 font-semibold shadow-xs'
                             : 'bg-white dark:bg-[#1a1b23] border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-orange-300'
@@ -2272,19 +2414,19 @@ export const SupplierDebtsPage: React.FC = () => {
                     value={returnForm.reason}
                     onChange={(e) => setReturnForm({ ...returnForm, reason: e.target.value })}
                     placeholder="VD: Hàng lỗi vải, rách bao bì khi kiểm đếm..."
-                    className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
+                    className="w-full px-3 py-2 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
                   />
                 </div>
               </div>
             </div>
           </ModalBody>
 
-          <ModalFooter>
+          <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
             <ModalButton
               type="button"
               variant="outline"
               onClick={() => setIsReturnModalOpen(false)}
-              className="gap-1.5"
+              className="gap-1.5 px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
             >
               <X size={14} />
               <span>Hủy</span>
@@ -2292,10 +2434,11 @@ export const SupplierDebtsPage: React.FC = () => {
             <ModalButton
               type="submit"
               variant="primary"
-              className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white shadow-xs"
+              className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 bg-orange-600 hover:bg-orange-700 text-white font-semibold shadow-xs active:scale-95 transition-all text-xs justify-center"
             >
               <RotateCcw size={14} />
-              <span>Xác nhận Trả Hàng & Giảm Nợ</span>
+              <span className="hidden sm:inline">Xác nhận Trả Hàng & Giảm Nợ</span>
+              <span className="sm:hidden">Xác nhận Trả Hàng</span>
             </ModalButton>
           </ModalFooter>
         </form>

@@ -295,48 +295,47 @@ export const InventoryPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div>
-          <h1 className="text-base sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
-            <Boxes size={20} className="text-[#5865f2]" />
-            <span className="sm:hidden">Hàng tồn kho</span>
-            <span className="hidden sm:inline">Kho & Tồn kho</span>
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+            <Boxes size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
+            <span className="truncate">Kho & Tồn kho</span>
           </h1>
-          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-            <span className="sm:hidden">Số dư thực có & khả dụng</span>
-            <span className="hidden sm:inline">Theo dõi số dư thực tế, nhập kho, điều chỉnh kiểm kê và sổ cái biến động bất biến</span>
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
+            Theo dõi số dư thực tế, nhập kho, điều chỉnh kiểm kê và sổ cái biến động bất biến
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <Link to="/purchase-receipts">
             <Button
               size="sm"
               variant="outline"
-              className="gap-1.5 border-[#5865f2]/40 text-[#5865f2] dark:text-[#7b85f5] hover:bg-[#5865f2]/10"
+              className="h-8 px-2 sm:px-3 gap-1 sm:gap-1.5 border-[#5865f2]/40 text-[#5865f2] dark:text-[#7b85f5] hover:bg-[#5865f2]/10 text-xs"
               title="Nhập hàng từ Nhà phân phối có công nợ"
             >
               <PackagePlus size={14} />
-              <span className="hidden sm:inline">Phiếu nhập NCC</span>
-              <span className="sm:hidden">Phiếu nhập</span>
+              <span className="hidden md:inline">Phiếu nhập NCC</span>
+              <span className="hidden sm:inline md:hidden">Phiếu nhập</span>
             </Button>
           </Link>
           <Button
             size="sm"
             onClick={() => handleOpenReceiveModal()}
-            className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="h-8 px-2 sm:px-3 gap-1 sm:gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+            title="Nhập kho lẻ"
           >
             <ArrowDownLeft size={14} />
-            <span className="hidden sm:inline">Nhập kho lẻ</span>
-            <span className="sm:hidden">Nhập lẻ</span>
+            <span className="hidden sm:inline">Nhập lẻ</span>
           </Button>
           <Button
             size="sm"
             onClick={() => setIsAdjustModalOpen(true)}
-            className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
+            className="h-8 px-2 sm:px-3 gap-1 sm:gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs"
+            title="Điều chỉnh kiểm kê"
           >
             <Sliders size={14} />
-            <span>Điều chỉnh</span>
+            <span className="hidden sm:inline">Điều chỉnh</span>
           </Button>
           <Button
             variant="outline"
@@ -348,10 +347,11 @@ export const InventoryPage: React.FC = () => {
                   ? loadLedger()
                   : handleRunReconciliation()
             }
-            className="p-2"
+            className="h-8 w-8 sm:w-auto p-0 sm:px-2.5 sm:py-1 gap-1 text-xs"
             title="Làm mới dữ liệu"
           >
             <RefreshCw size={14} />
+            <span className="hidden lg:inline text-xs">Làm mới</span>
           </Button>
         </div>
       </div>
@@ -414,39 +414,41 @@ export const InventoryPage: React.FC = () => {
       <div className="flex items-center gap-1 p-1 bg-gray-100/80 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded w-full sm:w-fit shrink-0 max-w-full overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab('BALANCES')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 whitespace-nowrap ${
             activeTab === 'BALANCES'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
           }`}
         >
-          <Boxes size={14} />
+          <Boxes size={14} className="shrink-0" />
           <span>Số dư tồn kho ({balances.length})</span>
         </button>
         <button
           onClick={() => setActiveTab('LEDGER')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 ${
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 whitespace-nowrap ${
             activeTab === 'LEDGER'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
           }`}
         >
-          <History size={14} />
-          <span>Sổ cái biến động (Inventory Ledger)</span>
+          <History size={14} className="shrink-0" />
+          <span className="hidden sm:inline">Sổ cái biến động (Inventory Ledger)</span>
+          <span className="sm:hidden">Sổ cái biến động</span>
         </button>
         <button
           onClick={() => {
             setActiveTab('RECONCILIATION');
             if (!reconciliationResult) handleRunReconciliation();
           }}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 ${
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 whitespace-nowrap ${
             activeTab === 'RECONCILIATION'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
           }`}
         >
-          <ShieldCheck size={14} />
-          <span>Đối soát kiểm toán số dư</span>
+          <ShieldCheck size={14} className="shrink-0" />
+          <span className="hidden sm:inline">Đối soát kiểm toán số dư</span>
+          <span className="sm:hidden">Đối soát kiểm toán</span>
         </button>
       </div>
 
@@ -1222,13 +1224,13 @@ export const InventoryPage: React.FC = () => {
         <Modal
           isOpen={isReceiveModalOpen}
           onClose={() => setIsReceiveModalOpen(false)}
-          title="Tạo phiếu nhập kho hàng hóa"
-          subtitle="Ghi nhận số lượng thực nhập, tính lại giá vốn bình quân gia quyền và ghi sổ cái bất biến"
+          title={<><span className="sm:hidden">Nhập kho hàng hóa</span><span className="hidden sm:inline">Tạo phiếu nhập kho hàng hóa</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Ghi nhận số lượng thực nhập, tính lại giá vốn bình quân gia quyền và ghi sổ cái bất biến</span>}
           icon={ArrowDownLeft}
           maxWidth="max-w-lg"
         >
           <form onSubmit={handleReceiveSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                   Kho nhập hàng *
@@ -1373,15 +1375,17 @@ export const InventoryPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsReceiveModalOpen(false)}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
-              <ModalButton variant="primary" type="submit">
-                Xác nhận nhập kho
+              <ModalButton variant="primary" type="submit" className="flex-1 sm:flex-initial">
+                <span className="sm:hidden">Nhập kho</span>
+                <span className="hidden sm:inline">Xác nhận nhập kho</span>
               </ModalButton>
             </ModalFooter>
           </form>
@@ -1393,13 +1397,13 @@ export const InventoryPage: React.FC = () => {
         <Modal
           isOpen={isAdjustModalOpen}
           onClose={() => setIsAdjustModalOpen(false)}
-          title="Điều chỉnh tồn kho kiểm kê"
-          subtitle="Lập biên bản điều chỉnh thừa/thiếu tồn kho thực tế và hạch toán sổ cái kiểm toán"
+          title={<><span className="sm:hidden">Điều chỉnh kiểm kê</span><span className="hidden sm:inline">Điều chỉnh tồn kho kiểm kê</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Lập biên bản điều chỉnh thừa/thiếu tồn kho thực tế và hạch toán sổ cái kiểm toán</span>}
           icon={Sliders}
           maxWidth="max-w-lg"
         >
           <form onSubmit={handleAdjustSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                   Kho hàng *
@@ -1449,7 +1453,8 @@ export const InventoryPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Số lượng thay đổi (+ để tăng, - để giảm) *
+                  <span className="sm:hidden">Số lượng thay đổi (+ / -) *</span>
+                  <span className="hidden sm:inline">Số lượng thay đổi (+ để tăng, - để giảm) *</span>
                 </label>
                 <input
                   type="number"
@@ -1468,7 +1473,8 @@ export const InventoryPage: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Lý do điều chỉnh (Bắt buộc theo chuẩn kế toán kho) *
+                  <span className="sm:hidden">Lý do điều chỉnh *</span>
+                  <span className="hidden sm:inline">Lý do điều chỉnh (Bắt buộc theo chuẩn kế toán kho) *</span>
                 </label>
                 <Select
                   value={adjustForm.reason}
@@ -1495,15 +1501,17 @@ export const InventoryPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsAdjustModalOpen(false)}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
-              <ModalButton variant="primary" type="submit">
-                Xác nhận điều chỉnh
+              <ModalButton variant="primary" type="submit" className="flex-1 sm:flex-initial">
+                <span className="sm:hidden">Điều chỉnh</span>
+                <span className="hidden sm:inline">Xác nhận điều chỉnh</span>
               </ModalButton>
             </ModalFooter>
           </form>

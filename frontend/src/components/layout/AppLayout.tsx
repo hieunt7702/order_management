@@ -13,7 +13,10 @@ export const AppLayout: React.FC = () => {
     location.pathname.startsWith('/purchase-receipts') ||
     location.pathname.startsWith('/suppliers');
 
-  const isScanActive = location.pathname === '/scan';
+  const isScanActive =
+    location.pathname === '/scan' ||
+    location.pathname.startsWith('/scan') ||
+    location.pathname === '/scan-orders';
 
   const isInventoryActive =
     location.pathname.startsWith('/inventory') ||
@@ -28,10 +31,19 @@ export const AppLayout: React.FC = () => {
 
       {/* Main Column */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f9f9fa] dark:bg-[#0f1115]">
-        <AppHeader />
+        {/* Hide system header on mobile and tablet when on barcode scan screen */}
+        <div className={isScanActive ? 'hidden lg:block' : ''}>
+          <AppHeader />
+        </div>
 
         {/* Page Content */}
-        <main className="flex-1 flex flex-col min-h-0 overflow-y-auto overscroll-y-contain custom-scrollbar p-4 sm:p-5 md:px-6 md:py-5 pb-[calc(7rem+env(safe-area-inset-bottom,0px))] md:pb-6">
+        <main
+          className={`flex-1 flex flex-col min-h-0 overflow-y-auto overscroll-y-contain custom-scrollbar ${
+            isScanActive
+              ? 'p-2.5 sm:p-3.5 md:px-5 md:py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-6'
+              : 'p-4 sm:p-5 md:px-6 md:py-5 pb-[calc(7rem+env(safe-area-inset-bottom,0px))] md:pb-6'
+          }`}
+        >
           <Outlet />
         </main>
 

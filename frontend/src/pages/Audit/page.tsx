@@ -188,13 +188,14 @@ export const AuditPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div>
-          <h1 className="text-lg md:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
-            <ShieldAlert size={20} className="text-[#5865f2]" />
-            Nhật ký kiểm toán hệ thống (Audit Trail)
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+            <ShieldAlert size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
+            <span className="sm:hidden truncate">Nhật ký kiểm toán</span>
+            <span className="hidden sm:inline truncate">Nhật ký kiểm toán hệ thống (Audit Trail)</span>
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
             Lưu vết mọi hành động xuất hàng, điều chỉnh kho, import đơn và phân quyền của nhân viên
           </p>
         </div>
@@ -203,10 +204,11 @@ export const AuditPage: React.FC = () => {
           variant="outline"
           size="sm"
           onClick={loadAuditLogs}
-          className="p-2 self-start sm:self-auto"
+          className="h-8 w-8 sm:w-auto p-0 sm:px-2.5 sm:py-1 gap-1 text-xs shrink-0"
           title="Làm mới dữ liệu"
         >
           <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+          <span className="hidden lg:inline text-xs">Làm mới</span>
         </Button>
       </div>
 
@@ -387,13 +389,13 @@ export const AuditPage: React.FC = () => {
         <Modal
           isOpen={Boolean(selectedLog)}
           onClose={() => setSelectedLog(null)}
-          title={`Bản ghi kiểm toán #${selectedLog.id?.substring(0, 8)}`}
-          subtitle={`${getActionInfo(selectedLog.action).label} (${selectedLog.action}) • ${getEntityLabel(selectedLog.entityType)}`}
+          title={<><span className="sm:hidden">Kiểm toán #{selectedLog.id?.substring(0, 8)}</span><span className="hidden sm:inline">{`Bản ghi kiểm toán #${selectedLog.id?.substring(0, 8)}`}</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`${getActionInfo(selectedLog.action).label} (${selectedLog.action}) • ${getEntityLabel(selectedLog.entityType)}`}</span>}
           icon={ShieldAlert}
           maxWidth="max-w-xl"
         >
           <div className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div className="grid grid-cols-2 gap-3 text-xs bg-gray-50 dark:bg-[#181b22] p-3 rounded border border-gray-200 dark:border-gray-800">
                 <div>
                   <span className="text-gray-400">Thời gian:</span>
@@ -403,13 +405,13 @@ export const AuditPage: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-gray-400">Người thực hiện:</span>
-                  <div className="font-medium text-gray-800 dark:text-gray-200 mt-0.5">
+                  <div className="font-medium text-gray-800 dark:text-gray-200 mt-0.5 truncate">
                     {selectedLog.user?.email || selectedLog.userId}
                   </div>
                 </div>
                 <div>
                   <span className="text-gray-400">Thực thể ID:</span>
-                  <div className="font-mono text-[11px] text-gray-800 dark:text-gray-200 mt-0.5">
+                  <div className="font-mono text-[11px] text-gray-800 dark:text-gray-200 mt-0.5 truncate">
                     {selectedLog.entityId || '--'}
                   </div>
                 </div>
@@ -431,8 +433,8 @@ export const AuditPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
-              <ModalButton variant="primary" onClick={() => setSelectedLog(null)}>
+            <ModalFooter className="flex items-center justify-end w-full">
+              <ModalButton variant="primary" onClick={() => setSelectedLog(null)} className="w-full sm:w-auto">
                 Đóng
               </ModalButton>
             </ModalFooter>

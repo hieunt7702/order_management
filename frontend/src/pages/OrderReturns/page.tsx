@@ -228,27 +228,28 @@ export const OrderReturnsPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-lg md:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
-            <RotateCcw size={20} className="text-[#5865f2]" />
-            Xử lý đơn hoàn & Nhập lại kho
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+            <RotateCcw size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
+            <span className="sm:hidden truncate">Hàng hoàn</span>
+            <span className="hidden sm:inline truncate">Xử lý đơn hoàn & Nhập lại kho</span>
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
             Chỉ cộng kho khi kho thực tế nhận và kiểm tra: Hàng đạt chuẩn → Tồn bán được • Hàng hỏng/móp → Tồn hàng lỗi
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={() => (activeTab === 'QUEUE' ? loadReturnQueue() : loadHistory())}
-            className="gap-1.5"
+            className="gap-1.5 p-2 lg:px-3"
             title="Làm mới dữ liệu"
           >
             <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-            <span>Làm mới</span>
+            <span className="hidden lg:inline">Làm mới</span>
           </Button>
         </div>
       </div>
@@ -574,10 +575,15 @@ export const OrderReturnsPage: React.FC = () => {
       )}
 
       {/* MODAL: KIỂM TRA TỪNG SẢN PHẨM & NHẬP HOÀN KHO */}
-      <Modal isOpen={isInspectModalOpen} onClose={() => setIsInspectModalOpen(false)} title={`Kiểm Tra Hàng Hoàn Thực Tế: ${selectedQueueOrder?.internalOrderCode || ''}`} size="xl">
+      <Modal
+        isOpen={isInspectModalOpen}
+        onClose={() => setIsInspectModalOpen(false)}
+        title={<><span className="sm:hidden">Kiểm tra hoàn: {selectedQueueOrder?.internalOrderCode}</span><span className="hidden sm:inline">{`Kiểm Tra Hàng Hoàn Thực Tế: ${selectedQueueOrder?.internalOrderCode || ''}`}</span></>}
+        size="xl"
+      >
         {selectedQueueOrder && (
-          <form onSubmit={handleSubmitInspection} className="space-y-4">
-            <ModalBody className="max-h-[75vh] overflow-y-auto space-y-4 text-xs sm:text-sm">
+          <form onSubmit={handleSubmitInspection} className="flex flex-col flex-1 min-h-0">
+            <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5 text-xs sm:text-sm">
               {/* Header Info */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
                 <div>
@@ -756,12 +762,13 @@ export const OrderReturnsPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
-              <ModalButton type="button" variant="outline" onClick={() => setIsInspectModalOpen(false)}>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
+              <ModalButton type="button" variant="outline" onClick={() => setIsInspectModalOpen(false)} className="flex-1 sm:flex-initial">
                 Hủy bỏ
               </ModalButton>
-              <ModalButton type="submit" variant="primary">
-                Xác nhận Nhập Kho & Ghi Sổ Cái
+              <ModalButton type="submit" variant="primary" className="flex-1 sm:flex-initial">
+                <span className="sm:hidden">Nhập kho hoàn</span>
+                <span className="hidden sm:inline">Xác nhận Nhập Kho & Ghi Sổ Cái</span>
               </ModalButton>
             </ModalFooter>
           </form>
@@ -769,9 +776,14 @@ export const OrderReturnsPage: React.FC = () => {
       </Modal>
 
       {/* MODAL: CHI TIẾT PHIẾU NHẬN HOÀN */}
-      <Modal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} title={`Phiếu Nhận Hoàn: ${selectedHistoryDetail?.returnCode || ''}`} size="lg">
+      <Modal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        title={<><span className="sm:hidden">Phiếu hoàn: {selectedHistoryDetail?.returnCode}</span><span className="hidden sm:inline">{`Phiếu Nhận Hoàn: ${selectedHistoryDetail?.returnCode || ''}`}</span></>}
+        size="lg"
+      >
         {selectedHistoryDetail && (
-          <div className="space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+          <div className="space-y-3 sm:space-y-4 p-3 sm:p-5 max-h-[78vh] sm:max-h-[75vh] overflow-y-auto text-xs">
             <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <div>
                 <span className="text-gray-400 block">Mã đơn hàng:</span>

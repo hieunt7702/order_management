@@ -91,15 +91,25 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
     <Modal
       isOpen={isOpen}
       onClose={() => !isSubmitting && onClose()}
-      title="Thêm nhanh Nhà cung cấp"
-      subtitle="Tạo mới đối tác cung ứng để chọn ngay vào giao dịch"
+      title={
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="sm:hidden font-semibold truncate">Thêm nhanh NCC</span>
+          <span className="hidden sm:inline font-semibold truncate">Thêm nhanh Nhà cung cấp</span>
+        </div>
+      }
+      subtitle={
+        <div className="min-w-0 truncate">
+          <span className="sm:hidden truncate">Tạo đối tác chọn ngay vào đơn</span>
+          <span className="hidden sm:inline truncate">Tạo mới đối tác cung ứng để chọn ngay vào giao dịch</span>
+        </div>
+      }
       icon={Truck}
       maxWidth="max-w-lg"
     >
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-        <ModalBody className="space-y-3.5 text-xs">
+        <ModalBody className="space-y-3 sm:space-y-3.5 text-xs p-3 sm:p-5">
           {/* 1. THÔNG TIN CƠ BẢN */}
-          <div className="p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-3">
+          <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
             <div className="flex items-center gap-1.5 pb-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
               <Building2 className="w-3.5 h-3.5 text-[#5865f2]" />
               <span>Thông tin đối tác</span>
@@ -250,13 +260,13 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
           </div>
         </ModalBody>
 
-        <ModalFooter>
+        <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
           <ModalButton
             type="button"
             variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
-            className="gap-1.5"
+            className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
           >
             <X size={14} />
             <span>Hủy</span>
@@ -265,10 +275,11 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
             type="submit"
             variant="primary"
             loading={isSubmitting}
-            className="gap-1.5"
+            className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 font-semibold text-xs active:scale-95 justify-center"
           >
             <Check size={14} />
-            <span>Tạo Nhà Cung Cấp</span>
+            <span className="sm:hidden">Tạo NCC</span>
+            <span className="hidden sm:inline">Tạo Nhà Cung Cấp</span>
           </ModalButton>
         </ModalFooter>
       </form>

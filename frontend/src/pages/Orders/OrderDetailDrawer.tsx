@@ -441,13 +441,13 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
         <Modal
           isOpen={isCancelModalOpen}
           onClose={() => setIsCancelModalOpen(false)}
-          title="Xác nhận hủy đơn hàng"
-          subtitle="Giải phóng số lượng giữ hàng (reserved) và cập nhật trạng thái đơn"
+          title={<><span className="sm:hidden">Hủy đơn hàng</span><span className="hidden sm:inline">Xác nhận hủy đơn hàng</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Giải phóng số lượng giữ hàng (reserved) và cập nhật trạng thái đơn</span>}
           icon={Ban}
           maxWidth="max-w-md"
         >
           <form onSubmit={handleCancel} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Nếu đơn chưa xuất kho, số lượng đã giữ hàng (reserved) sẽ được giải phóng ngay lập tức về kho thực tế.
               </p>
@@ -465,10 +465,11 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                 />
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsCancelModalOpen(false)}
+                className="flex-1 sm:flex-initial"
               >
                 Đóng
               </ModalButton>
@@ -476,6 +477,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                 variant="danger"
                 type="submit"
                 disabled={isLoadingAction}
+                className="flex-1 sm:flex-initial"
               >
                 Xác nhận hủy
               </ModalButton>
@@ -489,13 +491,13 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
         <Modal
           isOpen={isReturnModalOpen}
           onClose={() => setIsReturnModalOpen(false)}
-          title="Xác nhận nhập lại hàng hoàn"
-          subtitle="Cộng lại tồn kho thực tế và hạch toán vào sổ cái kế toán"
+          title={<><span className="sm:hidden">Nhập lại hàng hoàn</span><span className="hidden sm:inline">Xác nhận nhập lại hàng hoàn</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Cộng lại tồn kho thực tế và hạch toán vào sổ cái kế toán</span>}
           icon={RotateCcw}
           maxWidth="max-w-md"
         >
           <form onSubmit={handleReceiveReturn} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Số lượng sản phẩm sẽ được cộng lại vào tồn kho thực tế (onHand) và ghi nhận vào sổ cái bất biến.
               </p>
@@ -513,10 +515,11 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                 />
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsReturnModalOpen(false)}
+                className="flex-1 sm:flex-initial"
               >
                 Đóng
               </ModalButton>
@@ -524,6 +527,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                 variant="primary"
                 type="submit"
                 disabled={isLoadingAction}
+                className="flex-1 sm:flex-initial"
               >
                 Nhập kho hoàn
               </ModalButton>

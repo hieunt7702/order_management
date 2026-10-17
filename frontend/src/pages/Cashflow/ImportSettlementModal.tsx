@@ -232,11 +232,11 @@ export const ImportSettlementModal: React.FC<ImportSettlementModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       size="2xl"
-      title="Đối soát File Quyết toán & Doanh thu Shopee"
-      subtitle="Ghép tiền thực nhận và các khoản phí sàn với đơn hàng, cập nhật số dư ví sàn"
+      title={<><span className="sm:hidden">Đối soát doanh thu Shopee</span><span className="hidden sm:inline">Đối soát File Quyết toán & Doanh thu Shopee</span></>}
+      subtitle={<span className="line-clamp-1 sm:line-clamp-none">Ghép tiền thực nhận và các khoản phí sàn với đơn hàng, cập nhật số dư ví sàn</span>}
       icon={FileSpreadsheet}
     >
-      <ModalBody className="space-y-4 p-6 max-h-[75vh] overflow-y-auto">
+      <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5 max-h-[78vh] sm:max-h-[75vh] overflow-y-auto text-xs sm:text-sm">
         {/* Hướng dẫn nguyên tắc quan trọng */}
         <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs text-emerald-800 dark:text-emerald-200 flex items-start gap-2.5">
           <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
@@ -409,8 +409,8 @@ Mã đơn hàng	Tổng tiền người mua trả	Số tiền thực nhận	Phí 
         )}
       </ModalBody>
 
-      <ModalFooter className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800">
-        <ModalButton variant="secondary" onClick={onClose} disabled={submitting}>
+      <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
+        <ModalButton variant="secondary" onClick={onClose} disabled={submitting} className="flex-1 sm:flex-initial">
           Đóng
         </ModalButton>
 
@@ -418,12 +418,17 @@ Mã đơn hàng	Tổng tiền người mua trả	Số tiền thực nhận	Phí 
           type="button"
           disabled={submitting || parsedRows.length === 0}
           onClick={handleSubmit}
-          className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl shadow-md shadow-indigo-600/20 transition-all flex items-center gap-1.5"
+          className="flex-1 sm:flex-initial min-h-[38px] sm:min-h-[32px] px-3.5 sm:px-5 py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:scale-95 disabled:opacity-50 rounded-lg sm:rounded-xl shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
         >
-          <CheckCircle2 className="w-4 h-4" />
-          {submitting
-            ? 'Đang xử lý ghép đơn...'
-            : `Tiến hành đối soát (${parsedRows.length} đơn)`}
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          {submitting ? (
+            'Đang xử lý...'
+          ) : (
+            <>
+              <span className="sm:hidden">Đối soát ({parsedRows.length})</span>
+              <span className="hidden sm:inline">Tiến hành đối soát ({parsedRows.length} đơn)</span>
+            </>
+          )}
         </button>
       </ModalFooter>
     </Modal>

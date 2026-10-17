@@ -214,19 +214,40 @@ export const DashboardPage: React.FC = () => {
                       >
                         {/* Drag Handle & Header */}
                         <div className="w-full pt-3 pb-2.5 px-4 flex flex-col border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-[#121620]">
-                          <div className="w-12 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-2.5" />
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold text-sm text-gray-900 dark:text-white flex items-center gap-1.5">
-                              <ListFilter size={15} className="text-[#5865f2]" />
-                              Lọc theo trạng thái Shopee
+                          <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-2.5" />
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-7 h-7 rounded-lg bg-[#5865f2]/10 dark:bg-[#5865f2]/20 flex items-center justify-center shrink-0">
+                                <ListFilter size={15} className="text-[#5865f2]" />
+                              </div>
+                              <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                                Lọc theo trạng thái Shopee
+                              </h3>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setIsStatusDropdownOpen(false)}
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-white/10 active:scale-95 transition-all shrink-0 cursor-pointer -mr-1"
+                              aria-label="Đóng"
+                            >
+                              <X size={17} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Quick Presets & Shortcuts */}
+                        <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#161b26] space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                              Chọn nhanh
                             </span>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2.5 shrink-0">
                               <button
                                 type="button"
                                 onClick={() =>
                                   setSelectedStatuses(SHOPEE_STATUS_OPTIONS.map((s) => s.id))
                                 }
-                                className="text-xs text-[#5865f2] hover:underline cursor-pointer font-medium"
+                                className="text-xs text-[#5865f2] hover:underline cursor-pointer font-medium whitespace-nowrap active:opacity-75"
                               >
                                 Chọn tất cả
                               </button>
@@ -234,72 +255,88 @@ export const DashboardPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => setSelectedStatuses([])}
-                                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer font-medium"
+                                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer font-medium whitespace-nowrap active:opacity-75"
                               >
                                 Bỏ chọn
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => setIsStatusDropdownOpen(false)}
-                                className="p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 ml-1 cursor-pointer"
-                              >
-                                <X size={16} />
-                              </button>
                             </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedStatuses(['COMPLETED', 'TO_CONFIRM_RECEIVE'])
+                              }
+                              className={`py-1.5 px-2 rounded-lg text-xs font-medium transition-all cursor-pointer border text-center flex items-center justify-center gap-1 active:scale-95 truncate ${
+                                selectedStatuses.length === 2 &&
+                                selectedStatuses.includes('COMPLETED') &&
+                                selectedStatuses.includes('TO_CONFIRM_RECEIVE')
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                  : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-800/40 hover:bg-emerald-100'
+                              }`}
+                            >
+                              <span>✓</span>
+                              <span className="truncate">Thành công</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedStatuses(['READY_TO_SHIP', 'SHIPPED', 'RETRY_SHIP'])
+                              }
+                              className={`py-1.5 px-2 rounded-lg text-xs font-medium transition-all cursor-pointer border text-center flex items-center justify-center gap-1 active:scale-95 truncate ${
+                                selectedStatuses.length === 3 &&
+                                selectedStatuses.includes('READY_TO_SHIP') &&
+                                selectedStatuses.includes('SHIPPED') &&
+                                selectedStatuses.includes('RETRY_SHIP')
+                                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                                  : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-200/60 dark:border-indigo-800/40 hover:bg-indigo-100'
+                              }`}
+                            >
+                              <span>⏱</span>
+                              <span className="truncate">Đang giao</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedStatuses([
+                                  'CANCELLED',
+                                  'TO_RETURN',
+                                  'RETURN_REFUND',
+                                  'IN_CANCEL',
+                                ])
+                              }
+                              className={`py-1.5 px-2 rounded-lg text-xs font-medium transition-all cursor-pointer border text-center flex items-center justify-center gap-1 active:scale-95 truncate ${
+                                selectedStatuses.length === 4 &&
+                                selectedStatuses.includes('CANCELLED') &&
+                                selectedStatuses.includes('TO_RETURN') &&
+                                selectedStatuses.includes('RETURN_REFUND') &&
+                                selectedStatuses.includes('IN_CANCEL')
+                                  ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                                  : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200/60 dark:border-rose-800/40 hover:bg-rose-100'
+                              }`}
+                            >
+                              <span>✕</span>
+                              <span className="truncate">Hủy & Hoàn</span>
+                            </button>
                           </div>
                         </div>
 
-                        {/* Quick Presets */}
-                        <div className="px-4 py-2.5 flex flex-wrap gap-1.5 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-[#161b26]">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedStatuses(['COMPLETED', 'TO_CONFIRM_RECEIVE'])
-                            }
-                            className="px-2.5 py-1 rounded text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 hover:bg-emerald-100 transition-colors cursor-pointer border border-emerald-200/60 dark:border-emerald-800/40"
-                          >
-                            ✓ Thành công
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedStatuses(['READY_TO_SHIP', 'SHIPPED', 'RETRY_SHIP'])
-                            }
-                            className="px-2.5 py-1 rounded text-xs font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 hover:bg-indigo-100 transition-colors cursor-pointer border border-indigo-200/60 dark:border-indigo-800/40"
-                          >
-                            ⏱ Đang giao
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedStatuses([
-                                'CANCELLED',
-                                'TO_RETURN',
-                                'RETURN_REFUND',
-                                'IN_CANCEL',
-                              ])
-                            }
-                            className="px-2.5 py-1 rounded text-xs font-medium bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 hover:bg-rose-100 transition-colors cursor-pointer border border-rose-200/60 dark:border-rose-800/40"
-                          >
-                            ✕ Hủy & Hoàn
-                          </button>
-                        </div>
-
                         {/* Status Options with Checkbox */}
-                        <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar min-h-0">
                           {SHOPEE_STATUS_OPTIONS.map((st) => {
                             const isSelected = selectedStatuses.includes(st.id);
                             return (
                               <div
                                 key={st.id}
                                 onClick={() => toggleStatus(st.id)}
-                                className={`flex items-center justify-between p-2.5 rounded-lg transition-colors cursor-pointer select-none ${
+                                className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all cursor-pointer select-none active:scale-[0.99] ${
                                   isSelected
-                                    ? 'bg-indigo-50/70 dark:bg-[#5865f2]/10 border border-[#5865f2]/30'
-                                    : 'hover:bg-gray-50 dark:hover:bg-white/[0.03] border border-transparent'
+                                    ? 'bg-indigo-50/80 dark:bg-[#5865f2]/15 border border-[#5865f2]/40 text-gray-900 dark:text-white shadow-2xs'
+                                    : 'bg-gray-50/50 dark:bg-white/[0.02] hover:bg-gray-100/70 dark:hover:bg-white/[0.05] border border-transparent'
                                 }`}
                               >
-                                <div className="flex items-center gap-2.5">
+                                <div className="flex items-center gap-2.5 min-w-0 pr-2">
                                   <Checkbox
                                     checked={isSelected}
                                     onChange={() => toggleStatus(st.id)}
@@ -308,11 +345,11 @@ export const DashboardPage: React.FC = () => {
                                   <span
                                     className={`w-2 h-2 rounded-full ${st.dotColor} shrink-0`}
                                   />
-                                  <span className="font-medium text-gray-800 dark:text-gray-200 text-xs">
+                                  <span className="font-medium text-gray-800 dark:text-gray-200 text-xs truncate">
                                     {st.label}
                                   </span>
                                 </div>
-                                <span className="font-mono text-[10px] text-gray-400">
+                                <span className="font-mono text-[10px] text-gray-400 dark:text-gray-500 shrink-0 select-none">
                                   {st.id}
                                 </span>
                               </div>
@@ -321,19 +358,37 @@ export const DashboardPage: React.FC = () => {
                         </div>
 
                         {/* Footer */}
-                        <div className="p-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-[#121620]">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {selectedStatuses.length === 0
-                              ? 'Đang tính cho tất cả đơn hàng'
-                              : `Đang chọn ${selectedStatuses.length} trạng thái`}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setIsStatusDropdownOpen(false)}
-                            className="px-4 py-2 rounded-lg bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold cursor-pointer shadow-sm active:scale-95 transition-all"
-                          >
-                            Áp dụng
-                          </button>
+                        <div className="p-3.5 sm:px-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3 bg-gray-50/90 dark:bg-[#121620]">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">
+                              {selectedStatuses.length === 0
+                                ? 'Tất cả trạng thái'
+                                : `Đã chọn ${selectedStatuses.length} / ${SHOPEE_STATUS_OPTIONS.length}`}
+                            </div>
+                            <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                              {selectedStatuses.length === 0
+                                ? 'Đang tính cho tất cả đơn hàng'
+                                : 'Lọc dữ liệu theo trạng thái đã chọn'}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {selectedStatuses.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedStatuses([])}
+                                className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 text-xs font-medium cursor-pointer active:scale-95 transition-all whitespace-nowrap"
+                              >
+                                Đặt lại
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setIsStatusDropdownOpen(false)}
+                              className="px-5 py-2 rounded-lg bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold cursor-pointer shadow-md shadow-[#5865f2]/25 active:scale-95 transition-all whitespace-nowrap"
+                            >
+                              Áp dụng
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>,
@@ -341,20 +396,20 @@ export const DashboardPage: React.FC = () => {
                   )
                 : (
                     /* Desktop Dropdown Popover */
-                    <div className="absolute right-0 top-full mt-1.5 z-50 w-[340px] rounded-lg bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 shadow-xl p-2.5 text-xs animate-in fade-in zoom-in-95 duration-150">
+                    <div className="absolute right-0 top-full mt-1.5 z-50 w-[350px] rounded-xl bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 shadow-xl p-3 text-xs animate-in fade-in zoom-in-95 duration-150">
                       {/* Header */}
-                      <div className="pb-2 mb-2 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                        <span className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
-                          <ListFilter size={14} className="text-[#5865f2]" />
-                          Lọc theo trạng thái Shopee
+                      <div className="pb-2.5 mb-2.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2">
+                        <span className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 truncate min-w-0">
+                          <ListFilter size={14} className="text-[#5865f2] shrink-0" />
+                          <span className="truncate">Lọc theo trạng thái Shopee</span>
                         </span>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                           <button
                             type="button"
                             onClick={() =>
                               setSelectedStatuses(SHOPEE_STATUS_OPTIONS.map((s) => s.id))
                             }
-                            className="text-[11px] text-[#5865f2] hover:underline cursor-pointer font-medium"
+                            className="text-[11px] text-[#5865f2] hover:underline cursor-pointer font-medium whitespace-nowrap"
                           >
                             Chọn tất cả
                           </button>
@@ -362,7 +417,7 @@ export const DashboardPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setSelectedStatuses([])}
-                            className="text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer font-medium"
+                            className="text-[11px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer font-medium whitespace-nowrap"
                           >
                             Bỏ chọn
                           </button>
@@ -370,13 +425,19 @@ export const DashboardPage: React.FC = () => {
                       </div>
 
                       {/* Quick Presets */}
-                      <div className="flex flex-wrap gap-1.5 mb-2.5 pb-2 border-b border-gray-100 dark:border-gray-800">
+                      <div className="grid grid-cols-3 gap-1.5 mb-2.5 pb-2.5 border-b border-gray-100 dark:border-gray-800">
                         <button
                           type="button"
                           onClick={() =>
                             setSelectedStatuses(['COMPLETED', 'TO_CONFIRM_RECEIVE'])
                           }
-                          className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 hover:bg-emerald-100 transition-colors cursor-pointer border border-emerald-200/60 dark:border-emerald-800/40"
+                          className={`px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer border text-center truncate ${
+                            selectedStatuses.length === 2 &&
+                            selectedStatuses.includes('COMPLETED') &&
+                            selectedStatuses.includes('TO_CONFIRM_RECEIVE')
+                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 hover:bg-emerald-100 border-emerald-200/60 dark:border-emerald-800/40'
+                          }`}
                         >
                           ✓ Thành công
                         </button>
@@ -385,7 +446,14 @@ export const DashboardPage: React.FC = () => {
                           onClick={() =>
                             setSelectedStatuses(['READY_TO_SHIP', 'SHIPPED', 'RETRY_SHIP'])
                           }
-                          className="px-2 py-0.5 rounded text-[11px] font-medium bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 hover:bg-indigo-100 transition-colors cursor-pointer border border-indigo-200/60 dark:border-indigo-800/40"
+                          className={`px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer border text-center truncate ${
+                            selectedStatuses.length === 3 &&
+                            selectedStatuses.includes('READY_TO_SHIP') &&
+                            selectedStatuses.includes('SHIPPED') &&
+                            selectedStatuses.includes('RETRY_SHIP')
+                              ? 'bg-indigo-600 text-white border-indigo-600'
+                              : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 hover:bg-indigo-100 border-indigo-200/60 dark:border-indigo-800/40'
+                          }`}
                         >
                           ⏱ Đang giao
                         </button>
@@ -399,7 +467,15 @@ export const DashboardPage: React.FC = () => {
                               'IN_CANCEL',
                             ])
                           }
-                          className="px-2 py-0.5 rounded text-[11px] font-medium bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 hover:bg-rose-100 transition-colors cursor-pointer border border-rose-200/60 dark:border-rose-800/40"
+                          className={`px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer border text-center truncate ${
+                            selectedStatuses.length === 4 &&
+                            selectedStatuses.includes('CANCELLED') &&
+                            selectedStatuses.includes('TO_RETURN') &&
+                            selectedStatuses.includes('RETURN_REFUND') &&
+                            selectedStatuses.includes('IN_CANCEL')
+                              ? 'bg-rose-600 text-white border-rose-600'
+                              : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 hover:bg-rose-100 border-rose-200/60 dark:border-rose-800/40'
+                          }`}
                         >
                           ✕ Hủy & Hoàn
                         </button>
@@ -413,13 +489,13 @@ export const DashboardPage: React.FC = () => {
                             <div
                               key={st.id}
                               onClick={() => toggleStatus(st.id)}
-                              className={`flex items-center justify-between p-2 rounded transition-colors cursor-pointer select-none ${
+                              className={`flex items-center justify-between p-2 rounded-lg transition-colors cursor-pointer select-none ${
                                 isSelected
-                                  ? 'bg-gray-100/80 dark:bg-white/5'
-                                  : 'hover:bg-gray-50 dark:hover:bg-white/[0.02]'
+                                  ? 'bg-indigo-50/70 dark:bg-[#5865f2]/10 border border-[#5865f2]/30'
+                                  : 'hover:bg-gray-50 dark:hover:bg-white/[0.02] border border-transparent'
                               }`}
                             >
-                              <div className="flex items-center gap-2.5">
+                              <div className="flex items-center gap-2.5 min-w-0 pr-2">
                                 <Checkbox
                                   checked={isSelected}
                                   onChange={() => toggleStatus(st.id)}
@@ -428,11 +504,11 @@ export const DashboardPage: React.FC = () => {
                                 <span
                                   className={`w-2 h-2 rounded-full ${st.dotColor} shrink-0`}
                                 />
-                                <span className="font-medium text-gray-800 dark:text-gray-200 text-xs">
+                                <span className="font-medium text-gray-800 dark:text-gray-200 text-xs truncate">
                                   {st.label}
                                 </span>
                               </div>
-                              <span className="font-mono text-[10px] text-gray-400">
+                              <span className="font-mono text-[10px] text-gray-400 shrink-0">
                                 {st.id}
                               </span>
                             </div>
@@ -441,8 +517,8 @@ export const DashboardPage: React.FC = () => {
                       </div>
 
                       {/* Footer */}
-                      <div className="pt-2 mt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                        <span className="text-[11px] text-gray-400">
+                      <div className="pt-2.5 mt-2.5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2">
+                        <span className="text-[11px] text-gray-400 truncate min-w-0">
                           {selectedStatuses.length === 0
                             ? 'Đang tính cho tất cả đơn hàng'
                             : `Đang chọn ${selectedStatuses.length} trạng thái`}
@@ -450,7 +526,7 @@ export const DashboardPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setIsStatusDropdownOpen(false)}
-                          className="px-3 py-1 rounded bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-lg bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold cursor-pointer shrink-0 shadow-xs active:scale-95 transition-all whitespace-nowrap"
                         >
                           Áp dụng
                         </button>

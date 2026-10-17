@@ -210,7 +210,9 @@ export const SettingsPage: React.FC = () => {
               onClick={() => setIsCreateWhModalOpen(true)}
               className="gap-1.5"
             >
-              <Plus size={14} /> Thêm kho mới
+              <Plus size={14} />
+              <span className="hidden sm:inline">Thêm kho mới</span>
+              <span className="sm:hidden">Thêm mới</span>
             </Button>
           </CardAction>
         </CardHeader>
@@ -341,13 +343,13 @@ export const SettingsPage: React.FC = () => {
         <Modal
           isOpen={isCreateWhModalOpen}
           onClose={() => setIsCreateWhModalOpen(false)}
-          title="Thêm Kho hàng mới"
-          subtitle="Tạo kho lưu trữ và xuất hàng hóa cho các gian hàng Shopee"
+          title={<><span className="sm:hidden">Thêm kho hàng</span><span className="hidden sm:inline">Thêm Kho hàng mới</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Tạo kho lưu trữ và xuất hàng hóa cho các gian hàng Shopee</span>}
           icon={Warehouse}
           maxWidth="max-w-md"
         >
           <form onSubmit={handleCreateWhSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Mã kho (Duy nhất) *
@@ -403,14 +405,15 @@ export const SettingsPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsCreateWhModalOpen(false)}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
-              <ModalButton variant="primary" type="submit">
+              <ModalButton variant="primary" type="submit" className="flex-1 sm:flex-initial">
                 Tạo Kho
               </ModalButton>
             </ModalFooter>
@@ -423,13 +426,13 @@ export const SettingsPage: React.FC = () => {
         <Modal
           isOpen={isEditWhModalOpen}
           onClose={() => setIsEditWhModalOpen(false)}
-          title="Chỉnh sửa Kho hàng"
-          subtitle={`Cập nhật thông tin chi tiết cho ${selectedWhForEdit.code}`}
+          title={<><span className="sm:hidden">Sửa kho hàng</span><span className="hidden sm:inline">Chỉnh sửa Kho hàng</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Cập nhật thông tin chi tiết cho ${selectedWhForEdit.code}`}</span>}
           icon={Warehouse}
           maxWidth="max-w-md"
         >
           <form onSubmit={handleEditWhSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Tên kho hàng *
@@ -484,14 +487,15 @@ export const SettingsPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsEditWhModalOpen(false)}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
-              <ModalButton variant="primary" type="submit">
+              <ModalButton variant="primary" type="submit" className="flex-1 sm:flex-initial">
                 Lưu thay đổi
               </ModalButton>
             </ModalFooter>
@@ -504,13 +508,13 @@ export const SettingsPage: React.FC = () => {
         <Modal
           isOpen={isDeleteWhModalOpen}
           onClose={() => setIsDeleteWhModalOpen(false)}
-          title="Xác nhận xóa kho hàng"
-          subtitle={`Bạn có chắc chắn muốn xóa kho "${selectedWhForDelete.name}" (${selectedWhForDelete.code})?`}
+          title={<><span className="sm:hidden">Xóa kho hàng</span><span className="hidden sm:inline">Xác nhận xóa kho hàng</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Bạn có chắc chắn muốn xóa kho "${selectedWhForDelete.name}" (${selectedWhForDelete.code})?`}</span>}
           icon={Trash2}
           maxWidth="max-w-md"
         >
           <div className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3">
+            <ModalBody className="space-y-3 p-3 sm:p-5">
               <div className="p-3 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
                 <AlertTriangle size={16} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                 <div>
@@ -521,11 +525,12 @@ export const SettingsPage: React.FC = () => {
                 </div>
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsDeleteWhModalOpen(false)}
                 disabled={isDeletingWh}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
@@ -533,6 +538,7 @@ export const SettingsPage: React.FC = () => {
                 variant="danger"
                 onClick={handleDeleteWhSubmit}
                 disabled={isDeletingWh}
+                className="flex-1 sm:flex-initial"
               >
                 {isDeletingWh ? 'Đang xóa...' : 'Xác nhận xóa'}
               </ModalButton>

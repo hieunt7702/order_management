@@ -119,12 +119,24 @@ export const InternalTransferModal: React.FC<InternalTransferModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       size="lg"
-      title="Chuyển tiền nội bộ / Rút tiền sàn Shopee"
-      subtitle="Chuyển dịch dòng tiền giữa các tài khoản mà không tính trùng doanh thu hoặc chi phí"
+      title={
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="sm:hidden font-semibold truncate">Chuyển tiền nội bộ</span>
+          <span className="hidden sm:inline font-semibold truncate">Chuyển tiền nội bộ / Rút tiền sàn Shopee</span>
+        </div>
+      }
+      subtitle={
+        <div className="min-w-0 truncate">
+          <span className="sm:hidden truncate">Chuyển dịch giữa các tài khoản</span>
+          <span className="hidden sm:inline truncate">
+            Chuyển dịch dòng tiền giữa các tài khoản mà không tính trùng doanh thu hoặc chi phí
+          </span>
+        </div>
+      }
       icon={ArrowLeftRight}
     >
       <form onSubmit={handleSubmit}>
-        <ModalBody className="space-y-4 p-6">
+        <ModalBody className="space-y-3.5 sm:space-y-4 p-3 sm:p-6 max-h-[85vh] overflow-y-auto text-xs sm:text-sm">
           {/* Nguyên tắc kế toán quan trọng */}
           <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl flex items-start gap-2.5 text-xs text-blue-800 dark:text-blue-300">
             <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
@@ -271,18 +283,24 @@ export const InternalTransferModal: React.FC<InternalTransferModalProps> = ({
           </div>
         </ModalBody>
 
-        <ModalFooter className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800">
-          <ModalButton variant="secondary" onClick={onClose} disabled={submitting}>
+        <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 p-3 sm:p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800 w-full">
+          <ModalButton
+            variant="secondary"
+            onClick={onClose}
+            disabled={submitting}
+            className="gap-1.5 flex-none px-4 py-2.5 sm:py-2 text-xs font-semibold shrink-0"
+          >
             Đóng
           </ModalButton>
 
           <button
             type="submit"
             disabled={submitting}
-            className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/20 transition-all flex items-center gap-1.5"
+            className="px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg sm:rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 flex-1 sm:flex-none active:scale-95 cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
-            {submitting ? 'Đang chuyển...' : 'Xác nhận chuyển tiền nội bộ'}
+            <span className="sm:hidden">{submitting ? 'Đang chuyển...' : 'Chuyển tiền'}</span>
+            <span className="hidden sm:inline">{submitting ? 'Đang chuyển...' : 'Xác nhận chuyển tiền nội bộ'}</span>
           </button>
         </ModalFooter>
       </form>

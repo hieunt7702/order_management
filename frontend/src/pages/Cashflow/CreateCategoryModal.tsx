@@ -62,12 +62,22 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       size="md"
-      title="Thêm khoản mục thu / chi mới"
-      subtitle="Thiết lập nhóm phân loại chi phí hoặc doanh thu cho shop"
+      title={
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="sm:hidden font-semibold truncate">Thêm khoản mục</span>
+          <span className="hidden sm:inline font-semibold truncate">Thêm khoản mục thu / chi mới</span>
+        </div>
+      }
+      subtitle={
+        <div className="min-w-0 truncate">
+          <span className="sm:hidden truncate">Nhóm phân loại chi phí & doanh thu</span>
+          <span className="hidden sm:inline truncate">Thiết lập nhóm phân loại chi phí hoặc doanh thu cho shop</span>
+        </div>
+      }
       icon={Tag}
     >
       <form onSubmit={handleSubmit}>
-        <ModalBody className="space-y-4 p-6">
+        <ModalBody className="space-y-3.5 sm:space-y-4 p-3 sm:p-6">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
@@ -126,18 +136,23 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
           </div>
         </ModalBody>
 
-        <ModalFooter className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800">
-          <ModalButton variant="secondary" onClick={onClose} disabled={submitting}>
+        <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 p-3 sm:p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-800 w-full">
+          <ModalButton
+            variant="secondary"
+            onClick={onClose}
+            disabled={submitting}
+            className="gap-1.5 flex-none px-4 py-2.5 sm:py-2 text-xs font-semibold shrink-0"
+          >
             Đóng
           </ModalButton>
 
           <button
             type="submit"
             disabled={submitting}
-            className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-all flex items-center gap-1.5"
+            className="px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg sm:rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 flex-1 sm:flex-none active:scale-95 cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
-            {submitting ? 'Đang tạo...' : 'Lưu khoản mục'}
+            <span>{submitting ? 'Đang tạo...' : 'Lưu khoản mục'}</span>
           </button>
         </ModalFooter>
       </form>

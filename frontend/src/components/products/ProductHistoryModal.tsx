@@ -248,13 +248,13 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Sổ Cái & Lịch Sử Tồn Kho: ${sku}`}
-      subtitle={`Sản phẩm: ${productName} • Theo dõi bút toán và diễn giải số dư kho`}
+      title={<><span className="sm:hidden">Sổ cái: {sku}</span><span className="hidden sm:inline">{`Sổ Cái & Lịch Sử Tồn Kho: ${sku}`}</span></>}
+      subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Sản phẩm: ${productName} • Theo dõi bút toán và diễn giải số dư kho`}</span>}
       icon={History}
       size="3xl"
       maxWidth="max-w-[96vw] xl:max-w-7xl w-full"
     >
-      <ModalBody className="p-4 sm:p-5 space-y-3.5 flex flex-col flex-1 min-h-0">
+      <ModalBody className="p-3 sm:p-5 space-y-3 sm:space-y-3.5 flex flex-col flex-1 min-h-0">
         {/* Product & Warehouse Header */}
         <div className="p-3 bg-gray-50/80 dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div className="min-w-0">
@@ -661,8 +661,8 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
         </SystemTableWrapper>
       </ModalBody>
 
-      <ModalFooter>
-        <ModalButton type="button" variant="outline" onClick={onClose} className="gap-1.5">
+      <ModalFooter className="flex items-center justify-end w-full">
+        <ModalButton type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto gap-1.5">
           <X size={14} />
           <span>Đóng</span>
         </ModalButton>
@@ -673,12 +673,12 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
         <Modal
           isOpen={!!selectedEntry}
           onClose={() => setSelectedEntry(null)}
-          title="Chi tiết bút toán sổ cái tồn kho"
-          subtitle={`Mã bút toán: ${selectedEntry.id} • SKU: ${sku}`}
+          title={<><span className="sm:hidden">Chi tiết bút toán</span><span className="hidden sm:inline">Chi tiết bút toán sổ cái tồn kho</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Mã: ${selectedEntry.id} • SKU: ${sku}`}</span>}
           icon={FileText}
           maxWidth="max-w-lg"
         >
-          <ModalBody className="p-4 space-y-3 text-xs">
+          <ModalBody className="p-3 sm:p-4 space-y-2.5 sm:space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-2.5">
               <div className="p-2.5 bg-gray-50 dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">
                 <span className="text-gray-400 text-[11px] flex items-center gap-1">
@@ -776,8 +776,8 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
               </div>
             )}
           </ModalBody>
-          <ModalFooter>
-            <ModalButton variant="secondary" onClick={() => setSelectedEntry(null)} className="gap-1.5">
+          <ModalFooter className="flex items-center justify-end w-full">
+            <ModalButton variant="secondary" onClick={() => setSelectedEntry(null)} className="w-full sm:w-auto gap-1.5">
               <X size={14} />
               <span>Đóng</span>
             </ModalButton>

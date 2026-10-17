@@ -389,32 +389,32 @@ export const PurchaseReceiptsPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-base sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
-            <PackagePlus size={20} className="text-[#5865f2]" />
-            <span className="sm:hidden">Phiếu nhập kho</span>
-            <span className="hidden sm:inline">Quản lý Phiếu Nhập Kho</span>
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+            <PackagePlus size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
+            <span className="sm:hidden truncate">Phiếu nhập kho</span>
+            <span className="hidden sm:inline truncate">Quản lý Phiếu Nhập Kho</span>
           </h1>
-          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-            <span className="sm:hidden">Nhập hàng NCC & công nợ</span>
-            <span className="hidden sm:inline">Phân tách độc lập: Giá trị hàng thực nhận • Công nợ phải trả NCC • Tiền thực tế đã thanh toán</span>
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
+            Phân tách độc lập: Giá trị hàng thực nhận • Công nợ phải trả NCC • Tiền thực tế đã thanh toán
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" onClick={handleOpenCreateModal} className="gap-1.5">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <Button size="sm" onClick={handleOpenCreateModal} className="gap-1.5 px-2.5 sm:px-3">
             <Plus size={14} />
-            <span>Tạo phiếu nhập mới</span>
+            <span className="hidden sm:inline">Tạo phiếu nhập mới</span>
+            <span className="sm:hidden">Tạo mới</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={loadReceipts}
-            className="gap-1.5"
+            className="gap-1.5 p-2 lg:px-3"
             title="Làm mới dữ liệu"
           >
             <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-            <span>Làm mới</span>
+            <span className="hidden lg:inline">Làm mới</span>
           </Button>
         </div>
       </div>
@@ -460,74 +460,76 @@ export const PurchaseReceiptsPage: React.FC = () => {
           className="w-full sm:w-64"
         />
 
-        <div className="w-full sm:w-52">
-          <Select
-            value={selectedSupplierId}
-            onChange={(val) => {
-              setSelectedSupplierId(String(val));
-              setPage(1);
-            }}
-            options={[
-              { value: 'ALL', label: 'Tất cả Nhà Cung Cấp', icon: Building2 },
-              ...suppliers.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}`, icon: Building2 })),
-            ]}
-            icon={Building2}
-            size="sm"
-          />
-        </div>
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="w-full sm:w-52">
+            <Select
+              value={selectedSupplierId}
+              onChange={(val) => {
+                setSelectedSupplierId(String(val));
+                setPage(1);
+              }}
+              options={[
+                { value: 'ALL', label: 'Tất cả Nhà Cung Cấp', icon: Building2 },
+                ...suppliers.map((s) => ({ value: s.id, label: `${s.code} - ${s.name}`, icon: Building2 })),
+              ]}
+              icon={Building2}
+              size="sm"
+            />
+          </div>
 
-        <div className="w-full sm:w-48">
-          <Select
-            value={filterPaymentStatus}
-            onChange={(val) => {
-              setFilterPaymentStatus(String(val));
-              setPage(1);
-            }}
-            options={[
-              { value: 'ALL', label: 'Tất cả trạng thái nợ', icon: DollarSign },
-              { value: 'UNPAID', label: 'Chưa thanh toán', icon: AlertCircle },
-              { value: 'PARTIALLY_PAID', label: 'Thanh toán 1 phần', icon: Clock },
-              { value: 'PAID', label: 'Đã thanh toán đủ', icon: CheckCircle2 },
-            ]}
-            icon={DollarSign}
-            size="sm"
-          />
-        </div>
+          <div className="w-full sm:w-48">
+            <Select
+              value={filterPaymentStatus}
+              onChange={(val) => {
+                setFilterPaymentStatus(String(val));
+                setPage(1);
+              }}
+              options={[
+                { value: 'ALL', label: 'Tất cả trạng thái nợ', icon: DollarSign },
+                { value: 'UNPAID', label: 'Chưa thanh toán', icon: AlertCircle },
+                { value: 'PARTIALLY_PAID', label: 'Thanh toán 1 phần', icon: Clock },
+                { value: 'PAID', label: 'Đã thanh toán đủ', icon: CheckCircle2 },
+              ]}
+              icon={DollarSign}
+              size="sm"
+            />
+          </div>
 
-        <div className="w-full sm:w-48">
-          <Select
-            value={filterReceivingStatus}
-            onChange={(val) => {
-              setFilterReceivingStatus(String(val));
-              setPage(1);
-            }}
-            options={[
-              { value: 'ALL', label: 'Tất cả nhận hàng', icon: Truck },
-              { value: 'RECEIVED', label: 'Nhận đủ hàng', icon: CheckCircle2 },
-              { value: 'PARTIALLY_RECEIVED', label: 'Nhận 1 phần', icon: Clock },
-              { value: 'PENDING_RECEIVE', label: 'Chờ nhận', icon: AlertCircle },
-            ]}
-            icon={Truck}
-            size="sm"
-          />
-        </div>
+          <div className="w-full sm:w-48">
+            <Select
+              value={filterReceivingStatus}
+              onChange={(val) => {
+                setFilterReceivingStatus(String(val));
+                setPage(1);
+              }}
+              options={[
+                { value: 'ALL', label: 'Tất cả nhận hàng', icon: Truck },
+                { value: 'RECEIVED', label: 'Nhận đủ hàng', icon: CheckCircle2 },
+                { value: 'PARTIALLY_RECEIVED', label: 'Nhận 1 phần', icon: Clock },
+                { value: 'PENDING_RECEIVE', label: 'Chờ nhận', icon: AlertCircle },
+              ]}
+              icon={Truck}
+              size="sm"
+            />
+          </div>
 
-        <div className="w-full sm:w-48">
-          <Select
-            value={filterDueStatus}
-            onChange={(val) => {
-              setFilterDueStatus(String(val));
-              setPage(1);
-            }}
-            options={[
-              { value: 'ALL', label: 'Tất cả hạn nợ', icon: Clock },
-              { value: 'OVERDUE', label: 'Quá hạn nợ', icon: AlertCircle },
-              { value: 'DUE_SOON', label: 'Đến hạn (<=7 ngày)', icon: Clock },
-              { value: 'NOT_DUE', label: 'Chưa đến hạn', icon: CheckCircle2 },
-            ]}
-            icon={Clock}
-            size="sm"
-          />
+          <div className="w-full sm:w-48">
+            <Select
+              value={filterDueStatus}
+              onChange={(val) => {
+                setFilterDueStatus(String(val));
+                setPage(1);
+              }}
+              options={[
+                { value: 'ALL', label: 'Tất cả hạn nợ', icon: Clock },
+                { value: 'OVERDUE', label: 'Quá hạn nợ', icon: AlertCircle },
+                { value: 'DUE_SOON', label: 'Đến hạn (<=7 ngày)', icon: Clock },
+                { value: 'NOT_DUE', label: 'Chưa đến hạn', icon: CheckCircle2 },
+              ]}
+              icon={Clock}
+              size="sm"
+            />
+          </div>
         </div>
 
         {(searchTerm || selectedSupplierId !== 'ALL' || filterPaymentStatus !== 'ALL' || filterReceivingStatus !== 'ALL' || filterDueStatus !== 'ALL') && (
@@ -980,13 +982,23 @@ export const PurchaseReceiptsPage: React.FC = () => {
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title="Lập phiếu nhập kho"
-        subtitle="Cộng tồn kho thực tế & ghi nhận công nợ NCC"
+        title={
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="sm:hidden font-semibold truncate">Lập phiếu nhập</span>
+            <span className="hidden sm:inline font-semibold truncate">Lập phiếu nhập kho</span>
+          </div>
+        }
+        subtitle={
+          <div className="min-w-0 truncate">
+            <span className="sm:hidden truncate">Cộng tồn & ghi nhận công nợ NCC</span>
+            <span className="hidden sm:inline truncate">Cộng tồn kho thực tế & ghi nhận công nợ NCC</span>
+          </div>
+        }
         icon={PackagePlus}
         size="2xl"
       >
-        <form onSubmit={handleCreateSubmit} className="space-y-4">
-          <ModalBody className="max-h-[75vh] overflow-y-auto space-y-3.5 p-3 sm:p-5">
+        <form onSubmit={handleCreateSubmit} className="flex flex-col flex-1 min-h-0">
+          <ModalBody className="space-y-3.5 p-3 sm:p-5">
             {/* Header info */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded border border-gray-200 dark:border-gray-800">
               <div>
@@ -1605,14 +1617,24 @@ export const PurchaseReceiptsPage: React.FC = () => {
             </div>
           </ModalBody>
 
-          <ModalFooter>
-            <ModalButton type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)} className="gap-1.5">
+          <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
+            <ModalButton
+              type="button"
+              variant="outline"
+              onClick={() => setIsCreateModalOpen(false)}
+              className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
+            >
               <X size={14} />
               <span>Hủy bỏ</span>
             </ModalButton>
-            <ModalButton type="submit" variant="primary" className="gap-1.5">
+            <ModalButton
+              type="submit"
+              variant="primary"
+              className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 font-semibold text-xs active:scale-95 justify-center"
+            >
               <CheckCircle2 size={14} />
-              <span>Xác nhận Nhập Kho</span>
+              <span className="sm:hidden">Nhập kho</span>
+              <span className="hidden sm:inline">Xác nhận Nhập Kho</span>
             </ModalButton>
           </ModalFooter>
         </form>
@@ -1629,7 +1651,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
       >
         {selectedReceiptDetail && (
           <>
-            <ModalBody className="space-y-4 max-h-[75vh] overflow-y-auto">
+            <ModalBody className="space-y-4">
               {/* Top 3 axes info */}
               <div className="grid grid-cols-3 gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded text-xs">
                 <div>
@@ -1742,14 +1764,24 @@ export const PurchaseReceiptsPage: React.FC = () => {
       <Modal
         isOpen={!!quickPayReceipt}
         onClose={() => setQuickPayReceipt(null)}
-        title={`Thanh Toán Cho Phiếu: ${quickPayReceipt?.receiptCode || ''}`}
-        subtitle="Lập phiếu chi công nợ nhà cung cấp và ghi giảm số nợ của phiếu"
+        title={
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="sm:hidden font-semibold truncate">Thanh toán: {quickPayReceipt?.receiptCode || ''}</span>
+            <span className="hidden sm:inline font-semibold truncate">Thanh Toán Cho Phiếu: {quickPayReceipt?.receiptCode || ''}</span>
+          </div>
+        }
+        subtitle={
+          <div className="min-w-0 truncate">
+            <span className="sm:hidden truncate">Chi trả nợ NCC & giảm nợ phiếu</span>
+            <span className="hidden sm:inline truncate">Lập phiếu chi công nợ nhà cung cấp và ghi giảm số nợ của phiếu</span>
+          </div>
+        }
         icon={CreditCard}
         size="md"
       >
         <form onSubmit={handleQuickPaySubmit} className="space-y-4">
-          <ModalBody className="space-y-3 text-xs sm:text-sm">
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-200 dark:border-amber-900/30 flex justify-between">
+          <ModalBody className="space-y-3 p-3 sm:p-5 text-xs sm:text-sm">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-900/30 flex justify-between">
               <div>
                 <div className="text-xs text-gray-500 flex items-center gap-1">
                   <Building2 size={12} />
@@ -1781,7 +1813,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               <div>
                 <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5">
                   <User size={13} className="text-gray-400" />
@@ -1793,7 +1825,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   placeholder="Chị Hồng, Bạn, Kế toán..."
                   value={quickPayForm.payerName}
                   onChange={(e) => setQuickPayForm({ ...quickPayForm, payerName: e.target.value })}
-                  className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2"
+                  className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-xs"
                 />
               </div>
 
@@ -1805,7 +1837,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 <select
                   value={quickPayForm.fundSource}
                   onChange={(e) => setQuickPayForm({ ...quickPayForm, fundSource: e.target.value as any })}
-                  className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2"
+                  className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-xs"
                 >
                   <option value="CASH_FUND">Quỹ tiền mặt</option>
                   <option value="BANK_ACCOUNT">Tài khoản công ty</option>
@@ -1824,7 +1856,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 placeholder="Ví dụ: FT260101589..."
                 value={quickPayForm.referenceCode}
                 onChange={(e) => setQuickPayForm({ ...quickPayForm, referenceCode: e.target.value })}
-                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2"
+                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-xs"
               />
             </div>
 
@@ -1837,19 +1869,29 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 type="text"
                 value={quickPayForm.note}
                 onChange={(e) => setQuickPayForm({ ...quickPayForm, note: e.target.value })}
-                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2"
+                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-xs"
               />
             </div>
           </ModalBody>
 
-          <ModalFooter>
-            <ModalButton type="button" variant="outline" onClick={() => setQuickPayReceipt(null)} className="gap-1.5">
+          <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
+            <ModalButton
+              type="button"
+              variant="outline"
+              onClick={() => setQuickPayReceipt(null)}
+              className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
+            >
               <X size={14} />
               <span>Hủy</span>
             </ModalButton>
-            <ModalButton type="submit" variant="primary" className="gap-1.5">
+            <ModalButton
+              type="submit"
+              variant="primary"
+              className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 font-semibold text-xs active:scale-95 justify-center"
+            >
               <CheckCircle2 size={14} />
-              <span>Xác nhận chi tiền</span>
+              <span className="sm:hidden">Chi tiền</span>
+              <span className="hidden sm:inline">Xác nhận chi tiền</span>
             </ModalButton>
           </ModalFooter>
         </form>

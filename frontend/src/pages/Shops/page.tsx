@@ -201,34 +201,36 @@ export const ShopsPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div>
-          <h1 className="text-lg md:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
-            <Store size={20} className="text-[#5865f2]" />
-            Quản lý Shop ({shops.length})
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+            <Store size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
+            <span className="truncate">Quản lý Shop ({shops.length})</span>
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
             Cấu hình các gian hàng Shopee, gán kho xuất mặc định và kiểm soát trạng thái hoạt động
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <Button
             size="sm"
             onClick={() => setIsCreateModalOpen(true)}
-            className="gap-1.5"
+            className="h-8 px-2.5 sm:px-3 gap-1 sm:gap-1.5 text-xs"
           >
             <Plus size={14} />
-            <span>Thêm Shop mới</span>
+            <span className="hidden sm:inline">Thêm Shop mới</span>
+            <span className="sm:hidden">Thêm</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={loadShops}
-            className="p-2"
+            className="h-8 w-8 sm:w-auto p-0 sm:px-2.5 sm:py-1 gap-1 text-xs"
             title="Làm mới dữ liệu"
           >
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+            <span className="hidden lg:inline text-xs">Làm mới</span>
           </Button>
         </div>
       </div>
@@ -693,13 +695,23 @@ export const ShopsPage: React.FC = () => {
         <Modal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
-          title="Thêm Shop mới"
-          subtitle="Tạo cấu hình gian hàng Shopee và liên kết kho xuất hàng mặc định"
+          title={
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="sm:hidden font-semibold truncate">Thêm Shop mới</span>
+              <span className="hidden sm:inline font-semibold truncate">Thêm Shop mới</span>
+            </div>
+          }
+          subtitle={
+            <div className="min-w-0 truncate">
+              <span className="sm:hidden truncate">Cấu hình gian hàng & kho xuất</span>
+              <span className="hidden sm:inline truncate">Tạo cấu hình gian hàng Shopee và liên kết kho xuất hàng mặc định</span>
+            </div>
+          }
           icon={Store}
           maxWidth="max-w-md"
         >
           <form onSubmit={handleCreateSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                   Mã shop (Duy nhất trong Workspace) *
@@ -752,14 +764,19 @@ export const ShopsPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsCreateModalOpen(false)}
+                className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
               >
                 Hủy
               </ModalButton>
-              <ModalButton variant="primary" type="submit">
+              <ModalButton
+                variant="primary"
+                type="submit"
+                className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 font-semibold text-xs active:scale-95 justify-center"
+              >
                 Tạo Shop
               </ModalButton>
             </ModalFooter>
@@ -772,13 +789,23 @@ export const ShopsPage: React.FC = () => {
         <Modal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
-          title="Chỉnh sửa Shop"
-          subtitle={`Cập nhật thông tin và kho xuất mặc định cho ${selectedShopForEdit.code}`}
+          title={
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="sm:hidden font-semibold truncate">Sửa Shop: {selectedShopForEdit.code}</span>
+              <span className="hidden sm:inline font-semibold truncate">Chỉnh sửa Shop</span>
+            </div>
+          }
+          subtitle={
+            <div className="min-w-0 truncate">
+              <span className="sm:hidden truncate">Cập nhật thông tin cho {selectedShopForEdit.code}</span>
+              <span className="hidden sm:inline truncate">Cập nhật thông tin và kho xuất mặc định cho {selectedShopForEdit.code}</span>
+            </div>
+          }
           icon={Store}
           maxWidth="max-w-md"
         >
           <form onSubmit={handleEditSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                   Tên hiển thị Shop *
@@ -832,15 +859,21 @@ export const ShopsPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsEditModalOpen(false)}
+                className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
               >
                 Hủy
               </ModalButton>
-              <ModalButton variant="primary" type="submit">
-                Lưu thay đổi
+              <ModalButton
+                variant="primary"
+                type="submit"
+                className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 font-semibold text-xs active:scale-95 justify-center"
+              >
+                <span className="sm:hidden">Lưu</span>
+                <span className="hidden sm:inline">Lưu thay đổi</span>
               </ModalButton>
             </ModalFooter>
           </form>
@@ -858,22 +891,23 @@ export const ShopsPage: React.FC = () => {
           maxWidth="max-w-md"
         >
           <div className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3">
-              <div className="p-3 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+            <ModalBody className="space-y-3 p-3 sm:p-5">
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
                 <AlertTriangle size={16} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                 <div>
                   <p className="font-semibold">Lưu ý về tính toàn vẹn dữ liệu:</p>
-                  <p className="mt-0.5 text-amber-700 dark:text-amber-400/90 leading-relaxed">
+                  <p className="mt-0.5 text-amber-700 dark:text-amber-400/90 leading-relaxed text-[11px] sm:text-xs">
                     Nếu shop đã có đơn hàng hoặc dữ liệu đối soát lịch sử, hệ thống sẽ tự động chuyển trạng thái shop sang <strong>Ngừng hoạt động (Tạm dừng)</strong> nhằm bảo toàn báo cáo tài chính và sổ cái kiểm toán.
                   </p>
                 </div>
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsDeleteModalOpen(false)}
                 disabled={isDeleting}
+                className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
               >
                 Hủy
               </ModalButton>
@@ -881,6 +915,7 @@ export const ShopsPage: React.FC = () => {
                 variant="danger"
                 onClick={handleDeleteSubmit}
                 disabled={isDeleting}
+                className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 font-semibold text-xs active:scale-95 justify-center"
               >
                 {isDeleting ? 'Đang xóa...' : 'Xác nhận xóa'}
               </ModalButton>

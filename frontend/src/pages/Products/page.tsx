@@ -924,37 +924,40 @@ export const ProductsPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded bg-[#5865f2]/10 dark:bg-[#5865f2]/20 flex items-center justify-center text-[#5865f2] shrink-0">
-            <Package size={22} strokeWidth={2.5} />
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded bg-[#5865f2]/10 dark:bg-[#5865f2]/20 flex items-center justify-center text-[#5865f2] shrink-0">
+            <Package size={18} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
-              Sản phẩm & Mapping SKU
+          <div className="min-w-0">
+            <h1 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white leading-tight truncate">
+              <span className="sm:hidden">Sản phẩm & SKU</span>
+              <span className="hidden sm:inline">Sản phẩm & Mapping SKU</span>
             </h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
               Quản lý danh mục SKU nội bộ, giá vốn COGS và ánh xạ đơn hàng Shopee
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {activeTab === 'PRODUCTS' && (
             <button
               onClick={handleOpenCreateProductModal}
-              className="flex items-center gap-2 px-3.5 py-2 bg-[#5865f2] hover:bg-[#4752c4] text-white rounded text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 bg-[#5865f2] hover:bg-[#4752c4] text-white rounded text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             >
-              <Plus size={16} />
-              Thêm sản phẩm
+              <Plus size={15} />
+              <span className="hidden sm:inline">Thêm sản phẩm</span>
+              <span className="sm:hidden">Thêm</span>
             </button>
           )}
           <button
             onClick={() => (activeTab === 'PRODUCTS' ? loadProducts() : loadMappings())}
-            className="p-2 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1c212d] rounded text-gray-600 dark:text-gray-300 transition-colors cursor-pointer"
+            className="p-2 lg:px-3 flex items-center gap-1.5 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1c212d] rounded text-gray-600 dark:text-gray-300 transition-colors cursor-pointer text-xs"
             title="Làm mới dữ liệu"
           >
-            <RefreshCw size={16} />
+            <RefreshCw size={14} />
+            <span className="hidden lg:inline font-medium">Làm mới</span>
           </button>
         </div>
       </div>
@@ -963,25 +966,27 @@ export const ProductsPage: React.FC = () => {
       <div className="flex items-center gap-1 p-1 bg-gray-100/80 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded w-full sm:w-fit shrink-0 max-w-full overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab('PRODUCTS')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 whitespace-nowrap ${
             activeTab === 'PRODUCTS'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
           }`}
         >
-          <Boxes size={14} />
-          <span>Sản phẩm & Biến thể nội bộ ({totalProducts})</span>
+          <Boxes size={14} className="shrink-0" />
+          <span className="hidden sm:inline">Sản phẩm & Biến thể nội bộ ({totalProducts})</span>
+          <span className="sm:hidden">Sản phẩm ({totalProducts})</span>
         </button>
         <button
           onClick={() => setActiveTab('MAPPINGS')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 whitespace-nowrap ${
             activeTab === 'MAPPINGS'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
           }`}
         >
-          <LinkIcon size={14} />
-          <span>Liên kết SKU Shopee ({mappings.length})</span>
+          <LinkIcon size={14} className="shrink-0" />
+          <span className="hidden sm:inline">Liên kết SKU Shopee ({mappings.length})</span>
+          <span className="sm:hidden">Liên kết SKU ({mappings.length})</span>
         </button>
       </div>
 
@@ -1880,14 +1885,14 @@ export const ProductsPage: React.FC = () => {
         <Modal
           isOpen={isCreateProductModalOpen}
           onClose={() => setIsCreateProductModalOpen(false)}
-          title="Thêm sản phẩm nội bộ mới"
-          subtitle="Tạo sản phẩm và các biến thể SKU để theo dõi tồn kho và liên kết với sàn"
+          title={<><span className="sm:hidden">Thêm sản phẩm mới</span><span className="hidden sm:inline">Thêm sản phẩm nội bộ mới</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Tạo sản phẩm và các biến thể SKU để theo dõi tồn kho và liên kết với sàn</span>}
           icon={Package}
           maxWidth="w-[92vw] max-w-4xl"
         >
           <form onSubmit={handleCreateProductSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-4">
-              <div className="grid grid-cols-2 gap-3.5">
+            <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                     Tên sản phẩm *
@@ -2021,7 +2026,7 @@ export const ProductsPage: React.FC = () => {
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5">
                           <div>
                             <label className="text-[11px] font-medium text-gray-500">
                               Tên biến thể
@@ -2071,7 +2076,7 @@ export const ProductsPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5">
                           <div>
                             <label className="text-[11px] font-medium text-gray-500">
                               Giá vốn (VND)
@@ -2128,14 +2133,15 @@ export const ProductsPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsCreateProductModalOpen(false)}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
-              <ModalButton variant="primary" type="submit">
+              <ModalButton variant="primary" type="submit" className="flex-1 sm:flex-initial">
                 Lưu sản phẩm
               </ModalButton>
             </ModalFooter>
@@ -2148,13 +2154,13 @@ export const ProductsPage: React.FC = () => {
         <Modal
           isOpen={isEditVariantModalOpen && Boolean(selectedVariantForEdit)}
           onClose={() => setIsEditVariantModalOpen(false)}
-          title="Cập nhật biến thể SKU"
-          subtitle={`Mã SKU nội bộ: ${selectedVariantForEdit.sku}`}
+          title={<><span className="sm:hidden">Sửa biến thể SKU</span><span className="hidden sm:inline">Cập nhật biến thể SKU</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Mã SKU nội bộ: ${selectedVariantForEdit.sku}`}</span>}
           icon={Edit2}
           maxWidth="w-[92vw] max-w-xl"
         >
           <form onSubmit={handleUpdateVariantSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                   Tên biến thể *
@@ -2185,7 +2191,7 @@ export const ProductsPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                     Giá vốn COGS (VND)
@@ -2241,14 +2247,15 @@ export const ProductsPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsEditVariantModalOpen(false)}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
-              <ModalButton variant="primary" type="submit">
+              <ModalButton variant="primary" type="submit" className="flex-1 sm:flex-initial">
                 Lưu thay đổi
               </ModalButton>
             </ModalFooter>
@@ -2261,13 +2268,13 @@ export const ProductsPage: React.FC = () => {
         <Modal
           isOpen={isEditProductModalOpen}
           onClose={() => setIsEditProductModalOpen(false)}
-          title="Chỉnh sửa sản phẩm cha"
-          subtitle={`Cập nhật thông tin chung cho sản phẩm [${selectedProductForEdit.code || selectedProductForEdit.sku}]`}
+          title={<><span className="sm:hidden">Sửa sản phẩm</span><span className="hidden sm:inline">Chỉnh sửa sản phẩm cha</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Cập nhật thông tin chung [${selectedProductForEdit.code || selectedProductForEdit.sku}]`}</span>}
           icon={Package}
           maxWidth="w-[92vw] max-w-2xl"
         >
           <form onSubmit={handleUpdateProductSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                   Tên sản phẩm *
@@ -2299,14 +2306,15 @@ export const ProductsPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsEditProductModalOpen(false)}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
-              <ModalButton variant="primary" type="submit">
+              <ModalButton variant="primary" type="submit" className="flex-1 sm:flex-initial">
                 Lưu thay đổi
               </ModalButton>
             </ModalFooter>
@@ -2319,13 +2327,13 @@ export const ProductsPage: React.FC = () => {
         <Modal
           isOpen={isDeleteProductModalOpen}
           onClose={() => setIsDeleteProductModalOpen(false)}
-          title="Xác nhận xóa sản phẩm"
-          subtitle={`Bạn có chắc muốn xóa "${selectedProductForDelete.name}" (${selectedProductForDelete.code || selectedProductForDelete.sku})?`}
+          title={<><span className="sm:hidden">Xóa sản phẩm</span><span className="hidden sm:inline">Xác nhận xóa sản phẩm</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Bạn có chắc muốn xóa "${selectedProductForDelete.name}" (${selectedProductForDelete.code || selectedProductForDelete.sku})?`}</span>}
           icon={Trash2}
           maxWidth="max-w-md"
         >
           <div className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3">
+            <ModalBody className="space-y-3 p-3 sm:p-5">
               <div className="p-3 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
                 <AlertTriangle size={16} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                 <div>
@@ -2336,11 +2344,12 @@ export const ProductsPage: React.FC = () => {
                 </div>
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsDeleteProductModalOpen(false)}
                 disabled={isDeletingProduct}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
@@ -2348,6 +2357,7 @@ export const ProductsPage: React.FC = () => {
                 variant="danger"
                 onClick={handleDeleteProductSubmit}
                 disabled={isDeletingProduct}
+                className="flex-1 sm:flex-initial"
               >
                 {isDeletingProduct ? 'Đang xóa...' : 'Xác nhận xóa'}
               </ModalButton>
@@ -2361,13 +2371,13 @@ export const ProductsPage: React.FC = () => {
         <Modal
           isOpen={isDeleteVariantModalOpen}
           onClose={() => setIsDeleteVariantModalOpen(false)}
-          title="Xác nhận xóa biến thể SKU"
-          subtitle={`Bạn có chắc muốn xóa biến thể "${selectedVariantForDelete.name}" (SKU: ${selectedVariantForDelete.sku})?`}
+          title={<><span className="sm:hidden">Xóa biến thể</span><span className="hidden sm:inline">Xác nhận xóa biến thể SKU</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Bạn có chắc muốn xóa biến thể "${selectedVariantForDelete.name}" (SKU: ${selectedVariantForDelete.sku})?`}</span>}
           icon={Trash2}
           maxWidth="max-w-md"
         >
           <div className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3">
+            <ModalBody className="space-y-3 p-3 sm:p-5">
               <div className="p-3 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
                 <AlertTriangle size={16} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                 <div>
@@ -2378,11 +2388,12 @@ export const ProductsPage: React.FC = () => {
                 </div>
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsDeleteVariantModalOpen(false)}
                 disabled={isDeletingVariant}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
@@ -2390,6 +2401,7 @@ export const ProductsPage: React.FC = () => {
                 variant="danger"
                 onClick={handleDeleteVariantSubmit}
                 disabled={isDeletingVariant}
+                className="flex-1 sm:flex-initial"
               >
                 {isDeletingVariant ? 'Đang xóa...' : 'Xác nhận xóa'}
               </ModalButton>
@@ -2404,13 +2416,13 @@ export const ProductsPage: React.FC = () => {
         <Modal
           isOpen={isMapModalOpen && Boolean(selectedMappingTarget)}
           onClose={() => setIsMapModalOpen(false)}
-          title="Gán sản phẩm sàn vào SKU kho nội bộ"
-          subtitle="Liên kết phân loại hàng Shopee với SKU kho để tự động đồng bộ tồn kho và giá vốn COGS"
+          title={<><span className="sm:hidden">Gán sản phẩm vào SKU</span><span className="hidden sm:inline">Gán sản phẩm sàn vào SKU kho nội bộ</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Liên kết phân loại hàng Shopee với SKU kho để tự động đồng bộ tồn kho và giá vốn COGS</span>}
           icon={Boxes}
           maxWidth="w-[92vw] max-w-2xl"
         >
           <form onSubmit={handleSaveMapping} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-4">
+            <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5">
               {/* Product Info Summary Box */}
               <div className="p-3.5 bg-gray-50/80 dark:bg-[#131720]/80 rounded-lg border border-gray-200/70 dark:border-gray-800 text-xs space-y-2">
                 <div className="flex justify-between items-center">
@@ -2662,14 +2674,15 @@ export const ProductsPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsMapModalOpen(false)}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
-              <ModalButton variant="primary" type="submit">
+              <ModalButton variant="primary" type="submit" className="flex-1 sm:flex-initial">
                 Xác nhận liên kết
               </ModalButton>
             </ModalFooter>
@@ -2682,13 +2695,13 @@ export const ProductsPage: React.FC = () => {
         <Modal
           isOpen={isBulkMapModalOpen}
           onClose={() => setIsBulkMapModalOpen(false)}
-          title={`Gom ${selectedListingIds.length} sản phẩm sàn về CÙNG 1 SKU kho`}
-          subtitle="Ánh xạ nhiều phân loại Shopee khác nhau về cùng 1 SKU nội bộ quản lý"
+          title={<><span className="sm:hidden">Gom {selectedListingIds.length} SP về 1 SKU</span><span className="hidden sm:inline">{`Gom ${selectedListingIds.length} sản phẩm sàn về CÙNG 1 SKU kho`}</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Ánh xạ nhiều phân loại Shopee khác nhau về cùng 1 SKU nội bộ quản lý</span>}
           icon={Layers}
           maxWidth="w-[92vw] max-w-4xl"
         >
           <form onSubmit={handleSaveBulkMapping} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-4">
+            <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                   Chọn biến thể SKU kho nội bộ chung cho tất cả các sản phẩm này *
@@ -2773,15 +2786,16 @@ export const ProductsPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsBulkMapModalOpen(false)}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
-              <ModalButton variant="primary" type="submit">
-                Xác nhận gom về 1 SKU kho
+              <ModalButton variant="primary" type="submit" className="flex-1 sm:flex-initial">
+                Xác nhận gom
               </ModalButton>
             </ModalFooter>
           </form>
@@ -2793,13 +2807,13 @@ export const ProductsPage: React.FC = () => {
         <Modal
           isOpen={isShopeeVariantsModalOpen}
           onClose={() => setIsShopeeVariantsModalOpen(false)}
-          title={`Biến thể Shopee liên kết SKU: ${selectedVariantForShopee.sku}`}
-          subtitle={`Sản phẩm kho: ${selectedProductForShopee?.name || ''} • Biến thể: ${selectedVariantForShopee.name}`}
+          title={<><span className="sm:hidden">Shopee map: {selectedVariantForShopee.sku}</span><span className="hidden sm:inline">{`Biến thể Shopee liên kết SKU: ${selectedVariantForShopee.sku}`}</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Sản phẩm kho: ${selectedProductForShopee?.name || ''} • Biến thể: ${selectedVariantForShopee.name}`}</span>}
           icon={Store}
           maxWidth="w-[94vw] max-w-5xl"
         >
           <div className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-4">
+            <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5">
               {/* Variant Info Banner */}
               <div className="p-3 bg-gray-50 dark:bg-[#181b22] rounded border border-gray-200 dark:border-gray-800 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div>
@@ -3043,10 +3057,11 @@ export const ProductsPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-end w-full">
               <ModalButton
                 variant="primary"
                 onClick={() => setIsShopeeVariantsModalOpen(false)}
+                className="w-full sm:w-auto"
               >
                 Đóng
               </ModalButton>
@@ -3060,13 +3075,13 @@ export const ProductsPage: React.FC = () => {
         <Modal
           isOpen={isProductDetailModalOpen}
           onClose={() => setIsProductDetailModalOpen(false)}
-          title={`Chi tiết sản phẩm: ${selectedProductForDetail.name}`}
-          subtitle={`Mã sản phẩm: ${selectedProductForDetail.code || selectedProductForDetail.sku || '--'} • Danh mục SKU nội bộ & Ánh xạ Shopee`}
+          title={<><span className="sm:hidden">Chi tiết SP: {selectedProductForDetail.name}</span><span className="hidden sm:inline">{`Chi tiết sản phẩm: ${selectedProductForDetail.name}`}</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Mã: ${selectedProductForDetail.code || selectedProductForDetail.sku || '--'} • Danh mục SKU nội bộ & Ánh xạ Shopee`}</span>}
           icon={Package}
           maxWidth="w-[94vw] max-w-6xl"
         >
           <div className="flex flex-col flex-1 min-h-0 space-y-4">
-            <ModalBody className="space-y-4">
+            <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5">
               {/* Product Key Metrics */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="p-3 bg-gray-50 dark:bg-[#181b22] rounded border border-gray-200 dark:border-gray-800">
@@ -3256,10 +3271,11 @@ export const ProductsPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-end w-full">
               <ModalButton
                 variant="primary"
                 onClick={() => setIsProductDetailModalOpen(false)}
+                className="w-full sm:w-auto"
               >
                 Đóng
               </ModalButton>

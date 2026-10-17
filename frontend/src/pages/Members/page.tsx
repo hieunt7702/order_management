@@ -253,37 +253,39 @@ export const MembersPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div>
-          <h1 className="text-lg md:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
-            <Users size={20} className="text-[#5865f2]" />
-            Thành viên & Phân quyền ({members.length})
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+            <Users size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
+            <span className="truncate">Thành viên ({members.length})</span>
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
             Quản lý tài khoản nhân viên, vai trò truy cập và phạm vi shop được phép thao tác
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {isOwnerOrAdmin && (
             <Button
               variant="default"
               size="sm"
               onClick={handleOpenAddModal}
-              className="gap-1.5"
+              className="h-8 px-2.5 sm:px-3 gap-1 sm:gap-1.5 text-xs"
             >
               <UserPlus size={14} />
-              <span>Thêm nhân viên</span>
+              <span className="hidden sm:inline">Thêm nhân viên</span>
+              <span className="sm:hidden">Thêm</span>
             </Button>
           )}
           <Button
             variant="outline"
             size="sm"
             onClick={loadMembers}
-            className="p-2"
+            className="h-8 w-8 sm:w-auto p-0 sm:px-2.5 sm:py-1 gap-1 text-xs"
             title="Làm mới dữ liệu"
           >
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+            <span className="hidden lg:inline text-xs">Làm mới</span>
           </Button>
         </div>
       </div>
@@ -735,13 +737,23 @@ export const MembersPage: React.FC = () => {
         <Modal
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
-          title="Thêm nhân viên mới"
-          subtitle="Tạo tài khoản và thiết lập vai trò phân quyền cho nhân viên trong Workspace"
+          title={
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="sm:hidden font-semibold truncate">Thêm nhân viên</span>
+              <span className="hidden sm:inline font-semibold truncate">Thêm nhân viên mới</span>
+            </div>
+          }
+          subtitle={
+            <div className="min-w-0 truncate">
+              <span className="sm:hidden truncate">Tạo tài khoản & phân quyền</span>
+              <span className="hidden sm:inline truncate">Tạo tài khoản và thiết lập vai trò phân quyền cho nhân viên trong Workspace</span>
+            </div>
+          }
           icon={UserPlus}
           maxWidth="max-w-lg"
         >
           <form onSubmit={handleAddSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-1.5">
@@ -893,14 +905,19 @@ export const MembersPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsAddModalOpen(false)}
+                className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
               >
                 Hủy
               </ModalButton>
-              <ModalButton variant="primary" type="submit">
+              <ModalButton
+                variant="primary"
+                type="submit"
+                className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 font-semibold text-xs active:scale-95 justify-center"
+              >
                 Tạo nhân viên
               </ModalButton>
             </ModalFooter>
@@ -913,13 +930,23 @@ export const MembersPage: React.FC = () => {
         <Modal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
-          title="Chỉnh sửa quyền nhân viên"
-          subtitle={`Cập nhật vai trò và phạm vi shop cho ${selectedMemberForEdit.user?.email || ''}`}
+          title={
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="sm:hidden font-semibold truncate">Sửa quyền</span>
+              <span className="hidden sm:inline font-semibold truncate">Chỉnh sửa quyền nhân viên</span>
+            </div>
+          }
+          subtitle={
+            <div className="min-w-0 truncate">
+              <span className="sm:hidden truncate">Vai trò: {selectedMemberForEdit.user?.name || selectedMemberForEdit.user?.email}</span>
+              <span className="hidden sm:inline truncate">Cập nhật vai trò và phạm vi shop cho {selectedMemberForEdit.user?.email || ''}</span>
+            </div>
+          }
           icon={Users}
           maxWidth="max-w-lg"
         >
           <form onSubmit={handleEditSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                   Vai trò chức vụ *
@@ -988,15 +1015,21 @@ export const MembersPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsEditModalOpen(false)}
+                className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
               >
                 Hủy
               </ModalButton>
-              <ModalButton variant="primary" type="submit">
-                Lưu thay đổi
+              <ModalButton
+                variant="primary"
+                type="submit"
+                className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 font-semibold text-xs active:scale-95 justify-center"
+              >
+                <span className="sm:hidden">Lưu</span>
+                <span className="hidden sm:inline">Lưu thay đổi</span>
               </ModalButton>
             </ModalFooter>
           </form>
@@ -1014,22 +1047,23 @@ export const MembersPage: React.FC = () => {
           maxWidth="max-w-md"
         >
           <div className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3">
-              <div className="p-3 rounded bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 flex items-start gap-2.5 text-xs text-red-800 dark:text-red-300">
+            <ModalBody className="space-y-3 p-3 sm:p-5">
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 flex items-start gap-2.5 text-xs text-red-800 dark:text-red-300">
                 <AlertTriangle size={16} className="shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
                 <div>
                   <p className="font-semibold">Hành động không thể hoàn tác:</p>
-                  <p className="mt-0.5 text-red-700 dark:text-red-400/90 leading-relaxed">
+                  <p className="mt-0.5 text-red-700 dark:text-red-400/90 leading-relaxed text-[11px] sm:text-xs">
                     Thành viên này sẽ mất toàn bộ quyền truy cập vào Workspace và các dữ liệu liên quan.
                   </p>
                 </div>
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsDeleteModalOpen(false)}
                 disabled={isDeleting}
+                className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
               >
                 Hủy
               </ModalButton>
@@ -1037,6 +1071,7 @@ export const MembersPage: React.FC = () => {
                 variant="danger"
                 onClick={handleDeleteSubmit}
                 disabled={isDeleting}
+                className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 font-semibold text-xs active:scale-95 justify-center"
               >
                 {isDeleting ? 'Đang xóa...' : 'Xác nhận xóa'}
               </ModalButton>

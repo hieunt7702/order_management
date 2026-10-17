@@ -87,7 +87,7 @@ const createDefaultSession = (index = 1, warehouseId?: string): ScanSession => {
   return {
     id,
     sessionCode: `PQ-${randCode}`,
-    name: `Phiên quét #${index} (${timeStr} ${dateStr})`,
+    name: `Phiên Quét ${index}`,
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
     status: 'DRAFT',

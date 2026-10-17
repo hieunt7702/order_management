@@ -51,12 +51,12 @@ export const ScannerSettingsModal: React.FC<ScannerSettingsModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Cài đặt quét đơn"
-      subtitle="Tùy chỉnh động cơ nhận diện & phản hồi âm thanh / rung"
+      subtitle={<span className="line-clamp-1 sm:line-clamp-none">Tùy chỉnh động cơ nhận diện & phản hồi âm thanh / rung</span>}
       icon={Settings2}
       maxWidth="max-w-md"
     >
       <div className="flex flex-col flex-1 min-h-0">
-        <ModalBody className="space-y-4">
+        <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5">
           {/* AI / OCR Engine */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
@@ -181,16 +181,18 @@ export const ScannerSettingsModal: React.FC<ScannerSettingsModalProps> = ({
           </div>
         </ModalBody>
 
-        <ModalFooter>
+        <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
           <ModalButton
             variant="secondary"
             onClick={onClose}
+            className="flex-1 sm:flex-initial"
           >
             Đóng
           </ModalButton>
           <ModalButton
             variant="primary"
             onClick={handleSave}
+            className="flex-1 sm:flex-initial"
           >
             <Check size={14} className="mr-1 inline" /> Áp dụng
           </ModalButton>

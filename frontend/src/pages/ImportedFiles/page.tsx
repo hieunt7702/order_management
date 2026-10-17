@@ -487,22 +487,22 @@ export const ImportedFilesPage: React.FC = () => {
         onDrop={handleDrop}
       >
         {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded bg-[#5865f2]/10 dark:bg-[#5865f2]/20 flex items-center justify-center text-[#5865f2] shrink-0">
-              <FileSpreadsheet size={18} strokeWidth={1.5} />
+        <div className="flex items-center justify-between gap-2 shrink-0">
+          <div className="min-w-0 flex-1 flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded bg-[#5865f2]/10 dark:bg-[#5865f2]/20 flex items-center justify-center text-[#5865f2] shrink-0">
+              <FileSpreadsheet size={16} className="sm:w-[18px] sm:h-[18px]" strokeWidth={1.5} />
             </div>
-            <div className="flex flex-col">
-              <h1 className="text-base font-medium text-gray-900 dark:text-white leading-tight">
+            <div className="min-w-0 flex-1 truncate">
+              <h1 className="text-sm sm:text-base font-medium text-gray-900 dark:text-white leading-tight truncate">
                 Dữ liệu Excel
               </h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
                 Quản lý và import dữ liệu đơn hàng từ file Excel Shopee
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <input
               type="file"
               accept=".xlsx, .xls"
@@ -515,16 +515,18 @@ export const ImportedFilesPage: React.FC = () => {
               variant="default"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              className="gap-1.5"
+              className="h-8 px-2.5 sm:px-3 gap-1 sm:gap-1.5 text-xs"
             >
-              <Plus size={14} /> Import Excel
+              <Plus size={14} />
+              <span className="hidden sm:inline">Import Excel</span>
+              <span className="sm:hidden">Import</span>
             </Button>
 
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsMetricsExpanded(!isMetricsExpanded)}
-              className="px-2"
+              className="h-8 w-8 p-0"
               title={isMetricsExpanded ? 'Thu gọn thống kê' : 'Mở rộng thống kê'}
             >
               <ChevronDown

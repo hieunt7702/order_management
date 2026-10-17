@@ -774,25 +774,28 @@ export const OrdersPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-lg md:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
-            <ShoppingBag size={20} className="text-[#5865f2]" />
-            Quản lý Đơn hàng
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+            <ShoppingBag size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
+            <span className="sm:hidden truncate">Đơn hàng</span>
+            <span className="hidden sm:inline truncate">Quản lý Đơn hàng</span>
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
             Theo dõi, tra cứu trạng thái sàn Shopee, mã vận đơn và tiến độ xuất kho
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <Button
             size="sm"
             onClick={handleOpenCreateOrder}
-            className="gap-1.5"
+            className="gap-1.5 px-2.5 sm:px-3"
+            title="Tạo đơn hàng mới"
           >
             <Plus size={14} />
-            <span>Tạo đơn hàng mới</span>
+            <span className="hidden sm:inline">Tạo đơn hàng mới</span>
+            <span className="sm:hidden">Tạo mới</span>
           </Button>
           <Button
             variant="outline"
@@ -802,21 +805,21 @@ export const OrdersPage: React.FC = () => {
               setForceDeleteAll(false);
               setIsDeleteAllModalOpen(true);
             }}
-            className="gap-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 border-red-200 dark:border-red-900/50"
+            className="gap-1.5 p-2 sm:px-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 border-red-200 dark:border-red-900/50"
             title="Xóa toàn bộ đơn hàng trong hệ thống hoặc shop hiện tại"
           >
             <Trash2 size={13} />
-            <span>Xóa tất cả</span>
+            <span className="hidden sm:inline">Xóa tất cả</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={loadOrders}
-            className="gap-1.5"
+            className="gap-1.5 p-2 lg:px-3"
             title="Làm mới dữ liệu"
           >
             <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-            <span>Làm mới</span>
+            <span className="hidden lg:inline">Làm mới</span>
           </Button>
         </div>
       </div>
@@ -1291,13 +1294,13 @@ export const OrdersPage: React.FC = () => {
         <Modal
           isOpen={isCreateOrderModalOpen}
           onClose={() => setIsCreateOrderModalOpen(false)}
-          title="Tạo đơn hàng mới"
-          subtitle="Khởi tạo đơn hàng thủ công hoặc bán ngoài sàn với thông tin vận chuyển và tồn kho"
+          title={<><span className="sm:hidden">Tạo đơn hàng</span><span className="hidden sm:inline">Tạo đơn hàng mới</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Khởi tạo đơn hàng thủ công hoặc bán ngoài sàn với thông tin vận chuyển và tồn kho</span>}
           icon={Plus}
           maxWidth="max-w-2xl"
         >
           <form onSubmit={handleCreateOrderSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+            <ModalBody className="space-y-3 sm:space-y-4 max-h-[78vh] sm:max-h-[75vh] overflow-y-auto pr-1 p-3 sm:p-5">
               {/* Row 1: Shop & Order Code */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -1673,11 +1676,12 @@ export const OrdersPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsCreateOrderModalOpen(false)}
                 disabled={isSavingOrder}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
@@ -1685,6 +1689,7 @@ export const OrdersPage: React.FC = () => {
                 variant="primary"
                 type="submit"
                 disabled={isSavingOrder}
+                className="flex-1 sm:flex-initial"
               >
                 {isSavingOrder ? 'Đang tạo...' : 'Tạo đơn hàng'}
               </ModalButton>
@@ -1698,13 +1703,13 @@ export const OrdersPage: React.FC = () => {
         <Modal
           isOpen={isEditOrderModalOpen}
           onClose={() => setIsEditOrderModalOpen(false)}
-          title="Chỉnh sửa đơn hàng"
-          subtitle={`Cập nhật thông tin giao hàng và cước phí cho đơn [${selectedOrderForEdit.externalOrderId}]`}
+          title={<><span className="sm:hidden">Sửa đơn hàng</span><span className="hidden sm:inline">Chỉnh sửa đơn hàng</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Cập nhật thông tin giao hàng cho đơn [${selectedOrderForEdit.externalOrderId}]`}</span>}
           icon={Edit2}
           maxWidth="max-w-md"
         >
           <form onSubmit={handleUpdateOrderSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5 max-h-[75vh] overflow-y-auto pr-1">
+            <ModalBody className="space-y-3 sm:space-y-3.5 max-h-[78vh] sm:max-h-[75vh] overflow-y-auto pr-1 p-3 sm:p-5">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
@@ -1871,11 +1876,12 @@ export const OrdersPage: React.FC = () => {
               </div>
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsEditOrderModalOpen(false)}
                 disabled={isSavingOrder}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
@@ -1883,6 +1889,7 @@ export const OrdersPage: React.FC = () => {
                 variant="primary"
                 type="submit"
                 disabled={isSavingOrder}
+                className="flex-1 sm:flex-initial"
               >
                 {isSavingOrder ? 'Đang lưu...' : 'Lưu thay đổi'}
               </ModalButton>
@@ -1896,13 +1903,13 @@ export const OrdersPage: React.FC = () => {
         <Modal
           isOpen={isDeleteOrderModalOpen}
           onClose={() => setIsDeleteOrderModalOpen(false)}
-          title="Xác nhận xóa đơn hàng"
-          subtitle={`Bạn có chắc muốn xóa vĩnh viễn đơn hàng "${selectedOrderForDelete.externalOrderId}"?`}
+          title={<><span className="sm:hidden">Xóa đơn hàng</span><span className="hidden sm:inline">Xác nhận xóa đơn hàng</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Bạn có chắc muốn xóa vĩnh viễn đơn hàng "${selectedOrderForDelete.externalOrderId}"?`}</span>}
           icon={Trash2}
           maxWidth="max-w-md"
         >
           <div className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3">
+            <ModalBody className="space-y-3 p-3 sm:p-5">
               <div className="p-3 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
                 <AlertTriangle size={16} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                 <div>
@@ -1914,11 +1921,12 @@ export const OrdersPage: React.FC = () => {
                 </div>
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsDeleteOrderModalOpen(false)}
                 disabled={isDeletingOrder}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
@@ -1926,6 +1934,7 @@ export const OrdersPage: React.FC = () => {
                 variant="danger"
                 onClick={handleDeleteOrderSubmit}
                 disabled={isDeletingOrder}
+                className="flex-1 sm:flex-initial"
               >
                 {isDeletingOrder ? 'Đang xóa...' : 'Xác nhận xóa'}
               </ModalButton>
@@ -1939,13 +1948,13 @@ export const OrdersPage: React.FC = () => {
         <Modal
           isOpen={isBulkDeleteModalOpen}
           onClose={() => !isDeletingBulk && setIsBulkDeleteModalOpen(false)}
-          title="Xác nhận xóa hàng loạt"
-          subtitle={`Bạn có chắc muốn xóa ${selectedOrderIds.length} đơn hàng đã chọn?`}
+          title={<><span className="sm:hidden">Xóa hàng loạt</span><span className="hidden sm:inline">Xác nhận xóa hàng loạt</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Bạn có chắc muốn xóa ${selectedOrderIds.length} đơn hàng đã chọn?`}</span>}
           icon={Trash2}
           maxWidth="max-w-md"
         >
           <div className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div className="p-3 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
                 <AlertTriangle size={16} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                 <div className="space-y-1">
@@ -1974,11 +1983,12 @@ export const OrdersPage: React.FC = () => {
                 </label>
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsBulkDeleteModalOpen(false)}
                 disabled={isDeletingBulk}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
@@ -1986,6 +1996,7 @@ export const OrdersPage: React.FC = () => {
                 variant="danger"
                 onClick={handleBulkDeleteSubmit}
                 disabled={isDeletingBulk}
+                className="flex-1 sm:flex-initial"
               >
                 {isDeletingBulk ? 'Đang xóa...' : `Xác nhận xóa (${selectedOrderIds.length})`}
               </ModalButton>
@@ -1999,17 +2010,19 @@ export const OrdersPage: React.FC = () => {
         <Modal
           isOpen={isDeleteAllModalOpen}
           onClose={() => !isDeletingBulk && setIsDeleteAllModalOpen(false)}
-          title="Xác nhận xóa toàn bộ đơn hàng"
+          title={<><span className="sm:hidden">Xóa toàn bộ đơn</span><span className="hidden sm:inline">Xác nhận xóa toàn bộ đơn hàng</span></>}
           subtitle={
-            selectedShopId
-              ? `Xóa toàn bộ đơn hàng của gian hàng đang lọc (${shops.find((s) => s.id === selectedShopId)?.name || 'Shop'})`
-              : 'Xóa toàn bộ tất cả đơn hàng trong hệ thống'
+            <span className="line-clamp-1 sm:line-clamp-none">
+              {selectedShopId
+                ? `Xóa toàn bộ đơn hàng của gian hàng đang lọc (${shops.find((s) => s.id === selectedShopId)?.name || 'Shop'})`
+                : 'Xóa toàn bộ tất cả đơn hàng trong hệ thống'}
+            </span>
           }
           icon={Trash2}
           maxWidth="max-w-md"
         >
           <div className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div className="p-3.5 rounded bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 flex items-start gap-2.5 text-xs text-red-800 dark:text-red-300">
                 <AlertTriangle size={18} className="shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
                 <div className="space-y-1">
@@ -2049,7 +2062,7 @@ export const OrdersPage: React.FC = () => {
                 </div>
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => {
@@ -2057,6 +2070,7 @@ export const OrdersPage: React.FC = () => {
                   setConfirmDeleteAll(false);
                 }}
                 disabled={isDeletingBulk}
+                className="flex-1 sm:flex-initial"
               >
                 Hủy
               </ModalButton>
@@ -2064,8 +2078,9 @@ export const OrdersPage: React.FC = () => {
                 variant="danger"
                 onClick={handleDeleteAllSubmit}
                 disabled={!confirmDeleteAll || isDeletingBulk}
+                className="flex-1 sm:flex-initial"
               >
-                {isDeletingBulk ? 'Đang xóa toàn bộ...' : 'Xác nhận xóa toàn bộ'}
+                {isDeletingBulk ? 'Đang xóa...' : 'Xác nhận xóa'}
               </ModalButton>
             </ModalFooter>
           </div>
@@ -2082,13 +2097,13 @@ export const OrdersPage: React.FC = () => {
               setSelectedOrderForReturn(null);
             }
           }}
-          title="Đánh Dấu & Xử Lý Hoàn Hàng"
-          subtitle={`Đơn hàng: ${selectedOrderForReturn.externalOrderId || selectedOrderForReturn.internalOrderCode} • Shop: ${selectedOrderForReturn.shop?.name || 'Gian hàng'}`}
+          title={<><span className="sm:hidden">Xử lý hoàn hàng</span><span className="hidden sm:inline">Đánh Dấu & Xử Lý Hoàn Hàng</span></>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Đơn: ${selectedOrderForReturn.externalOrderId || selectedOrderForReturn.internalOrderCode} • ${selectedOrderForReturn.shop?.name || 'Gian hàng'}`}</span>}
           icon={RotateCcw}
           maxWidth="max-w-4xl"
         >
           <form onSubmit={handleSubmitReturn} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-4">
+            <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5">
               {/* Order Context Banner */}
               <div className="p-3 rounded-lg bg-gray-50 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 text-xs grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
@@ -2434,7 +2449,7 @@ export const OrdersPage: React.FC = () => {
               )}
             </ModalBody>
 
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => {
@@ -2442,6 +2457,7 @@ export const OrdersPage: React.FC = () => {
                   setSelectedOrderForReturn(null);
                 }}
                 disabled={isSubmittingReturn}
+                className="flex-1 sm:flex-initial"
               >
                 Đóng
               </ModalButton>
@@ -2450,12 +2466,21 @@ export const OrdersPage: React.FC = () => {
                 variant="primary"
                 type="submit"
                 disabled={isSubmittingReturn}
+                className="flex-1 sm:flex-initial"
               >
-                {isSubmittingReturn
-                  ? 'Đang xử lý...'
-                  : returnMode === 'INSPECT_AND_RECEIVE'
-                  ? 'Xác nhận kiểm nhận & Cập nhật kho'
-                  : 'Xác nhận báo đơn đang hoàn'}
+                {isSubmittingReturn ? (
+                  'Đang xử lý...'
+                ) : returnMode === 'INSPECT_AND_RECEIVE' ? (
+                  <>
+                    <span className="sm:hidden">Nhập kho hoàn</span>
+                    <span className="hidden sm:inline">Xác nhận kiểm nhận & Cập nhật kho</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="sm:hidden">Báo đang hoàn</span>
+                    <span className="hidden sm:inline">Xác nhận báo đơn đang hoàn</span>
+                  </>
+                )}
               </ModalButton>
             </ModalFooter>
           </form>

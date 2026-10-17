@@ -271,36 +271,40 @@ export const SuppliersPage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
       {/* 1. Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div>
-          <h1 className="text-lg md:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-2">
-            <Truck size={20} className="text-[#5865f2]" />
-            Quản lý Nhà cung cấp
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+            <Truck size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
+            <span className="truncate sm:hidden">Nhà cung cấp</span>
+            <span className="hidden sm:inline truncate">Quản lý Nhà cung cấp</span>
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
             Danh bạ đối tác cung ứng, liên hệ, tài khoản thanh toán và theo dõi công nợ mua hàng
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <Button
             size="sm"
             onClick={handleOpenCreateModal}
-            className="gap-1.5"
+            className="gap-1.5 px-2.5 sm:px-3"
+            title="Thêm nhà cung cấp mới"
           >
             <Plus size={14} />
-            <span>Thêm nhà cung cấp mới</span>
+            <span className="hidden sm:inline">Thêm nhà cung cấp mới</span>
+            <span className="sm:hidden">Thêm</span>
           </Button>
 
           <Link to="/supplier-debts">
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5"
+              className="gap-1.5 px-2 sm:px-3"
               title="Xem Sổ công nợ và Lập phiếu chi thanh toán"
             >
               <Building2 size={13} />
-              <span>Sổ công nợ NCC</span>
+              <span className="hidden sm:inline">Sổ công nợ NCC</span>
+              <span className="sm:hidden">Công nợ</span>
             </Button>
           </Link>
 
@@ -308,11 +312,11 @@ export const SuppliersPage: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={loadSuppliers}
-            className="gap-1.5"
+            className="gap-1.5 p-2 lg:px-3"
             title="Làm mới dữ liệu"
           >
             <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-            <span>Làm mới</span>
+            <span className="hidden lg:inline">Làm mới</span>
           </Button>
         </div>
       </div>
@@ -730,15 +734,27 @@ export const SuppliersPage: React.FC = () => {
         <Modal
           isOpen={isCreateModalOpen}
           onClose={() => !isSubmitting && setIsCreateModalOpen(false)}
-          title="Thêm mới Nhà cung cấp"
-          subtitle="Tạo mới đối tác cung ứng vào hệ thống để quản lý nhập kho và công nợ"
+          title={
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="sm:hidden font-semibold truncate">Thêm NCC mới</span>
+              <span className="hidden sm:inline font-semibold truncate">Thêm mới Nhà cung cấp</span>
+            </div>
+          }
+          subtitle={
+            <div className="min-w-0 truncate">
+              <span className="sm:hidden truncate">Tạo đối tác để quản lý nhập kho & công nợ</span>
+              <span className="hidden sm:inline truncate">
+                Tạo mới đối tác cung ứng vào hệ thống để quản lý nhập kho và công nợ
+              </span>
+            </div>
+          }
           icon={Truck}
           maxWidth="max-w-xl"
         >
           <form onSubmit={handleCreateSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5 text-xs">
+            <ModalBody className="space-y-3 sm:space-y-3.5 text-xs p-3 sm:p-5">
               {/* 1. THÔNG TIN CƠ BẢN */}
-              <div className="p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-3">
+              <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
                 <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
                   <Building2 className="w-3.5 h-3.5 text-[#5865f2]" />
                   <span>Thông tin định danh</span>
@@ -916,13 +932,13 @@ export const SuppliersPage: React.FC = () => {
                 />
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 type="button"
                 variant="outline"
                 onClick={() => setIsCreateModalOpen(false)}
                 disabled={isSubmitting}
-                className="gap-1.5"
+                className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
               >
                 <X size={14} />
                 <span>Hủy</span>
@@ -931,10 +947,11 @@ export const SuppliersPage: React.FC = () => {
                 type="submit"
                 variant="primary"
                 disabled={isSubmitting || !createForm.name.trim()}
-                className="gap-1.5"
+                className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 font-semibold text-xs active:scale-95 justify-center"
               >
                 <Check size={14} />
-                <span>{isSubmitting ? 'Đang tạo...' : 'Tạo nhà cung cấp'}</span>
+                <span className="sm:hidden">{isSubmitting ? 'Đang tạo...' : 'Tạo NCC'}</span>
+                <span className="hidden sm:inline">{isSubmitting ? 'Đang tạo...' : 'Tạo nhà cung cấp'}</span>
               </ModalButton>
             </ModalFooter>
           </form>
@@ -946,15 +963,25 @@ export const SuppliersPage: React.FC = () => {
         <Modal
           isOpen={isEditModalOpen}
           onClose={() => !isSubmitting && setIsEditModalOpen(false)}
-          title={`Chỉnh sửa Nhà cung cấp: ${selectedSupplierForEdit.code}`}
-          subtitle={`Cập nhật thông tin đối tác "${selectedSupplierForEdit.name}"`}
+          title={
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="sm:hidden font-semibold truncate">Sửa: {selectedSupplierForEdit.code}</span>
+              <span className="hidden sm:inline font-semibold truncate">Chỉnh sửa Nhà cung cấp: {selectedSupplierForEdit.code}</span>
+            </div>
+          }
+          subtitle={
+            <div className="min-w-0 truncate">
+              <span className="sm:hidden truncate">Cập nhật: {selectedSupplierForEdit.name}</span>
+              <span className="hidden sm:inline truncate">Cập nhật thông tin đối tác "{selectedSupplierForEdit.name}"</span>
+            </div>
+          }
           icon={Edit2}
           maxWidth="max-w-xl"
         >
           <form onSubmit={handleEditSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3.5 text-xs">
+            <ModalBody className="space-y-3 sm:space-y-3.5 text-xs p-3 sm:p-5">
               {/* 1. THÔNG TIN CƠ BẢN */}
-              <div className="p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-3">
+              <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded-xl border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3">
                 <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
                   <Building2 className="w-3.5 h-3.5 text-[#5865f2]" />
                   <span>Thông tin đối tác</span>
@@ -1111,13 +1138,13 @@ export const SuppliersPage: React.FC = () => {
                 />
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 type="button"
                 variant="outline"
                 onClick={() => setIsEditModalOpen(false)}
                 disabled={isSubmitting}
-                className="gap-1.5"
+                className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
               >
                 <X size={14} />
                 <span>Hủy</span>
@@ -1126,10 +1153,11 @@ export const SuppliersPage: React.FC = () => {
                 type="submit"
                 variant="primary"
                 disabled={isSubmitting || !editForm.name.trim()}
-                className="gap-1.5"
+                className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 font-semibold text-xs active:scale-95 justify-center"
               >
                 <Check size={14} />
-                <span>{isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}</span>
+                <span className="sm:hidden">{isSubmitting ? 'Đang lưu...' : 'Lưu'}</span>
+                <span className="hidden sm:inline">{isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}</span>
               </ModalButton>
             </ModalFooter>
           </form>
@@ -1159,11 +1187,12 @@ export const SuppliersPage: React.FC = () => {
                 </div>
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
               <ModalButton
                 variant="secondary"
                 onClick={() => setIsDeleteModalOpen(false)}
                 disabled={isSubmitting}
+                className="gap-1.5 flex-none px-4 py-2.5 sm:py-1.5 text-xs font-semibold shrink-0"
               >
                 Hủy
               </ModalButton>
@@ -1171,8 +1200,9 @@ export const SuppliersPage: React.FC = () => {
                 variant="danger"
                 onClick={handleDeleteSubmit}
                 disabled={isSubmitting}
+                className="gap-1.5 flex-1 sm:flex-none py-2.5 sm:py-1.5 px-4 font-semibold text-xs active:scale-95 justify-center"
               >
-                {isSubmitting ? 'Đang xóa...' : 'Xác nhận xóa'}
+                <span>{isSubmitting ? 'Đang xóa...' : 'Xác nhận xóa'}</span>
               </ModalButton>
             </ModalFooter>
           </div>

@@ -6,8 +6,8 @@ import { cn } from '../../lib/utils';
 export interface ModalProps {
   isOpen: boolean;
   onClose?: () => void;
-  title?: string;
-  subtitle?: string;
+  title?: ReactNode;
+  subtitle?: ReactNode;
   icon?: ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
   children?: ReactNode;
   maxWidth?: string;
@@ -15,6 +15,7 @@ export interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'full';
   className?: string;
   headerRight?: ReactNode;
+  mobilePlacement?: 'bottom' | 'center';
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -28,6 +29,7 @@ export const Modal: React.FC<ModalProps> = ({
   size,
   className = '',
   headerRight = null,
+  mobilePlacement = 'bottom',
 }) => {
   const sizeMap: Record<string, string> = {
     sm: 'max-w-sm',
@@ -60,7 +62,12 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 dark:bg-black/75 backdrop-blur-[2px] animate-fade-in">
+    <div
+      className={cn(
+        'fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 dark:bg-black/75 backdrop-blur-[2px] animate-modal-backdrop',
+        mobilePlacement === 'bottom' && 'flex-col justify-end sm:justify-center p-0 sm:p-4',
+      )}
+    >
       <div
         className="fixed inset-0 -z-10"
         onClick={onClose}
@@ -69,11 +76,22 @@ export const Modal: React.FC<ModalProps> = ({
       <div
         ref={modalRef}
         className={cn(
-          'bg-white dark:bg-[#181b22] rounded-xl sm:rounded w-full shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[92vh] transition-all',
+          'bg-white dark:bg-[#181b22] rounded-xl sm:rounded w-full shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh] max-h-[90dvh] sm:max-h-[90vh]',
+          '[&>form]:flex [&>form]:flex-col [&>form]:flex-1 [&>form]:min-h-0 [&>form]:overflow-hidden [&>form]:space-y-0',
+          mobilePlacement === 'bottom'
+            ? 'rounded-t-2xl sm:rounded-xl rounded-b-none sm:rounded-b-xl border-b-0 sm:border-b max-h-[88vh] max-h-[88dvh] sm:max-h-[90vh] animate-modal-sheet sm:animate-modal-center'
+            : 'animate-modal-center',
           resolvedMaxWidth,
           className,
         )}
       >
+        {/* Mobile Drag Indicator Bar */}
+        {mobilePlacement === 'bottom' && (
+          <div className="sm:hidden pt-2.5 pb-1 bg-white dark:bg-[#181b22] flex justify-center shrink-0">
+            <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
+          </div>
+        )}
+
         {/* Modal Header */}
         <div className="px-3.5 sm:px-5 py-3 sm:py-3.5 bg-white dark:bg-[#181b22] border-b border-gray-200 dark:border-gray-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -83,13 +101,13 @@ export const Modal: React.FC<ModalProps> = ({
               </div>
             )}
             <div className="min-w-0">
-              <h3 className="text-sm sm:text-base font-semibold sm:font-medium text-gray-900 dark:text-white leading-tight truncate">
+              <div className="text-sm sm:text-base font-semibold sm:font-medium text-gray-900 dark:text-white leading-tight truncate">
                 {title}
-              </h3>
+              </div>
               {subtitle && (
-                <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate font-normal">
+                <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate font-normal">
                   {subtitle}
-                </p>
+                </div>
               )}
             </div>
           </div>
@@ -98,7 +116,7 @@ export const Modal: React.FC<ModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-7 h-7 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer active:scale-95 shrink-0"
               title="Đóng (Esc)"
             >
               <X size={16} />
@@ -120,7 +138,7 @@ export const ModalBody: React.FC<{ children?: ReactNode; className?: string }> =
 }) => (
   <div
     className={cn(
-      'p-5 overflow-y-auto space-y-4 text-xs sm:text-sm text-gray-700 dark:text-gray-300 custom-scrollbar',
+      'p-3 sm:p-5 overflow-y-auto space-y-3 sm:space-y-4 text-xs sm:text-sm text-gray-700 dark:text-gray-300 custom-scrollbar flex-1 min-h-0 overscroll-contain',
       className,
     )}
   >
@@ -134,7 +152,7 @@ export const ModalFooter: React.FC<{
 }> = ({ children, className = '' }) => (
   <div
     className={cn(
-      'px-3.5 sm:px-5 py-2.5 sm:py-3 bg-gray-50/70 dark:bg-[#14151a] border-t border-gray-200 dark:border-gray-800 flex items-center justify-end gap-2 sm:gap-2.5 shrink-0',
+      'px-3.5 sm:px-5 py-2.5 sm:py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:pb-3 bg-gray-50/90 dark:bg-[#14151a] border-t border-gray-200 dark:border-gray-800 flex items-center justify-between sm:justify-end gap-2 sm:gap-2.5 shrink-0 mt-auto z-10',
       className,
     )}
   >
@@ -162,7 +180,7 @@ export const ModalButton: React.FC<ModalButtonProps> = ({
   className = '',
 }) => {
   const baseClasses =
-    'inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none';
+    'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-1.5 min-h-[38px] sm:min-h-[32px] text-xs sm:text-sm font-medium rounded-lg sm:rounded transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-95';
 
   const variantClasses = {
     secondary:
