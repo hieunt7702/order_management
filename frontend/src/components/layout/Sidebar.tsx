@@ -9,14 +9,17 @@ export const Sidebar: React.FC = () => {
   const { currentTenant } = useAuthStore();
 
   return (
-    <aside className="hidden lg:flex w-[260px] flex-shrink-0 bg-white dark:bg-[#14151a] border-r border-gray-200 dark:border-gray-800 flex-col transition-colors duration-300">
+    <aside className="hidden lg:flex w-[275px] flex-shrink-0 bg-white dark:bg-[#14151a] border-r border-gray-200 dark:border-gray-800 flex-col transition-colors duration-300">
       {/* Header / Logo */}
-      <div className="h-[60px] flex items-center gap-3 px-5 border-b border-gray-100 dark:border-gray-800">
+      <div className="h-[60px] flex items-center gap-2.5 px-4 border-b border-gray-100 dark:border-gray-800">
         <div className="flex-none w-8 h-8 rounded bg-[#5865f2] text-white flex items-center justify-center shadow-xs">
           <Command className="w-4 h-4" />
         </div>
-        <div className="flex flex-col min-w-0">
-          <span className="font-bold text-sm leading-tight text-gray-900 dark:text-white truncate">
+        <div className="flex flex-col min-w-0 flex-1">
+          <span
+            className="font-bold text-sm leading-tight text-gray-900 dark:text-white truncate"
+            title={currentTenant?.name || 'Shopee Order'}
+          >
             {currentTenant?.name || 'Shopee Order'}
           </span>
           <span className="text-[10px] font-medium text-gray-400 truncate">

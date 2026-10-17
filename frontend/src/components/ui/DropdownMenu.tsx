@@ -126,16 +126,19 @@ export function DropdownMenuContent({
       ? 'translateY(-100%)'
       : 'none';
 
+    const menuEl = menuRef.current;
+    const menuWidth = menuEl ? menuEl.offsetWidth : 210;
+
     let left: number | undefined;
     let right: number | undefined;
 
     if (isStart) {
-      left = Math.max(8, Math.min(rect.left, window.innerWidth - 190));
+      left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8));
     } else if (isCenter) {
       left = Math.max(8, Math.min(rect.left + rect.width / 2, window.innerWidth - 8));
     } else {
       // align === 'end' or 'right'
-      if (rect.right < 190) {
+      if (rect.right < menuWidth + 8) {
         left = 8;
       } else {
         right = Math.max(8, window.innerWidth - rect.right);
@@ -189,7 +192,7 @@ export function DropdownMenuContent({
         ...style,
       }}
       className={cn(
-        'min-w-[160px] max-w-[calc(100vw-16px)] sm:max-w-[260px] rounded bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 p-1 text-gray-900 dark:text-gray-100 shadow-xl animate-fade-in outline-none',
+        'w-max min-w-[170px] max-w-[calc(100vw-16px)] sm:max-w-[340px] rounded bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-800 p-1 text-gray-900 dark:text-gray-100 shadow-xl animate-fade-in outline-none',
         className,
       )}
       onClick={(e) => {
@@ -241,7 +244,7 @@ export function DropdownMenuItem({
       onTouchStart={(e) => e.stopPropagation()}
       onTouchEnd={(e) => e.stopPropagation()}
       className={cn(
-        'flex items-center gap-2 px-2.5 py-1.5 text-xs font-normal rounded transition-colors cursor-pointer select-none outline-none leading-snug',
+        'flex items-center gap-2 px-2.5 py-1.5 text-xs font-normal rounded transition-colors cursor-pointer select-none outline-none leading-snug whitespace-nowrap',
         variantClasses[variant] || variantClasses.default,
         className,
       )}

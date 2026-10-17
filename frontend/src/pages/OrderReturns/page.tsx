@@ -44,7 +44,7 @@ import {
   SystemPagination,
 } from '../../components/ui/SystemTable';
 import { Button } from '../../components/ui/Button';
-import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
+import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import { toast } from '../../components/ui/Toast';
 
 export const OrderReturnsPage: React.FC = () => {
@@ -254,35 +254,43 @@ export const OrderReturnsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Cards Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 shrink-0">
-        <SystemMetricCard
-          title="Chờ nhận hoàn"
-          value={totalWaitingCount.toString()}
-          subtitle="Chưa kiểm tra"
-          icon={Clock}
-          colorScheme="orange"
+      {/* KPI Cards Row matching Orders page */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Chờ nhận hoàn',
+            value: totalWaitingCount.toString(),
+            subtitle: 'Chưa kiểm tra',
+            icon: Clock,
+            colorScheme: 'orange',
+            isActive: activeTab === 'QUEUE',
+            onClick: () => setActiveTab('QUEUE'),
+          }}
+          rightItem={{
+            title: 'Sản phẩm đang về',
+            value: totalItemsWaiting.toString(),
+            subtitle: 'Chưa tính tồn',
+            icon: Boxes,
+            colorScheme: 'blue',
+          }}
         />
-        <SystemMetricCard
-          title="Sản phẩm đang về"
-          value={totalItemsWaiting.toString()}
-          subtitle="Chưa tính vào tồn bán"
-          icon={Boxes}
-          colorScheme="blue"
-        />
-        <SystemMetricCard
-          title="Hoàn một phần"
-          value={totalPartiallyCount.toString()}
-          subtitle="Đang theo dõi nhiều đợt"
-          icon={AlertTriangle}
-          colorScheme="purple"
-        />
-        <SystemMetricCard
-          title="Đã nhập hoàn kho"
-          value={historyTotal.toString()}
-          subtitle="Đã ghi sổ cái kho"
-          icon={CheckCircle2}
-          colorScheme="green"
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Hoàn một phần',
+            value: totalPartiallyCount.toString(),
+            subtitle: 'Theo dõi nhiều đợt',
+            icon: AlertTriangle,
+            colorScheme: 'purple',
+          }}
+          rightItem={{
+            title: 'Đã nhập hoàn kho',
+            value: historyTotal.toString(),
+            subtitle: 'Đã ghi sổ cái',
+            icon: CheckCircle2,
+            colorScheme: 'green',
+            isActive: activeTab === 'HISTORY',
+            onClick: () => setActiveTab('HISTORY'),
+          }}
         />
       </div>
 
@@ -822,22 +830,138 @@ export const OrderReturnsPage: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="border border-gray-200 dark:border-gray-800 rounded overflow-x-auto text-xs">
-                  <table className="w-full text-left">
+                {/* 1. MOBILE CARD VIEW (sm:hidden) */}
+                <div className="sm:hidden space-y-3">
+                  {inspectForm.items.map((row, idx) => {
+                    const prog = selectedQueueOrder.itemsProgress.find((p) => p.variantId === row.variantId);
+                    const maxAllowed = prog ? prog.remainingToReturn : 0;
+
+                    return (
+                      <div
+                        key={idx}
+                        className="p-3 bg-white dark:bg-[#161922] border border-gray-200/70 dark:border-white/[0.08] rounded-[4px] space-y-2.5 shadow-none"
+                      >
+                        {/* Header: SKU, Product Name, Stats */}
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span className="font-bold text-[#5865f2] dark:text-indigo-400 font-mono text-xs">
+                              {row.sku}
+                            </span>
+                            <div className="flex items-center gap-1.5 text-[10px]">
+                              <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium">
+                                Đã xuất: <strong className="font-mono text-gray-900 dark:text-white">{prog?.dispatchedQuantity || 0}</strong>
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-medium">
+                                Chờ hoàn: <strong className="font-mono">{maxAllowed}</strong>
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-xs font-medium text-gray-900 dark:text-gray-100 leading-snug">
+                            {prog?.productName} {prog?.variationName ? `(${prog.variationName})` : ''}
+                          </p>
+                        </div>
+
+                        {/* 3 Classification Columns */}
+                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                          {/* Còn nguyên */}
+                          <div className="bg-emerald-50/60 dark:bg-emerald-950/20 p-2 rounded-[4px] border border-emerald-200/80 dark:border-emerald-900/40 text-center flex flex-col justify-between">
+                            <label className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 block mb-1 truncate" title="Còn nguyên (Bán lại)">
+                              Còn nguyên
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max={maxAllowed}
+                              value={row.sellableQuantity}
+                              onChange={(e) => handleItemChange(idx, 'sellableQuantity', Number(e.target.value))}
+                              className="w-full text-center bg-white dark:bg-[#131720] border border-emerald-400 rounded-[4px] h-8 font-bold font-mono text-emerald-600 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            />
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 block">
+                              Tồn bán +{row.sellableQuantity}
+                            </span>
+                          </div>
+
+                          {/* Bị hỏng / móp */}
+                          <div className="bg-rose-50/60 dark:bg-rose-950/20 p-2 rounded-[4px] border border-rose-200/80 dark:border-rose-900/40 text-center flex flex-col justify-between">
+                            <label className="text-[10px] font-semibold text-rose-700 dark:text-rose-400 block mb-1 truncate" title="Bị hỏng / Móp (Hàng lỗi)">
+                              Hàng lỗi/móp
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max={maxAllowed}
+                              value={row.damagedQuantity}
+                              onChange={(e) => handleItemChange(idx, 'damagedQuantity', Number(e.target.value))}
+                              className="w-full text-center bg-white dark:bg-[#131720] border border-rose-400 rounded-[4px] h-8 font-bold font-mono text-rose-600 text-sm focus:outline-none focus:ring-1 focus:ring-rose-500"
+                            />
+                            <span className="text-[10px] text-rose-600 dark:text-rose-400 font-medium mt-1 block">
+                              Hàng lỗi +{row.damagedQuantity}
+                            </span>
+                          </div>
+
+                          {/* Khách giữ / thiếu */}
+                          <div className="bg-gray-50/80 dark:bg-gray-800/40 p-2 rounded-[4px] border border-gray-200 dark:border-gray-700/60 text-center flex flex-col justify-between">
+                            <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block mb-1 truncate" title="Khách giữ / Thiếu">
+                              Khách giữ
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              max={maxAllowed}
+                              value={row.missingQuantity}
+                              onChange={(e) => handleItemChange(idx, 'missingQuantity', Number(e.target.value))}
+                              className="w-full text-center bg-white dark:bg-[#131720] border border-gray-300 dark:border-gray-700 rounded-[4px] h-8 font-mono text-xs text-gray-700 dark:text-gray-300 focus:outline-none"
+                            />
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium mt-1 block">
+                              Ko cộng tồn
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Lô & Hạn sử dụng */}
+                        <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-gray-100 dark:border-gray-800">
+                          <div>
+                            <label className="text-[10px] text-gray-500 dark:text-gray-400 block mb-0.5 font-medium">Lô sản xuất</label>
+                            <input
+                              type="text"
+                              placeholder="Lô sản xuất"
+                              value={row.batchCode || ''}
+                              onChange={(e) => handleItemChange(idx, 'batchCode', e.target.value)}
+                              className="w-full bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-[4px] px-2 h-7 text-xs font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-gray-500 dark:text-gray-400 block mb-0.5 font-medium">Hạn sử dụng</label>
+                            <input
+                              type="date"
+                              value={row.expiryDate || ''}
+                              onChange={(e) => handleItemChange(idx, 'expiryDate', e.target.value)}
+                              className="w-full bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-[4px] px-2 h-7 text-[11px]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 2. DESKTOP TABLE VIEW (hidden sm:block) */}
+                <div className="hidden sm:block border border-gray-200 dark:border-gray-800 rounded-[4px] overflow-x-auto text-xs">
+                  <table className="w-full text-left min-w-[760px]">
                     <thead className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
                       <tr>
-                        <th className="p-2.5 w-[28%]">Sản Phẩm & SKU</th>
-                        <th className="p-2.5 text-center w-[12%]">SL Xuất Ban Đầu</th>
-                        <th className="p-2.5 text-center w-[15%] text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40">
-                          Còn Nguyên (Bán lại được)
+                        <th className="p-2.5 min-w-[200px]">Sản Phẩm & SKU</th>
+                        <th className="p-2.5 text-center w-24">SL Xuất</th>
+                        <th className="p-2.5 text-center w-32 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40">
+                          Còn Nguyên (Bán lại)
                         </th>
-                        <th className="p-2.5 text-center w-[15%] text-rose-600 bg-rose-50 dark:bg-rose-950/40">
-                          Bị Hỏng / Móp (Hàng lỗi)
+                        <th className="p-2.5 text-center w-32 text-rose-600 bg-rose-50 dark:bg-rose-950/40">
+                          Bị Hỏng (Hàng lỗi)
                         </th>
-                        <th className="p-2.5 text-center w-[12%] text-gray-500">
+                        <th className="p-2.5 text-center w-28 text-gray-500">
                           Khách Giữ / Thiếu
                         </th>
-                        <th className="p-2.5 w-[18%]">Lô & Hạn Dùng</th>
+                        <th className="p-2.5 w-44">Lô & Hạn Dùng</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -848,11 +972,11 @@ export const OrderReturnsPage: React.FC = () => {
                         return (
                           <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
                             <td className="p-2.5">
-                              <div className="font-bold text-indigo-600 font-mono">{row.sku}</div>
+                              <div className="font-bold text-[#5865f2] dark:text-indigo-400 font-mono">{row.sku}</div>
                               <div className="text-[11px] text-gray-700 dark:text-gray-300">
                                 {prog?.productName} {prog?.variationName ? `(${prog.variationName})` : ''}
                               </div>
-                              <div className="text-[10px] text-gray-400 mt-0.5">
+                              <div className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5 font-medium">
                                 Còn chờ hoàn: {maxAllowed} cái
                               </div>
                             </td>
@@ -869,7 +993,7 @@ export const OrderReturnsPage: React.FC = () => {
                                 max={maxAllowed}
                                 value={row.sellableQuantity}
                                 onChange={(e) => handleItemChange(idx, 'sellableQuantity', Number(e.target.value))}
-                                className="w-16 text-center bg-white dark:bg-gray-800 border border-emerald-400 rounded p-1 font-bold font-mono text-emerald-600 text-xs"
+                                className="w-16 text-center bg-white dark:bg-gray-800 border border-emerald-400 rounded p-1 font-bold font-mono text-emerald-600 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
                               />
                               <div className="text-[10px] text-emerald-600 mt-0.5">Tồn bán +{row.sellableQuantity}</div>
                             </td>
@@ -882,7 +1006,7 @@ export const OrderReturnsPage: React.FC = () => {
                                 max={maxAllowed}
                                 value={row.damagedQuantity}
                                 onChange={(e) => handleItemChange(idx, 'damagedQuantity', Number(e.target.value))}
-                                className="w-16 text-center bg-white dark:bg-gray-800 border border-rose-400 rounded p-1 font-bold font-mono text-rose-600 text-xs"
+                                className="w-16 text-center bg-white dark:bg-gray-800 border border-rose-400 rounded p-1 font-bold font-mono text-rose-600 text-xs focus:outline-none focus:ring-1 focus:ring-rose-500"
                               />
                               <div className="text-[10px] text-rose-600 mt-0.5">Hàng lỗi +{row.damagedQuantity}</div>
                             </td>
@@ -895,7 +1019,7 @@ export const OrderReturnsPage: React.FC = () => {
                                 max={maxAllowed}
                                 value={row.missingQuantity}
                                 onChange={(e) => handleItemChange(idx, 'missingQuantity', Number(e.target.value))}
-                                className="w-16 text-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1 font-mono text-xs text-gray-500"
+                                className="w-16 text-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1 font-mono text-xs text-gray-500 focus:outline-none"
                               />
                               <div className="text-[10px] text-gray-400 mt-0.5">Ko cộng tồn</div>
                             </td>

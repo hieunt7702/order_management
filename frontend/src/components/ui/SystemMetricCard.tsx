@@ -24,6 +24,94 @@ export interface SystemMetricCardProps {
   className?: string;
 }
 
+export interface MetricItemProps {
+  title: string;
+  mobileTitle?: string;
+  value: number | string;
+  subtitle?: string;
+  icon?: ComponentType<{ className?: string; strokeWidth?: number; size?: number }>;
+  colorScheme?: SystemMetricColorScheme;
+  isActive?: boolean;
+  tooltip?: string;
+  onClick?: () => void;
+  className?: string;
+}
+
+export interface SystemMetricPairCardProps {
+  leftItem: MetricItemProps;
+  rightItem: MetricItemProps;
+  className?: string;
+}
+
+const schemes: Record<
+  SystemMetricColorScheme,
+  {
+    borderActive: string;
+    borderInactive: string;
+    circleActive: string;
+    circleInactive: string;
+    indicatorColor: string;
+    iconColor: string;
+    textColor: string;
+  }
+> = {
+  green: {
+    borderActive: 'border-emerald-500 ring-1 ring-emerald-500/20 bg-emerald-500/[0.03]',
+    borderInactive:
+      'border-gray-200/60 dark:border-white/[0.08] hover:border-emerald-300 dark:hover:border-emerald-900/50',
+    circleActive: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-500',
+    circleInactive:
+      'bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/25 dark:border-emerald-500/30 text-emerald-500 dark:text-emerald-400',
+    indicatorColor: 'bg-emerald-500',
+    iconColor: 'text-emerald-500 dark:text-emerald-400',
+    textColor: 'text-emerald-500',
+  },
+  orange: {
+    borderActive: 'border-amber-500 ring-1 ring-amber-500/20 bg-amber-500/[0.03]',
+    borderInactive:
+      'border-gray-200/60 dark:border-white/[0.08] hover:border-amber-300 dark:hover:border-amber-900/50',
+    circleActive: 'bg-amber-500/20 border-amber-500/40 text-amber-500',
+    circleInactive:
+      'bg-amber-500/10 dark:bg-amber-500/15 border-amber-500/25 dark:border-amber-500/30 text-amber-500 dark:text-amber-400',
+    indicatorColor: 'bg-amber-500',
+    iconColor: 'text-amber-500 dark:text-amber-400',
+    textColor: 'text-amber-500',
+  },
+  red: {
+    borderActive: 'border-rose-500 ring-1 ring-rose-500/20 bg-rose-500/[0.03]',
+    borderInactive:
+      'border-gray-200/60 dark:border-white/[0.08] hover:border-rose-300 dark:hover:border-rose-900/50',
+    circleActive: 'bg-rose-500/20 border-rose-500/40 text-rose-500',
+    circleInactive:
+      'bg-rose-500/10 dark:bg-rose-500/15 border-rose-500/25 dark:border-rose-500/30 text-rose-500 dark:text-rose-400',
+    indicatorColor: 'bg-rose-500',
+    iconColor: 'text-rose-500 dark:text-rose-400',
+    textColor: 'text-rose-500',
+  },
+  blue: {
+    borderActive: 'border-blue-500 ring-1 ring-blue-500/20 bg-blue-500/[0.03]',
+    borderInactive:
+      'border-gray-200/60 dark:border-white/[0.08] hover:border-blue-300 dark:hover:border-blue-900/50',
+    circleActive: 'bg-blue-500/20 border-blue-500/40 text-blue-500',
+    circleInactive:
+      'bg-blue-500/10 dark:bg-blue-500/15 border-blue-500/25 dark:border-blue-500/30 text-blue-500 dark:text-blue-400',
+    indicatorColor: 'bg-blue-500',
+    iconColor: 'text-blue-500 dark:text-blue-400',
+    textColor: 'text-blue-500',
+  },
+  purple: {
+    borderActive: 'border-purple-500 ring-1 ring-purple-500/20 bg-purple-500/[0.03]',
+    borderInactive:
+      'border-gray-200/60 dark:border-white/[0.08] hover:border-purple-300 dark:hover:border-purple-900/50',
+    circleActive: 'bg-purple-500/20 border-purple-500/40 text-purple-500',
+    circleInactive:
+      'bg-purple-500/10 dark:bg-purple-500/15 border-purple-500/25 dark:border-purple-500/30 text-purple-500 dark:text-purple-400',
+    indicatorColor: 'bg-purple-500',
+    iconColor: 'text-purple-500 dark:text-purple-400',
+    textColor: 'text-purple-500',
+  },
+};
+
 export const SystemMetricCard: React.FC<SystemMetricCardProps> = ({
   title,
   mobileTitle,
@@ -37,127 +125,143 @@ export const SystemMetricCard: React.FC<SystemMetricCardProps> = ({
   onClick,
   className = '',
 }) => {
-  // Resolve subtitle: explicit subtitle wins, otherwise use trend.value
   const resolvedSubtitle = subtitle ?? trend?.value;
-
-  const schemes: Record<
-    SystemMetricColorScheme,
-    {
-      borderActive: string;
-      borderInactive: string;
-      bgActive: string;
-      bgInactive: string;
-      iconColor: string;
-      textColor: string;
-    }
-  > = {
-    green: {
-      borderActive: 'border-green-500 ring-2 ring-green-500/20',
-      borderInactive:
-        'border-gray-200/60 dark:border-white/[0.08] hover:border-green-300 dark:hover:border-green-900/50',
-      bgActive: 'bg-green-500/20',
-      bgInactive: 'bg-green-500/10',
-      iconColor: 'text-green-500',
-      textColor: 'text-green-500',
-    },
-    orange: {
-      borderActive: 'border-orange-500 ring-2 ring-orange-500/20',
-      borderInactive:
-        'border-gray-200/60 dark:border-white/[0.08] hover:border-orange-300 dark:hover:border-orange-900/50',
-      bgActive: 'bg-orange-500/20',
-      bgInactive: 'bg-orange-500/10',
-      iconColor: 'text-orange-500',
-      textColor: 'text-orange-500',
-    },
-    red: {
-      borderActive: 'border-red-500 ring-2 ring-red-500/20',
-      borderInactive:
-        'border-gray-200/60 dark:border-white/[0.08] hover:border-red-300 dark:hover:border-red-900/50',
-      bgActive: 'bg-red-500/20',
-      bgInactive: 'bg-red-500/10',
-      iconColor: 'text-red-500',
-      textColor: 'text-red-500',
-    },
-    blue: {
-      borderActive: 'border-blue-500 ring-2 ring-blue-500/20',
-      borderInactive:
-        'border-gray-200/60 dark:border-white/[0.08] hover:border-blue-300 dark:hover:border-blue-900/50',
-      bgActive: 'bg-blue-500/20',
-      bgInactive: 'bg-blue-500/10',
-      iconColor: 'text-blue-500',
-      textColor: 'text-blue-500',
-    },
-    purple: {
-      borderActive: 'border-purple-500 ring-2 ring-purple-500/20',
-      borderInactive:
-        'border-gray-200/60 dark:border-white/[0.08] hover:border-purple-300 dark:hover:border-purple-900/50',
-      bgActive: 'bg-purple-500/20',
-      bgInactive: 'bg-purple-500/10',
-      iconColor: 'text-purple-500',
-      textColor: 'text-purple-500',
-    },
-  };
-
   const scheme = schemes[colorScheme] || schemes.blue;
 
   return (
     <button
       onClick={onClick}
       disabled={!onClick}
-      className={`w-full text-left bg-white dark:bg-[#161922] border rounded-lg px-2.5 py-1.5 sm:px-3 sm:py-2 flex flex-col justify-between relative shadow-2xs transition-all ${
+      className={`w-full text-left bg-white dark:bg-[#161922] border rounded-[4px] px-3 py-2.5 flex items-center justify-between gap-2.5 relative shadow-none transition-all ${
         onClick ? 'cursor-pointer hover:border-[#5865f2]/50 group' : 'cursor-default'
       } ${isActive ? scheme.borderActive : scheme.borderInactive} ${className}`}
     >
-      {/* Top Header Row: Icon + Title */}
-      <div className="flex items-center justify-between w-full min-w-0 gap-1.5 mb-1">
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          {Icon && (
-            <div
-              className={`w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors ${
-                isActive ? scheme.bgActive : scheme.bgInactive
-              }`}
-            >
-              <Icon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${scheme.iconColor}`} strokeWidth={2} />
-            </div>
-          )}
-          <span className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 font-medium truncate">
-            {mobileTitle || title}
-          </span>
-        </div>
-        {tooltip && (
-          <div className="relative group/tooltip hidden sm:flex items-center shrink-0">
-            <Info size={11} className="text-gray-400 cursor-help" />
-            <div className="absolute top-full right-0 mt-1 w-max max-w-[180px] p-1.5 bg-gray-800 text-gray-100 text-[10px] rounded shadow-lg opacity-0 group-hover/tooltip:opacity-100 transition-opacity z-[100] text-center pointer-events-none whitespace-normal leading-relaxed">
-              {tooltip}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom Row: Value & Subtitle */}
-      <div className="flex items-baseline justify-between gap-1 w-full min-w-0">
-        <span className="text-[13px] xs:text-[14px] sm:text-[16px] font-bold text-gray-900 dark:text-white truncate tracking-tight leading-tight">
-          <motion.div
-            key={String(value)}
-            initial={{ opacity: 0, y: -2 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-            className="inline-block truncate max-w-full"
-          >
-            {value}
-          </motion.div>
-        </span>
-        {resolvedSubtitle && (
-          <span
-            className={`text-[9px] sm:text-[10px] font-medium truncate shrink-0 ml-1 hidden xs:inline-block ${
-              isActive ? scheme.textColor : 'text-gray-400 dark:text-gray-500'
+      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+        {Icon && (
+          <div
+            className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+              isActive ? scheme.circleActive : scheme.circleInactive
             }`}
           >
-            {resolvedSubtitle}
-          </span>
+            <Icon className={`w-4 h-4 ${scheme.iconColor}`} strokeWidth={1.8} />
+          </div>
         )}
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
+          <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium truncate leading-tight">
+            {mobileTitle || title}
+          </span>
+          <div className="flex items-baseline gap-1.5 mt-0.5">
+            <span className="text-[15px] sm:text-[17px] font-bold text-gray-900 dark:text-white truncate tracking-tight leading-tight">
+              <motion.div
+                key={String(value)}
+                initial={{ opacity: 0, y: -2 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className="inline-block truncate max-w-full"
+              >
+                {value}
+              </motion.div>
+            </span>
+            {resolvedSubtitle && (
+              <span
+                className={`text-[10px] font-medium truncate shrink-0 hidden xs:inline-block ${
+                  isActive ? scheme.textColor : 'text-gray-400 dark:text-gray-500'
+                }`}
+              >
+                {resolvedSubtitle}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {tooltip && (
+        <div className="relative group/tooltip hidden sm:flex items-center shrink-0 self-start mt-0.5">
+          <Info size={11} className="text-gray-400 cursor-help" />
+          <div className="absolute top-full right-0 mt-1 w-max max-w-[180px] p-1.5 bg-gray-800 text-gray-100 text-[10px] rounded shadow-lg opacity-0 group-hover/tooltip:opacity-100 transition-opacity z-[100] text-center pointer-events-none whitespace-normal leading-relaxed">
+            {tooltip}
+          </div>
+        </div>
+      )}
+    </button>
+  );
+};
+
+const SystemMetricHalfItem: React.FC<{ item: MetricItemProps }> = ({ item }) => {
+  const scheme = schemes[item.colorScheme || 'blue'] || schemes.blue;
+  const Icon = item.icon;
+
+  return (
+    <button
+      type="button"
+      onClick={item.onClick}
+      disabled={!item.onClick}
+      className={`px-3 py-2.5 sm:px-3.5 sm:py-2.5 flex items-center gap-2.5 sm:gap-3 text-left transition-colors relative min-w-0 flex-1 ${
+        item.onClick ? 'cursor-pointer hover:bg-gray-50/80 dark:hover:bg-white/[0.03]' : 'cursor-default'
+      } ${item.isActive ? 'bg-gray-100/70 dark:bg-white/[0.05]' : ''} ${item.className || ''}`}
+    >
+      {/* Active Indicator Bar on left */}
+      {item.isActive && (
+        <span
+          className={`absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r ${scheme.indicatorColor}`}
+        />
+      )}
+
+      {/* Circular Icon Badge */}
+      {Icon && (
+        <div
+          className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+            item.isActive ? scheme.circleActive : scheme.circleInactive
+          }`}
+        >
+          <Icon className={`w-4 h-4 ${scheme.iconColor}`} strokeWidth={1.8} />
+        </div>
+      )}
+
+      {/* Text Column */}
+      <div className="flex-1 min-w-0 flex flex-col justify-center">
+        <span className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium truncate leading-tight">
+          {item.mobileTitle || item.title}
+        </span>
+        <div className="flex items-baseline gap-1 mt-0.5">
+          <span className="text-[15px] sm:text-[17px] font-bold text-gray-900 dark:text-white truncate tracking-tight leading-tight">
+            <motion.div
+              key={String(item.value)}
+              initial={{ opacity: 0, y: -2 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className="inline-block truncate max-w-full"
+            >
+              {item.value}
+            </motion.div>
+          </span>
+          {item.subtitle && (
+            <span
+              className={`text-[10px] font-medium truncate shrink-0 hidden xs:inline-block ${
+                item.isActive ? scheme.textColor : 'text-gray-400 dark:text-gray-500'
+              }`}
+            >
+              {item.subtitle}
+            </span>
+          )}
+        </div>
       </div>
     </button>
+  );
+};
+
+export const SystemMetricPairCard: React.FC<SystemMetricPairCardProps> = ({
+  leftItem,
+  rightItem,
+  className = '',
+}) => {
+  return (
+    <div
+      className={`w-full bg-white dark:bg-[#161922] border border-gray-200/60 dark:border-white/[0.08] rounded-[4px] grid grid-cols-2 divide-x divide-gray-200/60 dark:divide-white/[0.08] overflow-hidden shadow-none transition-colors ${className}`}
+    >
+      <SystemMetricHalfItem item={leftItem} />
+      <SystemMetricHalfItem item={rightItem} />
+    </div>
   );
 };
 

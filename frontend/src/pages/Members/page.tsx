@@ -35,7 +35,7 @@ import {
   SystemTableEmpty,
   SystemPagination,
 } from '../../components/ui/SystemTable';
-import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
+import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -290,35 +290,39 @@ export const MembersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 shrink-0">
-        <SystemMetricCard
-          title="Tổng nhân sự"
-          value={members.length}
-          subtitle="Tài khoản trong Workspace"
-          icon={Users}
-          colorScheme="blue"
+      {/* KPI Cards matching Orders page */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Tổng nhân sự',
+            value: members.length,
+            subtitle: 'Thành viên Workspace',
+            icon: Users,
+            colorScheme: 'blue',
+          }}
+          rightItem={{
+            title: 'Quản trị viên (Admin)',
+            value: adminCount,
+            subtitle: 'Toàn quyền điều hành',
+            icon: ShieldCheck,
+            colorScheme: 'purple',
+          }}
         />
-        <SystemMetricCard
-          title="Quản trị viên (Admin)"
-          value={adminCount}
-          subtitle="Toàn quyền điều hành"
-          icon={ShieldCheck}
-          colorScheme="purple"
-        />
-        <SystemMetricCard
-          title="Nhân viên kho"
-          value={warehouseCount}
-          subtitle="Quét mã & xuất kho"
-          icon={Package}
-          colorScheme="orange"
-        />
-        <SystemMetricCard
-          title="Kế toán / Xem xét"
-          value={accountantCount}
-          subtitle="Đối soát & Báo cáo"
-          icon={DollarSign}
-          colorScheme="green"
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Nhân viên kho',
+            value: warehouseCount,
+            subtitle: 'Quét mã & xuất kho',
+            icon: Package,
+            colorScheme: 'orange',
+          }}
+          rightItem={{
+            title: 'Kế toán / Đối soát',
+            value: accountantCount,
+            subtitle: 'Tài chính & Báo cáo',
+            icon: DollarSign,
+            colorScheme: 'green',
+          }}
         />
       </div>
 
@@ -701,7 +705,7 @@ export const MembersPage: React.FC = () => {
                             <DropdownMenuTrigger className="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors">
                               <MoreHorizontal size={15} />
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-36">
+                            <DropdownMenuContent align="end" className="min-w-[150px]">
                               <DropdownMenuItem
                                 onClick={() => handleOpenEdit(m)}
                                 className="gap-2 cursor-pointer text-xs"

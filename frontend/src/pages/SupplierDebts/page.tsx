@@ -33,7 +33,9 @@ import {
   Boxes,
   FileText,
   Wallet,
+  Filter,
 } from 'lucide-react';
+import { cn } from '../../lib/utils';
 import { suppliersApi, SupplierItem, SupplierStatement, DebtReportsResponse } from '../../services/suppliersApi';
 import { supplierPaymentsApi, SupplierPaymentModel, CreateSupplierPaymentPayload } from '../../services/supplierPaymentsApi';
 import { purchaseReturnsApi, PurchaseReturnModel, CreatePurchaseReturnPayload } from '../../services/purchaseReturnsApi';
@@ -52,7 +54,7 @@ import {
   SystemTableSkeleton,
 } from '../../components/ui/SystemTable';
 import { Button } from '../../components/ui/Button';
-import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
+import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import { Select } from '../../components/ui/Select';
 import { toast } from '../../components/ui/Toast';
@@ -658,47 +660,51 @@ export const SupplierDebtsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Cards Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 shrink-0">
-        <SystemMetricCard
-          title="Tổng nợ phải trả NCC"
-          mobileTitle="Tổng nợ NCC"
-          value={`${summaryTotalPayable.toLocaleString('vi-VN')}đ`}
-          subtitle="Nghĩa vụ phải trả"
-          icon={Receipt}
-          colorScheme="red"
-          isActive={activeTab === 'DEBT_LIST'}
-          onClick={() => setActiveTab('DEBT_LIST')}
+      {/* KPI Cards Row matching Orders page */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Tổng nợ phải trả NCC',
+            mobileTitle: 'Tổng nợ NCC',
+            value: `${summaryTotalPayable.toLocaleString('vi-VN')}đ`,
+            subtitle: 'Nghĩa vụ phải trả',
+            icon: Receipt,
+            colorScheme: 'red',
+            isActive: activeTab === 'DEBT_LIST',
+            onClick: () => setActiveTab('DEBT_LIST'),
+          }}
+          rightItem={{
+            title: 'Ứng trước / Đặt cọc',
+            mobileTitle: 'Ứng trước / Cọc',
+            value: `${summaryTotalAdvance.toLocaleString('vi-VN')}đ`,
+            subtitle: 'NCC đang giữ',
+            icon: ArrowDownLeft,
+            colorScheme: 'blue',
+            isActive: activeTab === 'PAYMENTS',
+            onClick: () => setActiveTab('PAYMENTS'),
+          }}
         />
-        <SystemMetricCard
-          title="Ứng trước / Đặt cọc"
-          mobileTitle="Ứng trước / Cọc"
-          value={`${summaryTotalAdvance.toLocaleString('vi-VN')}đ`}
-          subtitle="NCC đang giữ"
-          icon={ArrowDownLeft}
-          colorScheme="blue"
-          isActive={activeTab === 'PAYMENTS'}
-          onClick={() => setActiveTab('PAYMENTS')}
-        />
-        <SystemMetricCard
-          title="Nợ quá hạn thanh toán"
-          mobileTitle="Nợ quá hạn"
-          value={`${summaryOverdue.toLocaleString('vi-VN')}đ`}
-          subtitle="Cần ưu tiên trả"
-          icon={AlertTriangle}
-          colorScheme="orange"
-          isActive={activeTab === 'REPORTS'}
-          onClick={() => setActiveTab('REPORTS')}
-        />
-        <SystemMetricCard
-          title="Cá nhân chi hộ cần hoàn"
-          mobileTitle="Cá nhân chi hộ"
-          value={`${summaryPendingReimbursement.toLocaleString('vi-VN')}đ`}
-          subtitle="Shop nợ cá nhân"
-          icon={UserCheck}
-          colorScheme="purple"
-          isActive={activeTab === 'REPORTS'}
-          onClick={() => setActiveTab('REPORTS')}
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Nợ quá hạn thanh toán',
+            mobileTitle: 'Nợ quá hạn',
+            value: `${summaryOverdue.toLocaleString('vi-VN')}đ`,
+            subtitle: 'Cần ưu tiên trả',
+            icon: AlertTriangle,
+            colorScheme: 'orange',
+            isActive: activeTab === 'REPORTS',
+            onClick: () => setActiveTab('REPORTS'),
+          }}
+          rightItem={{
+            title: 'Cá nhân chi hộ cần hoàn',
+            mobileTitle: 'Cá nhân chi hộ',
+            value: `${summaryPendingReimbursement.toLocaleString('vi-VN')}đ`,
+            subtitle: 'Shop nợ cá nhân',
+            icon: UserCheck,
+            colorScheme: 'purple',
+            isActive: activeTab === 'REPORTS',
+            onClick: () => setActiveTab('REPORTS'),
+          }}
         />
       </div>
 
@@ -990,7 +996,7 @@ export const SupplierDebtsPage: React.FC = () => {
                       <div>
                         <div className="text-[10px] text-gray-400">Phát sinh (+)</div>
                         <div className="font-mono font-medium text-xs text-gray-900 dark:text-white mt-0.5">
-                          {(s.totalIncurred || 0).toLocaleString('vi-VN')}đ
+                          {(s.totalPurchases || 0).toLocaleString('vi-VN')}đ
                         </div>
                       </div>
                       <div>
@@ -1522,45 +1528,303 @@ export const SupplierDebtsPage: React.FC = () => {
       <Modal
         isOpen={isStatementOpen}
         onClose={() => setIsStatementOpen(false)}
-        title={<><span className="sm:hidden">Sao kê: {statementData?.supplier?.name}</span><span className="hidden sm:inline">{`Sao Kê Đối Soát 360°: ${statementData?.supplier?.name || ''}`}</span></>}
+        icon={Receipt}
+        title={
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="sm:hidden font-semibold truncate">Sao kê: {statementData?.supplier?.name}</span>
+            <span className="hidden sm:inline font-semibold truncate">{`Sao Kê Đối Soát 360°: ${statementData?.supplier?.name || ''}`}</span>
+          </div>
+        }
+        subtitle={
+          statementData?.supplier ? (
+            <div className="flex items-center gap-2 text-[11px] text-gray-500 truncate">
+              <span className="font-mono">{statementData.supplier.code}</span>
+              {statementData.supplier.phone && (
+                <>
+                  <span>•</span>
+                  <span>{statementData.supplier.phone}</span>
+                </>
+              )}
+            </div>
+          ) : undefined
+        }
         size="xl"
       >
         {statementData && (
           <div className="flex flex-col flex-1 min-h-0">
             <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5 text-xs sm:text-sm">
-              {/* Filter Date Range */}
-              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded text-xs">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span>Từ:</span>
-                  <input
-                    type="date"
-                    value={statementDateRange.startDate}
-                    onChange={(e) => setStatementDateRange({ ...statementDateRange, startDate: e.target.value })}
-                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1 text-xs"
-                  />
-                  <span>Đến:</span>
-                  <input
-                    type="date"
-                    value={statementDateRange.endDate}
-                    onChange={(e) => setStatementDateRange({ ...statementDateRange, endDate: e.target.value })}
-                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1 text-xs"
-                  />
-                  <Button size="sm" onClick={handleFilterStatement} className="text-xs">
-                    Lọc sao kê
-                  </Button>
+              {/* Summary Card */}
+              <div className="p-3 rounded-[4px] bg-gray-50/80 dark:bg-[#1a1d26] border border-gray-200/80 dark:border-white/[0.08] flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Số dư nợ hiện tại</div>
+                  <div className="flex items-baseline gap-1.5 flex-wrap">
+                    <span
+                      className={cn(
+                        'text-base sm:text-lg font-bold font-mono tracking-tight',
+                        statementData.supplier.closingDebt > 0
+                          ? 'text-rose-600 dark:text-rose-400'
+                          : statementData.supplier.closingDebt < 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-gray-700 dark:text-gray-300'
+                      )}
+                    >
+                      {statementData.supplier.closingDebt.toLocaleString('vi-VN')}đ
+                    </span>
+                    <span className="text-[11px] text-gray-400 font-normal">
+                      {statementData.supplier.closingDebt > 0
+                        ? '(Shop nợ NCC)'
+                        : statementData.supplier.closingDebt < 0
+                        ? '(NCC giữ cọc)'
+                        : '(Cân bằng)'}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="text-right font-mono">
-                  <span className="text-gray-500">Số dư nợ: </span>
-                  <span className={`font-bold text-sm ${statementData.supplier.closingDebt > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                    {statementData.supplier.closingDebt.toLocaleString('vi-VN')}đ
+                <div className="shrink-0 text-right">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-xs font-semibold bg-gray-200/70 dark:bg-white/[0.08] text-gray-700 dark:text-gray-300">
+                    {statementData.transactions.length} giao dịch
                   </span>
                 </div>
               </div>
 
-              {/* Timeline Ledger Table */}
-              <div className="border border-gray-200 dark:border-gray-800 rounded overflow-x-auto text-xs">
-                <table className="w-full text-left min-w-[550px]">
+              {/* Mobile Filter Bar */}
+              <div className="sm:hidden p-2.5 rounded-[4px] border border-gray-200/70 dark:border-white/[0.08] bg-white dark:bg-[#161922] space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Từ ngày
+                    </label>
+                    <input
+                      type="date"
+                      value={statementDateRange.startDate}
+                      onChange={(e) => setStatementDateRange({ ...statementDateRange, startDate: e.target.value })}
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-[4px] px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Đến ngày
+                    </label>
+                    <input
+                      type="date"
+                      value={statementDateRange.endDate}
+                      onChange={(e) => setStatementDateRange({ ...statementDateRange, endDate: e.target.value })}
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-[4px] px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleFilterStatement}
+                    className="flex-1 text-xs py-1.5 rounded-[4px] flex items-center justify-center gap-1.5 font-medium"
+                  >
+                    <Filter size={12} />
+                    <span>Lọc sao kê</span>
+                  </Button>
+                  {(statementDateRange.startDate || statementDateRange.endDate) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStatementDateRange({ startDate: '', endDate: '' });
+                        if (activeStatementSupplierId) {
+                          suppliersApi.getStatement(activeStatementSupplierId, {}).then((res: any) => {
+                            setStatementData(res?.data || res);
+                          });
+                        }
+                      }}
+                      className="px-2.5 py-1.5 text-xs rounded-[4px] border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center"
+                      title="Xóa bộ lọc"
+                    >
+                      <RotateCcw size={12} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Desktop Filter Bar */}
+              <div className="hidden sm:flex items-center justify-between gap-3 p-2.5 bg-gray-50 dark:bg-gray-900 rounded-[4px] border border-gray-200/60 dark:border-white/[0.06] text-xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-gray-500 text-xs shrink-0">Khoảng ngày:</span>
+                  <input
+                    type="date"
+                    value={statementDateRange.startDate}
+                    onChange={(e) => setStatementDateRange({ ...statementDateRange, startDate: e.target.value })}
+                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-[4px] px-2 py-1 text-xs text-gray-900 dark:text-gray-100"
+                  />
+                  <span className="text-gray-400 text-xs shrink-0">→</span>
+                  <input
+                    type="date"
+                    value={statementDateRange.endDate}
+                    onChange={(e) => setStatementDateRange({ ...statementDateRange, endDate: e.target.value })}
+                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-[4px] px-2 py-1 text-xs text-gray-900 dark:text-gray-100"
+                  />
+                  <Button size="sm" onClick={handleFilterStatement} className="text-xs rounded-[4px] flex items-center gap-1">
+                    <Filter size={12} />
+                    <span>Lọc sao kê</span>
+                  </Button>
+                  {(statementDateRange.startDate || statementDateRange.endDate) && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setStatementDateRange({ startDate: '', endDate: '' });
+                        if (activeStatementSupplierId) {
+                          suppliersApi.getStatement(activeStatementSupplierId, {}).then((res: any) => {
+                            setStatementData(res?.data || res);
+                          });
+                        }
+                      }}
+                      className="text-xs rounded-[4px] flex items-center gap-1"
+                    >
+                      <RotateCcw size={12} />
+                      <span>Đặt lại</span>
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* MOBILE: Card View (sm:hidden) */}
+              <div className="sm:hidden space-y-2">
+                {statementData.transactions.length === 0 ? (
+                  <div className="py-8 text-center flex flex-col items-center justify-center p-4 border border-dashed border-gray-200 dark:border-gray-800 rounded-[4px] bg-gray-50/50 dark:bg-white/[0.01]">
+                    <FileText className="w-8 h-8 text-gray-300 dark:text-gray-600 mb-2" />
+                    <p className="text-xs text-gray-500 font-medium">Chưa có giao dịch nào trong khoảng thời gian này</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">Thử nới rộng bộ lọc ngày để xem lịch sử</p>
+                  </div>
+                ) : (
+                  statementData.transactions.map((tx, idx) => {
+                    const isIncrease = tx.increaseDebt > 0;
+                    const isDecrease = tx.decreaseDebt > 0;
+
+                    let typeLabel = 'Giao dịch';
+                    let typeBadgeClass = 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700';
+                    let borderLeftClass = 'border-l-gray-400 dark:border-l-gray-600';
+                    let TypeIcon = Receipt;
+
+                    if (tx.type === 'RECEIPT') {
+                      typeLabel = 'Nhập hàng';
+                      typeBadgeClass = 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border-rose-200/80 dark:border-rose-900/50';
+                      borderLeftClass = 'border-l-rose-500';
+                      TypeIcon = ArrowDownLeft;
+                    } else if (tx.type === 'PAYMENT') {
+                      typeLabel = 'Thanh toán';
+                      typeBadgeClass = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-900/50';
+                      borderLeftClass = 'border-l-emerald-500';
+                      TypeIcon = ArrowUpRight;
+                    } else if (tx.type === 'RETURN') {
+                      typeLabel = 'Trả hàng NCC';
+                      typeBadgeClass = 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200/80 dark:border-amber-900/50';
+                      borderLeftClass = 'border-l-amber-500';
+                      TypeIcon = RotateCcw;
+                    } else if (tx.type === 'REFUND') {
+                      typeLabel = 'Hoàn tiền';
+                      typeBadgeClass = 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200/80 dark:border-purple-900/50';
+                      borderLeftClass = 'border-l-purple-500';
+                      TypeIcon = DollarSign;
+                    } else if (tx.type === 'OPENING') {
+                      typeLabel = 'Nợ đầu kỳ';
+                      typeBadgeClass = 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200/80 dark:border-blue-900/50';
+                      borderLeftClass = 'border-l-blue-500';
+                      TypeIcon = Receipt;
+                    }
+
+                    return (
+                      <div
+                        key={idx}
+                        className={cn(
+                          'p-3 rounded-[4px] border border-gray-200/80 dark:border-white/[0.08] bg-white dark:bg-[#161922] space-y-2 shadow-xs border-l-[3px]',
+                          borderLeftClass
+                        )}
+                      >
+                        {/* Top: Type Badge + Date + Amount Delta */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span
+                              className={cn(
+                                'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[10px] font-semibold border',
+                                typeBadgeClass
+                              )}
+                            >
+                              <TypeIcon size={11} strokeWidth={2.2} />
+                              <span>{typeLabel}</span>
+                            </span>
+                            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-sans flex items-center gap-1">
+                              <Calendar size={11} />
+                              {new Date(tx.date).toLocaleDateString('vi-VN')}
+                            </span>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            {isIncrease && (
+                              <span className="font-mono font-bold text-xs text-rose-600 dark:text-rose-400">
+                                +{tx.increaseDebt.toLocaleString('vi-VN')}đ
+                              </span>
+                            )}
+                            {isDecrease && (
+                              <span className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                                -{tx.decreaseDebt.toLocaleString('vi-VN')}đ
+                              </span>
+                            )}
+                            {!isIncrease && !isDecrease && (
+                              <span className="font-mono text-xs text-gray-400">-</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Transaction Code & Description */}
+                        <div>
+                          <div className="font-mono font-bold text-xs text-gray-900 dark:text-gray-100 select-all">
+                            {tx.code}
+                          </div>
+                          <p className="text-xs text-gray-700 dark:text-gray-300 font-sans mt-0.5 leading-relaxed">
+                            {tx.description}
+                          </p>
+                        </div>
+
+                        {/* Metadata tags (Payer, Fund source) */}
+                        {(tx.payerOrCreator || tx.fundSource) && (
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 font-sans">
+                            {tx.payerOrCreator && (
+                              <span className="inline-flex items-center gap-1">
+                                <UserCheck size={11} />
+                                {tx.payerOrCreator}
+                              </span>
+                            )}
+                            {tx.fundSource && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-[3px] font-mono text-[10px] text-gray-600 dark:text-gray-300">
+                                <Wallet size={10} />
+                                {tx.fundSource}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Footer: Running Balance */}
+                        <div className="pt-2 border-t border-gray-100 dark:border-white/[0.06] flex items-center justify-between text-xs">
+                          <span className="text-gray-500 dark:text-gray-400 text-[11px]">Dư nợ sau GD:</span>
+                          <span
+                            className={cn(
+                              'font-mono font-bold text-xs',
+                              tx.runningBalance > 0
+                                ? 'text-rose-600 dark:text-rose-400'
+                                : tx.runningBalance < 0
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-gray-600 dark:text-gray-400'
+                            )}
+                          >
+                            {tx.runningBalance.toLocaleString('vi-VN')}đ
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* DESKTOP: Timeline Ledger Table (hidden sm:block) */}
+              <div className="hidden sm:block border border-gray-200 dark:border-gray-800 rounded-[4px] overflow-x-auto text-xs">
+                <table className="w-full text-left min-w-[700px]">
                   <thead className="bg-gray-100 dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300">
                     <tr>
                       <th className="p-2.5">Thời Gian</th>
@@ -1581,22 +1845,22 @@ export const SupplierDebtsPage: React.FC = () => {
                     ) : (
                       statementData.transactions.map((tx, idx) => (
                         <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                          <td className="p-2.5 text-gray-500 font-sans">
+                          <td className="p-2.5 text-gray-500 font-sans whitespace-nowrap">
                             {new Date(tx.date).toLocaleDateString('vi-VN')}
                           </td>
-                          <td className="p-2.5 font-bold">
+                          <td className="p-2.5 font-bold whitespace-nowrap">
                             {tx.code}
                           </td>
                           <td className="p-2.5 font-sans text-gray-800 dark:text-gray-200">
                             {tx.description}
                           </td>
-                          <td className="p-2.5 text-right text-rose-600">
+                          <td className="p-2.5 text-right text-rose-600 whitespace-nowrap">
                             {tx.increaseDebt > 0 ? `+${tx.increaseDebt.toLocaleString('vi-VN')}đ` : '-'}
                           </td>
-                          <td className="p-2.5 text-right text-emerald-600">
+                          <td className="p-2.5 text-right text-emerald-600 whitespace-nowrap">
                             {tx.decreaseDebt > 0 ? `-${tx.decreaseDebt.toLocaleString('vi-VN')}đ` : '-'}
                           </td>
-                          <td className={`p-2.5 text-right font-bold ${tx.runningBalance > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                          <td className={`p-2.5 text-right font-bold whitespace-nowrap ${tx.runningBalance > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                             {tx.runningBalance.toLocaleString('vi-VN')}đ
                           </td>
                         </tr>

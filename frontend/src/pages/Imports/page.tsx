@@ -19,7 +19,7 @@ import {
 } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
+import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 
 export const ImportsPage: React.FC = () => {
   const { shops, selectedShopId, warehouses, selectedWarehouseId } =
@@ -280,42 +280,43 @@ export const ImportsPage: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <SystemMetricCard
-                title="Tổng đơn nhận diện"
-                value={uploadResult.totalOrders}
-                subtitle="Đơn trong file"
-                icon={FileSpreadsheet}
-                colorScheme="blue"
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
+              <SystemMetricPairCard
+                leftItem={{
+                  title: 'Tổng đơn nhận diện',
+                  value: uploadResult.totalOrders,
+                  subtitle: 'Đơn trong file',
+                  icon: FileSpreadsheet,
+                  colorScheme: 'blue',
+                }}
+                rightItem={{
+                  title: 'Đơn mới hoàn toàn',
+                  value:
+                    uploadResult.newOrderCount !== undefined
+                      ? uploadResult.newOrderCount
+                      : uploadResult.totalOrders,
+                  subtitle: 'Tạo mới',
+                  icon: CheckCircle2,
+                  colorScheme: 'green',
+                }}
               />
-              <SystemMetricCard
-                title="Đơn mới hoàn toàn"
-                value={
-                  uploadResult.newOrderCount !== undefined
-                    ? uploadResult.newOrderCount
-                    : uploadResult.totalOrders
-                }
-                subtitle="Tạo mới"
-                icon={CheckCircle2}
-                colorScheme="green"
-              />
-              <SystemMetricCard
-                title="Đơn trùng (Cập nhật)"
-                value={uploadResult.duplicateOrderCount || 0}
-                subtitle="Cập nhật trạng thái"
-                icon={RefreshCw}
-                colorScheme="purple"
-              />
-              <SystemMetricCard
-                title="SKU chưa map"
-                value={uploadResult.unmappedSkuCount}
-                subtitle={
-                  uploadResult.unmappedSkuCount > 0 ? 'Cần ánh xạ' : 'Hoàn hảo'
-                }
-                icon={AlertTriangle}
-                colorScheme={
-                  uploadResult.unmappedSkuCount > 0 ? 'red' : 'green'
-                }
+              <SystemMetricPairCard
+                leftItem={{
+                  title: 'Đơn trùng (Cập nhật)',
+                  value: uploadResult.duplicateOrderCount || 0,
+                  subtitle: 'Cập nhật trạng thái',
+                  icon: RefreshCw,
+                  colorScheme: 'purple',
+                }}
+                rightItem={{
+                  title: 'SKU chưa map',
+                  value: uploadResult.unmappedSkuCount,
+                  subtitle:
+                    uploadResult.unmappedSkuCount > 0 ? 'Cần ánh xạ' : 'Hoàn hảo',
+                  icon: AlertTriangle,
+                  colorScheme:
+                    uploadResult.unmappedSkuCount > 0 ? 'red' : 'green',
+                }}
               />
             </div>
 

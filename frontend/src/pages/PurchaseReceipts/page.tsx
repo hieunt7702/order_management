@@ -56,7 +56,7 @@ import {
   SystemFilterReset,
 } from '../../components/ui/SystemFilter';
 import { Button } from '../../components/ui/Button';
-import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
+import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import { Select } from '../../components/ui/Select';
 import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import { toast } from '../../components/ui/Toast';
@@ -416,35 +416,39 @@ export const PurchaseReceiptsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Cards Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 shrink-0">
-        <SystemMetricCard
-          title="Hàng thực nhận"
-          value={`${totalItemsVal.toLocaleString('vi-VN')}đ`}
-          subtitle="Tổng giá trị nhập"
-          icon={PackagePlus}
-          colorScheme="blue"
+      {/* KPI Cards Row matching Orders page */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Hàng thực nhận',
+            value: `${totalItemsVal.toLocaleString('vi-VN')}đ`,
+            subtitle: 'Tổng giá trị nhập',
+            icon: PackagePlus,
+            colorScheme: 'blue',
+          }}
+          rightItem={{
+            title: 'Công nợ phải trả',
+            value: `${totalPayableVal.toLocaleString('vi-VN')}đ`,
+            subtitle: 'Sau chiết khấu & cước',
+            icon: Receipt,
+            colorScheme: 'orange',
+          }}
         />
-        <SystemMetricCard
-          title="Công nợ phải trả"
-          value={`${totalPayableVal.toLocaleString('vi-VN')}đ`}
-          subtitle="Sau chiết khấu & cước"
-          icon={Receipt}
-          colorScheme="orange"
-        />
-        <SystemMetricCard
-          title="Đã thanh toán"
-          value={`${totalPaidVal.toLocaleString('vi-VN')}đ`}
-          subtitle="Tiền thực tế đã chi"
-          icon={CreditCard}
-          colorScheme="green"
-        />
-        <SystemMetricCard
-          title="Còn nợ NCC"
-          value={`${totalRemainingVal.toLocaleString('vi-VN')}đ`}
-          subtitle="Công nợ chưa thanh toán"
-          icon={AlertCircle}
-          colorScheme="red"
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Đã thanh toán',
+            value: `${totalPaidVal.toLocaleString('vi-VN')}đ`,
+            subtitle: 'Tiền thực tế đã chi',
+            icon: CreditCard,
+            colorScheme: 'green',
+          }}
+          rightItem={{
+            title: 'Còn nợ NCC',
+            value: `${totalRemainingVal.toLocaleString('vi-VN')}đ`,
+            subtitle: 'Chưa thanh toán',
+            icon: AlertCircle,
+            colorScheme: 'red',
+          }}
         />
       </div>
 
@@ -1004,10 +1008,10 @@ export const PurchaseReceiptsPage: React.FC = () => {
         <form onSubmit={handleCreateSubmit} className="flex flex-col flex-1 min-h-0">
           <ModalBody className="space-y-3.5 p-3 sm:p-5">
             {/* Header info */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded border border-gray-200 dark:border-gray-800">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3 sm:p-3.5 bg-gray-50/70 dark:bg-gray-900/50 rounded border border-gray-200/80 dark:border-gray-800">
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                     <Building2 size={13} className="text-[#5865f2]" />
                     <span>Nhà cung cấp *</span>
                   </label>
@@ -1017,7 +1021,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                       setQuickSupplierInitialName('');
                       setIsQuickSupplierModalOpen(true);
                     }}
-                    className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-[#5865f2] hover:text-[#4752c4] hover:underline cursor-pointer"
+                    className="inline-flex items-center gap-0.5 text-[11px] font-medium text-[#5865f2] hover:text-[#4752c4] hover:underline cursor-pointer"
                   >
                     <Plus size={12} />
                     <span>Thêm nhanh</span>
@@ -1056,7 +1060,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                   <Warehouse size={13} className="text-[#5865f2]" />
                   <span>Kho nhập hàng *</span>
                 </label>
@@ -1076,7 +1080,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                   <Store size={13} className="text-gray-400" />
                   <span>Shop sở hữu (Tùy chọn)</span>
                 </label>
@@ -1098,20 +1102,20 @@ export const PurchaseReceiptsPage: React.FC = () => {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-1.5">
-                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                       <FileText size={13} className="text-[#5865f2]" />
                       <span>Mã phiếu nhập *</span>
                     </label>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-medium">
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-400 font-medium">
                       Tự sinh
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setCreateForm((prev) => ({ ...prev, receiptCode: generateNextReceiptCode() }))}
-                    className="inline-flex items-center gap-1 text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-medium cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[11px] text-[#5865f2] dark:text-indigo-400 hover:underline font-medium cursor-pointer"
                     title="Tạo mã phiếu mới ngẫu nhiên"
                   >
                     <RefreshCw className="w-3 h-3" />
@@ -1124,12 +1128,12 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   placeholder="Ví dụ: PNK-20261015-ABCD"
                   value={createForm.receiptCode || ''}
                   onChange={(e) => setCreateForm({ ...createForm, receiptCode: e.target.value.toUpperCase() })}
-                  className="w-full text-xs font-mono uppercase bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1.5 text-gray-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full h-8 px-2.5 text-xs font-mono uppercase bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2] transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                   <Calendar size={13} className="text-gray-400" />
                   <span>Ngày nhập hàng</span>
                 </label>
@@ -1137,12 +1141,12 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   type="date"
                   value={createForm.receiptDate || ''}
                   onChange={(e) => setCreateForm({ ...createForm, receiptDate: e.target.value })}
-                  className="w-full text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1.5 text-gray-900 dark:text-white"
+                  className="w-full h-8 px-2.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2] transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                   <Clock size={13} className="text-gray-400" />
                   <span>Hạn thanh toán nợ</span>
                 </label>
@@ -1150,7 +1154,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   type="date"
                   value={createForm.paymentDueDate || ''}
                   onChange={(e) => setCreateForm({ ...createForm, paymentDueDate: e.target.value })}
-                  className="w-full text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1.5 text-gray-900 dark:text-white"
+                  className="w-full h-8 px-2.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2] transition-colors"
                 />
               </div>
             </div>
@@ -1258,7 +1262,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                               value={row.orderedQuantity}
                               onFocus={(e) => e.target.select()}
                               onChange={(e) => handleItemChange(idx, 'orderedQuantity', Number(e.target.value))}
-                              className="w-16 text-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1 text-xs"
+                              className="h-8 w-16 text-center bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded px-1 text-xs font-semibold text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]"
                             />
                           </td>
                           <td className="p-2 text-center">
@@ -1268,7 +1272,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                               value={row.receivedQuantity}
                               onFocus={(e) => e.target.select()}
                               onChange={(e) => handleItemChange(idx, 'receivedQuantity', Number(e.target.value))}
-                              className="w-16 text-center bg-white dark:bg-gray-800 border border-indigo-400 rounded p-1 text-xs font-bold text-indigo-600 dark:text-indigo-400"
+                              className="h-8 w-16 text-center bg-white dark:bg-[#161b26] border border-[#5865f2]/60 rounded px-1 text-xs font-bold text-[#5865f2] dark:text-indigo-400 focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
                             />
                           </td>
                           <td className="p-2 text-center">
@@ -1278,7 +1282,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                               value={row.disputedQuantity || 0}
                               onFocus={(e) => e.target.select()}
                               onChange={(e) => handleItemChange(idx, 'disputedQuantity', Number(e.target.value))}
-                              className="w-16 text-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1 text-xs text-rose-500"
+                              className="h-8 w-16 text-center bg-white dark:bg-[#161b26] border border-rose-300 dark:border-rose-700/80 rounded px-1 text-xs text-rose-600 dark:text-rose-400 font-semibold focus:outline-none focus:ring-1 focus:ring-rose-500"
                             />
                           </td>
                           <td className="p-2 text-right">
@@ -1286,7 +1290,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                               value={row.unitPrice}
                               onChange={(val) => handleItemChange(idx, 'unitPrice', val)}
                               className="w-28 ml-auto"
-                              inputClassName="text-right p-1"
+                              inputClassName="h-8 text-right px-2 text-xs font-mono font-semibold"
                             />
                           </td>
                           <td className="p-2 text-right font-semibold font-mono text-gray-900 dark:text-white">
@@ -1371,7 +1375,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
 
                       {/* 3 Quantities Grid: Đặt, Nhận, Lỗi */}
                       <div className="grid grid-cols-3 gap-2">
-                        <div className="p-1.5 rounded bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/70 text-center">
+                        <div className="p-1.5 rounded bg-gray-50/80 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/70 text-center">
                           <label className="block text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 font-medium">
                             SL Đặt
                           </label>
@@ -1381,12 +1385,12 @@ export const PurchaseReceiptsPage: React.FC = () => {
                             value={row.orderedQuantity}
                             onFocus={(e) => e.target.select()}
                             onChange={(e) => handleItemChange(idx, 'orderedQuantity', Number(e.target.value))}
-                            className="w-full text-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded py-1 text-xs font-semibold"
+                            className="h-8 w-full text-center bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded py-1 text-xs font-semibold text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]"
                           />
                         </div>
 
-                        <div className="p-1.5 rounded bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-center">
-                          <label className="block text-[10px] text-indigo-600 dark:text-indigo-400 mb-0.5 font-bold">
+                        <div className="p-1.5 rounded bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-800/60 text-center">
+                          <label className="block text-[10px] text-[#5865f2] dark:text-indigo-400 mb-0.5 font-bold">
                             Thực nhận
                           </label>
                           <input
@@ -1395,11 +1399,11 @@ export const PurchaseReceiptsPage: React.FC = () => {
                             value={row.receivedQuantity}
                             onFocus={(e) => e.target.select()}
                             onChange={(e) => handleItemChange(idx, 'receivedQuantity', Number(e.target.value))}
-                            className="w-full text-center bg-white dark:bg-gray-800 border border-indigo-400 rounded py-1 text-xs font-bold text-indigo-600 dark:text-indigo-400"
+                            className="h-8 w-full text-center bg-white dark:bg-[#161b26] border border-[#5865f2]/60 rounded py-1 text-xs font-bold text-[#5865f2] dark:text-indigo-400 focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
                           />
                         </div>
 
-                        <div className="p-1.5 rounded bg-rose-50/60 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-center">
+                        <div className="p-1.5 rounded bg-rose-50/50 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-800/60 text-center">
                           <label className="block text-[10px] text-rose-600 dark:text-rose-400 mb-0.5 font-medium">
                             Lỗi/Thiếu
                           </label>
@@ -1409,13 +1413,13 @@ export const PurchaseReceiptsPage: React.FC = () => {
                             value={row.disputedQuantity || 0}
                             onFocus={(e) => e.target.select()}
                             onChange={(e) => handleItemChange(idx, 'disputedQuantity', Number(e.target.value))}
-                            className="w-full text-center bg-white dark:bg-gray-800 border border-rose-300 dark:border-rose-700 rounded py-1 text-xs text-rose-600 font-semibold"
+                            className="h-8 w-full text-center bg-white dark:bg-[#161b26] border border-rose-300 dark:border-rose-700/80 rounded py-1 text-xs text-rose-600 dark:text-rose-400 font-semibold focus:outline-none focus:ring-1 focus:ring-rose-500"
                           />
                         </div>
                       </div>
 
                       {/* Price and Subtotal Grid */}
-                      <div className="grid grid-cols-2 gap-2 p-2 rounded bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700/60 items-center">
+                      <div className="grid grid-cols-2 gap-2 p-2 rounded bg-gray-50/70 dark:bg-gray-900/40 border border-gray-200/80 dark:border-gray-700/60 items-center">
                         <div>
                           <label className="block text-[10px] text-gray-500 dark:text-gray-400 mb-1 font-medium">
                             Đơn giá nhập (đ)
@@ -1423,7 +1427,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                           <CurrencyInput
                             value={row.unitPrice}
                             onChange={(val) => handleItemChange(idx, 'unitPrice', val)}
-                            inputClassName="p-1 text-xs font-semibold"
+                            inputClassName="h-8 p-1 text-xs font-semibold font-mono"
                           />
                         </div>
                         <div className="text-right">
@@ -1453,10 +1457,10 @@ export const PurchaseReceiptsPage: React.FC = () => {
             </div>
 
             {/* Financial Adjustments & Shipping Fee Attribution */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-200 dark:border-gray-800">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 sm:gap-4 pt-2 border-t border-gray-200 dark:border-gray-800">
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
                     <Percent size={13} className="text-emerald-500" />
                     <span>Chiết khấu / Giảm giá trực tiếp (đ)</span>
                   </label>
@@ -1464,11 +1468,12 @@ export const PurchaseReceiptsPage: React.FC = () => {
                     value={createForm.discountAmount}
                     onChange={(val) => setCreateForm({ ...createForm, discountAmount: val })}
                     suffix="đ"
+                    inputClassName="h-8 text-xs font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
                     <Receipt size={13} className="text-indigo-500" />
                     <span>Thuế VAT (đ)</span>
                   </label>
@@ -1476,33 +1481,36 @@ export const PurchaseReceiptsPage: React.FC = () => {
                     value={createForm.taxAmount}
                     onChange={(val) => setCreateForm({ ...createForm, taxAmount: val })}
                     suffix="đ"
+                    inputClassName="h-8 text-xs font-mono"
                   />
                 </div>
 
                 {/* Shipping Fee Attribution */}
-                <div className="p-3 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 dark:text-amber-200">
-                    <Truck className="w-4 h-4 text-amber-600" />
+                <div className="p-3 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 rounded space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-900 dark:text-amber-200">
+                    <Truck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                     <span>Cước vận chuyển & Bốc xếp</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <CurrencyInput
                       placeholder="Số tiền cước (đ)"
                       value={createForm.shippingFee}
                       onChange={(val) => setCreateForm({ ...createForm, shippingFee: val })}
                       suffix="đ"
-                      inputClassName="p-1.5"
+                      inputClassName="h-8 text-xs font-mono"
                     />
-                    <select
+                    <Select
                       value={createForm.shippingFeePayerType}
-                      onChange={(e) => setCreateForm({ ...createForm, shippingFeePayerType: e.target.value as any })}
-                      className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1.5 text-xs font-medium cursor-pointer"
-                    >
-                      <option value="PAID_TO_SUPPLIER">Trả cho NCC (Cộng vào nợ NCC)</option>
-                      <option value="PAID_TO_CARRIER">Trả riêng bên VC (Không cộng nợ NCC)</option>
-                    </select>
+                      onChange={(val) => setCreateForm({ ...createForm, shippingFeePayerType: val })}
+                      options={[
+                        { value: 'PAID_TO_SUPPLIER', label: 'Trả cho NCC (Cộng vào nợ NCC)' },
+                        { value: 'PAID_TO_CARRIER', label: 'Trả riêng bên VC (Không tính nợ)' },
+                      ]}
+                      size="sm"
+                      className="w-full"
+                    />
                   </div>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                  <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 font-normal leading-relaxed">
                     {createForm.shippingFeePayerType === 'PAID_TO_SUPPLIER'
                       ? '✓ Phí vận chuyển sẽ được cộng vào tổng công nợ phải trả NCC.'
                       : '✓ Phí này trả riêng cho nhà xe/đơn vị VC, không tính vào công nợ NCC.'}
@@ -1511,50 +1519,50 @@ export const PurchaseReceiptsPage: React.FC = () => {
               </div>
 
               {/* Summary Card */}
-              <div className="bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded p-4 flex flex-col justify-between">
+              <div className="bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded p-3.5 sm:p-4 flex flex-col justify-between">
                 <div className="space-y-2 text-xs">
-                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span className="flex items-center gap-1.5">
+                  <div className="flex justify-between items-center text-gray-600 dark:text-gray-400">
+                    <span className="flex items-center gap-1.5 font-normal">
                       <Boxes size={12} className="text-gray-400" />
                       <span>1. Giá trị hàng thực nhận:</span>
                     </span>
                     <span className="font-semibold text-gray-900 dark:text-white font-mono">{formItemsSubtotal.toLocaleString('vi-VN')}đ</span>
                   </div>
-                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span className="flex items-center gap-1.5">
+                  <div className="flex justify-between items-center text-gray-600 dark:text-gray-400">
+                    <span className="flex items-center gap-1.5 font-normal">
                       <Percent size={12} className="text-emerald-500" />
                       <span>2. Chiết khấu:</span>
                     </span>
-                    <span className="text-emerald-600 font-mono">-{Number(createForm.discountAmount || 0).toLocaleString('vi-VN')}đ</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">-{Number(createForm.discountAmount || 0).toLocaleString('vi-VN')}đ</span>
                   </div>
-                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span className="flex items-center gap-1.5">
+                  <div className="flex justify-between items-center text-gray-600 dark:text-gray-400">
+                    <span className="flex items-center gap-1.5 font-normal">
                       <Receipt size={12} className="text-indigo-500" />
                       <span>3. Thuế VAT:</span>
                     </span>
-                    <span className="font-mono">+{Number(createForm.taxAmount || 0).toLocaleString('vi-VN')}đ</span>
+                    <span className="font-semibold text-gray-900 dark:text-white font-mono">+{Number(createForm.taxAmount || 0).toLocaleString('vi-VN')}đ</span>
                   </div>
-                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span className="flex items-center gap-1.5">
+                  <div className="flex justify-between items-center text-gray-600 dark:text-gray-400">
+                    <span className="flex items-center gap-1.5 font-normal">
                       <Truck size={12} className="text-amber-500" />
                       <span>4. Cước vận chuyển tính vào nợ:</span>
                     </span>
-                    <span className="font-mono">
+                    <span className="font-semibold text-gray-900 dark:text-white font-mono">
                       +{createForm.shippingFeePayerType === 'PAID_TO_SUPPLIER' ? Number(createForm.shippingFee || 0).toLocaleString('vi-VN') : 0}đ
                     </span>
                   </div>
-                  <div className="pt-2 border-t border-indigo-200 dark:border-indigo-800/60 flex justify-between items-center text-sm font-bold text-indigo-700 dark:text-indigo-300">
-                    <span className="flex items-center gap-1.5">
+                  <div className="pt-2.5 border-t border-indigo-200/80 dark:border-indigo-800/60 flex justify-between items-center">
+                    <span className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-indigo-700 dark:text-indigo-300">
                       <DollarSign size={14} />
                       <span>TỔNG CÔNG NỢ PHẢI TRẢ:</span>
                     </span>
-                    <span className="text-base font-mono">{formPayable.toLocaleString('vi-VN')}đ</span>
+                    <span className="text-sm sm:text-base font-bold font-mono text-[#5865f2] dark:text-indigo-300">{formPayable.toLocaleString('vi-VN')}đ</span>
                   </div>
                 </div>
 
                 {/* Immediate payment switch */}
                 <div className="mt-4 pt-3 border-t border-indigo-100 dark:border-indigo-900/30 space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-900 dark:text-white">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-gray-900 dark:text-white select-none">
                     <input
                       type="checkbox"
                       checked={createForm.immediatePayment || false}
@@ -1566,16 +1574,16 @@ export const PurchaseReceiptsPage: React.FC = () => {
                           immediatePaymentAmount: checked ? formPayable : 0,
                         });
                       }}
-                      className="rounded text-indigo-600 focus:ring-indigo-500"
+                      className="rounded text-[#5865f2] focus:ring-[#5865f2]"
                     />
-                    <Wallet size={14} className="text-emerald-500" />
+                    <Wallet size={14} className="text-emerald-500 shrink-0" />
                     <span>Thanh toán ngay khi nhập hàng (Tạo phiếu chi đồng thời)</span>
                   </label>
 
                   {createForm.immediatePayment && (
-                    <div className="grid grid-cols-2 gap-2 pt-2 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 text-xs">
                       <div>
-                        <label className="block text-[11px] text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
+                        <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
                           <DollarSign size={11} className="text-emerald-500" />
                           <span>Số tiền chi ngay (đ)</span>
                         </label>
@@ -1583,11 +1591,11 @@ export const PurchaseReceiptsPage: React.FC = () => {
                           value={createForm.immediatePaymentAmount}
                           onChange={(val) => setCreateForm({ ...createForm, immediatePaymentAmount: val })}
                           suffix="đ"
-                          inputClassName="font-bold text-emerald-600 dark:text-emerald-400 p-1"
+                          inputClassName="h-8 font-bold text-emerald-600 dark:text-emerald-400 text-xs font-mono"
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
+                        <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
                           <User size={11} className="text-gray-400" />
                           <span>Người thanh toán</span>
                         </label>
@@ -1596,23 +1604,25 @@ export const PurchaseReceiptsPage: React.FC = () => {
                           placeholder="Ví dụ: Chị Hồng, Bạn..."
                           value={createForm.immediatePayerName || ''}
                           onChange={(e) => setCreateForm({ ...createForm, immediatePayerName: e.target.value })}
-                          className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1 text-xs"
+                          className="w-full h-8 px-2.5 bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]"
                         />
                       </div>
-                      <div className="col-span-2">
-                        <label className="block text-[11px] text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
                           <CreditCard size={11} className="text-gray-400" />
                           <span>Nguồn tiền chi</span>
                         </label>
-                        <select
+                        <Select
                           value={createForm.immediateFundSource || 'CASH_FUND'}
-                          onChange={(e) => setCreateForm({ ...createForm, immediateFundSource: e.target.value as any })}
-                          className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1 text-xs"
-                        >
-                          <option value="CASH_FUND">Quỹ tiền mặt của shop</option>
-                          <option value="BANK_ACCOUNT">Tài khoản ngân hàng công ty</option>
-                          <option value="PERSONAL_FUND">Tiền cá nhân (Chi hộ - Shop cần hoàn trả)</option>
-                        </select>
+                          onChange={(val) => setCreateForm({ ...createForm, immediateFundSource: val })}
+                          options={[
+                            { value: 'CASH_FUND', label: 'Quỹ tiền mặt của shop' },
+                            { value: 'BANK_ACCOUNT', label: 'Tài khoản ngân hàng công ty' },
+                            { value: 'PERSONAL_FUND', label: 'Tiền cá nhân (Chi hộ - Shop cần hoàn trả)' },
+                          ]}
+                          size="sm"
+                          className="w-full"
+                        />
                       </div>
                     </div>
                   )}
@@ -1834,19 +1844,21 @@ export const PurchaseReceiptsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5">
-                  <Wallet size={13} className="text-gray-400" />
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                  <Wallet size={13} className="text-[#5865f2]" />
                   <span>Nguồn tiền *</span>
                 </label>
-                <select
+                <Select
                   value={quickPayForm.fundSource}
-                  onChange={(e) => setQuickPayForm({ ...quickPayForm, fundSource: e.target.value as any })}
-                  className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-xs"
-                >
-                  <option value="CASH_FUND">Quỹ tiền mặt</option>
-                  <option value="BANK_ACCOUNT">Tài khoản công ty</option>
-                  <option value="PERSONAL_FUND">Tiền cá nhân (Shop cần hoàn trả)</option>
-                </select>
+                  onChange={(val) => setQuickPayForm({ ...quickPayForm, fundSource: val })}
+                  options={[
+                    { value: 'CASH_FUND', label: 'Quỹ tiền mặt' },
+                    { value: 'BANK_ACCOUNT', label: 'Tài khoản công ty' },
+                    { value: 'PERSONAL_FUND', label: 'Tiền cá nhân (Shop cần hoàn trả)' },
+                  ]}
+                  size="sm"
+                  className="w-full"
+                />
               </div>
             </div>
 

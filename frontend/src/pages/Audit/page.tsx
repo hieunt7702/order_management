@@ -25,7 +25,7 @@ import {
   SystemTableEmpty,
   SystemPagination,
 } from '../../components/ui/SystemTable';
-import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
+import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import { toast } from '../../components/ui/Toast';
 
 export interface ActionMetadata {
@@ -213,34 +213,38 @@ export const AuditPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 shrink-0">
-        <SystemMetricCard
-          title="Tổng nhật ký kiểm toán"
-          value={logs.length}
-          subtitle="Hành động đã ghi nhận"
-          icon={ShieldAlert}
-          colorScheme="blue"
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Tổng nhật ký kiểm toán',
+            value: logs.length,
+            subtitle: 'Hành động đã ghi nhận',
+            icon: ShieldAlert,
+            colorScheme: 'blue',
+          }}
+          rightItem={{
+            title: 'Đơn hàng & Xuất kho',
+            value: orderLogsCount,
+            subtitle: 'Thao tác xử lý đơn',
+            icon: CheckCircle,
+            colorScheme: 'green',
+          }}
         />
-        <SystemMetricCard
-          title="Đơn hàng & Xuất kho"
-          value={orderLogsCount}
-          subtitle="Thao tác xử lý đơn"
-          icon={CheckCircle}
-          colorScheme="green"
-        />
-        <SystemMetricCard
-          title="Kho hàng & Tồn kho"
-          value={inventoryLogsCount}
-          subtitle="Nhập/xuất/điều chỉnh tồn"
-          icon={Package}
-          colorScheme="orange"
-        />
-        <SystemMetricCard
-          title="Cấu hình & Nhân sự"
-          value={adminLogsCount}
-          subtitle="Thành viên & Shop"
-          icon={Users}
-          colorScheme="purple"
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Kho hàng & Tồn kho',
+            value: inventoryLogsCount,
+            subtitle: 'Nhập/xuất/điều chỉnh tồn',
+            icon: Package,
+            colorScheme: 'orange',
+          }}
+          rightItem={{
+            title: 'Cấu hình & Nhân sự',
+            value: adminLogsCount,
+            subtitle: 'Thành viên & Shop',
+            icon: Users,
+            colorScheme: 'purple',
+          }}
         />
       </div>
 

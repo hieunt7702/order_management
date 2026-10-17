@@ -162,7 +162,7 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
       item.status === 'VERIFIED'
         ? 'Thành công'
         : item.status === 'ALREADY_VERIFIED'
-        ? 'Đã quét trước'
+        ? 'Đã xuất trước'
         : item.status === 'NOT_FOUND'
         ? 'Không tìm thấy'
         : item.status === 'PENDING'
@@ -433,7 +433,7 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
                           <div className="text-xs text-emerald-600 dark:text-emerald-400 font-normal mt-1 flex items-center gap-1 flex-wrap">
                             <span>{session.stats?.verified ?? session.items.length} thành công</span>
                             {(session.stats?.alreadyVerified ?? 0) > 0 && (
-                              <span>· {session.stats?.alreadyVerified} trùng</span>
+                              <span>· {session.stats?.alreadyVerified} đã xuất trước</span>
                             )}
                             {(session.stats?.notFound ?? 0) > 0 && (
                               <span>· {session.stats?.notFound} không thấy</span>
@@ -546,59 +546,62 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
               selectedSessionForDetail.items.map((item, idx) => (
                 <div
                   key={item.id}
-                  className="p-2.5 rounded bg-gray-50 dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 flex items-center justify-between text-xs"
+                  className="p-2.5 rounded bg-gray-50 dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 flex items-start gap-2.5 text-xs shadow-xs"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-gray-400 font-semibold w-5 text-right">
-                      #{idx + 1}
-                    </span>
-                    <div>
-                      <div className="font-mono font-bold text-gray-900 dark:text-white">
+                  <span className="font-mono text-gray-400 font-semibold w-5 text-right shrink-0 pt-0.5">
+                    #{idx + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    {/* Top Row: Mã vận đơn (Left) & Trạng thái + Nút Xem đơn (Right) */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-mono font-bold text-gray-900 dark:text-white truncate">
                         {item.code}
                       </div>
-                      <div className="text-[11px] text-gray-500 dark:text-gray-400 font-mono">
-                        {item.scannedAt} • {item.message || 'Xác nhận xuất kho'}
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap border shrink-0 ${
+                            item.status === 'VERIFIED'
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                              : item.status === 'ALREADY_VERIFIED'
+                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                              : item.status === 'NOT_FOUND' || item.status === 'ERROR'
+                              ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                              : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                          }`}
+                        >
+                          {item.status === 'VERIFIED'
+                            ? 'Thành công'
+                            : item.status === 'ALREADY_VERIFIED'
+                            ? 'Đã xuất trước'
+                            : item.status === 'NOT_FOUND'
+                            ? 'Không tìm thấy'
+                            : item.status === 'ERROR'
+                            ? 'Lỗi đối soát'
+                            : 'Chờ đối soát'}
+                        </span>
+                        {item.orderId && onOpenOrderDetail && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const orderId = item.orderId!;
+                              setSelectedSessionForDetail(null);
+                              onClose();
+                              onOpenOrderDetail(orderId);
+                            }}
+                            className="text-[#2563eb] hover:underline cursor-pointer flex items-center justify-center shrink-0"
+                            title="Xem chi tiết đơn hàng"
+                          >
+                            <ChevronRight size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                        item.status === 'VERIFIED'
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                          : item.status === 'ALREADY_VERIFIED'
-                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                          : item.status === 'NOT_FOUND' || item.status === 'ERROR'
-                          ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                          : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
-                      }`}
-                    >
-                      {item.status === 'VERIFIED'
-                        ? 'Thành công'
-                        : item.status === 'ALREADY_VERIFIED'
-                        ? 'Đã quét trước'
-                        : item.status === 'NOT_FOUND'
-                        ? 'Không tìm thấy'
-                        : item.status === 'ERROR'
-                        ? 'Lỗi đối soát'
-                        : 'Chờ đối soát'}
-                    </span>
-                    {item.orderId && onOpenOrderDetail && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const orderId = item.orderId!;
-                          setSelectedSessionForDetail(null);
-                          onClose();
-                          onOpenOrderDetail(orderId);
-                        }}
-                        className="text-[#2563eb] hover:underline cursor-pointer"
-                        title="Xem chi tiết đơn hàng"
-                      >
-                        <ChevronRight size={14} />
-                      </button>
-                    )}
+                    {/* Bottom Row: Description */}
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400 font-mono mt-0.5 break-words">
+                      {item.scannedAt} • {item.message || 'Xác nhận xuất kho'}
+                    </div>
                   </div>
                 </div>
               ))

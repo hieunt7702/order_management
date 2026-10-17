@@ -31,8 +31,8 @@ export const AppLayout: React.FC = () => {
 
       {/* Main Column */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f9f9fa] dark:bg-[#0f1115]">
-        {/* Hide system header on mobile and tablet when on barcode scan screen */}
-        <div className={isScanActive ? 'hidden lg:block' : ''}>
+        {/* Hide system header on mobile and tablet */}
+        <div className="hidden lg:block">
           <AppHeader />
         </div>
 
@@ -40,8 +40,8 @@ export const AppLayout: React.FC = () => {
         <main
           className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar [-webkit-overflow-scrolling:touch] ${
             isScanActive
-              ? 'p-2.5 sm:p-3.5 md:px-5 md:py-4 pb-28 md:pb-6'
-              : 'p-3.5 sm:p-5 md:px-6 md:py-5 pb-32 md:pb-6'
+              ? 'p-2.5 sm:p-3.5 md:px-5 md:py-4 pt-[max(0.85rem,env(safe-area-inset-top,0px))] lg:pt-4 pb-28 lg:pb-6'
+              : 'p-3.5 sm:p-5 md:px-6 md:py-5 pt-[max(1.15rem,env(safe-area-inset-top,0px))] lg:pt-5 pb-32 lg:pb-6'
           }`}
         >
           <div className="flex-1 flex flex-col min-h-full">
@@ -49,9 +49,9 @@ export const AppLayout: React.FC = () => {
           </div>
         </main>
 
-        {/* Mobile Floating Glass Pill Navbar (md:hidden) */}
+        {/* Mobile & Tablet Floating Glass Pill Navbar (lg:hidden) */}
         <div
-          className="fixed z-40 md:hidden left-4 right-4 max-w-md mx-auto pb-0 pointer-events-none"
+          className="fixed z-40 lg:hidden left-4 right-4 max-w-md mx-auto pb-0 pointer-events-none"
           style={{ bottom: 'calc(16px + env(safe-area-inset-bottom))' }}
         >
           <nav className="pointer-events-auto bg-white/40 dark:bg-[#0c0e14]/70 backdrop-blur-[40px] backdrop-saturate-[200%] text-slate-600 dark:text-slate-300 shadow-[0_12px_40px_rgba(0,0,0,0.12),inset_0_1px_1px_rgba(255,255,255,0.7)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.14)] dark:border-white/15 rounded-[32px] flex items-center justify-around h-[68px] px-2 relative overflow-visible">

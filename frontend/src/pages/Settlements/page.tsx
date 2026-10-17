@@ -41,7 +41,7 @@ import {
   SystemPagination,
 } from '../../components/ui/SystemTable';
 import { Button } from '../../components/ui/Button';
-import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
+import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import { toast } from '../../components/ui/Toast';
 
 export const SettlementsPage: React.FC = () => {
@@ -176,35 +176,39 @@ export const SettlementsPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* Summary KPI Cards matching pawn-system */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 shrink-0">
-        <SystemMetricCard
-          title="Doanh thu Shopee (GMV)"
-          value={formatCurrency(totalGmv)}
-          subtitle="Tổng tiền đơn hàng"
-          icon={Receipt}
-          colorScheme="blue"
+      {/* Summary KPI Cards matching Orders page */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Doanh thu Shopee (GMV)',
+            value: formatCurrency(totalGmv),
+            subtitle: 'Tổng tiền đơn hàng',
+            icon: Receipt,
+            colorScheme: 'blue',
+          }}
+          rightItem={{
+            title: 'Phí sàn khấu trừ',
+            value: formatCurrency(totalFees),
+            subtitle: 'Phí dịch vụ & thanh toán',
+            icon: AlertCircle,
+            colorScheme: 'red',
+          }}
         />
-        <SystemMetricCard
-          title="Phí sàn khấu trừ"
-          value={formatCurrency(totalFees)}
-          subtitle="Phí dịch vụ & thanh toán"
-          icon={AlertCircle}
-          colorScheme="red"
-        />
-        <SystemMetricCard
-          title="Dự kiến nhận (Shopee)"
-          value={formatCurrency(totalExpected)}
-          subtitle="Doanh thu ước tính"
-          icon={DollarSign}
-          colorScheme="purple"
-        />
-        <SystemMetricCard
-          title="Thực nhận ngân hàng"
-          value={formatCurrency(totalActual)}
-          subtitle="Đã quyết toán về tài khoản"
-          icon={CheckCircle}
-          colorScheme="green"
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Dự kiến nhận (Shopee)',
+            value: formatCurrency(totalExpected),
+            subtitle: 'Doanh thu ước tính',
+            icon: DollarSign,
+            colorScheme: 'purple',
+          }}
+          rightItem={{
+            title: 'Thực nhận ngân hàng',
+            value: formatCurrency(totalActual),
+            subtitle: 'Đã về tài khoản',
+            icon: CheckCircle,
+            colorScheme: 'green',
+          }}
         />
       </div>
 

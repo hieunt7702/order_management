@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  SystemMetricCard,
+  SystemMetricPairCard,
   SystemCompactMetricsBar,
 } from '../../components/ui/SystemMetricCard';
 import { SystemFilter } from '../../components/ui/SystemFilter';
@@ -566,38 +566,42 @@ export const ImportedFilesPage: React.FC = () => {
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden mb-4 flex-shrink-0"
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <SystemMetricCard
-                    title="Tổng file đã import"
-                    value={importedFiles.length}
-                    subtitle="File Excel"
-                    icon={Folder}
-                    colorScheme="blue"
-                    isActive={false}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                  <SystemMetricPairCard
+                    leftItem={{
+                      title: 'Tổng file đã import',
+                      value: importedFiles.length,
+                      subtitle: 'File Excel',
+                      icon: Folder,
+                      colorScheme: 'blue',
+                      isActive: false,
+                    }}
+                    rightItem={{
+                      title: 'Tổng đơn hàng',
+                      value: totalOrdersCount.toLocaleString('vi-VN'),
+                      subtitle: 'Đơn hàng',
+                      icon: ClipboardList,
+                      colorScheme: 'green',
+                      isActive: false,
+                    }}
                   />
-                  <SystemMetricCard
-                    title="Tổng đơn hàng"
-                    value={totalOrdersCount.toLocaleString('vi-VN')}
-                    subtitle="Đơn hàng"
-                    icon={ClipboardList}
-                    colorScheme="green"
-                    isActive={false}
-                  />
-                  <SystemMetricCard
-                    title="Tổng doanh thu"
-                    value={formatCurrency(totalRevenueAll)}
-                    subtitle="Doanh thu"
-                    icon={CircleDollarSign}
-                    colorScheme="purple"
-                    isActive={false}
-                  />
-                  <SystemMetricCard
-                    title="Lần import gần nhất"
-                    value={latestImportFormatted}
-                    subtitle={importedFiles.length > 0 ? importedFiles[0].fileName : 'Chưa có dữ liệu'}
-                    icon={PieChart}
-                    colorScheme="orange"
-                    isActive={false}
+                  <SystemMetricPairCard
+                    leftItem={{
+                      title: 'Tổng doanh thu',
+                      value: formatCurrency(totalRevenueAll),
+                      subtitle: 'Doanh thu',
+                      icon: CircleDollarSign,
+                      colorScheme: 'purple',
+                      isActive: false,
+                    }}
+                    rightItem={{
+                      title: 'Lần import gần nhất',
+                      value: latestImportFormatted,
+                      subtitle: importedFiles.length > 0 ? importedFiles[0].fileName : 'Chưa có dữ liệu',
+                      icon: PieChart,
+                      colorScheme: 'orange',
+                      isActive: false,
+                    }}
                   />
                 </div>
               </motion.div>

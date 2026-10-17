@@ -98,35 +98,25 @@ export const AppHeader: React.FC = () => {
           <Menu size={20} />
         </button>
 
-        {/* Shop Selector with Store Icon Badge matching mobile mockup */}
-        <div className="flex items-center gap-2">
-          <div className="hidden sm:flex w-8 h-8 rounded-lg bg-indigo-50 dark:bg-[#1a1e2b] border border-indigo-200/60 dark:border-indigo-900/40 text-[#5865f2] dark:text-[#7b85f5] items-center justify-center shrink-0 shadow-2xs">
-            <Store size={17} />
-          </div>
-          <div className="flex flex-col min-w-0">
-            <div className="flex items-center">
-              <Select
-                value={selectedShopId || 'ALL'}
-                onChange={(val) => setSelectedShopId(String(val))}
-                options={[
-                  { value: 'ALL', label: 'SHOP MANAGER', icon: Store },
-                  ...shops.map((s: any) => ({
-                    value: s.id,
-                    label: s.name,
-                    icon: Store,
-                  })),
-                ]}
-                placeholder="SHOP MANAGER"
-                icon={Store}
-                size="sm"
-                className="w-32 sm:w-44 md:w-48 font-bold"
-                menuWidth="w-56"
-              />
-            </div>
-            <span className="text-[10px] text-gray-400 dark:text-gray-500 leading-none truncate pl-1 hidden sm:block">
-              Hệ thống bán hàng
-            </span>
-          </div>
+        {/* Shop Selector */}
+        <div className="flex items-center">
+          <Select
+            value={selectedShopId || 'ALL'}
+            onChange={(val) => setSelectedShopId(String(val))}
+            options={[
+              { value: 'ALL', label: 'Tất cả Shop', icon: Store },
+              ...shops.map((s: any) => ({
+                value: s.id,
+                label: s.name,
+                icon: Store,
+              })),
+            ]}
+            placeholder="Tất cả Shop"
+            icon={Store}
+            size="sm"
+            className="w-32 sm:w-44 md:w-48 font-medium"
+            menuWidth="w-56"
+          />
         </div>
 
         {/* Warehouse Selector (Only on warehouse-relevant screens) */}

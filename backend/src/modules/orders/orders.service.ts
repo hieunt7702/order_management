@@ -42,11 +42,23 @@ export class OrdersService {
     const where: any = {
       tenantId,
       ...(filter.shopId ? { shopId: filter.shopId } : {}),
-      ...(filter.platformStatus ? { platformStatus: filter.platformStatus } : {}),
       ...(filter.fulfillmentStatus ? { fulfillmentStatus: filter.fulfillmentStatus } : {}),
       ...(filter.verificationStatus ? { verificationStatus: filter.verificationStatus } : {}),
       ...(filter.financialStatus ? { financialStatus: filter.financialStatus } : {}),
     };
+
+    const andConditions: any[] = [];
+
+    if (filter.platformStatus === 'TO_RETURN') {
+      andConditions.push({
+        OR: [
+          { platformStatus: { in: ['TO_RETURN', 'RETURN_REFUND'] } },
+          { fulfillmentStatus: { in: ['RETURN_RECEIVED', 'PARTIALLY_RETURN_RECEIVED'] } },
+        ],
+      });
+    } else if (filter.platformStatus) {
+      where.platformStatus = filter.platformStatus;
+    }
 
     // Enforce allowed shop memberships
     if (allowedShopIds) {
@@ -57,12 +69,18 @@ export class OrdersService {
     }
 
     if (filter.search) {
-      where.OR = [
-        { externalOrderId: { contains: filter.search, mode: 'insensitive' } },
-        { internalOrderCode: { contains: filter.search, mode: 'insensitive' } },
-        { trackingCode: { contains: filter.search, mode: 'insensitive' } },
-        { buyerUsername: { contains: filter.search, mode: 'insensitive' } },
-      ];
+      andConditions.push({
+        OR: [
+          { externalOrderId: { contains: filter.search, mode: 'insensitive' } },
+          { internalOrderCode: { contains: filter.search, mode: 'insensitive' } },
+          { trackingCode: { contains: filter.search, mode: 'insensitive' } },
+          { buyerUsername: { contains: filter.search, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     if (filter.fromDate || filter.toDate) {
@@ -130,7 +148,7 @@ export class OrdersService {
       }
     }
 
-    const [total, readyToShip, shipped, verified, unmapped] = await Promise.all([
+    const [total, readyToShip, shipped, verified, completed, returned, unmapped] = await Promise.all([
       this.prisma.order.count({ where }),
       this.prisma.order.count({
         where: { ...where, platformStatus: 'READY_TO_SHIP' },
@@ -142,6 +160,18 @@ export class OrdersService {
         where: { ...where, verificationStatus: 'VERIFIED' },
       }),
       this.prisma.order.count({
+        where: { ...where, platformStatus: 'COMPLETED' },
+      }),
+      this.prisma.order.count({
+        where: {
+          ...where,
+          OR: [
+            { platformStatus: { in: ['TO_RETURN', 'RETURN_REFUND'] } },
+            { fulfillmentStatus: { in: ['RETURN_RECEIVED', 'PARTIALLY_RETURN_RECEIVED'] } },
+          ],
+        },
+      }),
+      this.prisma.order.count({
         where: { ...where, fulfillmentStatus: 'UNMAPPED' },
       }),
     ]);
@@ -151,6 +181,8 @@ export class OrdersService {
       readyToShip,
       shipped,
       verified,
+      completed,
+      returned,
       unmapped,
     };
   }

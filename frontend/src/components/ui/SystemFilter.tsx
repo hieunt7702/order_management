@@ -72,9 +72,10 @@ export const SystemFilterSearch: React.FC<SystemFilterSearchProps> = ({
 export const SystemFilterReset: React.FC<{
   onClick?: () => void;
   label?: string;
-}> = ({ onClick, label = 'Xóa bộ lọc' }) => {
+  className?: string;
+}> = ({ onClick, label = 'Xóa bộ lọc', className = '' }) => {
   return (
-    <div className="flex items-center ml-auto">
+    <div className={cn('flex items-center ml-auto', className)}>
       <button
         type="button"
         onClick={onClick}

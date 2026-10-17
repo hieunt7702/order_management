@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Settings,
   Warehouse,
@@ -9,14 +10,25 @@ import {
   AlertTriangle,
   Volume2,
   Scan,
+  MapPin,
+  Phone,
+  Store,
+  Moon,
+  Sun,
+  LogOut,
+  User as UserIcon,
+  Compass,
 } from 'lucide-react';
 import { warehousesApi } from '../../services/warehousesApi';
+import { shopsApi } from '../../services/shopsApi';
 import { useAuthStore } from '../../stores/authStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
+import { useNavigationStore } from '../../stores/navigationStore';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Card, CardHeader, CardTitle, CardContent, CardAction } from '../../components/ui/Card';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
+import { Select } from '../../components/ui/Select';
 import {
   SystemThead,
   SystemTh,
@@ -27,10 +39,21 @@ import {
 import { toast } from '../../components/ui/Toast';
 
 export const SettingsPage: React.FC = () => {
-  const { currentTenant } = useAuthStore();
-  const { warehouses, setContextData } = useWorkspaceStore();
+  const navigate = useNavigate();
+  const { user, currentTenant, logout } = useAuthStore();
+  const {
+    selectedShopId,
+    setSelectedShopId,
+    selectedWarehouseId,
+    setSelectedWarehouseId,
+    shops,
+    warehouses,
+    setContextData,
+  } = useWorkspaceStore();
+  const openMobileMenu = useNavigationStore((s) => s.openMobileMenu);
 
   const [, setIsLoadingWh] = useState<boolean>(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState<boolean>(false);
 
   // Modals
   const [isCreateWhModalOpen, setIsCreateWhModalOpen] = useState<boolean>(false);
@@ -39,6 +62,14 @@ export const SettingsPage: React.FC = () => {
   const [isDeleteWhModalOpen, setIsDeleteWhModalOpen] = useState<boolean>(false);
   const [selectedWhForDelete, setSelectedWhForDelete] = useState<any>(null);
   const [isDeletingWh, setIsDeletingWh] = useState<boolean>(false);
+
+  // Theme preferences
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return true;
+  });
 
   // Forms
   const [createWhForm, setCreateWhForm] = useState({
@@ -60,19 +91,46 @@ export const SettingsPage: React.FC = () => {
   const [autoSelectNext, setAutoSelectNext] = useState<boolean>(true);
 
   useEffect(() => {
-    loadWarehouses();
+    setIsDark(document.documentElement.classList.contains('dark'));
+    loadContextData();
   }, []);
 
-  const loadWarehouses = async () => {
+  const loadContextData = async () => {
     setIsLoadingWh(true);
     try {
-      const res: any = await warehousesApi.findAll();
-      setContextData({ warehouses: res || [] });
+      const [fetchedShops, fetchedWhs] = await Promise.all([
+        shopsApi.findAll(),
+        warehousesApi.findAll(),
+      ]);
+      setContextData({ shops: fetchedShops || [], warehouses: fetchedWhs || [] });
     } catch (err) {
-      console.error('Error loading warehouses:', err);
+      console.error('Error loading context data:', err);
     } finally {
       setIsLoadingWh(false);
     }
+  };
+
+  const loadWarehouses = loadContextData;
+
+  const setTheme = (targetDark: boolean) => {
+    if (!(document as any).startViewTransition) {
+      document.documentElement.classList.toggle('dark', targetDark);
+      setIsDark(targetDark);
+      localStorage.setItem('theme', targetDark ? 'dark' : 'light');
+      return;
+    }
+    (document as any).startViewTransition(() => {
+      document.documentElement.classList.toggle('dark', targetDark);
+      setIsDark(targetDark);
+      localStorage.setItem('theme', targetDark ? 'dark' : 'light');
+    });
+  };
+
+  const handleLogout = () => {
+    setIsLogoutModalOpen(false);
+    logout();
+    navigate('/login');
+    toast.success('Đã đăng xuất tài khoản');
   };
 
   const handleCreateWhSubmit = async (e: React.FormEvent) => {
@@ -160,36 +218,233 @@ export const SettingsPage: React.FC = () => {
               Cài đặt hệ thống
             </h1>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              Cấu hình kho hàng, thông tin Workspace và tùy biến thông số vận hành
+              Tài khoản, cửa hàng, kho xử lý, chủ đề giao diện và thông số vận hành
             </p>
           </div>
         </div>
+
+        {/* Mobile & Tablet Drawer Menu Shortcut */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={openMobileMenu}
+          className="lg:hidden gap-1.5 text-xs text-gray-700 dark:text-gray-200 self-start sm:self-auto"
+        >
+          <Compass size={14} className="text-[#5865f2]" />
+          <span>Tất cả tính năng</span>
+        </Button>
       </div>
+
+      {/* 1. USER ACCOUNT & LOGOUT CARD */}
+      <Card className="shrink-0">
+        <CardHeader className="py-2.5 px-3.5 sm:py-3 sm:px-4 flex flex-row items-center justify-between">
+          <CardTitle className="text-xs font-semibold flex items-center gap-2">
+            <UserIcon size={16} className="text-[#5865f2]" /> Tài khoản người dùng
+          </CardTitle>
+          <CardAction>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsLogoutModalOpen(true)}
+              className="gap-1.5 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-medium h-7 px-2.5 sm:h-8 sm:px-3"
+            >
+              <LogOut size={13} />
+              <span>Đăng xuất</span>
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="p-3.5 sm:p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-3.5 bg-gray-50/80 dark:bg-[#14151a] rounded-[4px] border border-gray-200 dark:border-gray-800">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-11 h-11 rounded-full bg-[#5865f2] text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+                {user?.name ? user.name.slice(0, 2).toUpperCase() : 'QU'}
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                    {user?.name || 'Người dùng'}
+                  </span>
+                  <Badge variant="default" className="text-[10px] py-0 px-1.5 font-mono">
+                    {currentTenant?.role || 'MEMBER'}
+                  </Badge>
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                  {user?.email || 'shopee_admin@domain.com'}
+                </div>
+              </div>
+            </div>
+
+            <div className="text-xs text-gray-500 dark:text-gray-400 sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-200 dark:border-gray-800 w-full sm:w-auto">
+              <span className="block text-[11px] text-gray-400">Doanh nghiệp:</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">
+                {currentTenant?.name || '--'} ({currentTenant?.code || 'WORKSPACE'})
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 2. WORKING SCOPE: SHOP & WAREHOUSE SELECTORS */}
+      <Card className="shrink-0">
+        <CardHeader className="py-2.5 px-3.5 sm:py-3 sm:px-4">
+          <CardTitle className="text-xs font-semibold flex items-center gap-2">
+            <Store size={16} className="text-[#5865f2]" /> Cửa hàng & Kho xử lý hoạt động
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-3.5 sm:p-4 space-y-3">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Chọn cửa hàng và kho hàng mặc định để lọc đơn hàng, quản lý xuất nhập và tra cứu báo cáo trên thiết bị này.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Shop Selection */}
+            <div className="p-3 bg-gray-50/80 dark:bg-[#14151a] rounded-[4px] border border-gray-200 dark:border-gray-800 space-y-1.5">
+              <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                <Store size={14} className="text-[#5865f2]" />
+                <span>Cửa hàng (Shop) làm việc:</span>
+              </label>
+              <Select
+                value={selectedShopId || 'ALL'}
+                onChange={(val) => {
+                  const sId = String(val);
+                  setSelectedShopId(sId);
+                  const sObj = shops.find((s) => s.id === sId);
+                  toast.success(sId === 'ALL' ? 'Đang xem tất cả Shop' : `Đã chuyển sang Shop: ${sObj?.name || sId}`);
+                }}
+                options={[
+                  { value: 'ALL', label: 'Tất cả Shop (Toàn Workspace)', icon: Store },
+                  ...shops.map((s) => ({
+                    value: s.id,
+                    label: s.code ? `[${s.code}] ${s.name}` : s.name,
+                    icon: Store,
+                  })),
+                ]}
+                placeholder="Chọn Shop..."
+                searchable={true}
+                size="md"
+                className="w-full"
+              />
+            </div>
+
+            {/* Warehouse Selection */}
+            <div className="p-3 bg-gray-50/80 dark:bg-[#14151a] rounded-[4px] border border-gray-200 dark:border-gray-800 space-y-1.5">
+              <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                <Warehouse size={14} className="text-[#5865f2]" />
+                <span>Kho xử lý xuất / nhập hàng:</span>
+              </label>
+              <Select
+                value={selectedWarehouseId || ''}
+                onChange={(val) => {
+                  const wId = String(val);
+                  setSelectedWarehouseId(wId);
+                  const wObj = warehouses.find((w) => w.id === wId);
+                  toast.success(!wId ? 'Đang xem tất cả kho hàng' : `Đã chọn kho: ${wObj?.name || wId}`);
+                }}
+                options={[
+                  { value: '', label: 'Tất cả kho hàng', icon: Warehouse },
+                  ...warehouses.map((w) => ({
+                    value: w.id,
+                    label: `${w.code} - ${w.name}`,
+                    icon: Warehouse,
+                    badge: w.status === 'ACTIVE' || w.isActive !== false ? 'Hoạt động' : undefined,
+                  })),
+                ]}
+                placeholder="Chọn kho xử lý..."
+                searchable={true}
+                size="md"
+                className="w-full"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 3. THEME PREFERENCES CARD */}
+      <Card className="shrink-0">
+        <CardHeader className="py-2.5 px-3.5 sm:py-3 sm:px-4">
+          <CardTitle className="text-xs font-semibold flex items-center gap-2">
+            <Moon size={16} className="text-[#5865f2]" /> Giao diện hiển thị (Theme)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-3.5 sm:p-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+            {/* Light Mode Button */}
+            <button
+              type="button"
+              onClick={() => setTheme(false)}
+              className={`p-3 rounded-[4px] border text-left transition-all flex items-center gap-3 cursor-pointer ${
+                !isDark
+                  ? 'bg-amber-500/10 border-amber-500/40 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/20'
+                  : 'bg-gray-50/80 dark:bg-[#14151a] border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700'
+              }`}
+            >
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                !isDark ? 'bg-amber-500 text-white shadow-xs' : 'bg-gray-200 dark:bg-gray-800 text-gray-500'
+              }`}>
+                <Sun size={18} />
+              </div>
+              <div className="min-w-0">
+                <span className="font-semibold text-xs text-gray-900 dark:text-white block leading-tight">
+                  Giao diện Sáng
+                </span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 block">
+                  Nền sáng, độ tương phản cao
+                </span>
+              </div>
+            </button>
+
+            {/* Dark Mode Button */}
+            <button
+              type="button"
+              onClick={() => setTheme(true)}
+              className={`p-3 rounded-[4px] border text-left transition-all flex items-center gap-3 cursor-pointer ${
+                isDark
+                  ? 'bg-[#5865f2]/10 border-[#5865f2]/40 text-[#5865f2] dark:text-indigo-300 ring-2 ring-[#5865f2]/20'
+                  : 'bg-gray-50/80 dark:bg-[#14151a] border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700'
+              }`}
+            >
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                isDark ? 'bg-[#5865f2] text-white shadow-xs' : 'bg-gray-200 dark:bg-gray-800 text-gray-500'
+              }`}>
+                <Moon size={18} />
+              </div>
+              <div className="min-w-0">
+                <span className="font-semibold text-xs text-gray-900 dark:text-white block leading-tight">
+                  Giao diện Tối
+                </span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 block">
+                  Dịu mắt, tối ưu làm việc đêm
+                </span>
+              </div>
+            </button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Workspace Card */}
       <Card className="shrink-0">
-        <CardHeader className="py-3 px-4">
-          <CardTitle className="text-xs font-medium flex items-center gap-2">
+        <CardHeader className="py-2.5 px-3.5 sm:py-3 sm:px-4">
+          <CardTitle className="text-xs font-semibold flex items-center gap-2">
             <Building2 size={16} className="text-[#5865f2]" /> Thông tin Workspace
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-4 pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-            <div className="p-3 bg-gray-50 dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">
-              <span className="text-gray-500 dark:text-gray-400">Tên Doanh nghiệp:</span>
-              <div className="font-medium text-gray-900 dark:text-white text-sm mt-0.5">
+        <CardContent className="p-3.5 sm:p-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-3 text-xs">
+            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-[#14151a] rounded-[4px] border border-gray-200 dark:border-gray-800 space-y-1">
+              <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block">Tên Doanh nghiệp:</span>
+              <div className="font-semibold text-gray-900 dark:text-white text-xs sm:text-sm">
                 {currentTenant?.name || '--'}
               </div>
             </div>
-            <div className="p-3 bg-gray-50 dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">
-              <span className="text-gray-500 dark:text-gray-400">Mã Workspace:</span>
-              <div className="font-mono font-medium text-[#5865f2] text-sm mt-0.5">
+            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-[#14151a] rounded-[4px] border border-gray-200 dark:border-gray-800 space-y-1">
+              <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block">Mã Workspace:</span>
+              <div className="font-mono font-semibold text-[#5865f2] text-xs sm:text-sm">
                 {currentTenant?.code || '--'}
               </div>
             </div>
-            <div className="p-3 bg-gray-50 dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">
-              <span className="text-gray-500 dark:text-gray-400">Vai trò của bạn:</span>
-              <div className="font-medium text-[#5865f2] text-sm mt-0.5">
+            <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-[#14151a] rounded-[4px] border border-gray-200 dark:border-gray-800 space-y-1">
+              <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block">Vai trò của bạn:</span>
+              <div className="font-semibold text-[#5865f2] text-xs sm:text-sm">
                 {currentTenant?.role || 'MEMBER'}
               </div>
             </div>
@@ -199,8 +454,8 @@ export const SettingsPage: React.FC = () => {
 
       {/* Warehouses Management Card */}
       <Card className="shrink-0">
-        <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
-          <CardTitle className="text-xs font-medium flex items-center gap-2">
+        <CardHeader className="py-2.5 px-3.5 sm:py-3 sm:px-4 flex flex-row items-center justify-between">
+          <CardTitle className="text-xs font-semibold flex items-center gap-2">
             <Warehouse size={16} className="text-[#5865f2]" /> Quản lý Kho hàng ({warehouses.length})
           </CardTitle>
           <CardAction>
@@ -208,7 +463,7 @@ export const SettingsPage: React.FC = () => {
               variant="default"
               size="sm"
               onClick={() => setIsCreateWhModalOpen(true)}
-              className="gap-1.5"
+              className="gap-1.5 h-7 px-2.5 sm:h-8 sm:px-3 text-xs"
             >
               <Plus size={14} />
               <span className="hidden sm:inline">Thêm kho mới</span>
@@ -218,7 +473,82 @@ export const SettingsPage: React.FC = () => {
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="overflow-x-auto border-t border-gray-200 dark:border-gray-800">
+          {/* MOBILE VIEW: Card List (sm:hidden) */}
+          <div className="sm:hidden p-3 space-y-2.5 bg-gray-50/50 dark:bg-[#101216]">
+            {warehouses.length === 0 ? (
+              <div className="py-8 text-center text-gray-400 text-xs">
+                Chưa có kho nào. Nhấn &quot;Thêm mới&quot; để tạo kho xuất hàng.
+              </div>
+            ) : (
+              warehouses.map((wh, index) => (
+                <div
+                  key={wh.id}
+                  className="p-3 bg-white dark:bg-[#161b26] border border-gray-200/80 dark:border-gray-800 rounded-[4px] shadow-xs space-y-2.5"
+                >
+                  {/* Top row: Name, Status Badge, Code, and Actions */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-xs text-gray-900 dark:text-white leading-tight">
+                          {wh.name}
+                        </span>
+                        <Badge variant={wh.isActive !== false ? 'success' : 'secondary'} className="text-[10px] py-0 px-1.5 shrink-0">
+                          {wh.isActive !== false ? 'Hoạt động' : 'Tạm dừng'}
+                        </Badge>
+                      </div>
+                      <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[#5865f2] dark:text-indigo-400 font-mono font-medium">
+                        <span className="text-gray-400 dark:text-gray-500 font-sans">#{index + 1}</span>
+                        <span className="text-gray-300 dark:text-gray-700">•</span>
+                        <span>{wh.code}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0 -mr-1">
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => handleOpenEditWh(wh)}
+                        className="h-7 w-7 p-0 text-gray-500 hover:text-[#5865f2] hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-[4px]"
+                        title="Sửa thông tin kho"
+                      >
+                        <Edit2 size={13} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => handleOpenDeleteWh(wh)}
+                        className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-[4px]"
+                        title="Xóa kho hàng"
+                      >
+                        <Trash2 size={13} />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Bottom row: Address & Phone */}
+                  <div className="pt-2 border-t border-gray-100 dark:border-gray-800/80 space-y-1.5 text-xs">
+                    <div className="flex items-start gap-1.5 text-gray-600 dark:text-gray-400">
+                      <MapPin size={13} className="text-gray-400 shrink-0 mt-0.5" />
+                      <span className="text-[11px] leading-relaxed break-words">
+                        {wh.address || <span className="text-gray-400 dark:text-gray-500 italic">Chưa có địa chỉ</span>}
+                      </span>
+                    </div>
+                    {wh.phone && (
+                      <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                        <Phone size={13} className="text-gray-400 shrink-0" />
+                        <span className="text-[11px] font-mono text-gray-700 dark:text-gray-300">
+                          {wh.phone}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* DESKTOP VIEW: Table (hidden sm:block) */}
+          <div className="hidden sm:block overflow-x-auto border-t border-gray-200 dark:border-gray-800">
             <table className="w-full text-left border-collapse text-xs">
               <SystemThead>
                 <SystemTr>
@@ -294,12 +624,12 @@ export const SettingsPage: React.FC = () => {
 
       {/* Operational & Scanner Preferences Card */}
       <Card className="shrink-0">
-        <CardHeader className="py-3 px-4">
-          <CardTitle className="text-xs font-medium flex items-center gap-2">
+        <CardHeader className="py-2.5 px-3.5 sm:py-3 sm:px-4">
+          <CardTitle className="text-xs font-semibold flex items-center gap-2">
             <Scan size={16} className="text-[#5865f2]" /> Cấu hình máy quét & Vận hành
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-4 pt-0 space-y-2.5">
+        <CardContent className="p-3.5 sm:p-4 space-y-2.5">
           <label className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
             <div className="flex items-center gap-2.5">
               <Volume2 size={16} className="text-emerald-500" />
@@ -548,6 +878,39 @@ export const SettingsPage: React.FC = () => {
               </ModalButton>
             </ModalFooter>
           </div>
+        </Modal>
+      )}
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {isLogoutModalOpen && (
+        <Modal
+          isOpen={isLogoutModalOpen}
+          onClose={() => setIsLogoutModalOpen(false)}
+          title="Xác nhận đăng xuất"
+          subtitle="Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?"
+          icon={LogOut}
+          maxWidth="max-w-sm"
+        >
+          <ModalBody className="p-4 space-y-2 text-xs text-gray-600 dark:text-gray-400">
+            <p>
+              Phiên làm việc hiện tại của bạn sẽ kết thúc. Bạn sẽ cần đăng nhập lại để tiếp tục sử dụng hệ thống.
+            </p>
+          </ModalBody>
+          <ModalFooter className="flex items-center justify-end gap-2 p-3">
+            <ModalButton
+              variant="outline"
+              onClick={() => setIsLogoutModalOpen(false)}
+            >
+              Hủy
+            </ModalButton>
+            <ModalButton
+              variant="danger"
+              onClick={handleLogout}
+              className="gap-1.5"
+            >
+              <LogOut size={13} />
+              <span>Đăng xuất</span>
+            </ModalButton>
+          </ModalFooter>
         </Modal>
       )}
     </div>

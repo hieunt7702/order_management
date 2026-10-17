@@ -40,7 +40,7 @@ import {
   SystemTableSkeleton,
   SystemPagination,
 } from '../../components/ui/SystemTable';
-import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
+import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -321,52 +321,56 @@ export const SuppliersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Metric KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 shrink-0">
-        <SystemMetricCard
-          title="Tổng nhà cung cấp"
-          value={totalSuppliersCount}
-          subtitle="Đối tác trong danh bạ"
-          icon={Truck}
-          colorScheme="blue"
-          isActive={statusFilter === 'ALL' && debtFilter === 'ALL'}
-          onClick={() => {
-            setStatusFilter('ALL');
-            setDebtFilter('ALL');
-            setPage(1);
+      {/* 2. Metric KPI Cards matching Orders page */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Tổng nhà cung cấp',
+            value: totalSuppliersCount,
+            subtitle: 'Đối tác danh bạ',
+            icon: Truck,
+            colorScheme: 'blue',
+            isActive: statusFilter === 'ALL' && debtFilter === 'ALL',
+            onClick: () => {
+              setStatusFilter('ALL');
+              setDebtFilter('ALL');
+              setPage(1);
+            },
+          }}
+          rightItem={{
+            title: 'Đang giao dịch',
+            value: activeSuppliersCount,
+            subtitle: 'Đang hoạt động',
+            icon: CheckCircle,
+            colorScheme: 'green',
+            isActive: statusFilter === 'ACTIVE',
+            onClick: () => {
+              setStatusFilter('ACTIVE');
+              setDebtFilter('ALL');
+              setPage(1);
+            },
           }}
         />
-        <SystemMetricCard
-          title="Đang giao dịch"
-          value={activeSuppliersCount}
-          subtitle="Trạng thái ACTIVE"
-          icon={CheckCircle}
-          colorScheme="green"
-          isActive={statusFilter === 'ACTIVE'}
-          onClick={() => {
-            setStatusFilter('ACTIVE');
-            setDebtFilter('ALL');
-            setPage(1);
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Có phát sinh nợ',
+            value: withDebtCount,
+            subtitle: 'NCC còn số dư nợ',
+            icon: AlertTriangle,
+            colorScheme: 'orange',
+            isActive: debtFilter === 'PAYABLE',
+            onClick: () => {
+              setDebtFilter('PAYABLE');
+              setPage(1);
+            },
           }}
-        />
-        <SystemMetricCard
-          title="Có phát sinh nợ"
-          value={withDebtCount}
-          subtitle="NCC đang còn số dư nợ"
-          icon={AlertTriangle}
-          colorScheme="orange"
-          isActive={debtFilter === 'PAYABLE'}
-          onClick={() => {
-            setDebtFilter('PAYABLE');
-            setPage(1);
+          rightItem={{
+            title: 'Tổng nợ phải trả',
+            value: `${formatCurrency(totalPayableDebt)} đ`,
+            subtitle: 'Chưa thanh toán',
+            icon: Receipt,
+            colorScheme: 'purple',
           }}
-        />
-        <SystemMetricCard
-          title="Tổng nợ phải trả"
-          value={`${formatCurrency(totalPayableDebt)} đ`}
-          subtitle="Nợ mua hàng chưa trả"
-          icon={Receipt}
-          colorScheme="purple"
         />
       </div>
 

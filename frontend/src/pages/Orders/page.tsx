@@ -4,7 +4,6 @@ import {
   ShoppingBag,
   RefreshCw,
   Eye,
-  Calendar,
   Truck,
   CheckCircle2,
   Clock,
@@ -57,9 +56,8 @@ import {
   SystemFilter,
   SystemFilterItem,
   SystemFilterSearch,
-  SystemFilterReset,
 } from '../../components/ui/SystemFilter';
-import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
+import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
 import { Checkbox } from '../../components/ui/Checkbox';
@@ -134,6 +132,8 @@ export const OrdersPage: React.FC = () => {
     readyToShip: 0,
     shipped: 0,
     verified: 0,
+    completed: 0,
+    returned: 0,
     unmapped: 0,
   });
 
@@ -190,6 +190,8 @@ export const OrdersPage: React.FC = () => {
           readyToShip: Number(res.readyToShip) || 0,
           shipped: Number(res.shipped) || 0,
           verified: Number(res.verified) || 0,
+          completed: Number(res.completed) || 0,
+          returned: Number(res.returned) || 0,
           unmapped: Number(res.unmapped) || 0,
         });
       }
@@ -894,53 +896,67 @@ export const OrdersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Summary KPI Cards Row matching pawn-system */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3 shrink-0">
-        <SystemMetricCard
-          title="Tất cả đơn"
-          value={orderSummary.total}
-          subtitle="Tổng số bản ghi"
-          icon={ShoppingBag}
-          colorScheme="blue"
-          isActive={activeTab === 'ALL'}
-          onClick={() => handleKpiFilter('ALL')}
+      {/* Summary KPI Cards Row matching mobile pair reference */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-2.5 shrink-0">
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Tất cả đơn',
+            value: orderSummary.total,
+            subtitle: 'Tổng đơn',
+            icon: ShoppingBag,
+            colorScheme: 'blue',
+            isActive: activeTab === 'ALL',
+            onClick: () => handleKpiFilter('ALL'),
+          }}
+          rightItem={{
+            title: 'Chờ giao hàng',
+            value: orderSummary.readyToShip,
+            subtitle: 'Cần đóng gói',
+            icon: Clock,
+            colorScheme: 'orange',
+            isActive: activeTab === 'READY_TO_SHIP',
+            onClick: () => handleKpiFilter('READY_TO_SHIP'),
+          }}
         />
-        <SystemMetricCard
-          title="Chờ giao hàng"
-          value={orderSummary.readyToShip}
-          subtitle="Cần đóng gói"
-          icon={Clock}
-          colorScheme="orange"
-          isActive={activeTab === 'READY_TO_SHIP'}
-          onClick={() => handleKpiFilter('READY_TO_SHIP')}
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Đã xuất kho',
+            value: orderSummary.verified,
+            subtitle: 'Đã quét xuất',
+            icon: CheckCircle2,
+            colorScheme: 'green',
+            isActive: activeTab === 'VERIFIED',
+            onClick: () => handleKpiFilter('VERIFIED'),
+          }}
+          rightItem={{
+            title: 'Đang giao',
+            value: orderSummary.shipped,
+            subtitle: 'ĐVVC vận chuyển',
+            icon: Truck,
+            colorScheme: 'purple',
+            isActive: activeTab === 'SHIPPED',
+            onClick: () => handleKpiFilter('SHIPPED'),
+          }}
         />
-        <SystemMetricCard
-          title="Đang giao"
-          value={orderSummary.shipped}
-          subtitle="Đã bàn giao ĐVVC"
-          icon={Truck}
-          colorScheme="purple"
-          isActive={activeTab === 'SHIPPED'}
-          onClick={() => handleKpiFilter('SHIPPED')}
-        />
-        <SystemMetricCard
-          title="Đã xuất kho"
-          value={orderSummary.verified}
-          subtitle="Đã quét mã vạch"
-          icon={CheckCircle2}
-          colorScheme="green"
-          isActive={activeTab === 'VERIFIED'}
-          onClick={() => handleKpiFilter('VERIFIED')}
-        />
-        <SystemMetricCard
-          title="Chưa map SKU"
-          value={orderSummary.unmapped}
-          subtitle="Cần liên kết sản phẩm"
-          icon={AlertTriangle}
-          colorScheme="red"
-          isActive={activeTab === 'NEEDS_ATTENTION'}
-          onClick={() => handleKpiFilter('NEEDS_ATTENTION')}
-          className="col-span-2 lg:col-span-1"
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Hoàn thành',
+            value: orderSummary.completed,
+            subtitle: 'Giao thành công',
+            icon: CheckCircle2,
+            colorScheme: 'green',
+            isActive: activeTab === 'COMPLETED',
+            onClick: () => handleKpiFilter('COMPLETED'),
+          }}
+          rightItem={{
+            title: 'Hoàn hàng',
+            value: orderSummary.returned,
+            subtitle: 'Trả hàng/hoàn tiền',
+            icon: RotateCcw,
+            colorScheme: 'red',
+            isActive: activeTab === 'TO_RETURN',
+            onClick: () => handleKpiFilter('TO_RETURN'),
+          }}
         />
       </div>
 
@@ -967,7 +983,7 @@ export const OrdersPage: React.FC = () => {
           </div>
         </SystemFilterItem>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto sm:ml-auto">
+        <div className="w-full sm:w-72 sm:ml-auto">
           <SystemFilterSearch
             value={searchTerm}
             onChange={(e) => {
@@ -975,37 +991,8 @@ export const OrdersPage: React.FC = () => {
               setPage(1);
             }}
             placeholder="Tìm mã đơn, MVD, người mua..."
-            className="w-full sm:w-60"
+            className="w-full"
           />
-
-          <div className="flex items-center gap-1.5 w-full sm:w-auto">
-            <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 h-8 text-xs flex-1 sm:w-auto">
-              <Calendar size={13} className="text-gray-400 shrink-0" />
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => {
-                  setFromDate(e.target.value);
-                  setPage(1);
-                }}
-                className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none font-normal min-w-0"
-              />
-              <span className="text-gray-400 font-normal shrink-0">-</span>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => {
-                  setToDate(e.target.value);
-                  setPage(1);
-                }}
-                className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none font-normal min-w-0"
-              />
-            </div>
-
-            {hasActiveFilter && (
-              <SystemFilterReset onClick={resetAllFilters} className="shrink-0" />
-            )}
-          </div>
         </div>
       </SystemFilter>
 
@@ -1233,7 +1220,7 @@ export const OrdersPage: React.FC = () => {
               <div
                 key={o.id}
                 onClick={() => handleOpenDetail(o.id)}
-                className={`p-3.5 rounded bg-white dark:bg-[#181b22] border ${
+                className={`p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border ${
                   selectedOrderIds.includes(o.id)
                     ? 'border-indigo-400 dark:border-indigo-600 bg-indigo-50/20 dark:bg-indigo-950/20'
                     : 'border-gray-200/60 dark:border-white/[0.08]'
@@ -1304,7 +1291,7 @@ export const OrdersPage: React.FC = () => {
         )}
 
         {/* Mobile Pagination */}
-        <div className="rounded border border-gray-200/60 dark:border-white/[0.08] overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+        <div className="rounded-[4px] border border-gray-200/60 dark:border-white/[0.08] overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
           <SystemPagination
             page={page - 1}
             totalPages={totalPages}
@@ -2367,11 +2354,116 @@ export const OrdersPage: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="overflow-x-auto rounded border border-gray-200 dark:border-gray-800">
-                      <table className="w-full text-left text-xs border-collapse">
+                    {/* 1. MOBILE CARD VIEW (sm:hidden) */}
+                    <div className="sm:hidden space-y-3">
+                      {returnForm.items.map((it, idx) => (
+                        <div
+                          key={it.orderItemId || idx}
+                          className="p-3 bg-white dark:bg-[#161922] border border-gray-200/70 dark:border-white/[0.08] rounded-[4px] space-y-2.5 shadow-none"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="font-bold text-[#5865f2] dark:text-indigo-400 font-mono text-xs">
+                                {it.sku}
+                              </span>
+                              <div className="flex items-center gap-1.5 text-[10px]">
+                                <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium">
+                                  Xuất: <strong className="font-mono text-gray-900 dark:text-white">{it.dispatchedQuantity}</strong>
+                                </span>
+                                <span className="px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-medium">
+                                  Chờ hoàn: <strong className="font-mono">{it.remainingToReturn}</strong>
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-xs font-medium text-gray-900 dark:text-gray-100 leading-snug">
+                              {it.productName} {it.variationName ? `(${it.variationName})` : ''}
+                            </p>
+                          </div>
+
+                          {/* 3 Classification Columns */}
+                          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                            {/* Còn nguyên */}
+                            <div className="bg-emerald-50/60 dark:bg-emerald-950/20 p-2 rounded-[4px] border border-emerald-200/80 dark:border-emerald-900/40 text-center flex flex-col justify-between">
+                              <label className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 block mb-1 truncate" title="Nguyên vẹn (Bán)">
+                                Còn nguyên
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={it.remainingToReturn}
+                                value={it.sellableQuantity}
+                                onChange={(e) =>
+                                  handleReturnItemChange(idx, 'sellableQuantity', Math.max(0, parseInt(e.target.value, 10) || 0))
+                                }
+                                className="w-full text-center bg-white dark:bg-[#131720] border border-emerald-400 rounded-[4px] h-8 font-bold font-mono text-emerald-600 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 block">
+                                Tồn bán +{it.sellableQuantity}
+                              </span>
+                            </div>
+
+                            {/* Bị hỏng */}
+                            <div className="bg-rose-50/60 dark:bg-rose-950/20 p-2 rounded-[4px] border border-rose-200/80 dark:border-rose-900/40 text-center flex flex-col justify-between">
+                              <label className="text-[10px] font-semibold text-rose-700 dark:text-rose-400 block mb-1 truncate" title="Hàng lỗi (Hỏng)">
+                                Hàng lỗi/hỏng
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={it.remainingToReturn}
+                                value={it.damagedQuantity}
+                                onChange={(e) =>
+                                  handleReturnItemChange(idx, 'damagedQuantity', Math.max(0, parseInt(e.target.value, 10) || 0))
+                                }
+                                className="w-full text-center bg-white dark:bg-[#131720] border border-rose-400 rounded-[4px] h-8 font-bold font-mono text-rose-600 text-sm focus:outline-none focus:ring-1 focus:ring-rose-500"
+                              />
+                              <span className="text-[10px] text-rose-600 dark:text-rose-400 font-medium mt-1 block">
+                                Hàng lỗi +{it.damagedQuantity}
+                              </span>
+                            </div>
+
+                            {/* Khách giữ / thiếu */}
+                            <div className="bg-gray-50/80 dark:bg-gray-800/40 p-2 rounded-[4px] border border-gray-200 dark:border-gray-700/60 text-center flex flex-col justify-between">
+                              <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block mb-1 truncate" title="Khách giữ / Mất">
+                                Khách giữ
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={it.remainingToReturn}
+                                value={it.missingQuantity}
+                                onChange={(e) =>
+                                  handleReturnItemChange(idx, 'missingQuantity', Math.max(0, parseInt(e.target.value, 10) || 0))
+                                }
+                                className="w-full text-center bg-white dark:bg-[#131720] border border-gray-300 dark:border-gray-700 rounded-[4px] h-8 font-mono text-xs text-gray-700 dark:text-gray-300 focus:outline-none"
+                              />
+                              <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium mt-1 block">
+                                Ko cộng tồn
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Ghi chú / Lô */}
+                          <div className="pt-1.5 border-t border-gray-100 dark:border-gray-800">
+                            <label className="text-[10px] text-gray-500 dark:text-gray-400 block mb-0.5 font-medium">Ghi chú / Lô</label>
+                            <input
+                              type="text"
+                              placeholder="Ghi chú tình trạng, lô sản xuất..."
+                              value={it.note || ''}
+                              onChange={(e) => handleReturnItemChange(idx, 'note', e.target.value)}
+                              className="w-full bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded-[4px] px-2 h-7 text-xs font-mono"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 2. DESKTOP TABLE VIEW (hidden sm:block) */}
+                    <div className="hidden sm:block overflow-x-auto rounded-[4px] border border-gray-200 dark:border-gray-800">
+                      <table className="w-full text-left text-xs border-collapse min-w-[780px]">
                         <thead>
                           <tr className="bg-gray-50 dark:bg-gray-900/80 text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800 font-semibold">
-                            <th className="py-2.5 px-3">Sản phẩm / SKU</th>
+                            <th className="py-2.5 px-3 min-w-[180px]">Sản phẩm / SKU</th>
                             <th className="py-2.5 px-2 text-center w-16">Đã xuất</th>
                             <th className="py-2.5 px-2 text-center w-16">Đã nhận</th>
                             <th className="py-2.5 px-2 text-center w-16 text-indigo-600 font-bold">Còn chờ</th>

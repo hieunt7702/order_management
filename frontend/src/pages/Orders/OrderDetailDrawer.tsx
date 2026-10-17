@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
@@ -53,6 +54,20 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   const [isReturnModalOpen, setIsReturnModalOpen] = useState<boolean>(false);
   const [returnNote, setReturnNote] = useState<string>('Hàng hoàn nguyên vẹn, bao bì đầy đủ');
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen || !order) return null;
 
   const platformCfg = getPlatformStatusConfig(order.platformStatus);
@@ -102,29 +117,33 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-hidden flex justify-end bg-black/40 backdrop-blur-xs">
+  return createPortal(
+    <div className="fixed inset-0 z-[60] overflow-hidden flex justify-end bg-black/50 backdrop-blur-xs">
+      {/* Backdrop overlay click to close */}
+      <div className="fixed inset-0 -z-10" onClick={onClose} aria-hidden="true" />
+
       <div className="w-full max-w-2xl bg-white dark:bg-[#181b22] h-full shadow-2xl flex flex-col border-l border-gray-200 dark:border-gray-800 animate-slide-left">
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-[#5865f2]">
+        {/* Header with Safe Area spacing */}
+        <div className="px-4 sm:px-6 pt-[max(1.1rem,env(safe-area-inset-top,0px))] pb-3.5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between shrink-0 bg-white dark:bg-[#181b22]">
+          <div className="min-w-0 pr-3">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#5865f2]/10 text-[#5865f2] dark:text-[#8a94fd]">
                 {order.shop?.name || 'Shop Shopee'}
               </span>
               <span className="text-gray-300 dark:text-gray-700">•</span>
-              <span className="text-xs text-gray-500 font-mono">{order.internalOrderCode}</span>
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 font-mono">{order.internalOrderCode}</span>
             </div>
-            <h2 className="text-base font-medium text-gray-900 dark:text-white mt-0.5">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
               Đơn hàng: {order.externalOrderId}
             </h2>
           </div>
 
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer shrink-0"
+            title="Đóng chi tiết đơn hàng"
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
 
@@ -366,13 +385,13 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2 bg-gray-50/50 dark:bg-gray-800/20">
-          <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="p-3.5 sm:px-6 sm:py-4 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 bg-white dark:bg-[#181b22] shrink-0 pb-[max(1.25rem,env(safe-area-inset-bottom,12px))] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.35)]">
+          <div className="flex items-center gap-2 flex-wrap">
             {/* Edit Button */}
             {onEdit && (
               <button
                 onClick={() => onEdit(order)}
-                className="px-2.5 py-1.5 rounded bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                className="px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
                 title="Sửa thông tin đơn hàng"
               >
                 <Edit2 size={13} />
@@ -385,7 +404,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
               <button
                 onClick={() => setIsCancelModalOpen(true)}
                 disabled={isLoadingAction}
-                className="px-2.5 py-1.5 rounded bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                className="px-3 py-1.5 rounded bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
               >
                 <Ban size={13} />
                 Hủy đơn
@@ -396,7 +415,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
             {onDelete && (
               <button
                 onClick={() => onDelete(order)}
-                className="px-2.5 py-1.5 rounded bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                className="px-3 py-1.5 rounded bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
                 title="Xóa đơn hàng"
               >
                 <Trash2 size={13} />
@@ -412,7 +431,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                   navigate(`/order-returns?search=${encodeURIComponent(order.orderSn || order.trackingCode || '')}`);
                 }}
                 disabled={isLoadingAction}
-                className="px-2.5 py-1.5 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                className="px-3 py-1.5 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
                 title="Kiểm tra phân loại và xác nhận nhập hàng hoàn vào kho"
               >
                 <RotateCcw size={13} />
@@ -427,7 +446,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
             <button
               onClick={handleReserve}
               disabled={isLoadingAction}
-              className="px-4 py-1.5 rounded bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              className="w-full sm:w-auto px-4 py-2 sm:py-1.5 rounded bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
               <Boxes size={14} />
               Giữ hàng (Reserve)
@@ -535,6 +554,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
           </form>
         </Modal>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };

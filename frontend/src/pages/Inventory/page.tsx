@@ -16,6 +16,7 @@ import {
   Plus,
   Package,
   PackagePlus,
+  PackageX,
 } from 'lucide-react';
 import { inventoryApi } from '../../services/inventoryApi';
 import { productsApi } from '../../services/productsApi';
@@ -33,7 +34,7 @@ import {
   SystemPagination,
 } from '../../components/ui/SystemTable';
 import { Button } from '../../components/ui/Button';
-import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
+import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import { Select } from '../../components/ui/Select';
 import { toast } from '../../components/ui/Toast';
 import { CurrencyInput } from '../../components/ui/CurrencyInput';
@@ -356,59 +357,78 @@ export const InventoryPage: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Summary Metric Cards matching pawn-system */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-2.5 shrink-0">
-        <SystemMetricCard
-          title="Tổng mặt hàng"
-          value={balances.length}
-          subtitle="SKU biến thể"
-          icon={Boxes}
-          colorScheme="blue"
-        />
-        <SystemMetricCard
-          title="Tồn thực tế"
-          value={balances.reduce((acc, b) => acc + (b.onHand || 0), 0).toLocaleString('vi-VN')}
-          subtitle="on-hand tồn kho"
-          icon={Warehouse}
-          colorScheme="green"
-        />
-        <SystemMetricCard
-          title="Đang giữ hàng"
-          value={balances.reduce((acc, b) => acc + (b.reserved || 0), 0).toLocaleString('vi-VN')}
-          subtitle="reserved theo đơn"
-          icon={ArrowUpRight}
-          colorScheme="orange"
-        />
-        <SystemMetricCard
-          title="Khả dụng xuất"
-          value={balances
-            .reduce((acc, b) => acc + (b.available ?? (b.onHand || 0) - (b.reserved || 0)), 0)
-            .toLocaleString('vi-VN')}
-          subtitle="available bán hàng"
-          icon={CheckCircle}
-          colorScheme="purple"
-        />
-        <SystemMetricCard
-          title="Cảnh báo tồn"
-          value={
-            balances.filter((b) => {
-              const onHand = b.onHand || 0;
-              const reserved = b.reserved || 0;
-              const available = b.available ?? onHand - reserved;
-              const minAlert =
-                b.lowStockThreshold ??
-                b.variant?.lowStockThreshold ??
-                b.variant?.minStockAlert ??
-                5;
-              return available <= minAlert;
-            }).length
-          }
-          subtitle="cần nhập thêm"
-          icon={AlertTriangle}
-          colorScheme="red"
-          className="col-span-2 lg:col-span-1"
-        />
-      </div>
+      {/* KPI Summary Metric Cards matching Orders page */}
+      {(() => {
+        const totalOnHand = balances.reduce((acc, b) => acc + (b.onHand || 0), 0);
+        const totalReserved = balances.reduce((acc, b) => acc + (b.reserved || 0), 0);
+        const totalAvailable = balances.reduce((acc, b) => acc + (b.available ?? (b.onHand || 0) - (b.reserved || 0)), 0);
+        const lowStockCount = balances.filter((b) => {
+          const onHand = b.onHand || 0;
+          const reserved = b.reserved || 0;
+          const available = b.available ?? onHand - reserved;
+          const minAlert = b.lowStockThreshold ?? b.variant?.lowStockThreshold ?? b.variant?.minStockAlert ?? 5;
+          return available <= minAlert && available > 0;
+        }).length;
+        const outOfStockCount = balances.filter((b) => {
+          const onHand = b.onHand || 0;
+          const reserved = b.reserved || 0;
+          const available = b.available ?? onHand - reserved;
+          return available <= 0;
+        }).length;
+
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-2.5 shrink-0">
+            <SystemMetricPairCard
+              leftItem={{
+                title: 'Tổng mặt hàng',
+                value: balances.length,
+                subtitle: 'SKU biến thể',
+                icon: Boxes,
+                colorScheme: 'blue',
+              }}
+              rightItem={{
+                title: 'Tồn thực tế',
+                value: totalOnHand.toLocaleString('vi-VN'),
+                subtitle: 'on-hand kho',
+                icon: Warehouse,
+                colorScheme: 'green',
+              }}
+            />
+            <SystemMetricPairCard
+              leftItem={{
+                title: 'Khả dụng xuất',
+                value: totalAvailable.toLocaleString('vi-VN'),
+                subtitle: 'available bán',
+                icon: CheckCircle,
+                colorScheme: 'purple',
+              }}
+              rightItem={{
+                title: 'Đang giữ hàng',
+                value: totalReserved.toLocaleString('vi-VN'),
+                subtitle: 'reserved đơn',
+                icon: ArrowUpRight,
+                colorScheme: 'orange',
+              }}
+            />
+            <SystemMetricPairCard
+              leftItem={{
+                title: 'Cảnh báo tồn',
+                value: lowStockCount,
+                subtitle: 'sắp hết hàng',
+                icon: AlertTriangle,
+                colorScheme: 'orange',
+              }}
+              rightItem={{
+                title: 'Hết hàng tồn',
+                value: outOfStockCount,
+                subtitle: 'tồn kho = 0',
+                icon: PackageX,
+                colorScheme: 'red',
+              }}
+            />
+          </div>
+        );
+      })()}
 
       {/* Tabs */}
       <div className="flex items-center gap-1 p-1 bg-gray-100/80 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded w-full sm:w-fit shrink-0 max-w-full overflow-x-auto scrollbar-none">
@@ -1143,45 +1163,55 @@ export const InventoryPage: React.FC = () => {
                 </div>
 
                 {/* KPI Summary Metric Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5 shrink-0">
-                  <SystemMetricCard
-                    title="Tổng SKU kiểm toán"
-                    value={totalAudited}
-                    subtitle="SKU có số dư tồn kho"
-                    icon={Package}
-                    colorScheme="blue"
-                    isActive={reconciliationFilter === 'ALL'}
-                    onClick={() => {
-                      setReconciliationFilter('ALL');
-                      setReconciliationPage(1);
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
+                  <SystemMetricPairCard
+                    leftItem={{
+                      title: 'Tổng SKU kiểm toán',
+                      value: totalAudited,
+                      subtitle: 'SKU có số dư tồn kho',
+                      icon: Package,
+                      colorScheme: 'blue',
+                      isActive: reconciliationFilter === 'ALL',
+                      onClick: () => {
+                        setReconciliationFilter('ALL');
+                        setReconciliationPage(1);
+                      },
+                    }}
+                    rightItem={{
+                      title: 'Số lượng khớp 100%',
+                      value: matchingCount,
+                      subtitle: 'Khớp sổ cái hoàn toàn',
+                      icon: CheckCircle,
+                      colorScheme: 'green',
+                      isActive: reconciliationFilter === 'BALANCED',
+                      onClick: () => {
+                        setReconciliationFilter('BALANCED');
+                        setReconciliationPage(1);
+                      },
                     }}
                   />
-                  <SystemMetricCard
-                    title="Số lượng khớp 100%"
-                    value={matchingCount}
-                    subtitle="Khớp sổ cái hoàn toàn"
-                    icon={CheckCircle}
-                    colorScheme="green"
-                    isActive={reconciliationFilter === 'BALANCED'}
-                    onClick={() => {
-                      setReconciliationFilter('BALANCED');
-                      setReconciliationPage(1);
+                  <SystemMetricPairCard
+                    leftItem={{
+                      title: 'Số lượng sai lệch',
+                      value: discrepancyCount,
+                      subtitle:
+                        discrepancyCount > 0
+                          ? 'Phát hiện chênh lệch tồn'
+                          : 'Không có chênh lệch',
+                      icon: AlertTriangle,
+                      colorScheme: discrepancyCount > 0 ? 'red' : 'purple',
+                      isActive: reconciliationFilter === 'DISCREPANCY',
+                      onClick: () => {
+                        setReconciliationFilter('DISCREPANCY');
+                        setReconciliationPage(1);
+                      },
                     }}
-                  />
-                  <SystemMetricCard
-                    title="Số lượng sai lệch"
-                    value={discrepancyCount}
-                    subtitle={
-                      discrepancyCount > 0
-                        ? 'Phát hiện chênh lệch tồn'
-                        : 'Không có chênh lệch'
-                    }
-                    icon={AlertTriangle}
-                    colorScheme={discrepancyCount > 0 ? 'red' : 'purple'}
-                    isActive={reconciliationFilter === 'DISCREPANCY'}
-                    onClick={() => {
-                      setReconciliationFilter('DISCREPANCY');
-                      setReconciliationPage(1);
+                    rightItem={{
+                      title: 'Tỷ lệ toàn vẹn sổ cái',
+                      value: `${totalAudited > 0 ? ((matchingCount / totalAudited) * 100).toFixed(1) : 100}%`,
+                      subtitle: discrepancyCount === 0 ? 'Đảm bảo chính xác 100%' : 'Cần rà soát sổ cái',
+                      icon: ShieldCheck,
+                      colorScheme: discrepancyCount === 0 ? 'green' : 'orange',
                     }}
                   />
                 </div>

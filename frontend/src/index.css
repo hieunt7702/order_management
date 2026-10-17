@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 :root {
+  --font-inter: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-heading: var(--font-sans);
+
   --background: #f9f9fa;
   --foreground: #151a1e;
   --card: #ffffff;
@@ -76,7 +81,7 @@ html, body, #root {
   height: 100%;
   width: 100%;
   overflow: hidden; /* AppLayout will handle scrolling */
-  font-family: "Mona Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   font-weight: 400;
   background-color: var(--background);
   color: var(--foreground);
@@ -86,7 +91,7 @@ html, body, #root {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: "Mona Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-heading);
   font-weight: 500;
 }
 

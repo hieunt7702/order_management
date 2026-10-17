@@ -16,6 +16,7 @@ export interface ModalProps {
   className?: string;
   headerRight?: ReactNode;
   mobilePlacement?: 'bottom' | 'center';
+  containerZIndex?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -30,6 +31,7 @@ export const Modal: React.FC<ModalProps> = ({
   className = '',
   headerRight = null,
   mobilePlacement = 'bottom',
+  containerZIndex = 'z-[70]',
 }) => {
   const sizeMap: Record<string, string> = {
     sm: 'max-w-sm',
@@ -64,7 +66,8 @@ export const Modal: React.FC<ModalProps> = ({
   return createPortal(
     <div
       className={cn(
-        'fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 dark:bg-black/75 backdrop-blur-[2px] animate-modal-backdrop',
+        'fixed inset-0 flex items-center justify-center p-2 sm:p-4 bg-black/60 dark:bg-black/75 backdrop-blur-[2px] animate-modal-backdrop',
+        containerZIndex,
         mobilePlacement === 'bottom' && 'flex-col justify-end sm:justify-center p-0 sm:p-4',
       )}
     >

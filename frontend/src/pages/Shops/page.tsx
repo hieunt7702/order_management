@@ -33,7 +33,7 @@ import {
   SystemTableSkeleton,
   SystemPagination,
 } from '../../components/ui/SystemTable';
-import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
+import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -235,35 +235,39 @@ export const ShopsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 shrink-0">
-        <SystemMetricCard
-          title="Tổng số Shop"
-          value={shops.length}
-          subtitle="Gian hàng đã kết nối"
-          icon={Store}
-          colorScheme="blue"
+      {/* Metric Cards matching Orders page */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Tổng số Shop',
+            value: shops.length,
+            subtitle: 'Gian hàng kết nối',
+            icon: Store,
+            colorScheme: 'blue',
+          }}
+          rightItem={{
+            title: 'Đang hoạt động',
+            value: activeCount,
+            subtitle: 'Sẵn sàng đồng bộ',
+            icon: CheckCircle,
+            colorScheme: 'green',
+          }}
         />
-        <SystemMetricCard
-          title="Đang hoạt động"
-          value={activeCount}
-          subtitle="Sẵn sàng đồng bộ đơn"
-          icon={CheckCircle}
-          colorScheme="green"
-        />
-        <SystemMetricCard
-          title="Tạm dừng"
-          value={inactiveCount}
-          subtitle="Ngừng đồng bộ"
-          icon={AlertTriangle}
-          colorScheme="red"
-        />
-        <SystemMetricCard
-          title="Đã gán kho xuất"
-          value={withWarehouseCount}
-          subtitle="Kho xuất hàng tự động"
-          icon={Warehouse}
-          colorScheme="purple"
+        <SystemMetricPairCard
+          leftItem={{
+            title: 'Tạm dừng',
+            value: inactiveCount,
+            subtitle: 'Ngừng đồng bộ',
+            icon: AlertTriangle,
+            colorScheme: 'red',
+          }}
+          rightItem={{
+            title: 'Đã gán kho xuất',
+            value: withWarehouseCount,
+            subtitle: 'Kho xuất tự động',
+            icon: Warehouse,
+            colorScheme: 'purple',
+          }}
         />
       </div>
 

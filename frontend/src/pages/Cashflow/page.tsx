@@ -35,6 +35,8 @@ import {
   ArrowUpDown,
   CircleDollarSign,
   ArrowRight,
+  ShoppingBag,
+  CheckCircle,
 } from 'lucide-react';
 import {
   cashflowApi,
@@ -48,7 +50,7 @@ import {
 } from '../../services/cashflowApi';
 import { shopsApi } from '../../services/shopsApi';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
-import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
+import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import {
   SystemTableWrapper,
   SystemThead,
@@ -411,7 +413,7 @@ export const CashflowPage: React.FC = () => {
                 <MoreHorizontal size={14} />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="min-w-[210px]">
               <DropdownMenuItem onClick={() => setIsAccountModalOpen(true)}>
                 <Landmark size={14} className="mr-2 text-indigo-400" />
                 Tạo tài khoản / Quỹ mới
@@ -530,77 +532,42 @@ export const CashflowPage: React.FC = () => {
       {/* -------------------- TAB 1: TỔNG QUAN -------------------- */}
       {activeTab === 'OVERVIEW' && (
         <div className="space-y-4 animate-in fade-in duration-200">
-          {/* Row 1: 4 KPI Cards (Ultra-compact 2-column mobile & tablet) */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5">
-            {/* Card 1: Số dư hiện tại */}
-            <div className="bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 rounded-lg p-2.5 sm:p-3 flex items-center gap-2.5 shadow-2xs">
-              <div className="w-8 h-8 rounded bg-blue-50 dark:bg-[#182642] text-blue-500 dark:text-[#38bdf8] flex items-center justify-center shrink-0">
-                <Wallet size={16} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium truncate">Số dư hiện tại</div>
-                <div className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white tracking-tight leading-tight mt-0.5 truncate">
-                  {(overview?.totals.totalNetBalance || 0).toLocaleString('vi-VN')} đ
-                </div>
-                <div className="text-[9px] sm:text-[11px] text-gray-400 dark:text-gray-500 truncate hidden xs:block">
-                  Tiền mặt, bank & ví sàn
-                </div>
-              </div>
-            </div>
-
-            {/* Card 2: Dòng tiền thuần trong kỳ */}
-            <div className="bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 rounded-lg p-2.5 sm:p-3 flex items-center gap-2.5 shadow-2xs">
-              <div className="w-8 h-8 rounded bg-emerald-50 dark:bg-[#102d25] text-emerald-600 dark:text-[#10b981] flex items-center justify-center shrink-0">
-                <ArrowUpDown size={16} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium truncate">Dòng tiền thuần</div>
-                <div className="text-sm sm:text-lg font-bold text-emerald-600 dark:text-[#10b981] tracking-tight leading-tight mt-0.5 truncate">
-                  {(overview?.period.netOperatingCashflow || 0) >= 0 ? '+' : ''}
-                  {(overview?.period.netOperatingCashflow || 0).toLocaleString('vi-VN')} đ
-                </div>
-                <div className="text-[9px] sm:text-[11px] text-gray-400 dark:text-gray-500 truncate hidden xs:block">
-                  Thu {(overview?.period.periodIncome || 0).toLocaleString('vi-VN')}đ · Chi {(overview?.period.periodExpense || 0).toLocaleString('vi-VN')}đ
-                </div>
-              </div>
-            </div>
-
-            {/* Card 3: Chờ Shopee quyết toán */}
-            <div className="bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 rounded-lg p-2.5 sm:p-3 flex items-center gap-2.5 shadow-2xs">
-              <div className="w-8 h-8 rounded bg-amber-50 dark:bg-[#382613] text-amber-600 dark:text-[#f59e0b] flex items-center justify-center shrink-0">
-                <Clock size={16} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium truncate">Chờ Shopee về</div>
-                <div className="text-sm sm:text-lg font-bold text-amber-600 dark:text-[#f59e0b] tracking-tight leading-tight mt-0.5 truncate">
-                  {(overview?.outstanding.pendingPlatformMoney || 0).toLocaleString('vi-VN')} đ
-                </div>
-                <div
-                  onClick={() => setActiveTab('RECONCILIATION')}
-                  className="text-[9px] sm:text-[11px] text-gray-400 dark:text-gray-500 truncate flex items-center gap-1 cursor-pointer hover:text-[#5865f2] transition-colors"
-                  title="Xem đối soát Shopee"
-                >
-                  <span className="truncate">{overview?.outstanding.pendingPlatformCount || 0} đơn chờ tiền</span>
-                  <ArrowRight size={10} className="shrink-0" />
-                </div>
-              </div>
-            </div>
-
-            {/* Card 4: Nợ nhà cung cấp */}
-            <div className="bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 rounded-lg p-2.5 sm:p-3 flex items-center gap-2.5 shadow-2xs">
-              <div className="w-8 h-8 rounded bg-rose-50 dark:bg-[#351821] text-rose-600 dark:text-[#f43f5e] flex items-center justify-center shrink-0">
-                <Building2 size={16} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium truncate">Nợ NCC</div>
-                <div className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white tracking-tight leading-tight mt-0.5 truncate">
-                  {(overview?.outstanding.supplierDebt || 0).toLocaleString('vi-VN')} đ
-                </div>
-                <div className="text-[9px] sm:text-[11px] text-gray-400 dark:text-gray-500 truncate hidden xs:block">
-                  {overview?.outstanding.unpaidReceiptsCount || 0} phiếu chưa trả
-                </div>
-              </div>
-            </div>
+          {/* Row 1: 4 KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
+            <SystemMetricPairCard
+              leftItem={{
+                title: 'Số dư hiện tại',
+                value: `${(overview?.totals.totalNetBalance || 0).toLocaleString('vi-VN')} đ`,
+                subtitle: 'Tiền mặt, bank & ví sàn',
+                icon: Wallet,
+                colorScheme: 'blue',
+              }}
+              rightItem={{
+                title: 'Dòng tiền thuần',
+                value: `${(overview?.period.netOperatingCashflow || 0) >= 0 ? '+' : ''}${(overview?.period.netOperatingCashflow || 0).toLocaleString('vi-VN')} đ`,
+                subtitle: `Thu ${(overview?.period.periodIncome || 0).toLocaleString('vi-VN')}đ · Chi ${(overview?.period.periodExpense || 0).toLocaleString('vi-VN')}đ`,
+                icon: ArrowUpDown,
+                colorScheme: (overview?.period.netOperatingCashflow || 0) >= 0 ? 'green' : 'red',
+              }}
+            />
+            <SystemMetricPairCard
+              leftItem={{
+                title: 'Chờ Shopee về',
+                value: `${(overview?.outstanding.pendingPlatformMoney || 0).toLocaleString('vi-VN')} đ`,
+                subtitle: `${overview?.outstanding.pendingPlatformCount || 0} đơn chờ tiền`,
+                icon: Clock,
+                colorScheme: 'orange',
+                onClick: () => setActiveTab('RECONCILIATION'),
+              }}
+              rightItem={{
+                title: 'Nợ NCC',
+                value: `${(overview?.outstanding.supplierDebt || 0).toLocaleString('vi-VN')} đ`,
+                subtitle: `${overview?.outstanding.unpaidReceiptsCount || 0} phiếu chưa trả`,
+                icon: Building2,
+                colorScheme: 'purple',
+                onClick: () => setActiveTab('SUPPLIERS'),
+              }}
+            />
           </div>
 
           {/* Row 2: Middle 2 Cards */}
@@ -682,7 +649,7 @@ export const CashflowPage: React.FC = () => {
                                 <MoreVertical size={16} />
                               </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuContent align="end" className="min-w-[190px]">
                               <DropdownMenuItem onClick={() => setIsTransferModalOpen(true)}>
                                 <ArrowLeftRight size={14} className="mr-2 text-indigo-400" />
                                 Chuyển tiền từ ví này
@@ -899,7 +866,7 @@ export const CashflowPage: React.FC = () => {
                                 <MoreHorizontal size={15} />
                               </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuContent align="end" className="min-w-[160px]">
                               {tx.status === 'DRAFT' && (
                                 <DropdownMenuItem onClick={() => handleConfirmTx(tx.id)}>
                                   <Check size={14} className="mr-2 text-emerald-500" />
@@ -1371,46 +1338,39 @@ export const CashflowPage: React.FC = () => {
 
           {/* 4 Financial Columns Metric Overview */}
           {reconSummary && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2.5">
-              <div className="p-2 sm:p-2.5 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs">
-                <span className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase">
-                  1. Giá trị hàng hóa
-                </span>
-                <div className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mt-0.5">
-                  {(reconSummary.totalGoodsValue || 0).toLocaleString('vi-VN')}đ
-                </div>
-                <p className="text-[10px] text-gray-500 mt-0.5 hidden sm:block">Tổng tiền sản phẩm theo đơn</p>
-              </div>
-
-              <div className="p-2 sm:p-2.5 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs">
-                <span className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase">
-                  2. Tiền dự kiến nhận
-                </span>
-                <div className="text-sm sm:text-base font-bold text-blue-600 dark:text-blue-400 mt-0.5">
-                  {(reconSummary.totalEstimatedPayout || 0).toLocaleString('vi-VN')}đ
-                </div>
-                <p className="text-[10px] text-gray-500 mt-0.5 hidden sm:block">Tạm tính trừ các loại phí sàn</p>
-              </div>
-
-              <div className="p-2 sm:p-2.5 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs">
-                <span className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase">
-                  3. Tiền đã quyết toán
-                </span>
-                <div className="text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                  {(reconSummary.totalSettledPayout || 0).toLocaleString('vi-VN')}đ
-                </div>
-                <p className="text-[10px] text-gray-500 mt-0.5 hidden sm:block">Xác nhận từ file quyết toán</p>
-              </div>
-
-              <div className="p-2 sm:p-2.5 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs">
-                <span className="text-[10px] sm:text-[11px] font-semibold text-gray-400 uppercase">
-                  4. Điều chỉnh / Hoàn tiền
-                </span>
-                <div className="text-sm sm:text-base font-bold text-amber-600 dark:text-amber-400 mt-0.5">
-                  {(reconSummary.totalAdjustment || 0).toLocaleString('vi-VN')}đ
-                </div>
-                <p className="text-[10px] text-gray-500 mt-0.5 hidden sm:block">Phát sinh khiếu nại, bồi thường</p>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
+              <SystemMetricPairCard
+                leftItem={{
+                  title: '1. Giá trị hàng hóa',
+                  value: `${(reconSummary.totalGoodsValue || 0).toLocaleString('vi-VN')} đ`,
+                  subtitle: 'Tổng tiền SP theo đơn',
+                  icon: ShoppingBag,
+                  colorScheme: 'blue',
+                }}
+                rightItem={{
+                  title: '2. Tiền dự kiến nhận',
+                  value: `${(reconSummary.totalEstimatedPayout || 0).toLocaleString('vi-VN')} đ`,
+                  subtitle: 'Tạm tính trừ các phí sàn',
+                  icon: CircleDollarSign,
+                  colorScheme: 'purple',
+                }}
+              />
+              <SystemMetricPairCard
+                leftItem={{
+                  title: '3. Tiền đã quyết toán',
+                  value: `${(reconSummary.totalSettledPayout || 0).toLocaleString('vi-VN')} đ`,
+                  subtitle: 'Xác nhận file quyết toán',
+                  icon: CheckCircle,
+                  colorScheme: 'green',
+                }}
+                rightItem={{
+                  title: '4. Điều chỉnh / Bồi hoàn',
+                  value: `${(reconSummary.totalAdjustment || 0).toLocaleString('vi-VN')} đ`,
+                  subtitle: 'Phát sinh khiếu nại, bù tiền',
+                  icon: RefreshCw,
+                  colorScheme: 'orange',
+                }}
+              />
             </div>
           )}
 

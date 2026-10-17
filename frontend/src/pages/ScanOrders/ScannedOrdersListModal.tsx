@@ -373,7 +373,7 @@ export const ScannedOrdersListModal: React.FC<ScannedOrdersListModalProps> = ({
                     </div>
 
                     {/* Hoàn tác nếu trong phiên và đã xuất kho */}
-                    {item.isSession && item.result === 'VERIFIED' && item.packageId && onReverse && (
+                    {item.isSession && (item.result === 'VERIFIED' || item.result === 'ALREADY_VERIFIED') && item.packageId && onReverse && (
                       <button
                         onClick={() => onReverse(item.packageId, code)}
                         className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded transition-colors cursor-pointer"
