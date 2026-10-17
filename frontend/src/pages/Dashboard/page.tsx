@@ -111,6 +111,7 @@ export const DashboardPage: React.FC = () => {
   // Multi-select Shopee Order Statuses
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState<boolean>(false);
+  const [showMobileKPIs, setShowMobileKPIs] = useState<boolean>(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const statusDrawerRef = useRef<HTMLDivElement>(null);
   useClickOutside(() => setIsStatusDropdownOpen(false), isStatusDropdownOpen, [statusDropdownRef, statusDrawerRef]);
@@ -145,23 +146,46 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div>
-          <h1 className="text-base font-medium text-gray-900 dark:text-white leading-tight">
-            <span className="sm:hidden">Tổng quan</span>
-            <span className="hidden sm:inline">Tổng quan Vận hành & Doanh thu</span>
-          </h1>
-          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-            <span className="sm:hidden">Số liệu theo thời gian thực</span>
-            <span className="hidden sm:inline">Dữ liệu tổng hợp từ hệ thống theo thời gian thực</span>
-          </p>
-        </div>
+      {/* Mobile Home Feature Launcher (Matches exact user mockup) */}
+      <MobileFeatureHub />
 
-        {/* Filter Controls: Shopee Status Multi-select, Date Filter & Refresh */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-          {/* Shopee Status Multi-Select Dropdown */}
-          <div ref={statusDropdownRef} className="relative w-full sm:w-auto">
+      {/* Mobile Accordion Toggle for Real-time Operational KPIs */}
+      <div className="lg:hidden">
+        <button
+          type="button"
+          onClick={() => setShowMobileKPIs(!showMobileKPIs)}
+          className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-white dark:bg-[#161922] border border-gray-200 dark:border-[#222736] text-xs font-semibold text-gray-700 dark:text-gray-300 hover:border-[#5865f2] transition-colors shadow-2xs cursor-pointer"
+        >
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            Báo cáo số liệu vận hành & doanh thu thực tế
+          </span>
+          <ChevronDown
+            size={14}
+            className={`transition-transform text-gray-400 ${showMobileKPIs ? 'rotate-180' : ''}`}
+          />
+        </button>
+      </div>
+
+      {/* Desktop Dashboard or Expanded Mobile Metrics */}
+      <div className={`${showMobileKPIs ? 'block' : 'hidden lg:block'} space-y-4`}>
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+          <div>
+            <h1 className="text-base font-medium text-gray-900 dark:text-white leading-tight">
+              <span className="sm:hidden">Tổng quan</span>
+              <span className="hidden sm:inline">Tổng quan Vận hành & Doanh thu</span>
+            </h1>
+            <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+              <span className="sm:hidden">Số liệu theo thời gian thực</span>
+              <span className="hidden sm:inline">Dữ liệu tổng hợp từ hệ thống theo thời gian thực</span>
+            </p>
+          </div>
+
+          {/* Filter Controls: Shopee Status Multi-select, Date Filter & Refresh */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            {/* Shopee Status Multi-Select Dropdown */}
+            <div ref={statusDropdownRef} className="relative w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
@@ -639,9 +663,6 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Mobile & Tablet Feature Hub: Instant access to all system functions */}
-      <MobileFeatureHub />
-
       {/* 1. Operational Fulfillment KPIs */}
       <div>
         <div className="flex items-center justify-between mb-2">
@@ -900,6 +921,7 @@ export const DashboardPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

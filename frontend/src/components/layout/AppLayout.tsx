@@ -5,7 +5,7 @@ import { AppHeader } from './AppHeader';
 import { MobileNavDrawer } from './MobileNavDrawer';
 import { useNavigationStore } from '../../stores/navigationStore';
 import {
-  LayoutDashboard,
+  Home,
   ShoppingBag,
   ScanLine,
   Boxes,
@@ -60,14 +60,14 @@ export const AppLayout: React.FC = () => {
             {/* Top specular reflection line */}
             <div className="absolute inset-x-8 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 dark:via-white/30 to-transparent pointer-events-none rounded-full" />
 
-            {/* 1. Dashboard / Tổng quan */}
+            {/* 1. Trang chủ (Home) */}
             <Link
               to="/"
               data-active={isHomeActive}
               className="flex flex-col items-center justify-center w-16 h-full transition-colors relative group"
-              title="Tổng quan Dashboard"
+              title="Trang chủ"
             >
-              <LayoutDashboard
+              <Home
                 strokeWidth={isHomeActive ? 1.4 : 1.25}
                 className={`w-[24px] h-[24px] transition-all duration-300 z-10 ${
                   isHomeActive

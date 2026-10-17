@@ -10,6 +10,7 @@ import {
   Sun,
   RefreshCw,
   Menu,
+  Bell,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
@@ -98,25 +99,35 @@ export const AppHeader: React.FC = () => {
           <Menu size={20} />
         </button>
 
-        {/* Shop Selector */}
-        <div className="flex items-center">
-          <Select
-            value={selectedShopId || 'ALL'}
-            onChange={(val) => setSelectedShopId(String(val))}
-            options={[
-              { value: 'ALL', label: 'Tất cả Shop', icon: Store },
-              ...shops.map((s: any) => ({
-                value: s.id,
-                label: `${s.name} (${s.code || s.name})`,
-                icon: Store,
-              })),
-            ]}
-            placeholder="Tất cả Shop"
-            icon={Store}
-            size="sm"
-            className="w-28 sm:w-44 md:w-48"
-            menuWidth="w-56"
-          />
+        {/* Shop Selector with Store Icon Badge matching mobile mockup */}
+        <div className="flex items-center gap-2">
+          <div className="hidden sm:flex w-8 h-8 rounded-lg bg-indigo-50 dark:bg-[#1a1e2b] border border-indigo-200/60 dark:border-indigo-900/40 text-[#5865f2] dark:text-[#7b85f5] items-center justify-center shrink-0 shadow-2xs">
+            <Store size={17} />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center">
+              <Select
+                value={selectedShopId || 'ALL'}
+                onChange={(val) => setSelectedShopId(String(val))}
+                options={[
+                  { value: 'ALL', label: 'SHOP MANAGER', icon: Store },
+                  ...shops.map((s: any) => ({
+                    value: s.id,
+                    label: s.name,
+                    icon: Store,
+                  })),
+                ]}
+                placeholder="SHOP MANAGER"
+                icon={Store}
+                size="sm"
+                className="w-32 sm:w-44 md:w-48 font-bold"
+                menuWidth="w-56"
+              />
+            </div>
+            <span className="text-[10px] text-gray-400 dark:text-gray-500 leading-none truncate pl-1 hidden sm:block">
+              Hệ thống bán hàng
+            </span>
+          </div>
         </div>
 
         {/* Warehouse Selector (Only on warehouse-relevant screens) */}
@@ -143,8 +154,18 @@ export const AppHeader: React.FC = () => {
         )}
       </div>
 
-      {/* Right: Actions, Theme Toggle, User Profile */}
+      {/* Right: Notification Bell, Actions, Theme Toggle, User Profile */}
       <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+        {/* Notification Bell matching mobile mockup */}
+        <button
+          type="button"
+          className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer relative"
+          title="Thông báo"
+        >
+          <Bell size={18} />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#5865f2] ring-2 ring-white dark:ring-[#14151a]" />
+        </button>
+
         {/* Refresh Context Button */}
         <button
           onClick={loadContextData}
