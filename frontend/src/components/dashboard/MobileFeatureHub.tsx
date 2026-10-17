@@ -59,13 +59,13 @@ export const MobileFeatureHub: React.FC = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Tìm chức năng..."
-          className="w-full pl-10 pr-9 py-2.5 bg-white dark:bg-[#161922] border border-gray-200 dark:border-[#222736] rounded-xl text-xs sm:text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#5865f2] transition-colors shadow-2xs"
+          className="w-full pl-10 pr-9 py-2.5 bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 rounded text-xs sm:text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-[#5865f2] transition-colors shadow-2xs"
         />
         {searchQuery && (
           <button
             type="button"
             onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 cursor-pointer"
             title="Xóa tìm kiếm"
           >
             <X size={14} />
@@ -80,7 +80,7 @@ export const MobileFeatureHub: React.FC = () => {
             Thao tác nhanh
           </h2>
 
-          <div className="bg-white dark:bg-[#161922] border border-gray-200 dark:border-[#222736] rounded-2xl grid grid-cols-3 divide-x divide-gray-100 dark:divide-[#222736] overflow-hidden shadow-2xs">
+          <div className="bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 rounded grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-800 overflow-hidden shadow-2xs">
             {/* Action 1: Quét xuất hàng (Highlighted) */}
             <Link
               to="/scan"
@@ -130,7 +130,7 @@ export const MobileFeatureHub: React.FC = () => {
         </h2>
 
         {filteredGroups.length === 0 ? (
-          <div className="p-6 text-center rounded-xl bg-white dark:bg-[#161922] border border-gray-200 dark:border-[#222736] text-xs text-gray-400">
+          <div className="p-6 text-center rounded bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 text-xs text-gray-400">
             Không tìm thấy chức năng nào phù hợp với "{searchQuery}"
           </div>
         ) : (
@@ -142,8 +142,8 @@ export const MobileFeatureHub: React.FC = () => {
                   {group.title}
                 </div>
 
-                {/* 2-Column Grid Card Container */}
-                <div className="bg-white dark:bg-[#161922] border border-gray-200 dark:border-[#222736] rounded-2xl grid grid-cols-2 divide-x divide-gray-100 dark:divide-[#222736] divide-y divide-gray-100 dark:divide-[#222736] overflow-hidden shadow-2xs">
+                {/* 2-Column Grid Card Container with unified system rounded */}
+                <div className="bg-white dark:bg-[#161922] border border-gray-200 dark:border-gray-800 rounded grid grid-cols-2 divide-x divide-gray-100 dark:divide-gray-800 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden shadow-2xs">
                   {group.items.map((item) => {
                     const IconComp = item.icon || Home;
                     return (

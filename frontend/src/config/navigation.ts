@@ -43,15 +43,6 @@ export const navigationGroups: NavGroup[] = [
     description: 'Xử lý đơn sàn, quét mã vạch đóng gói và hàng hoàn',
     items: [
       {
-        id: 'dashboard',
-        name: 'Tổng quan',
-        shortName: 'Tổng quan',
-        href: '/',
-        icon: Home,
-        description: 'Trang chủ tổng quan hệ thống và các chức năng',
-        colorScheme: 'indigo',
-      },
-      {
         id: 'orders',
         name: 'Đơn hàng',
         shortName: 'Đơn hàng',
@@ -184,6 +175,15 @@ export const navigationGroups: NavGroup[] = [
     title: 'HỆ THỐNG & QUYỀN',
     description: 'Phân quyền người dùng, nhật ký hoạt động và cấu hình',
     items: [
+      {
+        id: 'dashboard',
+        name: 'Tổng quan',
+        shortName: 'Tổng quan',
+        href: '/',
+        icon: Home,
+        description: 'Trang chủ tổng quan hệ thống và các chức năng',
+        colorScheme: 'indigo',
+      },
       {
         id: 'members',
         name: 'Thành viên & quyền',
