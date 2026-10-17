@@ -353,14 +353,13 @@ export const CashflowPage: React.FC = () => {
       : [];
 
   return (
-    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-4 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit space-y-4 animate-in fade-in duration-300">
       {/* 1. Top Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0 flex-1">
           <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
             <CircleDollarSign size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
-            <span className="sm:hidden truncate">Thu chi & Quỹ</span>
-            <span className="hidden sm:inline truncate">Thu chi & Đối soát</span>
+            <span className="truncate">Thu chi & đối soát</span>
           </h1>
           <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
             Theo dõi dòng tiền, quản lý quỹ và đối soát thanh toán.
@@ -436,7 +435,7 @@ export const CashflowPage: React.FC = () => {
       </div>
 
       {/* 2. Navigation Tabs (Horizontal Underline Style) */}
-      <div className="flex items-center gap-6 sm:gap-8 border-b border-gray-200 dark:border-gray-800 overflow-x-auto scrollbar-none">
+      <div className="flex items-center gap-6 sm:gap-8 border-b border-gray-200 dark:border-gray-800 overflow-x-auto scrollbar-none shrink-0 min-h-[42px]">
         {CASHFLOW_TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -444,7 +443,7 @@ export const CashflowPage: React.FC = () => {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as ActiveTab)}
-              className={`pb-2.5 pt-1 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap cursor-pointer border-b-2 -mb-[1px] outline-none ${
+              className={`pb-2.5 pt-1.5 text-xs sm:text-sm font-medium transition-colors relative whitespace-nowrap cursor-pointer border-b-2 -mb-[1px] outline-none shrink-0 ${
                 isActive
                   ? 'border-[#5865f2] text-[#5865f2] dark:text-[#5865f2] font-semibold'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-700'
@@ -457,7 +456,7 @@ export const CashflowPage: React.FC = () => {
       </div>
 
       {/* 3. Global Filter Bar */}
-      <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-2.5 sm:p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xs">
+      <div className="bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-2.5 sm:p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-xs shrink-0">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
           {/* Store Filter */}
           <div className="w-full sm:w-56">
@@ -934,7 +933,7 @@ export const CashflowPage: React.FC = () => {
       {activeTab === 'TRANSACTIONS' && (
         <div className="space-y-3.5 animate-in fade-in duration-200">
           {/* Sub Filters */}
-          <SystemFilter className="p-2 sm:p-2.5 flex-col sm:flex-row items-stretch sm:items-center">
+          <SystemFilter className="p-2 sm:p-2.5 flex-col sm:flex-row items-stretch sm:items-center shrink-0">
             <SystemFilterSearch
               value={txSearch}
               onChange={(e) => {
@@ -1274,7 +1273,7 @@ export const CashflowPage: React.FC = () => {
           )}
 
           {/* Filter Bar with Search and Status Pills */}
-          <SystemFilter className="p-2 sm:p-2.5 flex-col sm:flex-row items-stretch sm:items-center">
+          <SystemFilter className="p-2 sm:p-2.5 flex-col sm:flex-row items-stretch sm:items-center shrink-0">
             <SystemFilterSearch
               value={reconSearch}
               onChange={(e) => {
