@@ -37,6 +37,7 @@ import { OrderDetailDrawer } from '../Orders/OrderDetailDrawer';
 import { ordersApi } from '../../services/ordersApi';
 import { fulfillmentApi } from '../../services/fulfillmentApi';
 import { toast } from '../../components/ui/Toast';
+import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
 
 export const ScanOrdersPage: React.FC = () => {
   const navigate = useNavigate();
@@ -88,6 +89,11 @@ export const ScanOrdersPage: React.FC = () => {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
   const [selectedOrderForDrawer, setSelectedOrderForDrawer] = useState<any>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    type: 'REVERSE' | 'DELETE';
+    item: SessionItem;
+  } | null>(null);
+  const [isActionLoading, setIsActionLoading] = useState<boolean>(false);
 
   // Recent scan feedback banner
   const [lastScannedFeedback, setLastScannedFeedback] = useState<{
@@ -438,26 +444,38 @@ export const ScanOrdersPage: React.FC = () => {
     }
   };
 
-  // Reversal handler for items that were already verified
-  const handleReverseItem = async (item: SessionItem) => {
-    if (!item.packageId) {
-      toast.warning('Không tìm thấy thông tin kiện hàng để hoàn tác');
+  // Action executor for confirmation modal (Reversal & Deletion)
+  const handleExecuteConfirmAction = async () => {
+    if (!confirmAction) return;
+
+    if (confirmAction.type === 'DELETE') {
+      removeItemFromActiveSession(confirmAction.item.id);
+      toast.success(`Đã xóa mã "${confirmAction.item.code}" khỏi phiên`);
+      setConfirmAction(null);
       return;
     }
 
-    const confirmed = window.confirm(
-      `Bạn có muốn hoàn tác xuất kho cho mã "${item.code}" không?\n\nSố lượng sản phẩm sẽ được cộng hoàn trả lại vào kho ngay lập tức.`
-    );
-    if (!confirmed) return;
+    if (confirmAction.type === 'REVERSE') {
+      const { item } = confirmAction;
+      if (!item.packageId) {
+        toast.warning('Không tìm thấy thông tin kiện hàng để hoàn tác');
+        setConfirmAction(null);
+        return;
+      }
 
-    try {
-      toast.info(`Đang hoàn tác xuất kho mã "${item.code}"...`);
-      await fulfillmentApi.reverseDispatch(item.packageId, 'Hủy đơn tại kho / Đổi kiện cho đơn khác');
-      toast.success(`Đã hoàn tác mã "${item.code}", tồn kho đã được cộng lại!`);
-      removeItemFromActiveSession(item.id);
-      if (soundEnabled) playWarningSound();
-    } catch (err: any) {
-      toast.error('Lỗi hoàn tác', err.message || 'Không thể hoàn tác xuất kho');
+      setIsActionLoading(true);
+      try {
+        toast.info(`Đang hoàn tác xuất kho mã "${item.code}"...`);
+        await fulfillmentApi.reverseDispatch(item.packageId, 'Hủy đơn tại kho / Đổi kiện cho đơn khác');
+        toast.success(`Đã hoàn tác mã "${item.code}", tồn kho đã được cộng lại!`);
+        removeItemFromActiveSession(item.id);
+        if (soundEnabled) playWarningSound();
+        setConfirmAction(null);
+      } catch (err: any) {
+        toast.error('Lỗi hoàn tác', err.message || 'Không thể hoàn tác xuất kho');
+      } finally {
+        setIsActionLoading(false);
+      }
     }
   };
 
@@ -1025,86 +1043,92 @@ export const ScanOrdersPage: React.FC = () => {
                     return (
                       <div
                         key={item.id}
-                        className="p-2.5 rounded bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2 shadow-xs hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+                        className="p-2.5 rounded bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 flex items-start gap-2 shadow-xs hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
                       >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-mono text-xs font-bold text-gray-400 w-5 text-right shrink-0">
-                            #{displayedItems.length - index}
-                          </span>
+                        <span className="font-mono text-xs font-bold text-gray-400 w-5 text-right shrink-0 pt-0.5">
+                          #{displayedItems.length - index}
+                        </span>
 
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
+                        <div className="flex-1 min-w-0">
+                          {/* Hàng 1: Mã vận đơn (Trái) & Trạng thái + Nút Hoàn tác + Nút Xóa (Phải) */}
+                          <div className="flex items-center justify-between gap-1.5">
+                            <span
+                              onClick={() => handleCopyCode(item.code)}
+                              className="font-mono font-bold text-xs text-gray-900 dark:text-white truncate cursor-pointer hover:text-[#2563eb]"
+                              title="Bấm để sao chép"
+                            >
+                              {item.code}
+                            </span>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
                               <span
-                                onClick={() => handleCopyCode(item.code)}
-                                className="font-mono font-bold text-xs text-gray-900 dark:text-white truncate cursor-pointer hover:text-[#2563eb]"
-                                title="Bấm để sao chép"
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap border shrink-0 ${
+                                  isVerified
+                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                    : isAlreadyVerified
+                                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                    : isNotFound || item.status === 'ERROR'
+                                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                                    : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                                }`}
                               >
-                                {item.code}
+                                {isVerified
+                                  ? 'Thành công'
+                                  : isAlreadyVerified
+                                  ? 'Đã xuất trước'
+                                  : isNotFound
+                                  ? 'Không tìm thấy'
+                                  : item.status === 'ERROR'
+                                  ? 'Lỗi đối soát'
+                                  : 'Chờ đối soát'}
                               </span>
-                              <span className="text-[10px] text-gray-400 font-mono">{item.scannedAt}</span>
-                            </div>
-                            <div className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate mt-0.5">
-                              <span className="truncate">
-                                {item.message || (item.status === 'PENDING' ? 'Chờ đối soát' : 'Đã đối soát')}
-                              </span>
-                              {item.orderId && (
+
+                              {(isVerified || isAlreadyVerified) && item.packageId && (
                                 <button
                                   type="button"
-                                  onClick={() => handleOpenOrderDetail(item.orderId)}
-                                  className="text-[#2563eb] hover:underline font-semibold ml-1 shrink-0"
+                                  onClick={() => setConfirmAction({ type: 'REVERSE', item })}
+                                  className="h-6 px-1.5 rounded flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 border border-rose-200 dark:border-rose-900/40 transition-colors cursor-pointer shrink-0"
+                                  title="Hoàn tác xuất kho (cộng lại tồn kho)"
                                 >
-                                  Xem đơn →
+                                  <RotateCcw size={11} />
+                                  <span>Hoàn tác</span>
+                                </button>
+                              )}
+
+                              {!isVerified && (
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmAction({ type: 'DELETE', item })}
+                                  className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-rose-500 transition-colors cursor-pointer shrink-0"
+                                  title="Xóa mã này khỏi phiên"
+                                >
+                                  <Trash2 size={12} />
                                 </button>
                               )}
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span
-                            className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${
-                              isVerified
-                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                                : isAlreadyVerified
-                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                                : isNotFound || item.status === 'ERROR'
-                                ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                                : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                            }`}
-                          >
-                            {isVerified
-                              ? 'Thành công'
-                              : isAlreadyVerified
-                              ? 'Đã xuất trước'
-                              : isNotFound
-                              ? 'Không tìm thấy'
-                              : item.status === 'ERROR'
-                              ? 'Lỗi đối soát'
-                              : 'Chờ đối soát'}
-                          </span>
+                          {/* Hàng 2: Thời gian & Mô tả (Trái) & Nút Xem đơn (Phải) */}
+                          <div className="flex items-center justify-between gap-2 mt-0.5">
+                            <div className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1.5 truncate min-w-0">
+                              <span className="font-mono text-[10px] text-gray-400 shrink-0">{item.scannedAt}</span>
+                              <span className="text-gray-300 dark:text-gray-700 shrink-0">•</span>
+                              <span className="truncate">
+                                {item.message || (item.status === 'PENDING' ? 'Chờ đối soát' : 'Đã đối soát')}
+                              </span>
+                            </div>
 
-                          {(isVerified || isAlreadyVerified) && item.packageId && (
-                            <button
-                              type="button"
-                              onClick={() => handleReverseItem(item)}
-                              className="h-6 px-1.5 rounded flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 border border-rose-200 dark:border-rose-900/40 transition-colors cursor-pointer"
-                              title="Hoàn tác xuất kho (cộng lại tồn kho)"
-                            >
-                              <RotateCcw size={11} />
-                              <span>Hoàn tác</span>
-                            </button>
-                          )}
-
-                          {!isVerified && (
-                            <button
-                              type="button"
-                              onClick={() => removeItemFromActiveSession(item.id)}
-                              className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-rose-500 transition-colors cursor-pointer"
-                              title="Xóa mã này khỏi phiên"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          )}
+                            {item.orderId && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenOrderDetail(item.orderId)}
+                                className="text-[#2563eb] hover:underline font-semibold text-[11px] shrink-0 flex items-center gap-0.5 cursor-pointer ml-auto"
+                              >
+                                <span>Xem đơn</span>
+                                <span>→</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -1280,7 +1304,7 @@ export const ScanOrdersPage: React.FC = () => {
                                 {(isVerified || isAlreadyVerified) && item.packageId && (
                                   <button
                                     type="button"
-                                    onClick={() => handleReverseItem(item)}
+                                    onClick={() => setConfirmAction({ type: 'REVERSE', item })}
                                     className="px-2 py-1 rounded bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-600 dark:text-rose-400 text-[11px] font-semibold border border-rose-200 dark:border-rose-900/40 transition-colors cursor-pointer inline-flex items-center gap-1"
                                     title="Hoàn tác xuất kho (cộng lại tồn kho)"
                                   >
@@ -1291,7 +1315,7 @@ export const ScanOrdersPage: React.FC = () => {
                                 {!isVerified && (
                                   <button
                                     type="button"
-                                    onClick={() => removeItemFromActiveSession(item.id)}
+                                    onClick={() => setConfirmAction({ type: 'DELETE', item })}
                                     className="p-1 rounded text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
                                     title="Xóa mã này khỏi phiên"
                                   >
@@ -1330,6 +1354,100 @@ export const ScanOrdersPage: React.FC = () => {
         onClose={() => setIsDrawerOpen(false)}
         onRefresh={() => {}}
       />
+
+      {/* ACTION CONFIRMATION MODAL (System UI/UX) */}
+      <Modal
+        isOpen={!!confirmAction}
+        onClose={() => !isActionLoading && setConfirmAction(null)}
+        maxWidth="max-w-md"
+        size="sm"
+        mobilePlacement="bottom"
+      >
+        <ModalBody className="p-4 sm:p-5 space-y-3">
+          {confirmAction?.type === 'REVERSE' ? (
+            <>
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/20">
+                  <RotateCcw size={20} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
+                    Xác nhận hoàn tác xuất kho
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Bạn có chắc chắn muốn hoàn tác xuất kho cho mã{' '}
+                    <span className="font-mono font-bold text-gray-800 dark:text-gray-200">
+                      "{confirmAction.item.code}"
+                    </span>
+                    ?
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 space-y-1">
+                <div className="flex items-center gap-1.5 font-semibold">
+                  <AlertTriangle size={14} className="shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>Lưu ý về tồn kho</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
+                  Số lượng sản phẩm trong kiện sẽ được <strong>cộng hoàn trả lại vào tồn kho thực tế</strong> ngay lập tức và ghi nhận vào sổ cái kho.
+                </p>
+              </div>
+
+              {confirmAction.item.carrierName && (
+                <div className="p-2.5 rounded bg-gray-50 dark:bg-[#1a1d26] border border-gray-100 dark:border-gray-800 text-xs flex items-center justify-between text-gray-600 dark:text-gray-300">
+                  <span>Đơn vị vận chuyển:</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {confirmAction.item.carrierName}
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/20">
+                  <Trash2 size={20} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
+                    Xóa mã khỏi phiên quét
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Bạn có chắc chắn muốn xóa mã{' '}
+                    <span className="font-mono font-bold text-gray-800 dark:text-gray-200">
+                      "{confirmAction?.item.code}"
+                    </span>{' '}
+                    khỏi danh sách phiên quét hiện tại?
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[#1a1d26] p-2.5 rounded border border-gray-100 dark:border-gray-800">
+                Thao tác này chỉ gỡ bỏ mã khỏi phiên quét trên thiết bị này, không làm thay đổi trạng thái đơn hàng trên sàn.
+              </p>
+            </>
+          )}
+        </ModalBody>
+
+        <ModalFooter className="px-4 py-3">
+          <ModalButton
+            variant="outline"
+            onClick={() => setConfirmAction(null)}
+            disabled={isActionLoading}
+          >
+            Hủy bỏ
+          </ModalButton>
+
+          <ModalButton
+            variant="danger"
+            onClick={handleExecuteConfirmAction}
+            loading={isActionLoading}
+          >
+            {confirmAction?.type === 'REVERSE' ? 'Xác nhận hoàn tác' : 'Xóa khỏi phiên'}
+          </ModalButton>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 };
