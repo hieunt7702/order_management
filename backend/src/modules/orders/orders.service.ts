@@ -107,6 +107,54 @@ export class OrdersService {
     return { items, total, page, limit };
   }
 
+  async getSummary(
+    tenantId: string,
+    allowedShopIds: string[] | undefined,
+    filter: { shopId?: string; fromDate?: string; toDate?: string },
+  ) {
+    const where: Prisma.OrderWhereInput = { tenantId };
+
+    if (allowedShopIds && allowedShopIds.length > 0) {
+      where.shopId = { in: allowedShopIds };
+    }
+    if (filter.shopId && filter.shopId !== 'ALL') {
+      where.shopId = filter.shopId;
+    }
+    if (filter.fromDate || filter.toDate) {
+      where.orderDate = {};
+      if (filter.fromDate) {
+        where.orderDate.gte = new Date(filter.fromDate);
+      }
+      if (filter.toDate) {
+        where.orderDate.lt = new Date(filter.toDate);
+      }
+    }
+
+    const [total, readyToShip, shipped, verified, unmapped] = await Promise.all([
+      this.prisma.order.count({ where }),
+      this.prisma.order.count({
+        where: { ...where, platformStatus: 'READY_TO_SHIP' },
+      }),
+      this.prisma.order.count({
+        where: { ...where, platformStatus: 'SHIPPED' },
+      }),
+      this.prisma.order.count({
+        where: { ...where, verificationStatus: 'VERIFIED' },
+      }),
+      this.prisma.order.count({
+        where: { ...where, fulfillmentStatus: 'UNMAPPED' },
+      }),
+    ]);
+
+    return {
+      total,
+      readyToShip,
+      shipped,
+      verified,
+      unmapped,
+    };
+  }
+
   async findOne(tenantId: string, id: string) {
     const order = await this.prisma.order.findFirst({
       where: { id, tenantId },

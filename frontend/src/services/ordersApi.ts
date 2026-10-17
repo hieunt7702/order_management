@@ -16,6 +16,9 @@ export const ordersApi = {
   findAll: (params: OrderQueryParams = {}) => {
     return api.get(`/orders${buildQuery(params)}`);
   },
+  getSummary: (params: { shopId?: string; fromDate?: string; toDate?: string } = {}) => {
+    return api.get(`/orders/summary${buildQuery(params)}`);
+  },
   findOne: (id: string) => api.get(`/orders/${id}`),
   create: (data: any) => api.post('/orders', data),
   update: (id: string, data: any) => api.patch(`/orders/${id}`, data),

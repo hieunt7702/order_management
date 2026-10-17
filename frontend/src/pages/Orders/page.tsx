@@ -62,6 +62,7 @@ import {
 import { SystemMetricCard } from '../../components/ui/SystemMetricCard';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
+import { Checkbox } from '../../components/ui/Checkbox';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
 import { OrderDetailDrawer } from './OrderDetailDrawer';
 
@@ -127,6 +128,15 @@ export const OrdersPage: React.FC = () => {
   const [forceDeleteAll, setForceDeleteAll] = useState<boolean>(false);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState<boolean>(false);
 
+  // Global Order Summary Metrics for KPI cards
+  const [orderSummary, setOrderSummary] = useState({
+    total: 0,
+    readyToShip: 0,
+    shipped: 0,
+    verified: 0,
+    unmapped: 0,
+  });
+
   const [isSavingOrder, setIsSavingOrder] = useState<boolean>(false);
   const [isDeletingOrder, setIsDeletingOrder] = useState<boolean>(false);
   const [availableVariants, setAvailableVariants] = useState<any[]>([]);
@@ -166,6 +176,31 @@ export const OrdersPage: React.FC = () => {
     platformStatus: 'READY_TO_SHIP',
     note: '',
   });
+
+  const loadSummary = async () => {
+    try {
+      const res: any = await ordersApi.getSummary({
+        shopId: selectedShopId,
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+      });
+      if (res) {
+        setOrderSummary({
+          total: Number(res.total) || 0,
+          readyToShip: Number(res.readyToShip) || 0,
+          shipped: Number(res.shipped) || 0,
+          verified: Number(res.verified) || 0,
+          unmapped: Number(res.unmapped) || 0,
+        });
+      }
+    } catch (err) {
+      console.error('Error loading order summary:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadSummary();
+  }, [selectedShopId, fromDate, toDate]);
 
   useEffect(() => {
     loadOrders();
@@ -383,6 +418,7 @@ export const OrdersPage: React.FC = () => {
 
       setIsCreateOrderModalOpen(false);
       loadOrders();
+      loadSummary();
     } catch (err: any) {
       alert(`Lỗi tạo đơn hàng: ${err.message || 'Không thể tạo đơn'}`);
     } finally {
@@ -425,6 +461,7 @@ export const OrdersPage: React.FC = () => {
 
       setIsEditOrderModalOpen(false);
       loadOrders();
+      loadSummary();
       if (selectedOrder?.id === selectedOrderForEdit.id) {
         handleOpenDetail(selectedOrderForEdit.id);
       }
@@ -453,6 +490,7 @@ export const OrdersPage: React.FC = () => {
       }
       setSelectedOrderForDelete(null);
       loadOrders();
+      loadSummary();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || err.message || 'Không thể xóa đơn hàng');
     } finally {
@@ -476,8 +514,8 @@ export const OrdersPage: React.FC = () => {
     }
   };
 
-  const handleToggleSelectOrder = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleToggleSelectOrder = (id: string, e?: any) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     setSelectedOrderIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
@@ -498,6 +536,7 @@ export const OrdersPage: React.FC = () => {
       setSelectedOrderIds([]);
       setForceBulkDelete(false);
       loadOrders();
+      loadSummary();
     } catch (err: any) {
       toast.error(
         err?.response?.data?.message ||
@@ -524,6 +563,7 @@ export const OrdersPage: React.FC = () => {
       setConfirmDeleteAll(false);
       setForceDeleteAll(false);
       loadOrders();
+      loadSummary();
     } catch (err: any) {
       toast.error(
         err?.response?.data?.message ||
@@ -739,6 +779,7 @@ export const OrdersPage: React.FC = () => {
       setIsReturnModalOpen(false);
       setSelectedOrderForReturn(null);
       loadOrders();
+      loadSummary();
     } catch (err: any) {
       toast.error(
         'Có lỗi xảy ra khi xử lý đơn hoàn',
@@ -797,24 +838,53 @@ export const OrdersPage: React.FC = () => {
             <span className="hidden sm:inline">Tạo đơn hàng mới</span>
             <span className="sm:hidden">Tạo mới</span>
           </Button>
+
+          {selectedOrderIds.length > 0 ? (
+            <div className="flex items-center gap-1.5 animate-in fade-in">
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setIsBulkDeleteModalOpen(true)}
+                className="gap-1.5 px-2.5 sm:px-3"
+                title="Xóa các đơn hàng đã chọn"
+              >
+                <Trash2 size={13} />
+                <span>Xóa đã chọn ({selectedOrderIds.length})</span>
+              </Button>
+              <button
+                type="button"
+                onClick={() => setSelectedOrderIds([])}
+                className="h-8 px-2 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#181b22] text-xs text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center gap-1 cursor-pointer"
+                title="Bỏ chọn tất cả"
+              >
+                <X size={13} />
+                <span className="hidden sm:inline">Bỏ chọn</span>
+              </button>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setConfirmDeleteAll(false);
+                setForceDeleteAll(false);
+                setIsDeleteAllModalOpen(true);
+              }}
+              className="gap-1.5 p-2 sm:px-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 border-red-200 dark:border-red-900/50"
+              title="Xóa toàn bộ đơn hàng trong hệ thống hoặc shop hiện tại"
+            >
+              <Trash2 size={13} />
+              <span className="hidden sm:inline">Xóa tất cả</span>
+            </Button>
+          )}
+
           <Button
             variant="outline"
             size="sm"
             onClick={() => {
-              setConfirmDeleteAll(false);
-              setForceDeleteAll(false);
-              setIsDeleteAllModalOpen(true);
+              loadOrders();
+              loadSummary();
             }}
-            className="gap-1.5 p-2 sm:px-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 border-red-200 dark:border-red-900/50"
-            title="Xóa toàn bộ đơn hàng trong hệ thống hoặc shop hiện tại"
-          >
-            <Trash2 size={13} />
-            <span className="hidden sm:inline">Xóa tất cả</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadOrders}
             className="gap-1.5 p-2 lg:px-3"
             title="Làm mới dữ liệu"
           >
@@ -828,7 +898,7 @@ export const OrdersPage: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3 shrink-0">
         <SystemMetricCard
           title="Tất cả đơn"
-          value={totalCount}
+          value={orderSummary.total}
           subtitle="Tổng số bản ghi"
           icon={ShoppingBag}
           colorScheme="blue"
@@ -837,7 +907,7 @@ export const OrdersPage: React.FC = () => {
         />
         <SystemMetricCard
           title="Chờ giao hàng"
-          value={orders.filter((o) => o.platformStatus === 'READY_TO_SHIP').length}
+          value={orderSummary.readyToShip}
           subtitle="Cần đóng gói"
           icon={Clock}
           colorScheme="orange"
@@ -846,7 +916,7 @@ export const OrdersPage: React.FC = () => {
         />
         <SystemMetricCard
           title="Đang giao"
-          value={orders.filter((o) => o.platformStatus === 'SHIPPED').length}
+          value={orderSummary.shipped}
           subtitle="Đã bàn giao ĐVVC"
           icon={Truck}
           colorScheme="purple"
@@ -855,7 +925,7 @@ export const OrdersPage: React.FC = () => {
         />
         <SystemMetricCard
           title="Đã xuất kho"
-          value={orders.filter((o) => o.verificationStatus === 'VERIFIED').length}
+          value={orderSummary.verified}
           subtitle="Đã quét mã vạch"
           icon={CheckCircle2}
           colorScheme="green"
@@ -864,7 +934,7 @@ export const OrdersPage: React.FC = () => {
         />
         <SystemMetricCard
           title="Chưa map SKU"
-          value={orders.filter((o) => o.fulfillmentStatus === 'UNMAPPED').length}
+          value={orderSummary.unmapped}
           subtitle="Cần liên kết sản phẩm"
           icon={AlertTriangle}
           colorScheme="red"
@@ -965,35 +1035,7 @@ export const OrdersPage: React.FC = () => {
         </div>
       )}
 
-      {/* Bulk Selection Action Bar */}
-      {selectedOrderIds.length > 0 && (
-        <div className="flex items-center justify-between px-3.5 py-2 rounded bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 text-xs animate-in fade-in duration-200">
-          <div className="flex items-center gap-2.5">
-            <span className="font-medium text-indigo-950 dark:text-indigo-200">
-              Đã chọn <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{selectedOrderIds.length}</strong> đơn hàng
-            </span>
-            <span className="text-gray-300 dark:text-gray-600">|</span>
-            <button
-              type="button"
-              onClick={() => setSelectedOrderIds([])}
-              className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 underline cursor-pointer"
-            >
-              Bỏ chọn tất cả
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => setIsBulkDeleteModalOpen(true)}
-              className="gap-1.5 h-7 px-2.5 text-xs"
-            >
-              <Trash2 size={13} />
-              <span>Xóa các đơn đã chọn ({selectedOrderIds.length})</span>
-            </Button>
-          </div>
-        </div>
-      )}
+
 
       {/* Desktop Table View */}
       <div className="hidden md:flex flex-1 flex-col min-h-0">
@@ -1014,21 +1056,20 @@ export const OrdersPage: React.FC = () => {
           }
         >
           <SystemThead>
-            <SystemTh className="w-10 text-center">
-              <input
-                type="checkbox"
-                checked={orders.length > 0 && orders.every((o) => selectedOrderIds.includes(o.id))}
-                ref={(el) => {
-                  if (el) {
-                    const hasSome = orders.some((o) => selectedOrderIds.includes(o.id));
-                    const hasAll = orders.length > 0 && orders.every((o) => selectedOrderIds.includes(o.id));
-                    el.indeterminate = hasSome && !hasAll;
+            <SystemTh className="w-[44px] text-center" align="center">
+              <div className="flex items-center justify-center">
+                <Checkbox
+                  checked={
+                    orders.length > 0 &&
+                    orders.every((o) => selectedOrderIds.includes(o.id))
                   }
-                }}
-                onChange={handleToggleSelectAll}
-                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-[#5865f2] focus:ring-1 focus:ring-[#5865f2] bg-white dark:bg-gray-800 cursor-pointer"
-                title="Chọn tất cả trên trang này"
-              />
+                  indeterminate={
+                    orders.some((o) => selectedOrderIds.includes(o.id)) &&
+                    !orders.every((o) => selectedOrderIds.includes(o.id))
+                  }
+                  onChange={handleToggleSelectAll}
+                />
+              </div>
             </SystemTh>
             <SystemTh className="w-56">Mã đơn / Shop</SystemTh>
             <SystemTh className="w-32">Ngày đặt</SystemTh>
@@ -1062,13 +1103,13 @@ export const OrdersPage: React.FC = () => {
                         : ''
                     }`}
                   >
-                    <SystemTd className="text-center" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        checked={selectedOrderIds.includes(o.id)}
-                        onChange={(e) => handleToggleSelectOrder(o.id, e as any)}
-                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-[#5865f2] focus:ring-1 focus:ring-[#5865f2] bg-white dark:bg-gray-800 cursor-pointer"
-                      />
+                    <SystemTd align="center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center">
+                        <Checkbox
+                          checked={selectedOrderIds.includes(o.id)}
+                          onChange={() => handleToggleSelectOrder(o.id)}
+                        />
+                      </div>
                     </SystemTd>
                     <SystemTd>
                       <div className="font-mono font-medium text-xs text-gray-900 dark:text-white hover:text-[#5865f2] truncate">
@@ -1195,11 +1236,9 @@ export const OrdersPage: React.FC = () => {
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={selectedOrderIds.includes(o.id)}
-                      onChange={(e) => handleToggleSelectOrder(o.id, e as any)}
-                      className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-[#5865f2] focus:ring-1 focus:ring-[#5865f2] bg-white dark:bg-gray-800 cursor-pointer shrink-0"
+                      onChange={() => handleToggleSelectOrder(o.id)}
                     />
                     <span className="font-mono font-medium text-xs text-gray-900 dark:text-white truncate">
                       {o.externalOrderId}
@@ -1283,6 +1322,7 @@ export const OrdersPage: React.FC = () => {
         onClose={() => setIsDrawerOpen(false)}
         onRefresh={() => {
           loadOrders();
+          loadSummary();
           if (selectedOrder) handleOpenDetail(selectedOrder.id);
         }}
         onEdit={(ord) => handleOpenEditOrder(ord)}

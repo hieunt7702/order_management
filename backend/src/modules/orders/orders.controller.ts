@@ -54,6 +54,26 @@ export class OrdersController {
     return this.ordersService.findAll(tenantId, allowedShopIds, filter);
   }
 
+  @Get('summary')
+  @Roles(
+    MembershipRole.OWNER,
+    MembershipRole.ADMIN,
+    MembershipRole.WAREHOUSE,
+    MembershipRole.ACCOUNTANT,
+    MembershipRole.VIEWER,
+  )
+  @ApiOperation({ summary: 'Lấy số liệu tổng quan các trạng thái đơn hàng toàn hệ thống / shop' })
+  async getSummary(
+    @CurrentTenantId() tenantId: string,
+    @Req() req: Request,
+    @Query('shopId') shopId?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+  ) {
+    const allowedShopIds = (req as any).allowedShopIds;
+    return this.ordersService.getSummary(tenantId, allowedShopIds, { shopId, fromDate, toDate });
+  }
+
   @Get(':id')
   @Roles(
     MembershipRole.OWNER,
