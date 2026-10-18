@@ -802,9 +802,10 @@ export const SettingsPage: React.FC = () => {
                   type="text"
                   readOnly
                   disabled
+                  tabIndex={-1}
                   value={createWhForm.code || 'Hệ thống tự động cấp'}
                   title="Mã kho được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
-                  className="w-full h-8 px-3 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none"
+                  className="w-full h-8 px-3 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none pointer-events-none"
                 />
               </div>
 

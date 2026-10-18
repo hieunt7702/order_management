@@ -872,9 +872,10 @@ export const SuppliersPage: React.FC = () => {
                       type="text"
                       readOnly
                       disabled
+                      tabIndex={-1}
                       value={createForm.code || 'Hệ thống tự động cấp'}
                       title="Mã được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
-                      className="w-full px-2.5 py-1.5 h-8 bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded text-xs text-gray-500 dark:text-gray-400 font-mono font-bold cursor-not-allowed select-none"
+                      className="w-full px-2.5 py-1.5 h-8 bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded text-xs text-gray-500 dark:text-gray-400 font-mono font-bold cursor-not-allowed select-none pointer-events-none"
                     />
                   </div>
                   <div className="sm:col-span-2">

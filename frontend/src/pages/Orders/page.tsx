@@ -1381,15 +1381,12 @@ export const OrdersPage: React.FC = () => {
                   </div>
                   <input
                     type="text"
-                    placeholder="VD: DH261015-ABCD"
-                    value={createOrderForm.externalOrderId}
-                    onChange={(e) =>
-                      setCreateOrderForm({
-                        ...createOrderForm,
-                        externalOrderId: e.target.value.toUpperCase(),
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    readOnly
+                    disabled
+                    tabIndex={-1}
+                    value={createOrderForm.externalOrderId || 'Hệ thống tự động cấp'}
+                    title="Mã đơn hàng được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
+                    className="w-full px-3 py-2 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none transition-colors pointer-events-none"
                   />
                 </div>
               </div>

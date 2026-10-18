@@ -600,8 +600,10 @@ export const SettlementsPage: React.FC = () => {
                 <input
                   type="text"
                   disabled
+                  readOnly
+                  tabIndex={-1}
                   value={selectedSettlement?.order?.externalOrderId || selectedSettlement?.order?.internalOrderCode || selectedSettlement?.order?.orderSn || recordForm.orderId}
-                  className="w-full px-3 py-2 text-xs font-mono bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed"
+                  className="w-full px-3 py-2 text-xs font-mono bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none pointer-events-none"
                 />
               </div>
 

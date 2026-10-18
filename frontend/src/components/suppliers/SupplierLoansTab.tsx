@@ -674,16 +674,23 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5">
-                  <FileText size={13} className="text-gray-400" />
-                  <span>Mã GD / Số hợp đồng</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                    <FileText size={13} className="text-[#5865f2]" />
+                    <span>Mã hợp đồng / GD</span>
+                  </label>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-400 font-medium">
+                    Hệ thống tự cấp
+                  </span>
+                </div>
                 <input
                   type="text"
-                  placeholder="VD: HDV-20261018-01..."
-                  value={createForm.referenceCode}
-                  onChange={(e) => setCreateForm({ ...createForm, referenceCode: e.target.value })}
-                  className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs font-mono uppercase"
+                  readOnly
+                  disabled
+                  tabIndex={-1}
+                  value={createForm.referenceCode || 'Hệ thống tự động cấp'}
+                  title="Mã hợp đồng được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
+                  className="w-full bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded px-2.5 py-1.5 text-xs font-mono uppercase font-bold text-gray-500 dark:text-gray-400 cursor-not-allowed select-none pointer-events-none"
                 />
               </div>
             </div>

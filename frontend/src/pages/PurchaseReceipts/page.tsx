@@ -1128,9 +1128,10 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   type="text"
                   readOnly
                   disabled
+                  tabIndex={-1}
                   value={createForm.receiptCode || 'Hệ thống tự động cấp'}
                   title="Mã phiếu được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
-                  className="w-full h-8 px-2.5 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none transition-colors"
+                  className="w-full h-8 px-2.5 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none transition-colors pointer-events-none"
                 />
               </div>
 
@@ -1914,16 +1915,21 @@ export const PurchaseReceiptsPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                        <FileText size={13} className="text-gray-400" />
-                        <span>Mã giao dịch / UNC</span>
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                          <FileText size={13} className="text-indigo-500" />
+                          <span>Mã phiếu chi / GD</span>
+                        </label>
+                        <span className="text-[10px] text-gray-400 font-normal">Hệ thống tự cấp</span>
+                      </div>
                       <input
                         type="text"
-                        placeholder="Ví dụ: FT260101589..."
-                        value={quickPayForm.referenceCode}
-                        onChange={(e) => setQuickPayForm({ ...quickPayForm, referenceCode: e.target.value })}
-                        className="w-full bg-white dark:bg-[#161a22] border border-gray-200 dark:border-gray-700 rounded p-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
+                        readOnly
+                        disabled
+                        tabIndex={-1}
+                        value={quickPayForm.referenceCode || 'Hệ thống tự động cấp'}
+                        title="Mã phiếu được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
+                        className="w-full bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-2 text-xs font-mono uppercase font-bold text-gray-500 dark:text-gray-400 cursor-not-allowed select-none pointer-events-none"
                       />
                     </div>
 

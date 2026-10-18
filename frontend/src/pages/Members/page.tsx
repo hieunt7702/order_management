@@ -791,10 +791,12 @@ export const MembersPage: React.FC = () => {
                 </div>
                 <input
                   type="text"
-                  required
+                  readOnly
+                  disabled
+                  tabIndex={-1}
                   value={addForm.employeeCode}
-                  onChange={(e) => setAddForm({ ...addForm, employeeCode: e.target.value.toUpperCase() })}
-                  className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  title="Mã nhân viên được hệ thống tự động sinh để đảm bảo tính đồng bộ"
+                  className="w-full px-3 py-2 text-xs font-mono uppercase bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none pointer-events-none"
                 />
               </div>
 

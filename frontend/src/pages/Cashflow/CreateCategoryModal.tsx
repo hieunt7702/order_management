@@ -111,9 +111,10 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
                 type="text"
                 readOnly
                 disabled
+                tabIndex={-1}
                 value={code || 'Hệ thống tự động cấp'}
                 title="Mã khoản mục được hệ thống tự động sinh ngầm khi lưu"
-                className="w-full px-3.5 py-2 rounded border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-sm font-semibold uppercase text-slate-500 dark:text-slate-400 cursor-not-allowed select-none"
+                className="w-full px-3.5 py-2 rounded border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-sm font-semibold uppercase text-slate-500 dark:text-slate-400 cursor-not-allowed select-none pointer-events-none"
               />
             </div>
 

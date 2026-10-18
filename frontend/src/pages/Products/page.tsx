@@ -2359,9 +2359,10 @@ export const ProductsPage: React.FC = () => {
                     type="text"
                     readOnly
                     disabled
+                    tabIndex={-1}
                     value={createProductForm.sku || 'Hệ thống tự động cấp'}
                     title="Mã sản phẩm được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
-                    className="w-full px-3 py-2 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none transition-colors"
+                    className="w-full px-3 py-2 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none transition-colors pointer-events-none"
                   />
                 </div>
               </div>
@@ -2480,9 +2481,10 @@ export const ProductsPage: React.FC = () => {
                               type="text"
                               readOnly
                               disabled
+                              tabIndex={-1}
                               value={v.sku}
                               title="SKU biến thể được hệ thống tự động sinh ngầm"
-                              className="w-full px-2.5 py-1.5 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none transition-colors"
+                              className="w-full px-2.5 py-1.5 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none transition-colors pointer-events-none"
                             />
                           </div>
                           <div>

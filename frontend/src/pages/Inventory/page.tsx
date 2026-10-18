@@ -1633,9 +1633,10 @@ export const InventoryPage: React.FC = () => {
                   type="text"
                   readOnly
                   disabled
+                  tabIndex={-1}
                   value={receiveForm.referenceCode || 'Hệ thống tự động cấp'}
                   title="Mã phiếu được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
-                  className="w-full px-3 py-2 text-xs font-mono font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none"
+                  className="w-full px-3 py-2 text-xs font-mono font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none pointer-events-none"
                 />
                 <p className="text-[10px] text-gray-400 mt-1">
                   Mã phiếu tự động sinh ngầm theo ngày và định danh duy nhất cam kết không bị trùng lặp
