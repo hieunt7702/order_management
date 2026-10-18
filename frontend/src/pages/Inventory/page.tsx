@@ -1204,8 +1204,8 @@ export const InventoryPage: React.FC = () => {
                     />
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <span className="hidden sm:inline text-xs font-semibold text-gray-500 dark:text-gray-400 shrink-0">
                       Bộ lọc trạng thái:
                     </span>
                     <Select
@@ -1220,8 +1220,8 @@ export const InventoryPage: React.FC = () => {
                         { value: 'BALANCED', label: `Chỉ sản phẩm khớp 100% (${matchingCount})`, icon: CheckCircle },
                       ]}
                       size="sm"
-                      className="w-56"
-                      menuWidth="w-60"
+                      className="w-full sm:w-56"
+                      menuWidth="w-full sm:w-60"
                     />
                   </div>
                 </div>
