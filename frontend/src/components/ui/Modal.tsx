@@ -33,28 +33,63 @@ export const Modal: React.FC<ModalProps> = ({
   mobilePlacement = 'bottom',
   containerZIndex = 'z-[70]',
 }) => {
-  const sizeMap: Record<string, string> = {
-    sm: 'max-w-sm',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-    '2xl': 'max-w-6xl',
-    '3xl': 'max-w-7xl sm:w-[96vw]',
-    full: 'max-w-[96vw] sm:w-[96vw]',
+  const desktopSizeMap: Record<string, string> = {
+    sm: 'lg:max-w-sm',
+    md: 'lg:max-w-lg',
+    lg: 'lg:max-w-2xl',
+    xl: 'lg:max-w-4xl',
+    '2xl': 'lg:max-w-6xl',
+    '3xl': 'lg:max-w-7xl lg:w-[96vw]',
+    full: 'lg:max-w-[96vw] lg:w-[96vw]',
   };
-  const rawMaxWidth = maxWidth ?? (size ? sizeMap[size] : 'max-w-lg');
-  const resolvedMaxWidth = (() => {
-    // Ensure that on mobile (< sm), max-width is ALWAYS 100% full width (w-full max-w-full)
-    // and the specific desktop max-width restriction is only applied at sm breakpoint (sm:max-w-...)
-    const tokens = rawMaxWidth.split(/\s+/).filter(Boolean);
-    const responsiveTokens = tokens.map((token) => {
-      if (token.startsWith('max-w-') && !token.startsWith('max-w-full') && !token.includes(':')) {
-        return `sm:${token}`;
-      }
-      return token;
-    });
-    return cn('w-full max-w-full', responsiveTokens.join(' '));
-  })();
+
+  const customMaxWidthToDesktop: Record<string, string> = {
+    'max-w-xs': 'lg:max-w-xs',
+    'max-w-sm': 'lg:max-w-sm',
+    'max-w-md': 'lg:max-w-md',
+    'max-w-lg': 'lg:max-w-lg',
+    'max-w-xl': 'lg:max-w-xl',
+    'max-w-2xl': 'lg:max-w-2xl',
+    'max-w-3xl': 'lg:max-w-3xl',
+    'max-w-4xl': 'lg:max-w-4xl',
+    'max-w-5xl': 'lg:max-w-5xl',
+    'max-w-6xl': 'lg:max-w-6xl',
+    'max-w-7xl': 'lg:max-w-7xl',
+    'max-w-[96vw]': 'lg:max-w-[96vw]',
+    'w-[92vw] max-w-xl': 'lg:max-w-xl lg:w-auto',
+    'w-[92vw] max-w-2xl': 'lg:max-w-2xl lg:w-auto',
+    'w-[92vw] max-w-4xl': 'lg:max-w-4xl lg:w-auto',
+    'w-[94vw] max-w-5xl': 'lg:max-w-5xl lg:w-auto',
+    'w-[94vw] max-w-6xl': 'lg:max-w-6xl lg:w-auto',
+    'max-w-[96vw] xl:max-w-7xl w-full': 'lg:max-w-[96vw] xl:max-w-7xl lg:w-full',
+  };
+
+  const resolveDesktopWidth = (raw: string): string => {
+    const trimmed = raw.trim();
+    if (customMaxWidthToDesktop[trimmed]) {
+      return customMaxWidthToDesktop[trimmed];
+    }
+    return trimmed
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((token) => {
+        if (token.startsWith('max-w-') && !token.startsWith('max-w-full') && !token.includes(':')) {
+          return `lg:${token}`;
+        }
+        if (token.startsWith('w-') && !token.includes(':') && token !== 'w-full') {
+          return `lg:${token}`;
+        }
+        return token;
+      })
+      .join(' ');
+  };
+
+  const desktopWidthClass = maxWidth
+    ? resolveDesktopWidth(maxWidth)
+    : (size ? desktopSizeMap[size] || 'lg:max-w-lg' : 'lg:max-w-lg');
+
+  // Full width on tablet & mobile (< lg), original max-width restored on PC (>= lg)
+  const resolvedMaxWidth = cn('w-full max-w-full', desktopWidthClass);
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -78,11 +113,11 @@ export const Modal: React.FC<ModalProps> = ({
   return createPortal(
     <div
       className={cn(
-        'fixed inset-0 flex items-center justify-center p-0 sm:p-4 bg-black/60 dark:bg-black/75 backdrop-blur-[2px] animate-modal-backdrop',
+        'fixed inset-0 flex items-center justify-center bg-black/60 dark:bg-black/75 backdrop-blur-[2px] animate-modal-backdrop',
         containerZIndex,
         mobilePlacement === 'bottom'
           ? 'flex-col justify-end sm:justify-center p-0 sm:p-4'
-          : 'p-0 sm:p-4',
+          : 'p-2 sm:p-4',
       )}
     >
       <div
@@ -97,7 +132,7 @@ export const Modal: React.FC<ModalProps> = ({
           '[&>form]:flex [&>form]:flex-col [&>form]:flex-1 [&>form]:min-h-0 [&>form]:overflow-hidden [&>form]:space-y-0',
           mobilePlacement === 'bottom'
             ? 'rounded-t-2xl sm:rounded-lg rounded-b-none sm:rounded-b border-x-0 sm:border-x border-b-0 sm:border-b max-h-[90vh] max-h-[90dvh] sm:max-h-[90vh] animate-modal-sheet sm:animate-modal-center'
-            : 'rounded-t-2xl sm:rounded-lg rounded-b-none sm:rounded-b border-x-0 sm:border-x border-b-0 sm:border-b sm:border animate-modal-center',
+            : 'rounded-xl sm:rounded-lg border animate-modal-center',
           resolvedMaxWidth,
           className,
         )}
