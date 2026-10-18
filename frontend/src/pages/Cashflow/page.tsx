@@ -72,6 +72,7 @@ import {
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
 import { toast } from '../../components/ui/Toast';
+import { confirmModal } from '../../components/ui/ConfirmModal';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -2048,14 +2049,20 @@ export const CashflowPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={async () => {
-                              if (window.confirm(`Xác nhận xóa khoản mục ${cat.name}?`)) {
-                                try {
-                                  await cashflowApi.deleteCategory(cat.id);
-                                  toast.success('Đã xóa khoản mục');
-                                  loadBaseData();
-                                } catch (e: any) {
-                                  toast.error(e?.response?.data?.message || 'Không thể xóa');
-                                }
+                              const ok = await confirmModal({
+                                title: 'Xóa khoản mục thu chi',
+                                message: `Xác nhận xóa khoản mục "${cat.name}"?`,
+                                description: 'Khoản mục này sẽ bị xóa khỏi danh mục phân loại thu chi.',
+                                confirmText: 'Xác nhận xóa',
+                                variant: 'danger',
+                              });
+                              if (!ok) return;
+                              try {
+                                await cashflowApi.deleteCategory(cat.id);
+                                toast.success('Đã xóa khoản mục');
+                                loadBaseData();
+                              } catch (e: any) {
+                                toast.error(e?.response?.data?.message || 'Không thể xóa');
                               }
                             }}
                             className="p-1 text-rose-500 hover:bg-rose-50 rounded transition-colors cursor-pointer"
@@ -2137,14 +2144,20 @@ export const CashflowPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={async () => {
-                          if (window.confirm(`Xác nhận xóa khoản mục ${cat.name}?`)) {
-                            try {
-                              await cashflowApi.deleteCategory(cat.id);
-                              toast.success('Đã xóa khoản mục');
-                              loadBaseData();
-                            } catch (e: any) {
-                              toast.error(e?.response?.data?.message || 'Không thể xóa');
-                            }
+                          const ok = await confirmModal({
+                            title: 'Xóa khoản mục chi',
+                            message: `Xác nhận xóa khoản mục "${cat.name}"?`,
+                            description: 'Khoản mục này sẽ bị xóa khỏi danh mục phân loại chi phí.',
+                            confirmText: 'Xác nhận xóa',
+                            variant: 'danger',
+                          });
+                          if (!ok) return;
+                          try {
+                            await cashflowApi.deleteCategory(cat.id);
+                            toast.success('Đã xóa khoản mục');
+                            loadBaseData();
+                          } catch (e: any) {
+                            toast.error(e?.response?.data?.message || 'Không thể xóa');
                           }
                         }}
                         className="p-1 text-rose-500 hover:bg-rose-50 rounded transition-colors"

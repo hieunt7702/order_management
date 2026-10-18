@@ -48,6 +48,7 @@ import { purchaseReceiptsApi, PurchaseReceiptModel } from '../../services/purcha
 import { productsApi } from '../../services/productsApi';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
+import { confirmModal } from '../../components/ui/ConfirmModal';
 import {
   SystemTableWrapper,
   SystemThead,
@@ -386,7 +387,14 @@ export const SupplierDebtsPage: React.FC = () => {
   };
 
   const handleDeleteSupplier = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa/ngừng hoạt động nhà cung cấp "${name}"?`)) return;
+    const ok = await confirmModal({
+      title: 'Xóa nhà cung cấp',
+      message: `Bạn có chắc chắn muốn xóa/ngừng hoạt động nhà cung cấp "${name}"?`,
+      description: 'Nếu nhà cung cấp đã phát sinh công nợ hoặc phiếu nhập, hệ thống sẽ chuyển sang trạng thái ngừng hoạt động để bảo toàn lịch sử sổ sách kế toán.',
+      confirmText: 'Xác nhận xóa',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       const res = await suppliersApi.delete(id);
       const data = (res as any)?.data || res;
@@ -516,7 +524,14 @@ export const SupplierDebtsPage: React.FC = () => {
   };
 
   const handleMarkReimbursed = async (paymentId: string) => {
-    if (!window.confirm('Xác nhận shop đã hoàn trả lại tiền cá nhân chi hộ cho khoản này?')) return;
+    const ok = await confirmModal({
+      title: 'Xác nhận hoàn tiền chi hộ',
+      message: 'Xác nhận shop đã hoàn trả lại tiền cá nhân chi hộ cho khoản này?',
+      description: 'Khoản chi hộ sẽ được đánh dấu đã hoàn trả xong và không còn hiển thị trong danh sách cảnh báo nợ cần trả lại.',
+      confirmText: 'Đã hoàn tiền',
+      variant: 'primary',
+    });
+    if (!ok) return;
     try {
       await supplierPaymentsApi.markReimbursed(paymentId, 'Đã hoàn trả từ quỹ shop');
       loadPayments();
@@ -528,7 +543,14 @@ export const SupplierDebtsPage: React.FC = () => {
   };
 
   const handleDeletePayment = async (id: string, code: string) => {
-    if (!window.confirm(`Hủy phiếu chi "${code}"? Khoản thanh toán sẽ bị xóa và công nợ trên các phiếu nhập sẽ được khôi phục.`)) return;
+    const ok = await confirmModal({
+      title: 'Hủy phiếu chi',
+      message: `Bạn có chắc chắn muốn hủy phiếu chi "${code}"?`,
+      description: 'Khoản thanh toán sẽ bị xóa và công nợ trên các phiếu nhập tương ứng sẽ được tự động khôi phục lại.',
+      confirmText: 'Xác nhận hủy phiếu',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await supplierPaymentsApi.delete(id);
       loadAllData();
@@ -633,7 +655,14 @@ export const SupplierDebtsPage: React.FC = () => {
   };
 
   const handleDeleteReturn = async (id: string, code: string) => {
-    if (!window.confirm(`Hủy phiếu trả hàng "${code}"? Tồn kho và công nợ NCC sẽ được khôi phục lại.`)) return;
+    const ok = await confirmModal({
+      title: 'Hủy phiếu trả hàng',
+      message: `Bạn có chắc chắn muốn hủy phiếu trả hàng "${code}"?`,
+      description: 'Số lượng tồn kho sản phẩm và công nợ nhà cung cấp sẽ được khôi phục lại nguyên trạng.',
+      confirmText: 'Xác nhận hủy phiếu',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await purchaseReturnsApi.delete(id);
       loadAllData();

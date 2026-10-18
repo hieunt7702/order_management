@@ -35,6 +35,7 @@ import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import { Select } from '../../components/ui/Select';
 import { Checkbox } from '../../components/ui/Checkbox';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
+import { confirmModal } from '../../components/ui/ConfirmModal';
 import {
   SystemPagination,
   SystemTableWrapper,
@@ -800,7 +801,14 @@ export const ProductsPage: React.FC = () => {
   };
 
   const handleDeleteMapping = async (mappingId: string) => {
-    if (!window.confirm('Bạn có chắc chắn muốn hủy liên kết SKU này?')) return;
+    const ok = await confirmModal({
+      title: 'Hủy liên kết SKU',
+      message: 'Bạn có chắc chắn muốn hủy liên kết SKU sàn này?',
+      description: 'Sau khi hủy liên kết, đơn hàng phát sinh từ mã sàn này sẽ không tự động trừ tồn kho cho biến thể nữa cho đến khi được liên kết lại.',
+      confirmText: 'Hủy liên kết',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await productsApi.deleteMapping(mappingId);
       toast.success('Đã hủy liên kết SKU');
@@ -3424,7 +3432,13 @@ export const ProductsPage: React.FC = () => {
                                   variant="outline"
                                   size="xs"
                                   onClick={async () => {
-                                    if (!window.confirm(`Hủy liên kết mã Shopee "${lm.sellerSku}" với SKU này?`)) return;
+                                    const ok = await confirmModal({
+                                      title: 'Hủy liên kết SKU Shopee',
+                                      message: `Hủy liên kết mã Shopee "${lm.sellerSku}" với SKU này?`,
+                                      confirmText: 'Hủy liên kết',
+                                      variant: 'danger',
+                                    });
+                                    if (!ok) return;
                                     try {
                                       await productsApi.deleteMapping(lm.id);
                                       toast.success('Đã hủy liên kết SKU Shopee!');

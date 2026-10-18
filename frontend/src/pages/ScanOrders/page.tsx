@@ -38,6 +38,7 @@ import { ordersApi } from '../../services/ordersApi';
 import { fulfillmentApi } from '../../services/fulfillmentApi';
 import { toast } from '../../components/ui/Toast';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
+import { confirmModal } from '../../components/ui/ConfirmModal';
 
 export const ScanOrdersPage: React.FC = () => {
   const navigate = useNavigate();
@@ -396,12 +397,15 @@ export const ScanOrdersPage: React.FC = () => {
     }
 
     const pendingCount = activeSession.items.filter((i) => i.status === 'PENDING').length;
-    if (
-      pendingCount === 0 &&
-      activeSession.status === 'SUBMITTED' &&
-      !confirm('Phiên này đã đối soát rồi. Bạn có muốn gửi đối soát lại không?')
-    ) {
-      return;
+    if (pendingCount === 0 && activeSession.status === 'SUBMITTED') {
+      const ok = await confirmModal({
+        title: 'Đối soát lại phiên quét',
+        message: 'Phiên quét này đã được gửi đối soát trước đó. Bạn có muốn gửi đối soát lại không?',
+        description: 'Hệ thống sẽ kiểm tra lại toàn bộ trạng thái các đơn hàng trong phiên theo dữ liệu kho hiện tại.',
+        confirmText: 'Gửi đối soát lại',
+        variant: 'warning',
+      });
+      if (!ok) return;
     }
 
     try {

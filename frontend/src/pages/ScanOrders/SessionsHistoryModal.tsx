@@ -20,6 +20,7 @@ import {
 import { useScanSessionStore, ScanSession } from '../../stores/scanSessionStore';
 import { toast } from '../../components/ui/Toast';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
+import { confirmModal } from '../../components/ui/ConfirmModal';
 
 interface SessionsHistoryModalProps {
   isOpen: boolean;
@@ -112,16 +113,22 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
     onClose();
   };
 
-  const handleDelete = (s: ScanSession, e?: React.MouseEvent) => {
+  const handleDelete = async (s: ScanSession, e?: React.MouseEvent) => {
     e?.stopPropagation();
     setMenuOpenSessionId(null);
     const title = formatSessionTitle(s.name);
-    if (confirm(`Bạn có chắc chắn muốn xóa "${title}" (${s.items.length} mã quét)?`)) {
-      deleteSession(s.id);
-      toast.info(`Đã xóa ${title}`);
-      if (selectedSessionForDetail?.id === s.id) {
-        setSelectedSessionForDetail(null);
-      }
+    const ok = await confirmModal({
+      title: 'Xóa phiên quét',
+      message: `Bạn có chắc chắn muốn xóa "${title}" (${s.items.length} mã quét)?`,
+      description: 'Dữ liệu các mã đã quét trong phiên này sẽ bị xóa khỏi lịch sử lưu trữ cục bộ.',
+      confirmText: 'Xác nhận xóa',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    deleteSession(s.id);
+    toast.info(`Đã xóa ${title}`);
+    if (selectedSessionForDetail?.id === s.id) {
+      setSelectedSessionForDetail(null);
     }
   };
 

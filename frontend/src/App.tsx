@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { ToastContainer } from './components/ui/Toast';
+import { ConfirmModalContainer } from './components/ui/ConfirmModal';
 import { useAuthStore } from './stores/authStore';
 
 // Pages
@@ -53,6 +54,7 @@ function App() {
   return (
     <BrowserRouter>
       <ToastContainer />
+      <ConfirmModalContainer />
       <Routes>
         {/* Public Login Route */}
         <Route

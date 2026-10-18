@@ -40,6 +40,7 @@ import { supplierPaymentsApi } from '../../services/supplierPaymentsApi';
 import { productsApi } from '../../services/productsApi';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
+import { confirmModal } from '../../components/ui/ConfirmModal';
 import {
   SystemTableWrapper,
   SystemThead,
@@ -341,13 +342,14 @@ export const PurchaseReceiptsPage: React.FC = () => {
   };
 
   const handleDeleteReceipt = async (id: string, code: string) => {
-    if (
-      !window.confirm(
-        `Bạn có chắc chắn muốn hủy phiếu nhập "${code}"? Tồn kho thực tế sẽ bị đảo ngược và các phân bổ thanh toán sẽ bị xóa.`,
-      )
-    ) {
-      return;
-    }
+    const ok = await confirmModal({
+      title: 'Hủy phiếu nhập kho',
+      message: `Bạn có chắc chắn muốn hủy phiếu nhập "${code}"?`,
+      description: 'Tồn kho thực tế sẽ bị đảo ngược và các phân bổ thanh toán liên quan sẽ được tự động xóa.',
+      confirmText: 'Xác nhận hủy phiếu',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await purchaseReceiptsApi.delete(id);
