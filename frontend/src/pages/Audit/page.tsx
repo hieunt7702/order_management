@@ -8,6 +8,19 @@ import {
   CheckCircle,
   Package,
   Users,
+  Globe,
+  Copy,
+  Check,
+  ShoppingBag,
+  Boxes,
+  Warehouse,
+  Store,
+  Building2,
+  Receipt,
+  RotateCcw,
+  FileSpreadsheet,
+  CreditCard,
+  Shield,
 } from 'lucide-react';
 import { auditApi } from '../../services/auditApi';
 import { Button } from '../../components/ui/Button';
@@ -96,6 +109,7 @@ export const ENTITY_TYPE_LABELS: Record<string, string> = {
   Membership: 'Nhân sự / Quyền',
   Shop: 'Gian hàng',
   User: 'Tài khoản',
+  ProductVariant: 'Biến thể SP',
 };
 
 export const getActionInfo = (action: string): ActionMetadata => {
@@ -116,32 +130,130 @@ export const getEntityLabel = (entityType?: string): string => {
   return ENTITY_TYPE_LABELS[entityType] || entityType;
 };
 
+// Component icon đại diện cho thực thể
+const EntityIcon: React.FC<{ type?: string; size?: number; className?: string }> = ({
+  type = '',
+  size = 13,
+  className = '',
+}) => {
+  const t = type.toLowerCase();
+  if (t.includes('orderreturn')) return <RotateCcw size={size} className={className} />;
+  if (t.includes('order')) return <ShoppingBag size={size} className={className} />;
+  if (t.includes('package')) return <Package size={size} className={className} />;
+  if (t.includes('warehouse')) return <Warehouse size={size} className={className} />;
+  if (t.includes('supplierpayment')) return <CreditCard size={size} className={className} />;
+  if (t.includes('purchasereceipt')) return <Receipt size={size} className={className} />;
+  if (t.includes('supplier')) return <Building2 size={size} className={className} />;
+  if (t.includes('shop')) return <Store size={size} className={className} />;
+  if (t.includes('member') || t.includes('user')) return <Users size={size} className={className} />;
+  if (t.includes('settlement')) return <FileSpreadsheet size={size} className={className} />;
+  if (t.includes('inventory')) return <Boxes size={size} className={className} />;
+  return <Shield size={size} className={className} />;
+};
+
 export const AuditPage: React.FC = () => {
   const [logs, setLogs] = useState<any[]>([]);
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(50);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [entityFilter, setEntityFilter] = useState<string>('ALL');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Selected Log detail
   const [selectedLog, setSelectedLog] = useState<any>(null);
 
   useEffect(() => {
     loadAuditLogs();
-  }, [page]);
+  }, [page, limit]);
 
   const loadAuditLogs = async () => {
     setIsLoading(true);
     try {
       const res: any = await auditApi.getAuditLogs({ page, limit });
-      setLogs(res?.data || res?.items || res || []);
+      const items = res?.items || res?.data || (Array.isArray(res) ? res : []);
+      setLogs(items);
+      setTotalItems(res?.total ?? items.length);
     } catch (err: any) {
       console.error('Error loading audit logs:', err);
       toast.error('Lỗi tải nhật ký kiểm toán', err.message);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCopy = (e: React.MouseEvent, text: string, label: string = 'ID') => {
+    e.stopPropagation();
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedId(text);
+    toast.success(`Đã sao chép ${label}`);
+    setTimeout(() => setCopiedId(null), 1800);
+  };
+
+  const getEntityDisplay = (log: any) => {
+    const summary = log.entitySummary;
+    const code = log.entityCode;
+    const name = log.entityName;
+    const rawId = log.entityId || '';
+    const shortId = rawId ? (rawId.length > 13 ? `${rawId.substring(0, 8)}...` : rawId) : '--';
+
+    let primaryText = summary;
+    if (!primaryText) {
+      if (name && code) {
+        primaryText = `${name} (${code})`;
+      } else if (code) {
+        primaryText = `${getEntityLabel(log.entityType)} ${code}`;
+      } else if (name) {
+        primaryText = name;
+      } else if (rawId) {
+        primaryText = `${getEntityLabel(log.entityType)} #${rawId.substring(0, 8)}`;
+      } else {
+        primaryText = '--';
+      }
+    }
+
+    return {
+      title: primaryText,
+      rawId,
+      shortId,
+      hasCodeOrName: Boolean(summary || code || name),
+    };
+  };
+
+  const renderIpBadge = (ip?: string) => {
+    const cleanIp = (ip || '').replace(/^::ffff:/, '').trim();
+    if (!cleanIp || cleanIp === '--') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60">
+          <Globe size={11} className="text-gray-400" />
+          127.0.0.1 <span className="text-[9px] text-gray-400 font-sans">(Local)</span>
+        </span>
+      );
+    }
+
+    const isLocal =
+      cleanIp === '127.0.0.1' ||
+      cleanIp === '::1' ||
+      cleanIp === 'localhost' ||
+      cleanIp.startsWith('192.168.') ||
+      cleanIp.startsWith('10.');
+
+    return (
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium border ${
+          isLocal
+            ? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700'
+            : 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-900/50'
+        }`}
+        title={isLocal ? 'Mạng cục bộ / Máy chủ nội bộ' : `Địa chỉ IP Client: ${cleanIp}`}
+      >
+        <Globe size={11} className={isLocal ? 'text-gray-400' : 'text-blue-500'} />
+        <span>{cleanIp}</span>
+        {isLocal && <span className="text-[9px] text-gray-400 font-sans">(Local)</span>}
+      </span>
+    );
   };
 
   // Metrics
@@ -167,23 +279,29 @@ export const AuditPage: React.FC = () => {
       const term = searchTerm.toLowerCase();
       const actionCode = (log.action || '').toLowerCase();
       const actionLabel = (AUDIT_ACTIONS[log.action]?.label || '').toLowerCase();
-      const entityCode = (log.entityType || '').toLowerCase();
+      const entitySummary = (log.entitySummary || '').toLowerCase();
+      const entityCode = (log.entityCode || '').toLowerCase();
+      const entityName = (log.entityName || '').toLowerCase();
+      const entityType = (log.entityType || '').toLowerCase();
       const entityLabel = (getEntityLabel(log.entityType) || '').toLowerCase();
       const actor = (log.user?.email || log.user?.name || log.userId || '').toLowerCase();
       const entityId = (log.entityId || '').toLowerCase();
+      const ip = (log.ipAddress || '').toLowerCase();
       return (
         actionCode.includes(term) ||
         actionLabel.includes(term) ||
+        entitySummary.includes(term) ||
         entityCode.includes(term) ||
+        entityName.includes(term) ||
+        entityType.includes(term) ||
         entityLabel.includes(term) ||
         actor.includes(term) ||
-        entityId.includes(term)
+        entityId.includes(term) ||
+        ip.includes(term)
       );
     }
     return true;
   });
-
-  const paginatedLogs = filteredLogs.slice((page - 1) * limit, page * limit);
 
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
@@ -217,7 +335,7 @@ export const AuditPage: React.FC = () => {
         <SystemMetricPairCard
           leftItem={{
             title: 'Tổng nhật ký kiểm toán',
-            value: logs.length,
+            value: totalItems || logs.length,
             subtitle: 'Hành động đã ghi nhận',
             icon: ShieldAlert,
             colorScheme: 'blue',
@@ -254,7 +372,7 @@ export const AuditPage: React.FC = () => {
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <input
             type="text"
-            placeholder="Tìm theo hành động, thực thể hoặc email..."
+            placeholder="Tìm theo hành động, mã đơn, tên kho, IP hoặc email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-8 pr-4 py-1.5 h-8 bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-normal"
@@ -275,6 +393,9 @@ export const AuditPage: React.FC = () => {
               { value: 'INVENTORY', label: 'Kho tồn (Inventory)' },
               { value: 'IMPORT', label: 'Import Excel (ImportJob)' },
               { value: 'RETURN', label: 'Hàng hoàn (OrderReturn)' },
+              { value: 'PURCHASE', label: 'Phiếu nhập NCC (PurchaseReceipt)' },
+              { value: 'SUPPLIER', label: 'Nhà cung cấp (Supplier)' },
+              { value: 'WAREHOUSE', label: 'Kho hàng (Warehouse)' },
               { value: 'SHOP', label: 'Gian hàng (Shop)' },
               { value: 'MEMBER', label: 'Nhân sự (Membership)' },
               { value: 'SETTLEMENT', label: 'Đối soát sàn (Settlement)' },
@@ -289,12 +410,12 @@ export const AuditPage: React.FC = () => {
       {/* Desktop Table with Bottom-Pinned SystemPagination */}
       <div className="hidden md:flex flex-1 flex-col min-h-fit md:min-h-0">
         <SystemTableWrapper
-          tableClassName="min-w-[900px]"
+          tableClassName="min-w-[980px]"
           pagination={
             <SystemPagination
               page={page - 1}
-              totalPages={Math.ceil(filteredLogs.length / limit) || 1}
-              totalItems={filteredLogs.length}
+              totalPages={Math.ceil(totalItems / limit) || 1}
+              totalItems={totalItems}
               setPage={(p) => setPage(p + 1)}
               itemsPerPage={limit}
               setItemsPerPage={setLimit}
@@ -303,20 +424,20 @@ export const AuditPage: React.FC = () => {
         >
           <SystemThead>
             <SystemTr>
-              <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
-              <SystemTh align="left">Thời gian</SystemTh>
-              <SystemTh align="left">Người thực hiện</SystemTh>
-              <SystemTh align="left">Hành động</SystemTh>
-              <SystemTh align="left">Đối tượng</SystemTh>
-              <SystemTh align="left">ID đối tượng</SystemTh>
-              <SystemTh align="left">IP Client</SystemTh>
-              <SystemTh align="center">Chi tiết</SystemTh>
+              <SystemTh className="w-12 text-center" align="center">STT</SystemTh>
+              <SystemTh className="w-36" align="left">Thời gian</SystemTh>
+              <SystemTh className="w-44" align="left">Người thực hiện</SystemTh>
+              <SystemTh className="w-40" align="left">Hành động</SystemTh>
+              <SystemTh className="w-28" align="left">Loại đối tượng</SystemTh>
+              <SystemTh className="min-w-[220px]" align="left">Mã / Đối tượng tác động</SystemTh>
+              <SystemTh className="w-36 text-center" align="center">IP Client</SystemTh>
+              <SystemTh className="w-16 text-center" align="center">Xem</SystemTh>
             </SystemTr>
           </SystemThead>
           <SystemTbody>
             {isLoading ? (
               <SystemTableSkeleton cols={8} rows={7} />
-            ) : paginatedLogs.length === 0 ? (
+            ) : filteredLogs.length === 0 ? (
               <SystemTableEmpty
                 colSpan={8}
                 title="Không có bản ghi nhật ký kiểm toán nào"
@@ -327,70 +448,98 @@ export const AuditPage: React.FC = () => {
                 }
               />
             ) : (
-              paginatedLogs.map((log, index) => {
+              filteredLogs.map((log, index) => {
                 const stt = (page - 1) * limit + index + 1;
+                const actionInfo = getActionInfo(log.action);
+                const display = getEntityDisplay(log);
+
                 return (
                   <SystemTr key={log.id}>
                     <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
                       {stt}
                     </SystemTd>
-                  <SystemTd className="text-gray-500 dark:text-gray-400 font-mono text-[11px] whitespace-nowrap">
-                    {new Date(log.createdAt).toLocaleString('vi-VN')}
-                  </SystemTd>
-                  <SystemTd>
-                    <div className="font-medium text-gray-900 dark:text-white">
-                      {log.user?.name || 'Hệ thống'}
-                    </div>
-                    <div className="text-[11px] font-mono text-gray-400">
-                      {log.user?.email || log.userId || '--'}
-                    </div>
-                  </SystemTd>
-                  <SystemTd>
-                    {(() => {
-                      const actionInfo = getActionInfo(log.action);
-                      return (
-                        <div className="flex flex-col items-start gap-1">
-                          <Badge variant={actionInfo.variant} className="text-[11px] font-semibold">
-                            {actionInfo.label}
-                          </Badge>
-                          <span className="font-mono text-[10px] text-gray-400 select-all tracking-tight">
-                            {log.action}
+                    <SystemTd className="text-gray-500 dark:text-gray-400 font-mono text-[11px] whitespace-nowrap">
+                      {new Date(log.createdAt).toLocaleString('vi-VN')}
+                    </SystemTd>
+                    <SystemTd>
+                      <div className="font-medium text-xs text-gray-900 dark:text-white truncate max-w-[160px]" title={log.user?.name || 'Hệ thống'}>
+                        {log.user?.name || 'Hệ thống'}
+                      </div>
+                      <div className="text-[11px] font-mono text-gray-400 truncate max-w-[160px]" title={log.user?.email || log.userId || '--'}>
+                        {log.user?.email || log.userId || '--'}
+                      </div>
+                    </SystemTd>
+                    <SystemTd>
+                      <div className="flex flex-col items-start gap-1">
+                        <Badge variant={actionInfo.variant} className="text-[11px] font-semibold">
+                          {actionInfo.label}
+                        </Badge>
+                        <span className="font-mono text-[10px] text-gray-400 select-all tracking-tight">
+                          {log.action}
+                        </span>
+                      </div>
+                    </SystemTd>
+                    <SystemTd>
+                      <div className="flex items-center gap-1.5">
+                        <span className="p-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                          <EntityIcon type={log.entityType} size={13} />
+                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-gray-900 dark:text-gray-100 font-medium text-xs">
+                            {getEntityLabel(log.entityType)}
+                          </span>
+                          <span className="font-mono text-[10px] text-gray-400">
+                            {log.entityType}
                           </span>
                         </div>
-                      );
-                    })()}
-                  </SystemTd>
-                  <SystemTd>
-                    <div className="flex flex-col items-start gap-0.5">
-                      <span className="text-gray-900 dark:text-gray-100 font-medium text-xs">
-                        {getEntityLabel(log.entityType)}
-                      </span>
-                      <span className="font-mono text-[10px] text-gray-400">
-                        {log.entityType}
-                      </span>
-                    </div>
-                  </SystemTd>
-                  <SystemTd className="font-mono text-[11px] text-gray-500 dark:text-gray-400 max-w-[140px] truncate">
-                    {log.entityId || '--'}
-                  </SystemTd>
-                  <SystemTd className="font-mono text-gray-400 text-[11px]">
-                    {log.ipAddress || '--'}
-                  </SystemTd>
-                  <SystemTd align="center">
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={() => setSelectedLog(log)}
-                      className="px-2 text-gray-500 hover:text-[#5865f2]"
-                      title="Xem chi tiết dữ liệu"
-                    >
-                      <Eye size={14} />
-                    </Button>
-                  </SystemTd>
-                </SystemTr>
-              );
-            })
-          )}
+                      </div>
+                    </SystemTd>
+                    <SystemTd>
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5 font-medium text-xs text-gray-900 dark:text-gray-100">
+                          <span className="truncate max-w-[240px]" title={display.title}>
+                            {display.title}
+                          </span>
+                        </div>
+                        {display.rawId && (
+                          <div className="flex items-center gap-1 text-[11px] font-mono text-gray-400">
+                            <span className="truncate" title={`UUID: ${display.rawId}`}>
+                              ID: {display.shortId}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => handleCopy(e, display.rawId, 'UUID')}
+                              className="text-gray-400 hover:text-[#5865f2] transition-colors p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+                              title="Sao chép toàn bộ UUID"
+                            >
+                              {copiedId === display.rawId ? (
+                                <Check size={11} className="text-emerald-500" />
+                              ) : (
+                                <Copy size={11} />
+                              )}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </SystemTd>
+                    <SystemTd align="center" className="text-center">
+                      {renderIpBadge(log.ipAddress)}
+                    </SystemTd>
+                    <SystemTd align="center">
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => setSelectedLog(log)}
+                        className="px-2 text-gray-500 hover:text-[#5865f2]"
+                        title="Xem chi tiết dữ liệu"
+                      >
+                        <Eye size={14} />
+                      </Button>
+                    </SystemTd>
+                  </SystemTr>
+                );
+              })
+            )}
           </SystemTbody>
         </SystemTableWrapper>
       </div>
@@ -399,18 +548,19 @@ export const AuditPage: React.FC = () => {
       <div className="md:hidden flex-1 overflow-y-auto space-y-2 pb-16">
         {isLoading ? (
           <div className="py-8 text-center text-xs text-gray-400">Đang tải nhật ký kiểm toán...</div>
-        ) : paginatedLogs.length === 0 ? (
+        ) : filteredLogs.length === 0 ? (
           <div className="py-8 text-center text-xs text-gray-400">Không có bản ghi nhật ký nào</div>
         ) : (
-          paginatedLogs.map((log, index) => {
+          filteredLogs.map((log, index) => {
             const stt = (page - 1) * limit + index + 1;
             const actionInfo = getActionInfo(log.action);
+            const display = getEntityDisplay(log);
 
             return (
               <div
                 key={log.id}
                 onClick={() => setSelectedLog(log)}
-                className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 space-y-2 cursor-pointer shadow-none"
+                className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 space-y-2 cursor-pointer shadow-none hover:border-[#5865f2]/40 transition-colors"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 min-w-0">
@@ -427,18 +577,27 @@ export const AuditPage: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="text-[11px] text-gray-600 dark:text-gray-300 flex items-center justify-between">
-                  <span className="font-medium text-gray-800 dark:text-gray-200">
-                    {getEntityLabel(log.entityType)}
-                  </span>
-                  {log.entityId && (
-                    <span className="font-mono text-gray-400 truncate max-w-[160px]">
-                      ID: {log.entityId}
+                {/* Entity & IP */}
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="p-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 shrink-0">
+                      <EntityIcon type={log.entityType} size={12} />
                     </span>
-                  )}
+                    <div className="min-w-0">
+                      <div className="font-medium text-xs text-gray-800 dark:text-gray-200 truncate">
+                        {display.title}
+                      </div>
+                      <div className="text-[10px] text-gray-400 font-mono">
+                        {getEntityLabel(log.entityType)} • {display.shortId}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    {renderIpBadge(log.ipAddress)}
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] pt-1 border-t border-gray-100 dark:border-gray-800 text-gray-500">
+                <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-gray-100 dark:border-gray-800 text-gray-500">
                   <span className="truncate">
                     Bởi: <strong>{log.user?.name || log.user?.email || 'Hệ thống'}</strong>
                   </span>
@@ -451,12 +610,12 @@ export const AuditPage: React.FC = () => {
           })
         )}
 
-        {filteredLogs.length > limit && (
+        {totalItems > limit && (
           <div className="pt-2">
             <SystemPagination
               page={page - 1}
-              totalPages={Math.ceil(filteredLogs.length / limit) || 1}
-              totalItems={filteredLogs.length}
+              totalPages={Math.ceil(totalItems / limit) || 1}
+              totalItems={totalItems}
               setPage={(p) => setPage(p + 1)}
               itemsPerPage={limit}
               setItemsPerPage={setLimit}
@@ -466,62 +625,120 @@ export const AuditPage: React.FC = () => {
       </div>
 
       {/* MODAL: VIEW AUDIT METADATA */}
-      {selectedLog && (
-        <Modal
-          isOpen={Boolean(selectedLog)}
-          onClose={() => setSelectedLog(null)}
-          title={<><span className="sm:hidden">Kiểm toán #{selectedLog.id?.substring(0, 8)}</span><span className="hidden sm:inline">{`Bản ghi kiểm toán #${selectedLog.id?.substring(0, 8)}`}</span></>}
-          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`${getActionInfo(selectedLog.action).label} (${selectedLog.action}) • ${getEntityLabel(selectedLog.entityType)}`}</span>}
-          icon={ShieldAlert}
-          maxWidth="max-w-xl"
-        >
-          <div className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
-              <div className="grid grid-cols-2 gap-3 text-xs bg-gray-50 dark:bg-[#181b22] p-3 rounded border border-gray-200 dark:border-gray-800">
-                <div>
-                  <span className="text-gray-400">Thời gian:</span>
-                  <div className="font-medium text-gray-800 dark:text-gray-200 mt-0.5">
-                    {new Date(selectedLog.createdAt).toLocaleString('vi-VN')}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-gray-400">Người thực hiện:</span>
-                  <div className="font-medium text-gray-800 dark:text-gray-200 mt-0.5 truncate">
-                    {selectedLog.user?.email || selectedLog.userId}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-gray-400">Thực thể ID:</span>
-                  <div className="font-mono text-[11px] text-gray-800 dark:text-gray-200 mt-0.5 truncate">
-                    {selectedLog.entityId || '--'}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-gray-400">IP Client:</span>
-                  <div className="font-mono text-[11px] text-gray-800 dark:text-gray-200 mt-0.5">
-                    {selectedLog.ipAddress || '--'}
-                  </div>
-                </div>
-              </div>
+      {selectedLog && (() => {
+        const modalDisplay = getEntityDisplay(selectedLog);
+        const actionInfo = getActionInfo(selectedLog.action);
+        const payloadData = {
+          ...(selectedLog.oldValues ? { 'Dữ liệu trước (oldValues)': selectedLog.oldValues } : {}),
+          ...(selectedLog.newValues ? { 'Dữ liệu sau (newValues)': selectedLog.newValues } : {}),
+          ...(selectedLog.metadata ? { 'Metadata': selectedLog.metadata } : {}),
+          ...(selectedLog.details ? { 'Chi tiết': selectedLog.details } : {}),
+        };
+        const hasPayload = Object.keys(payloadData).length > 0;
 
-              <div>
-                <label className="block text-xs font-medium text-gray-900 dark:text-white mb-1.5 flex items-center gap-1.5">
-                  <FileCode size={14} className="text-[#5865f2]" /> Dữ liệu payload / thay đổi:
-                </label>
-                <pre className="p-3 bg-gray-950 text-gray-100 rounded border border-gray-800 text-[11px] font-mono overflow-x-auto max-h-64 custom-scrollbar">
-                  {JSON.stringify(selectedLog.metadata || selectedLog.details || {}, null, 2)}
-                </pre>
-              </div>
-            </ModalBody>
+        return (
+          <Modal
+            isOpen={Boolean(selectedLog)}
+            onClose={() => setSelectedLog(null)}
+            title={
+              <>
+                <span className="sm:hidden">Kiểm toán #{selectedLog.id?.substring(0, 8)}</span>
+                <span className="hidden sm:inline">{`Bản ghi kiểm toán #${selectedLog.id?.substring(0, 8)}`}</span>
+              </>
+            }
+            subtitle={
+              <span className="line-clamp-1 sm:line-clamp-none">
+                {`${actionInfo.label} (${selectedLog.action}) • ${getEntityLabel(selectedLog.entityType)}`}
+              </span>
+            }
+            icon={ShieldAlert}
+            maxWidth="max-w-2xl"
+          >
+            <div className="flex flex-col flex-1 min-h-0">
+              <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-gray-50 dark:bg-[#181b22] p-3.5 rounded border border-gray-200 dark:border-gray-800">
+                  <div>
+                    <span className="text-gray-400 text-[11px] font-medium">Thời gian thực hiện:</span>
+                    <div className="font-medium text-gray-800 dark:text-gray-200 mt-0.5">
+                      {new Date(selectedLog.createdAt).toLocaleString('vi-VN')}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 text-[11px] font-medium">Người thực hiện:</span>
+                    <div className="font-medium text-gray-800 dark:text-gray-200 mt-0.5 truncate" title={selectedLog.user?.email || selectedLog.userId}>
+                      {selectedLog.user?.name ? `${selectedLog.user.name} (${selectedLog.user.email || selectedLog.userId})` : (selectedLog.user?.email || selectedLog.userId || 'Hệ thống')}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 text-[11px] font-medium">Đối tượng tác động:</span>
+                    <div className="font-semibold text-gray-900 dark:text-white mt-0.5 flex items-center gap-1.5">
+                      <EntityIcon type={selectedLog.entityType} size={14} className="text-[#5865f2]" />
+                      <span>{modalDisplay.title}</span>
+                    </div>
+                    {modalDisplay.rawId && (
+                      <div className="font-mono text-[10px] text-gray-400 mt-1 flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded w-fit">
+                        <span>UUID: {modalDisplay.rawId}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopy(e, modalDisplay.rawId, 'UUID')}
+                          className="text-gray-400 hover:text-[#5865f2] transition-colors"
+                          title="Sao chép UUID"
+                        >
+                          {copiedId === modalDisplay.rawId ? (
+                            <Check size={11} className="text-emerald-500" />
+                          ) : (
+                            <Copy size={11} />
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-gray-400 text-[11px] font-medium">IP Client & Thiết bị:</span>
+                    <div className="mt-1 flex items-center gap-2">
+                      {renderIpBadge(selectedLog.ipAddress)}
+                    </div>
+                    {selectedLog.userAgent && (
+                      <div className="text-[10px] font-mono text-gray-400 truncate mt-1" title={selectedLog.userAgent}>
+                        Agent: {selectedLog.userAgent}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-            <ModalFooter className="flex items-center justify-end w-full">
-              <ModalButton variant="primary" onClick={() => setSelectedLog(null)} className="w-full sm:w-auto">
-                Đóng
-              </ModalButton>
-            </ModalFooter>
-          </div>
-        </Modal>
-      )}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
+                      <FileCode size={14} className="text-[#5865f2]" /> Dữ liệu payload / thay đổi chi tiết:
+                    </label>
+                    {hasPayload && (
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={(e) => handleCopy(e, JSON.stringify(payloadData, null, 2), 'dữ liệu JSON')}
+                        className="text-[11px] text-gray-400 hover:text-[#5865f2] h-6 px-2 gap-1"
+                      >
+                        <Copy size={11} /> Sao chép JSON
+                      </Button>
+                    )}
+                  </div>
+                  <pre className="p-3 bg-gray-950 text-emerald-400 dark:text-emerald-300 rounded border border-gray-800 text-[11px] font-mono overflow-x-auto max-h-72 custom-scrollbar">
+                    {hasPayload
+                      ? JSON.stringify(payloadData, null, 2)
+                      : JSON.stringify({ message: 'Không có thông tin payload mở rộng cho bản ghi này' }, null, 2)}
+                  </pre>
+                </div>
+              </ModalBody>
+
+              <ModalFooter className="flex items-center justify-end w-full">
+                <ModalButton variant="primary" onClick={() => setSelectedLog(null)} className="w-full sm:w-auto">
+                  Đóng
+                </ModalButton>
+              </ModalFooter>
+            </div>
+          </Modal>
+        );
+      })()}
     </div>
   );
 };
