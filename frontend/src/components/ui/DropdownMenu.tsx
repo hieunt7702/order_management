@@ -127,21 +127,25 @@ export function DropdownMenuContent({
       : 'none';
 
     const menuEl = menuRef.current;
-    const menuWidth = menuEl ? menuEl.offsetWidth : 210;
+    const menuWidth = menuEl?.offsetWidth || 210;
+    const windowWidth = window.innerWidth;
 
     let left: number | undefined;
     let right: number | undefined;
 
     if (isStart) {
-      left = Math.max(8, Math.min(rect.left, window.innerWidth - menuWidth - 8));
+      left = Math.max(8, Math.min(rect.left, windowWidth - menuWidth - 8));
     } else if (isCenter) {
-      left = Math.max(8, Math.min(rect.left + rect.width / 2, window.innerWidth - 8));
+      left = Math.max(8, Math.min(rect.left + rect.width / 2, windowWidth - 8));
     } else {
       // align === 'end' or 'right'
+      const idealRight = windowWidth - rect.right;
       if (rect.right < menuWidth + 8) {
         left = 8;
+        right = undefined;
       } else {
-        right = Math.max(8, window.innerWidth - rect.right);
+        right = Math.max(8, Math.min(idealRight, windowWidth - menuWidth - 8));
+        left = undefined;
       }
     }
 
@@ -161,6 +165,11 @@ export function DropdownMenuContent({
 
     updatePosition();
 
+    // Recalculate with exact DOM-rendered dimensions
+    const rafId = requestAnimationFrame(() => {
+      updatePosition();
+    });
+
     const handleScrollOrResize = () => {
       updatePosition();
     };
@@ -169,6 +178,7 @@ export function DropdownMenuContent({
     window.addEventListener('resize', handleScrollOrResize);
 
     return () => {
+      cancelAnimationFrame(rafId);
       window.removeEventListener('scroll', handleScrollOrResize, true);
       window.removeEventListener('resize', handleScrollOrResize);
     };
@@ -244,7 +254,7 @@ export function DropdownMenuItem({
       onTouchStart={(e) => e.stopPropagation()}
       onTouchEnd={(e) => e.stopPropagation()}
       className={cn(
-        'flex items-center gap-2 px-2.5 py-1.5 text-xs font-normal rounded transition-colors cursor-pointer select-none outline-none leading-snug whitespace-nowrap',
+        'flex items-center gap-2 px-2.5 py-1.5 text-xs font-normal rounded transition-colors cursor-pointer select-none outline-none leading-snug whitespace-nowrap [&>svg]:shrink-0',
         variantClasses[variant] || variantClasses.default,
         className,
       )}

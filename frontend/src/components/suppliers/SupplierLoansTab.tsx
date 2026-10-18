@@ -466,20 +466,20 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
                               <MoreHorizontal size={14} />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="min-w-[190px]">
                             <DropdownMenuItem onClick={() => handleOpenDetail(loan)}>
-                              <Eye size={13} className="text-[#5865f2]" />
+                              <Eye size={14} className="text-[#5865f2] shrink-0" />
                               <span>Xem chi tiết hợp đồng</span>
                             </DropdownMenuItem>
                             {!isSettled && (
                               <DropdownMenuItem onClick={() => handleOpenRepayModal(loan)}>
-                                <CreditCard size={13} className="text-emerald-500" />
+                                <CreditCard size={14} className="text-emerald-500 shrink-0" />
                                 <span>{isBorrow ? 'Ghi nhận đợt trả nợ' : 'Ghi nhận thu nợ'}</span>
                               </DropdownMenuItem>
                             )}
                             {loan.supplier?.bankAccount && (
                               <DropdownMenuItem onClick={() => setQrModalLoan(loan)}>
-                                <QrCode size={13} className="text-indigo-500" />
+                                <QrCode size={14} className="text-indigo-500 shrink-0" />
                                 <span>Xem VietQR chuyển khoản</span>
                               </DropdownMenuItem>
                             )}
@@ -546,15 +546,47 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
 
                 <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-100 dark:border-gray-800" onClick={(e) => e.stopPropagation()}>
                   <span>{loan.loanDate ? new Date(loan.loanDate).toLocaleDateString('vi-VN') : ''}</span>
-                  {!isSettled && (
-                    <button
-                      type="button"
-                      onClick={() => handleOpenRepayModal(loan)}
-                      className="px-2.5 py-1 text-xs rounded bg-emerald-600 text-white font-semibold"
-                    >
-                      {isBorrow ? 'Trả nợ' : 'Thu nợ'}
-                    </button>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    {!isSettled && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenRepayModal(loan)}
+                        className="px-2.5 py-1 text-xs rounded bg-emerald-600 hover:bg-emerald-700 text-white font-medium cursor-pointer active:scale-95 transition-all"
+                      >
+                        {isBorrow ? 'Trả nợ' : 'Thu nợ'}
+                      </button>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="px-2 py-1 rounded flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                          title="Thao tác"
+                        >
+                          <MoreHorizontal size={13} />
+                          <span>Thao tác</span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="min-w-[190px]">
+                        <DropdownMenuItem onClick={() => handleOpenDetail(loan)}>
+                          <Eye size={14} className="text-[#5865f2] shrink-0" />
+                          <span>Xem chi tiết hợp đồng</span>
+                        </DropdownMenuItem>
+                        {!isSettled && (
+                          <DropdownMenuItem onClick={() => handleOpenRepayModal(loan)}>
+                            <CreditCard size={14} className="text-emerald-500 shrink-0" />
+                            <span>{isBorrow ? 'Ghi nhận đợt trả nợ' : 'Ghi nhận thu nợ'}</span>
+                          </DropdownMenuItem>
+                        )}
+                        {loan.supplier?.bankAccount && (
+                          <DropdownMenuItem onClick={() => setQrModalLoan(loan)}>
+                            <QrCode size={14} className="text-indigo-500 shrink-0" />
+                            <span>Xem VietQR chuyển khoản</span>
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </div>
             );

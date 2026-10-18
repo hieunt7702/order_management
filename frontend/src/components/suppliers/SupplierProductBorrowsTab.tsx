@@ -669,22 +669,22 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
                               <MoreHorizontal size={14} />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuContent align="end" className="min-w-[240px]">
                             <DropdownMenuItem onClick={() => handleOpenDetail(b)}>
-                              <Eye size={13} className="text-[#5865f2]" />
+                              <Eye size={14} className="text-[#5865f2] shrink-0" />
                               <span>Xem danh sách sản phẩm</span>
                             </DropdownMenuItem>
                             {hasRemaining && (
                               <>
                                 <DropdownMenuItem onClick={() => handleOpenReturnModal(b)}>
-                                  <RotateCcw size={13} className="text-orange-500" />
+                                  <RotateCcw size={14} className="text-orange-500 shrink-0" />
                                   <span className="text-orange-600 dark:text-orange-400 font-medium">
-                                    Xuất trả lại hàng cho NCC
+                                    {isBorrow ? 'Xuất trả lại hàng cho NCC' : 'Nhận lại hàng từ NCC'}
                                   </span>
                                 </DropdownMenuItem>
                                 {isBorrow && (
                                   <DropdownMenuItem onClick={() => handleOpenConvertModal(b)}>
-                                    <ShoppingCart size={13} className="text-emerald-500" />
+                                    <ShoppingCart size={14} className="text-emerald-500 shrink-0" />
                                     <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                                       Mua đứt (Chuyển sang mua hàng)
                                     </span>
@@ -768,22 +768,22 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
                         <span>Thao tác</span>
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuContent align="end" className="min-w-[240px]">
                       <DropdownMenuItem onClick={() => handleOpenDetail(b)}>
-                        <Eye size={13} className="text-[#5865f2]" />
+                        <Eye size={14} className="text-[#5865f2] shrink-0" />
                         <span>Xem danh sách sản phẩm</span>
                       </DropdownMenuItem>
                       {hasRemaining && (
                         <>
                           <DropdownMenuItem onClick={() => handleOpenReturnModal(b)}>
-                            <RotateCcw size={13} className="text-orange-500" />
+                            <RotateCcw size={14} className="text-orange-500 shrink-0" />
                             <span className="text-orange-600 dark:text-orange-400 font-medium">
-                              Xuất trả lại hàng cho NCC
+                              {isBorrow ? 'Xuất trả lại hàng cho NCC' : 'Nhận lại hàng từ NCC'}
                             </span>
                           </DropdownMenuItem>
                           {isBorrow && (
                             <DropdownMenuItem onClick={() => handleOpenConvertModal(b)}>
-                              <ShoppingCart size={13} className="text-emerald-500" />
+                              <ShoppingCart size={14} className="text-emerald-500 shrink-0" />
                               <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                                 Mua đứt (Chuyển sang mua hàng)
                               </span>
