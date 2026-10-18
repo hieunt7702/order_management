@@ -436,28 +436,30 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
               ]}
               icon={Layers}
               size="sm"
-              className="w-48"
+              className="w-full sm:w-48"
               menuWidth="w-56"
             />
 
-            {/* Stock State */}
-            <Select
-              value={stockState}
-              onChange={(val: any) => setStockState(val)}
-              options={[
-                { value: '', label: 'Tất cả trạng thái hàng', icon: ShieldCheck },
-                { value: 'SELLABLE', label: 'Đủ điều kiện bán (Đạt chuẩn)', icon: CheckCircle },
-                { value: 'DAMAGED', label: 'Hàng lỗi / hỏng', icon: AlertTriangle },
-                { value: 'PENDING_INSPECTION', label: 'Chờ kiểm tra', icon: Clock },
-              ]}
-              icon={ShieldCheck}
-              size="sm"
-              className="w-44"
-              menuWidth="w-52"
-            />
+            {/* Stock State - Ẩn trên mobile */}
+            <div className="hidden sm:block">
+              <Select
+                value={stockState}
+                onChange={(val: any) => setStockState(val)}
+                options={[
+                  { value: '', label: 'Tất cả trạng thái hàng', icon: ShieldCheck },
+                  { value: 'SELLABLE', label: 'Đủ điều kiện bán (Đạt chuẩn)', icon: CheckCircle },
+                  { value: 'DAMAGED', label: 'Hàng lỗi / hỏng', icon: AlertTriangle },
+                  { value: 'PENDING_INSPECTION', label: 'Chờ kiểm tra', icon: Clock },
+                ]}
+                icon={ShieldCheck}
+                size="sm"
+                className="w-44"
+                menuWidth="w-52"
+              />
+            </div>
 
-            {/* Date range with Calendar icon */}
-            <div className="flex items-center gap-1.5">
+            {/* Date range with Calendar icon - Ẩn trên mobile */}
+            <div className="hidden sm:flex items-center gap-1.5">
               <div className="flex items-center gap-1 px-2 h-8 bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs">
                 <Calendar size={13} className="text-gray-400 shrink-0" />
                 <input
@@ -482,13 +484,13 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
             <Button
               type="button"
               variant="default"
               size="sm"
               onClick={handleApplyFilter}
-              className="h-8 gap-1.5 px-3.5 bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold cursor-pointer"
+              className="h-8 gap-1.5 px-3.5 bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold cursor-pointer flex-1 sm:flex-initial justify-center"
             >
               <Filter size={13} />
               <span>Lọc dữ liệu</span>
@@ -496,7 +498,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
             <button
               type="button"
               onClick={handleResetFilter}
-              className="h-8 px-2.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#1a1b23] text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs transition-colors cursor-pointer flex items-center gap-1"
+              className="h-8 px-2.5 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#1a1b23] text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs transition-colors cursor-pointer flex items-center justify-center gap-1"
               title="Đặt lại bộ lọc"
             >
               <RotateCcw size={12} />
@@ -505,10 +507,285 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
           </div>
         </div>
 
-        {/* Main Ledger Table with Column Illustrative Icons */}
-        <SystemTableWrapper
-          tableClassName="min-w-[1100px]"
-          pagination={
+        {/* 1. Main Ledger Table: Chỉ hiển thị trên Desktop (hidden trên Mobile & Tablet) */}
+        <div className="hidden lg:flex flex-col flex-1 min-h-0">
+          <SystemTableWrapper
+            tableClassName="min-w-[1100px]"
+            pagination={
+              <SystemPagination
+                page={page - 1}
+                totalPages={totalPages}
+                totalItems={total}
+                setPage={(p) => setPage(p + 1)}
+                itemsPerPage={limit}
+                setItemsPerPage={(l) => {
+                  setLimit(l);
+                  setPage(1);
+                }}
+              />
+            }
+          >
+            <SystemThead>
+              <SystemTr>
+                <SystemTh className="w-36" align="left">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar size={12} className="text-gray-400 shrink-0" />
+                    <span>Thời Gian</span>
+                  </div>
+                </SystemTh>
+                <SystemTh className="w-44" align="left">
+                  <div className="flex items-center gap-1.5">
+                    <Layers size={12} className="text-gray-400 shrink-0" />
+                    <span>Loại Giao Dịch</span>
+                  </div>
+                </SystemTh>
+                <SystemTh className="w-36" align="left">
+                  <div className="flex items-center gap-1.5">
+                    <FileText size={12} className="text-gray-400 shrink-0" />
+                    <span>Chứng Từ</span>
+                  </div>
+                </SystemTh>
+                <SystemTh className="w-40" align="left">
+                  <div className="flex items-center gap-1.5">
+                    <Warehouse size={12} className="text-gray-400 shrink-0" />
+                    <span>Kho & Trạng Thái</span>
+                  </div>
+                </SystemTh>
+                <SystemTh className="w-28" align="right">
+                  <div className="flex items-center justify-end gap-1">
+                    <ArrowUpDown size={12} className="text-gray-400 shrink-0" />
+                    <span>Thay Đổi</span>
+                  </div>
+                </SystemTh>
+                <SystemTh className="w-36" align="center">
+                  <div className="flex items-center justify-center gap-1.5">
+                    <Boxes size={12} className="text-gray-400 shrink-0" />
+                    <span>Tồn Trước &rarr; Sau</span>
+                  </div>
+                </SystemTh>
+                <SystemTh className="w-32" align="left">
+                  <div className="flex items-center gap-1.5">
+                    <Clock size={12} className="text-gray-400 shrink-0" />
+                    <span>Lô & HSD</span>
+                  </div>
+                </SystemTh>
+                <SystemTh className="w-32" align="left">
+                  <div className="flex items-center gap-1.5">
+                    <User size={12} className="text-gray-400 shrink-0" />
+                    <span>Người Thực Hiện</span>
+                  </div>
+                </SystemTh>
+                <SystemTh className="min-w-[140px]" align="left">
+                  <div className="flex items-center gap-1.5">
+                    <FileText size={12} className="text-gray-400 shrink-0" />
+                    <span>Ghi Chú</span>
+                  </div>
+                </SystemTh>
+              </SystemTr>
+            </SystemThead>
+            <SystemTbody>
+              {isLoading ? (
+                <SystemTableSkeleton cols={9} rows={6} />
+              ) : ledgerEntries.length === 0 ? (
+                <SystemTableEmpty
+                  colSpan={9}
+                  title="Chưa có bút toán biến động"
+                  description="Không tìm thấy lịch sử biến động nào cho sản phẩm này theo điều kiện lọc hiện tại."
+                />
+              ) : (
+                ledgerEntries.map((row) => (
+                  <SystemTr
+                    key={row.id}
+                    onClick={() => setSelectedEntry(row)}
+                    className="cursor-pointer"
+                  >
+                    {/* Thời gian */}
+                    <SystemTd className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                      {new Date(row.createdAt).toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </SystemTd>
+
+                    {/* Loại giao dịch */}
+                    <SystemTd className="whitespace-nowrap">
+                      {formatMovementBadge(row.movementType, row.deltaOnHand, row.stockState)}
+                    </SystemTd>
+
+                    {/* Chứng từ liên quan */}
+                    <SystemTd className="font-mono font-bold text-[#5865f2] whitespace-nowrap">
+                      {row.voucherCode || (row.referenceType === 'PACKAGE' ? `Kiện ${row.referenceId?.substring(0, 8)}` : row.referenceId?.substring(0, 8)) || '-'}
+                    </SystemTd>
+
+                    {/* Kho & Trạng thái */}
+                    <SystemTd className="whitespace-nowrap">
+                      <div className="font-medium text-gray-900 dark:text-white">
+                        {row.warehouseName || row.warehouseCode}
+                      </div>
+                      <span className="text-[10px] text-gray-400">
+                        {row.stockState === 'DAMAGED'
+                          ? 'Hàng lỗi'
+                          : row.stockState === 'PENDING_INSPECTION'
+                          ? 'Chờ kiểm tra'
+                          : 'Có thể bán'}
+                      </span>
+                    </SystemTd>
+
+                    {/* Thay đổi */}
+                    <SystemTd align="right" className="whitespace-nowrap">
+                      {formatDelta(row)}
+                    </SystemTd>
+
+                    {/* Tồn trước -> sau */}
+                    <SystemTd align="center" className="whitespace-nowrap">
+                      {formatBeforeAfter(row)}
+                    </SystemTd>
+
+                    {/* Lô & HSD */}
+                    <SystemTd className="text-[11px] whitespace-nowrap">
+                      {row.batchCode ? (
+                        <div>
+                          <span className="font-mono text-gray-800 dark:text-gray-200 font-semibold">
+                            {row.batchCode}
+                          </span>
+                          {row.expiryDate && (
+                            <div className="text-[10px] text-gray-400">
+                              HSD: {new Date(row.expiryDate).toLocaleDateString('vi-VN')}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </SystemTd>
+
+                    {/* Người thực hiện */}
+                    <SystemTd className="text-[11px] text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      {row.performerName || 'Hệ thống'}
+                    </SystemTd>
+
+                    {/* Ghi chú */}
+                    <SystemTd className="text-[11px] text-gray-500 max-w-xs truncate" title={row.note || ''}>
+                      {row.note || '-'}
+                    </SystemTd>
+                  </SystemTr>
+                ))
+              )}
+            </SystemTbody>
+          </SystemTableWrapper>
+        </div>
+
+        {/* 2. Mobile & Tablet Card View: Thay thế hoàn toàn Table trên Mobile & Tablet (lg:hidden) */}
+        <div className="lg:hidden flex-1 overflow-y-auto space-y-2.5 min-h-[300px]">
+          {isLoading ? (
+            <div className="space-y-2.5">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="p-3.5 rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#14151a] animate-pulse space-y-2">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/3" />
+                  <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-1/2" />
+                  <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-1/4" />
+                </div>
+              ))}
+            </div>
+          ) : ledgerEntries.length === 0 ? (
+            <div className="p-8 text-center rounded border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#14151a]">
+              <Boxes size={28} className="mx-auto text-gray-400 mb-2 opacity-60" />
+              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">Chưa có bút toán biến động</p>
+              <p className="text-[11px] text-gray-400 mt-1">Không tìm thấy lịch sử biến động nào cho sản phẩm này theo điều kiện lọc hiện tại.</p>
+            </div>
+          ) : (
+            ledgerEntries.map((row) => {
+              const formattedDate = new Date(row.createdAt).toLocaleDateString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              });
+              const voucher = row.voucherCode || (row.referenceType === 'PACKAGE' ? `Kiện ${row.referenceId?.substring(0, 8)}` : row.referenceId?.substring(0, 8)) || '-';
+
+              return (
+                <div
+                  key={row.id}
+                  onClick={() => setSelectedEntry(row)}
+                  className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200/80 dark:border-gray-800/80 space-y-2.5 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-600 transition-colors shadow-xs"
+                >
+                  {/* Dòng 1: Badge loại biến động & Thay đổi tồn */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {formatMovementBadge(row.movementType, row.deltaOnHand, row.stockState)}
+                    </div>
+                    <div className="text-right shrink-0">
+                      {formatDelta(row)}
+                    </div>
+                  </div>
+
+                  {/* Dòng 2: Chứng từ & Tồn trước -> sau */}
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <FileText size={12} className="text-[#5865f2] shrink-0" />
+                      <span className="text-gray-400 text-[11px]">Chứng từ:</span>
+                      <span className="font-mono font-bold text-[#5865f2] truncate">
+                        {voucher}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] shrink-0">
+                      <span className="text-gray-400">Tồn:</span>
+                      {formatBeforeAfter(row)}
+                    </div>
+                  </div>
+
+                  {/* Dòng 3: Kho, Trạng thái & Thời gian */}
+                  <div className="flex items-center justify-between gap-2 text-xs pt-1.5 border-t border-gray-100 dark:border-gray-800/60 text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Warehouse size={12} className="text-gray-400 shrink-0" />
+                      <span className="truncate font-medium text-gray-800 dark:text-gray-200">
+                        {row.warehouseName || row.warehouseCode}
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        ({row.stockState === 'DAMAGED'
+                          ? 'Hàng lỗi'
+                          : row.stockState === 'PENDING_INSPECTION'
+                          ? 'Chờ KT'
+                          : 'Đủ ĐK bán'})
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 text-[11px] text-gray-400 shrink-0">
+                      <Clock size={11} className="shrink-0" />
+                      <span>{formattedDate}</span>
+                    </div>
+                  </div>
+
+                  {/* Dòng 4 (nếu có): Người thực hiện, Lô/HSD, Ghi chú */}
+                  {(row.performerName || row.batchCode || row.note) && (
+                    <div className="flex items-center justify-between gap-2 text-[11px] text-gray-400 pt-1 border-t border-dashed border-gray-100 dark:border-gray-800/40">
+                      <div className="flex items-center gap-1 truncate">
+                        <User size={11} className="shrink-0" />
+                        <span className="truncate">{row.performerName || 'Hệ thống'}</span>
+                        {row.batchCode && (
+                          <span className="font-mono text-gray-600 dark:text-gray-300">
+                            • Lô: {row.batchCode}
+                          </span>
+                        )}
+                      </div>
+                      {row.note && (
+                        <span className="truncate max-w-[140px] text-gray-400 italic" title={row.note}>
+                          {row.note}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+
+          {/* Phân trang trên Mobile & Tablet */}
+          <div className="rounded border border-gray-200/80 dark:border-gray-800/80 overflow-hidden bg-white dark:bg-[#14151a] shrink-0 mt-2">
             <SystemPagination
               page={page - 1}
               totalPages={totalPages}
@@ -519,160 +796,10 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                 setLimit(l);
                 setPage(1);
               }}
+              className="border-t-0"
             />
-          }
-        >
-          <SystemThead>
-            <SystemTr>
-              <SystemTh className="w-36" align="left">
-                <div className="flex items-center gap-1.5">
-                  <Calendar size={12} className="text-gray-400 shrink-0" />
-                  <span>Thời Gian</span>
-                </div>
-              </SystemTh>
-              <SystemTh className="w-44" align="left">
-                <div className="flex items-center gap-1.5">
-                  <Layers size={12} className="text-gray-400 shrink-0" />
-                  <span>Loại Giao Dịch</span>
-                </div>
-              </SystemTh>
-              <SystemTh className="w-36" align="left">
-                <div className="flex items-center gap-1.5">
-                  <FileText size={12} className="text-gray-400 shrink-0" />
-                  <span>Chứng Từ</span>
-                </div>
-              </SystemTh>
-              <SystemTh className="w-40" align="left">
-                <div className="flex items-center gap-1.5">
-                  <Warehouse size={12} className="text-gray-400 shrink-0" />
-                  <span>Kho & Trạng Thái</span>
-                </div>
-              </SystemTh>
-              <SystemTh className="w-28" align="right">
-                <div className="flex items-center justify-end gap-1">
-                  <ArrowUpDown size={12} className="text-gray-400 shrink-0" />
-                  <span>Thay Đổi</span>
-                </div>
-              </SystemTh>
-              <SystemTh className="w-36" align="center">
-                <div className="flex items-center justify-center gap-1.5">
-                  <Boxes size={12} className="text-gray-400 shrink-0" />
-                  <span>Tồn Trước &rarr; Sau</span>
-                </div>
-              </SystemTh>
-              <SystemTh className="w-32" align="left">
-                <div className="flex items-center gap-1.5">
-                  <Clock size={12} className="text-gray-400 shrink-0" />
-                  <span>Lô & HSD</span>
-                </div>
-              </SystemTh>
-              <SystemTh className="w-32" align="left">
-                <div className="flex items-center gap-1.5">
-                  <User size={12} className="text-gray-400 shrink-0" />
-                  <span>Người Thực Hiện</span>
-                </div>
-              </SystemTh>
-              <SystemTh className="min-w-[140px]" align="left">
-                <div className="flex items-center gap-1.5">
-                  <FileText size={12} className="text-gray-400 shrink-0" />
-                  <span>Ghi Chú</span>
-                </div>
-              </SystemTh>
-            </SystemTr>
-          </SystemThead>
-          <SystemTbody>
-            {isLoading ? (
-              <SystemTableSkeleton cols={9} rows={6} />
-            ) : ledgerEntries.length === 0 ? (
-              <SystemTableEmpty
-                colSpan={9}
-                title="Chưa có bút toán biến động"
-                description="Không tìm thấy lịch sử biến động nào cho sản phẩm này theo điều kiện lọc hiện tại."
-              />
-            ) : (
-              ledgerEntries.map((row) => (
-                <SystemTr
-                  key={row.id}
-                  onClick={() => setSelectedEntry(row)}
-                  className="cursor-pointer"
-                >
-                  {/* Thời gian */}
-                  <SystemTd className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                    {new Date(row.createdAt).toLocaleDateString('vi-VN', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </SystemTd>
-
-                  {/* Loại giao dịch */}
-                  <SystemTd className="whitespace-nowrap">
-                    {formatMovementBadge(row.movementType, row.deltaOnHand, row.stockState)}
-                  </SystemTd>
-
-                  {/* Chứng từ liên quan */}
-                  <SystemTd className="font-mono font-bold text-[#5865f2] whitespace-nowrap">
-                    {row.voucherCode || (row.referenceType === 'PACKAGE' ? `Kiện ${row.referenceId?.substring(0, 8)}` : row.referenceId?.substring(0, 8)) || '-'}
-                  </SystemTd>
-
-                  {/* Kho & Trạng thái */}
-                  <SystemTd className="whitespace-nowrap">
-                    <div className="font-medium text-gray-900 dark:text-white">
-                      {row.warehouseName || row.warehouseCode}
-                    </div>
-                    <span className="text-[10px] text-gray-400">
-                      {row.stockState === 'DAMAGED'
-                        ? 'Hàng lỗi'
-                        : row.stockState === 'PENDING_INSPECTION'
-                        ? 'Chờ kiểm tra'
-                        : 'Có thể bán'}
-                    </span>
-                  </SystemTd>
-
-                  {/* Thay đổi */}
-                  <SystemTd align="right" className="whitespace-nowrap">
-                    {formatDelta(row)}
-                  </SystemTd>
-
-                  {/* Tồn trước -> sau */}
-                  <SystemTd align="center" className="whitespace-nowrap">
-                    {formatBeforeAfter(row)}
-                  </SystemTd>
-
-                  {/* Lô & HSD */}
-                  <SystemTd className="text-[11px] whitespace-nowrap">
-                    {row.batchCode ? (
-                      <div>
-                        <span className="font-mono text-gray-800 dark:text-gray-200 font-semibold">
-                          {row.batchCode}
-                        </span>
-                        {row.expiryDate && (
-                          <div className="text-[10px] text-gray-400">
-                            HSD: {new Date(row.expiryDate).toLocaleDateString('vi-VN')}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </SystemTd>
-
-                  {/* Người thực hiện */}
-                  <SystemTd className="text-[11px] text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                    {row.performerName || 'Hệ thống'}
-                  </SystemTd>
-
-                  {/* Ghi chú */}
-                  <SystemTd className="text-[11px] text-gray-500 max-w-xs truncate" title={row.note || ''}>
-                    {row.note || '-'}
-                  </SystemTd>
-                </SystemTr>
-              ))
-            )}
-          </SystemTbody>
-        </SystemTableWrapper>
+          </div>
+        </div>
       </ModalBody>
 
       <ModalFooter className="flex items-center justify-end w-full">
