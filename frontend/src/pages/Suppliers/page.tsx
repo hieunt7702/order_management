@@ -1325,7 +1325,7 @@ export const SuppliersPage: React.FC = () => {
         }
         subtitle={viewingQrSupplier ? `${viewingQrSupplier.code} - ${viewingQrSupplier.name}` : ''}
         icon={QrCode}
-        size="md"
+        size="sm"
       >
         <ModalBody className="p-3 sm:p-5">
           {viewingQrSupplier && (
