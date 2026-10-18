@@ -36,6 +36,7 @@ import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { toast } from '../ui/Toast';
+import { formatLedgerNote } from '../../utils/inventoryUtils';
 import {
   SystemTableWrapper,
   SystemThead,
@@ -1289,7 +1290,7 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
                                 </span>
                               </div>
                               <div className="text-gray-400 mt-0.5 truncate text-[10px]">
-                                {new Date(l.createdAt).toLocaleString('vi-VN')} {l.performerName ? `• Bởi: ${l.performerName}` : ''} {l.note ? `• ${l.note}` : ''}
+                                {new Date(l.createdAt).toLocaleString('vi-VN')} {l.performerName ? `• Bởi: ${l.performerName}` : ''} {l.note ? `• ${formatLedgerNote(l.note)}` : ''}
                               </div>
                             </div>
                             <div className="text-right shrink-0">

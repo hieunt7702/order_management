@@ -38,6 +38,7 @@ import {
   SystemPagination,
 } from '../ui/SystemTable';
 import { Select } from '../ui/Select';
+import { formatLedgerNote } from '../../utils/inventoryUtils';
 import { Button } from '../ui/Button';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 
@@ -212,10 +213,36 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
             <Clock className="w-3 h-3" /> Số dư đầu kỳ
           </span>
         );
+      case 'RESERVE':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200/50">
+            <Layers className="w-3 h-3" /> Giữ hàng đơn
+          </span>
+        );
+      case 'RELEASE':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-200/50">
+            <RotateCcw className="w-3 h-3" /> Hủy giữ hàng
+          </span>
+        );
       default:
+        if (delta > 0) {
+          return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50">
+              <ArrowDownLeft className="w-3 h-3" /> Nhập kho (+)
+            </span>
+          );
+        }
+        if (delta < 0) {
+          return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/50">
+              <ArrowUpRight className="w-3 h-3" /> Xuất kho (-)
+            </span>
+          );
+        }
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-            {type}
+            {type && type !== 'UNKNOWN' ? type : 'Biến động kho'}
           </span>
         );
     }
@@ -433,6 +460,8 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                 { value: 'STATUS_CONVERT', label: 'Chuyển trạng thái hàng', icon: RotateCcw },
                 { value: 'SCRAP_DISPOSAL', label: 'Xuất hủy / Mất hàng', icon: AlertTriangle },
                 { value: 'OPENING_BALANCE', label: 'Số dư đầu kỳ', icon: Clock },
+                { value: 'RESERVE', label: 'Giữ hàng cho đơn', icon: Layers },
+                { value: 'RELEASE', label: 'Hủy giữ hàng', icon: RotateCcw },
               ]}
               icon={Layers}
               size="sm"
@@ -668,8 +697,8 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                     </SystemTd>
 
                     {/* Ghi chú */}
-                    <SystemTd className="text-[11px] text-gray-500 max-w-xs truncate" title={row.note || ''}>
-                      {row.note || '-'}
+                    <SystemTd className="text-[11px] text-gray-500 max-w-xs truncate" title={formatLedgerNote(row.note) || ''}>
+                      {formatLedgerNote(row.note) || '-'}
                     </SystemTd>
                   </SystemTr>
                 ))
@@ -773,8 +802,8 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                         )}
                       </div>
                       {row.note && (
-                        <span className="truncate max-w-[140px] text-gray-400 italic" title={row.note}>
-                          {row.note}
+                        <span className="truncate max-w-[140px] text-gray-400 italic" title={formatLedgerNote(row.note)}>
+                          {formatLedgerNote(row.note)}
                         </span>
                       )}
                     </div>
@@ -913,7 +942,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                   <FileText size={12} />
                   <span>Ghi chú:</span>
                 </span>
-                <p className="text-gray-800 dark:text-gray-200">{selectedEntry.note}</p>
+                <p className="text-gray-800 dark:text-gray-200">{formatLedgerNote(selectedEntry.note)}</p>
               </div>
             )}
           </ModalBody>

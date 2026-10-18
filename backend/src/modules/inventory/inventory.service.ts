@@ -338,6 +338,33 @@ export class InventoryService {
           (match, prefix) => prefix,
         );
 
+        const REASON_LABELS: Record<string, string> = {
+          INVENTORY_CHECK_DISCREPANCY: 'Kiểm kê định kỳ phát hiện chênh lệch',
+          DAMAGE: 'Hàng hỏng vỡ, lỗi trong quá trình bảo quản',
+          LOSS: 'Mất mát, thất thoát không rõ nguyên nhân',
+          CORRECTION: 'Bút toán điều chỉnh sai sót nhập liệu',
+          MANUAL_ADJUST: 'Điều chỉnh tồn kho thủ công',
+          INITIAL_STOCK: 'Tồn kho ban đầu',
+          OPENING_BALANCE: 'Số dư đầu kỳ',
+        };
+
+        if (resolvedNote) {
+          for (const [key, label] of Object.entries(REASON_LABELS)) {
+            if (resolvedNote === key) {
+              resolvedNote = label;
+              break;
+            } else if (resolvedNote.startsWith(`${key}:`)) {
+              const rest = resolvedNote.slice(key.length + 1).trim();
+              resolvedNote = rest ? `${label}: ${rest}` : label;
+              break;
+            } else if (resolvedNote.startsWith(`${key} -`)) {
+              const rest = resolvedNote.slice(key.length + 2).trim();
+              resolvedNote = rest ? `${label} - ${rest}` : label;
+              break;
+            }
+          }
+        }
+
         return {
           id: i.id,
           createdAt: i.createdAt,
@@ -497,7 +524,15 @@ export class InventoryService {
       );
     }
 
-    const noteText = dto.note ? `${dto.reason}: ${dto.note}` : dto.reason;
+    const reasonLabels: Record<string, string> = {
+      INVENTORY_CHECK_DISCREPANCY: 'Kiểm kê định kỳ phát hiện chênh lệch',
+      DAMAGE: 'Hàng hỏng vỡ, lỗi trong quá trình bảo quản',
+      LOSS: 'Mất mát, thất thoát không rõ nguyên nhân',
+      CORRECTION: 'Bút toán điều chỉnh sai sót nhập liệu',
+      MANUAL_ADJUST: 'Điều chỉnh tồn kho thủ công',
+    };
+    const reasonLabel = (dto.reason && reasonLabels[dto.reason]) || dto.reason || 'Điều chỉnh kiểm kê';
+    const noteText = dto.note ? `${reasonLabel}: ${dto.note}` : reasonLabel;
 
     return this.prisma.$transaction(async (tx) => {
       const updated = await tx.inventoryBalance.update({

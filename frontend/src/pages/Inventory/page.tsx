@@ -45,6 +45,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '../../components/ui/DropdownMenu';
+import { MovementTypeBadge, formatLedgerNote } from '../../utils/inventoryUtils';
 
 const REASON_OPTIONS = [
   { value: 'INVENTORY_CHECK_DISCREPANCY', label: 'Kiểm kê định kỳ phát hiện chênh lệch' },
@@ -245,13 +246,14 @@ export const InventoryPage: React.FC = () => {
     const idempotencyKey = `adj_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     try {
       const delta = parseInt(String(adjustForm.quantityChange), 10);
+      const reasonLabel = REASON_OPTIONS.find((r) => r.value === adjustForm.reason)?.label || adjustForm.reason;
       await inventoryApi.adjustStock(
         {
           warehouseId: adjustForm.warehouseId,
           variantId: adjustForm.variantId,
           deltaOnHand: delta,
           quantityChange: delta,
-          reason: adjustForm.reason,
+          reason: reasonLabel,
           note: adjustForm.note || undefined,
         },
         idempotencyKey
@@ -895,7 +897,7 @@ export const InventoryPage: React.FC = () => {
                         paginatedLedger.map((l, index) => {
                           const isPositive = (l.deltaOnHand || l.quantityDelta || 0) > 0;
                           const delta = l.deltaOnHand ?? l.quantityDelta ?? 0;
-                          const type = l.entryType || l.type || 'UNKNOWN';
+                          const type = l.movementType || l.entryType || l.type;
                           const vObj = l.variant || allVariants.find((v) => v.id === l.variantId);
                           const wObj = l.warehouse || warehouses.find((w) => w.id === l.warehouseId);
                           const sku = l.sku || vObj?.sku || l.variantId;
@@ -912,23 +914,7 @@ export const InventoryPage: React.FC = () => {
                                 {new Date(l.createdAt).toLocaleString('vi-VN')}
                               </SystemTd>
                               <SystemTd>
-                                <span
-                                  className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
-                                    type === 'RECEIVE'
-                                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                                      : type === 'DISPATCH'
-                                        ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30'
-                                        : type === 'RESERVE'
-                                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                                          : type === 'RELEASE'
-                                            ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
-                                            : type === 'RETURN_RECEIVE'
-                                              ? 'bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/30'
-                                              : 'bg-gray-500/15 text-gray-600 dark:text-gray-400 border border-gray-500/30'
-                                  }`}
-                                >
-                                  {type}
-                                </span>
+                                <MovementTypeBadge type={type} delta={delta} />
                               </SystemTd>
                               <SystemTd className="font-mono font-bold text-gray-900 dark:text-gray-100">
                                 <div>{sku}</div>
@@ -961,7 +947,9 @@ export const InventoryPage: React.FC = () => {
                               <SystemTd className="text-gray-600 dark:text-gray-400 truncate max-w-xs">
                                 {l.performerName || l.user?.name || l.user?.email || 'Hệ thống'}
                                 {l.note && (
-                                  <span className="block text-[11px] text-gray-400">{l.note}</span>
+                                  <span className="block text-[11px] text-gray-400" title={formatLedgerNote(l.note)}>
+                                    {formatLedgerNote(l.note)}
+                                  </span>
                                 )}
                               </SystemTd>
                             </SystemTr>
@@ -989,7 +977,7 @@ export const InventoryPage: React.FC = () => {
                     paginatedLedger.map((l, index) => {
                       const isPositive = (l.deltaOnHand || l.quantityDelta || 0) > 0;
                       const delta = l.deltaOnHand ?? l.quantityDelta ?? 0;
-                      const type = l.entryType || l.type || 'UNKNOWN';
+                      const type = l.movementType || l.entryType || l.type;
                       const vObj = l.variant || allVariants.find((v) => v.id === l.variantId);
                       const wObj = l.warehouse || warehouses.find((w) => w.id === l.warehouseId);
                       const sku = l.sku || vObj?.sku || l.variantId;
@@ -1016,23 +1004,7 @@ export const InventoryPage: React.FC = () => {
                                 </div>
                               )}
                             </div>
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
-                                type === 'RECEIVE'
-                                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                                  : type === 'DISPATCH'
-                                    ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30'
-                                    : type === 'RESERVE'
-                                      ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                                      : type === 'RELEASE'
-                                        ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
-                                        : type === 'RETURN_RECEIVE'
-                                          ? 'bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/30'
-                                          : 'bg-gray-500/15 text-gray-600 dark:text-gray-400 border border-gray-500/30'
-                              }`}
-                            >
-                              {type}
-                            </span>
+                            <MovementTypeBadge type={type} delta={delta} />
                           </div>
 
                           <div className="grid grid-cols-2 gap-2 text-xs py-1.5 px-2.5 rounded bg-gray-50 dark:bg-[#1a1b23] border border-gray-100 dark:border-gray-800">
@@ -1063,12 +1035,12 @@ export const InventoryPage: React.FC = () => {
                               {warehouseName} • {new Date(l.createdAt).toLocaleString('vi-VN')}
                             </span>
                             <span className="font-mono text-gray-700 dark:text-gray-300 font-medium shrink-0">
-                              {l.order?.orderSn || l.referenceCode || '--'}
+                              {l.voucherCode || l.order?.orderSn || l.referenceCode || '--'}
                             </span>
                           </div>
                           {l.note && (
                             <div className="text-[11px] text-gray-400 italic">
-                              Ghi chú: {l.note}
+                              Ghi chú: {formatLedgerNote(l.note)}
                             </div>
                           )}
                         </div>

@@ -346,3 +346,5 @@ export const calculateTopProducts = (normalizedOrders: any[]) => {
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 };
+
+export * from './inventoryUtils';
