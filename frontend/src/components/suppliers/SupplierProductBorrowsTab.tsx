@@ -17,6 +17,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Package,
+  MoreHorizontal,
 } from 'lucide-react';
 import {
   supplierProductBorrowsApi,
@@ -537,7 +538,7 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
             <SystemTh className="w-28 text-center">Còn Đang Mượn</SystemTh>
             <SystemTh className="w-32 text-center">Ngày Mượn / Hạn</SystemTh>
             <SystemTh className="w-32 text-center">Trạng Thái</SystemTh>
-            <SystemTh className="w-36 text-center">Thao Tác</SystemTh>
+            <SystemTh className="w-24 text-center">Thao Tác</SystemTh>
           </SystemThead>
           <SystemTbody>
             {isLoading ? (
@@ -629,39 +630,18 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
                       </span>
                     </SystemTd>
                     <SystemTd align="center" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-center gap-1.5">
-                        {hasRemaining && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => handleOpenReturnModal(b)}
-                              className="px-2 py-1 text-xs rounded border border-orange-200 text-orange-600 dark:border-orange-800 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 font-medium cursor-pointer"
-                              title="Xuất trả lại hàng cho NCC"
-                            >
-                              <span>Trả hàng</span>
-                            </button>
-                            {isBorrow && (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenConvertModal(b)}
-                                className="px-2 py-1 text-xs rounded bg-indigo-600 hover:bg-indigo-700 text-white font-medium cursor-pointer shadow-2xs active:scale-95 transition-all"
-                                title="Mua đứt hàng mượn (sinh phiếu nhập kho)"
-                              >
-                                <span>Mua đứt</span>
-                              </button>
-                            )}
-                          </>
-                        )}
+                      <div className="flex items-center justify-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button
                               type="button"
                               className="w-7 h-7 rounded flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                              title="Thao tác"
                             >
-                              <Eye size={14} />
+                              <MoreHorizontal size={14} />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="w-52">
                             <DropdownMenuItem onClick={() => handleOpenDetail(b)}>
                               <Eye size={13} className="text-[#5865f2]" />
                               <span>Xem danh sách sản phẩm</span>
@@ -670,12 +650,16 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
                               <>
                                 <DropdownMenuItem onClick={() => handleOpenReturnModal(b)}>
                                   <RotateCcw size={13} className="text-orange-500" />
-                                  <span>Xuất trả lại hàng mượn</span>
+                                  <span className="text-orange-600 dark:text-orange-400 font-medium">
+                                    Xuất trả lại hàng cho NCC
+                                  </span>
                                 </DropdownMenuItem>
                                 {isBorrow && (
                                   <DropdownMenuItem onClick={() => handleOpenConvertModal(b)}>
                                     <ShoppingCart size={13} className="text-emerald-500" />
-                                    <span>Chuyển thành mua hàng</span>
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                      Mua đứt (Chuyển sang mua hàng)
+                                    </span>
                                   </DropdownMenuItem>
                                 )}
                               </>
@@ -741,26 +725,47 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
                   </div>
                 </div>
 
-                {hasRemaining && (
-                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-gray-100 dark:border-gray-800" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenReturnModal(b)}
-                      className="px-2.5 py-1 text-xs rounded border border-orange-200 text-orange-600 font-medium"
-                    >
-                      Trả hàng
-                    </button>
-                    {isBorrow && (
+                <div
+                  className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-800 text-[11px] text-gray-500"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span>{b.borrowDate ? new Date(b.borrowDate).toLocaleDateString('vi-VN') : ''}</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        onClick={() => handleOpenConvertModal(b)}
-                        className="px-3 py-1 text-xs rounded bg-indigo-600 text-white font-semibold"
+                        className="px-2.5 py-1 rounded flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                       >
-                        Mua đứt
+                        <MoreHorizontal size={13} />
+                        <span>Thao tác</span>
                       </button>
-                    )}
-                  </div>
-                )}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-52">
+                      <DropdownMenuItem onClick={() => handleOpenDetail(b)}>
+                        <Eye size={13} className="text-[#5865f2]" />
+                        <span>Xem danh sách sản phẩm</span>
+                      </DropdownMenuItem>
+                      {hasRemaining && (
+                        <>
+                          <DropdownMenuItem onClick={() => handleOpenReturnModal(b)}>
+                            <RotateCcw size={13} className="text-orange-500" />
+                            <span className="text-orange-600 dark:text-orange-400 font-medium">
+                              Xuất trả lại hàng cho NCC
+                            </span>
+                          </DropdownMenuItem>
+                          {isBorrow && (
+                            <DropdownMenuItem onClick={() => handleOpenConvertModal(b)}>
+                              <ShoppingCart size={13} className="text-emerald-500" />
+                              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                Mua đứt (Chuyển sang mua hàng)
+                              </span>
+                            </DropdownMenuItem>
+                          )}
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             );
           })
