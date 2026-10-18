@@ -1998,16 +1998,17 @@ export const OrdersPage: React.FC = () => {
               <div className="p-3 rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
                 <div
                   onClick={() => setForceBulkDelete(!forceBulkDelete)}
-                  className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-700 dark:text-gray-300 select-none"
+                  className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-700 dark:text-gray-300 select-none group"
                 >
                   <Checkbox
                     checked={forceBulkDelete}
                     onChange={(e) => setForceBulkDelete(e.target.checked)}
                     size="sm"
+                    className="mt-0.5"
                   />
-                  <div>
-                    <span className="font-medium text-red-600 dark:text-red-400">Buộc xóa cả đơn đã xuất kho bàn giao</span>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                  <div className="min-w-0 flex-1">
+                    <span className="font-medium text-red-600 dark:text-red-400 block leading-snug">Buộc xóa cả đơn đã xuất kho bàn giao</span>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-normal">
                       Bật tùy chọn này nếu bạn muốn xóa dọn dẹp triệt để dữ liệu mà không bị chặn bởi trạng thái xuất kho.
                     </p>
                   </div>
@@ -2067,32 +2068,35 @@ export const OrdersPage: React.FC = () => {
               <div className="p-3 rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 space-y-2.5">
                 <div
                   onClick={() => setForceDeleteAll(!forceDeleteAll)}
-                  className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-700 dark:text-gray-300 select-none"
+                  className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-700 dark:text-gray-300 select-none group"
                 >
                   <Checkbox
                     checked={forceDeleteAll}
                     onChange={(e) => setForceDeleteAll(e.target.checked)}
                     size="sm"
+                    className="mt-0.5"
                   />
-                  <div>
-                    <span className="font-medium text-red-600 dark:text-red-400">Buộc xóa cả đơn đã xuất kho bàn giao (Force delete)</span>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                  <div className="min-w-0 flex-1">
+                    <span className="font-medium text-red-600 dark:text-red-400 block leading-snug">
+                      Buộc xóa cả đơn đã xuất kho bàn giao (Force delete)
+                    </span>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-normal">
                       Bỏ qua kiểm tra trạng thái DISPATCHED và xóa sạch toàn bộ đơn.
                     </p>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                <div className="pt-2.5 border-t border-gray-200 dark:border-gray-700">
                   <div
                     onClick={() => setConfirmDeleteAll(!confirmDeleteAll)}
-                    className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-900 dark:text-white font-medium select-none"
+                    className="flex items-center gap-2.5 cursor-pointer text-xs text-gray-900 dark:text-white font-medium select-none group"
                   >
                     <Checkbox
                       checked={confirmDeleteAll}
                       onChange={(e) => setConfirmDeleteAll(e.target.checked)}
                       size="sm"
                     />
-                    <span>Tôi hiểu và đồng ý xóa vĩnh viễn toàn bộ đơn hàng</span>
+                    <span className="leading-snug">Tôi hiểu và đồng ý xóa vĩnh viễn toàn bộ đơn hàng</span>
                   </div>
                 </div>
               </div>
