@@ -730,98 +730,71 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
         }
         subtitle={selectedLoanForRepay ? `Hợp đồng: ${selectedLoanForRepay.loanCode} - ${selectedLoanForRepay.supplier?.name}` : ''}
         icon={CreditCard}
-        maxWidth={
-          selectedLoanForRepay?.type === 'BORROWED_FROM_SUPPLIER' && selectedLoanForRepay.supplier?.bankAccount
-            ? 'max-w-2xl'
-            : 'max-w-md'
-        }
+        maxWidth="max-w-md"
       >
         <form onSubmit={handleRepaySubmit} className="space-y-4">
           <ModalBody className="p-3 sm:p-5 text-xs">
-            {(() => {
-              const hasQr =
-                selectedLoanForRepay?.type === 'BORROWED_FROM_SUPPLIER' &&
-                !!selectedLoanForRepay.supplier?.bankAccount;
-
-              return (
-                <div className={`grid grid-cols-1 ${hasQr ? 'md:grid-cols-12' : ''} gap-3 sm:gap-3.5 items-stretch`}>
-                  {/* Cột trái: Form nhập liệu */}
-                  <div className={`${hasQr ? 'md:col-span-7' : 'col-span-12'} space-y-2.5`}>
-                    <div className="p-2.5 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-200 dark:border-amber-900/30 flex justify-between">
-                      <div>
-                        <span className="text-gray-400">Tiền gốc vay:</span>
-                        <div className="font-mono font-bold text-gray-900 dark:text-white mt-0.5">
-                          {formatCurrency(selectedLoanForRepay?.amount || 0)} đ
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-rose-500 font-medium">Dư nợ còn lại:</span>
-                        <div className="font-mono font-bold text-rose-600 dark:text-rose-400 mt-0.5">
-                          {formatCurrency(selectedLoanForRepay?.remainingAmount || 0)} đ
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                        <DollarSign size={13} className="text-emerald-500" />
-                        <span>Số tiền thanh toán đợt này (đ) *</span>
-                      </label>
-                      <CurrencyInput
-                        value={repayForm.amount}
-                        onChange={(amt) => setRepayForm({ ...repayForm, amount: amt })}
-                        suffix="đ"
-                        inputClassName="h-8 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                          <UserCheck size={13} className="text-purple-500" />
-                          <span>Người thực hiện</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={repayForm.payerName}
-                          onChange={(e) => setRepayForm({ ...repayForm, payerName: e.target.value })}
-                          className="w-full bg-white dark:bg-[#161a22] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                          <Wallet size={13} className="text-[#5865f2]" />
-                          <span>Nguồn tiền chi/thu</span>
-                        </label>
-                        <Select
-                          value={repayForm.fundSource}
-                          onChange={(val) => setRepayForm({ ...repayForm, fundSource: val as any })}
-                          options={[
-                            { value: 'BANK_ACCOUNT', label: 'Tài khoản ngân hàng' },
-                            { value: 'CASH_FUND', label: 'Quỹ tiền mặt' },
-                          ]}
-                          size="sm"
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
+            <div className="w-full space-y-2.5">
+              <div className="p-2.5 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-200 dark:border-amber-900/30 flex justify-between">
+                <div>
+                  <span className="text-gray-400">Tiền gốc vay:</span>
+                  <div className="font-mono font-bold text-gray-900 dark:text-white mt-0.5">
+                    {formatCurrency(selectedLoanForRepay?.amount || 0)} đ
                   </div>
-
-                  {/* Cột phải: VietQR Realtime nếu là trả nợ cho NCC */}
-                  {hasQr && selectedLoanForRepay?.supplier && (
-                    <div className="md:col-span-5 flex flex-col">
-                      <SupplierBankQr
-                        supplier={selectedLoanForRepay.supplier}
-                        amount={repayForm.amount}
-                        description={repayForm.referenceCode || `Tra no hop dong ${selectedLoanForRepay.loanCode}`}
-                        className="h-full"
-                      />
-                    </div>
-                  )}
                 </div>
-              );
-            })()}
+                <div className="text-right">
+                  <span className="text-rose-500 font-medium">Dư nợ còn lại:</span>
+                  <div className="font-mono font-bold text-rose-600 dark:text-rose-400 mt-0.5">
+                    {formatCurrency(selectedLoanForRepay?.remainingAmount || 0)} đ
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                  <DollarSign size={13} className="text-emerald-500" />
+                  <span>Số tiền thanh toán đợt này (đ) *</span>
+                </label>
+                <CurrencyInput
+                  value={repayForm.amount}
+                  onChange={(amt) => setRepayForm({ ...repayForm, amount: amt })}
+                  suffix="đ"
+                  inputClassName="h-8 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                    <UserCheck size={13} className="text-purple-500" />
+                    <span>Người thực hiện</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={repayForm.payerName}
+                    onChange={(e) => setRepayForm({ ...repayForm, payerName: e.target.value })}
+                    className="w-full bg-white dark:bg-[#161a22] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                    <Wallet size={13} className="text-[#5865f2]" />
+                    <span>Nguồn tiền chi/thu</span>
+                  </label>
+                  <Select
+                    value={repayForm.fundSource}
+                    onChange={(val) => setRepayForm({ ...repayForm, fundSource: val as any })}
+                    options={[
+                      { value: 'BANK_ACCOUNT', label: 'Tài khoản ngân hàng' },
+                      { value: 'CASH_FUND', label: 'Quỹ tiền mặt' },
+                    ]}
+                    size="sm"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+            </div>
           </ModalBody>
 
           <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">

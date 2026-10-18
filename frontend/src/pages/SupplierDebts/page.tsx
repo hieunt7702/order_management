@@ -2059,209 +2059,194 @@ export const SupplierDebtsPage: React.FC = () => {
           </div>
         }
         icon={CreditCard}
-        size="2xl"
+        size="xl"
       >
         <form onSubmit={handleSavePayment} className="flex flex-col flex-1 min-h-0">
           <ModalBody className="space-y-3 sm:space-y-4 text-xs sm:text-sm p-3 sm:p-5">
-            {/* 1. THÔNG TIN THANH TOÁN & ĐỐI TÁC + VIETQR REALTIME BÊN PHẢI */}
+            {/* 1. THÔNG TIN THANH TOÁN & ĐỐI TÁC */}
             {(() => {
               const curSupplier = suppliers.find((s) => s.id === paymentForm.supplierId);
               return (
-                <div className={`grid grid-cols-1 ${curSupplier ? 'lg:grid-cols-12' : ''} gap-3 sm:gap-3.5 items-stretch`}>
-                  {/* Cột trái: Form thông tin thanh toán */}
-                  <div className={`${curSupplier ? 'lg:col-span-8' : 'col-span-12'} flex flex-col gap-2.5 sm:gap-3`}>
-                    <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3.5 flex-1">
-                      <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-                        <Building2 className="w-3.5 h-3.5 text-[#5865f2]" />
-                        <span className="sm:hidden">Thông tin thanh toán & NCC</span>
-                        <span className="hidden sm:inline">Thông tin thanh toán & Nhà cung cấp</span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-                        {/* Field 1: Nhà cung cấp */}
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                            <Building2 size={13} className="text-[#5865f2]" />
-                            <span>Nhà cung cấp *</span>
-                          </label>
-                          <Select
-                            value={paymentForm.supplierId}
-                            onChange={(val) => {
-                              const sId = String(val);
-                              setPaymentForm((prev) => ({ ...prev, supplierId: sId }));
-                              loadUnpaidReceiptsForSupplier(sId);
-                            }}
-                            options={[
-                              { value: '', label: '-- Chọn Nhà Cung Cấp --' },
-                              ...suppliers.map((s) => ({
-                                value: s.id,
-                                label: `${s.code} - ${s.name}`,
-                                icon: Building2,
-                                badge: s.closingDebt > 0 ? `Nợ: ${s.closingDebt.toLocaleString('vi-VN')}đ` : undefined,
-                              })),
-                            ]}
-                            placeholder="-- Chọn Nhà Cung Cấp --"
-                            searchable={true}
-                            size="sm"
-                            className="w-full"
-                          />
-                          {(() => {
-                            if (!curSupplier) return null;
-                            const debt = curSupplier.closingDebt || 0;
-                            return (
-                              <div className="flex items-center justify-between mt-1.5 text-[11px]">
-                                <span className="text-gray-500">Dư nợ hiện tại:</span>
-                                <span
-                                  className={`font-mono font-bold ${
-                                    debt > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
-                                  }`}
-                                >
-                                  {debt > 0 ? `${debt.toLocaleString('vi-VN')} đ` : '0 đ (Cân bằng)'}
-                                </span>
-                              </div>
-                            );
-                          })()}
-                        </div>
-
-                        {/* Field 2: Số tiền thực tế chi ra */}
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                            <DollarSign size={13} className="text-emerald-600 dark:text-emerald-400" />
-                            <span>Số tiền thực tế chi (đ) *</span>
-                          </label>
-                          <CurrencyInput
-                            value={paymentForm.amount}
-                            onChange={(amt) => {
-                              setPaymentForm((prev) => ({ ...prev, amount: amt }));
-                              handleAutoAllocate(amt);
-                            }}
-                            suffix="đ"
-                            inputClassName="w-full bg-white dark:bg-[#1a1b23] border border-emerald-500/60 dark:border-emerald-600/70 rounded px-2.5 py-1.5 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                          />
-                          {(() => {
-                            if (!curSupplier || curSupplier.closingDebt <= 0 || paymentForm.amount === curSupplier.closingDebt) {
-                              return null;
-                            }
-                            return (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPaymentForm((prev) => ({ ...prev, amount: curSupplier.closingDebt }));
-                                  handleAutoAllocate(curSupplier.closingDebt);
-                                }}
-                                className="text-[11px] text-[#5865f2] hover:underline mt-1 cursor-pointer flex items-center gap-1 font-medium active:scale-95 transition-transform"
-                              >
-                                <span>Chi đủ nợ ({curSupplier.closingDebt.toLocaleString('vi-VN')}đ)</span>
-                              </button>
-                            );
-                          })()}
-                        </div>
-
-                        {/* Field 3: Ngày chi tiền */}
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                            <Calendar size={13} className="text-blue-500" />
-                            <span className="sm:hidden">Ngày chi</span>
-                            <span className="hidden sm:inline">Ngày chi tiền</span>
-                          </label>
-                          <input
-                            type="date"
-                            value={paymentForm.paymentDate}
-                            onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
-                            className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
-                          />
-                        </div>
-
-                        {/* Field 4: Người chi tiền */}
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                            <UserCheck size={13} className="text-purple-500" />
-                            <span>Người chi tiền *</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="VD: HieuNT, Kế toán..."
-                            value={paymentForm.payerName}
-                            onChange={(e) => setPaymentForm({ ...paymentForm, payerName: e.target.value })}
-                            className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
-                          />
-                        </div>
-
-                        {/* Field 5: Nguồn tiền */}
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                            <Wallet size={13} className="text-amber-500" />
-                            <span>Nguồn tiền *</span>
-                          </label>
-                          <Select
-                            value={paymentForm.fundSource}
-                            onChange={(val) => {
-                              const src = String(val) as any;
-                              setPaymentForm((prev) => ({
-                                ...prev,
-                                fundSource: src,
-                                isReimbursementNeeded: src === 'PERSONAL_FUND',
-                              }));
-                            }}
-                            options={[
-                              { value: 'CASH_FUND', label: 'Quỹ tiền mặt của shop', icon: Wallet },
-                              { value: 'BANK_ACCOUNT', label: 'Tài khoản ngân hàng công ty', icon: Landmark },
-                              { value: 'PERSONAL_FUND', label: 'Tiền cá nhân người chi (Chi hộ)', icon: UserCheck },
-                            ]}
-                            size="sm"
-                            className="w-full"
-                          />
-                        </div>
-
-                        {/* Field 6: Mã giao dịch / Phiếu chi */}
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                              <Hash size={13} className="text-indigo-500" />
-                              <span>Mã phiếu chi / GD</span>
-                            </label>
-                            <span className="text-[10px] text-gray-400 font-normal">Hệ thống tự cấp</span>
-                          </div>
-                          <input
-                            type="text"
-                            readOnly
-                            disabled
-                            tabIndex={-1}
-                            value={paymentForm.referenceCode || 'Hệ thống tự động cấp'}
-                            title="Mã phiếu được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
-                            className="w-full bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded px-2.5 py-1.5 text-xs font-mono uppercase font-bold text-gray-500 dark:text-gray-400 cursor-not-allowed select-none pointer-events-none"
-                          />
-                        </div>
-                      </div>
+                <div className="w-full flex flex-col gap-2.5 sm:gap-3">
+                  <div className="p-3 sm:p-3.5 bg-gray-50/80 dark:bg-gray-900/60 rounded border border-gray-200/80 dark:border-gray-800 space-y-2.5 sm:space-y-3.5">
+                    <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
+                      <Building2 className="w-3.5 h-3.5 text-[#5865f2]" />
+                      <span className="sm:hidden">Thông tin thanh toán & NCC</span>
+                      <span className="hidden sm:inline">Thông tin thanh toán & Nhà cung cấp</span>
                     </div>
 
-                    {/* Ghi chú chi hộ nếu dùng tiền cá nhân */}
-                    {paymentForm.fundSource === 'PERSONAL_FUND' && (
-                      <div className="p-3 bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-900/40 rounded flex items-start gap-2.5 text-xs text-purple-900 dark:text-purple-200">
-                        <Info className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
-                        <div className="space-y-0.5">
-                          <span className="font-semibold text-purple-900 dark:text-purple-200">
-                            Khoản chi hộ bằng tiền cá nhân ({paymentForm.payerName || 'Cá nhân'}):
-                          </span>
-                          <p className="text-[11px] text-purple-700 dark:text-purple-300">
-                            Công nợ nhà cung cấp sẽ giảm ngay, đồng thời hệ thống tự động ghi nhận một khoản cảnh báo{' '}
-                            <strong>Shop cần hoàn lại {paymentForm.amount.toLocaleString('vi-VN')}đ cho {paymentForm.payerName || 'người chi'}</strong> trong mục Quản lý hoàn ứng.
-                          </p>
-                        </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                      {/* Field 1: Nhà cung cấp */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                          <Building2 size={13} className="text-[#5865f2]" />
+                          <span>Nhà cung cấp *</span>
+                        </label>
+                        <Select
+                          value={paymentForm.supplierId}
+                          onChange={(val) => {
+                            const sId = String(val);
+                            setPaymentForm((prev) => ({ ...prev, supplierId: sId }));
+                            loadUnpaidReceiptsForSupplier(sId);
+                          }}
+                          options={[
+                            { value: '', label: '-- Chọn Nhà Cung Cấp --' },
+                            ...suppliers.map((s) => ({
+                              value: s.id,
+                              label: `${s.code} - ${s.name}`,
+                              icon: Building2,
+                              badge: s.closingDebt > 0 ? `Nợ: ${s.closingDebt.toLocaleString('vi-VN')}đ` : undefined,
+                            })),
+                          ]}
+                          placeholder="-- Chọn Nhà Cung Cấp --"
+                          searchable={true}
+                          size="sm"
+                          className="w-full"
+                        />
+                        {(() => {
+                          if (!curSupplier) return null;
+                          const debt = curSupplier.closingDebt || 0;
+                          return (
+                            <div className="flex items-center justify-between mt-1.5 text-[11px]">
+                              <span className="text-gray-500">Dư nợ hiện tại:</span>
+                              <span
+                                className={`font-mono font-bold ${
+                                  debt > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                                }`}
+                              >
+                                {debt > 0 ? `${debt.toLocaleString('vi-VN')} đ` : '0 đ (Cân bằng)'}
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
-                    )}
+
+                      {/* Field 2: Số tiền thực tế chi ra */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                          <DollarSign size={13} className="text-emerald-600 dark:text-emerald-400" />
+                          <span>Số tiền thực tế chi (đ) *</span>
+                        </label>
+                        <CurrencyInput
+                          value={paymentForm.amount}
+                          onChange={(amt) => {
+                            setPaymentForm((prev) => ({ ...prev, amount: amt }));
+                            handleAutoAllocate(amt);
+                          }}
+                          suffix="đ"
+                          inputClassName="w-full bg-white dark:bg-[#1a1b23] border border-emerald-500/60 dark:border-emerald-600/70 rounded px-2.5 py-1.5 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                        />
+                        {(() => {
+                          if (!curSupplier || curSupplier.closingDebt <= 0 || paymentForm.amount === curSupplier.closingDebt) {
+                            return null;
+                          }
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPaymentForm((prev) => ({ ...prev, amount: curSupplier.closingDebt }));
+                                handleAutoAllocate(curSupplier.closingDebt);
+                              }}
+                              className="text-[11px] text-[#5865f2] hover:underline mt-1 cursor-pointer flex items-center gap-1 font-medium active:scale-95 transition-transform"
+                            >
+                              <span>Chi đủ nợ ({curSupplier.closingDebt.toLocaleString('vi-VN')}đ)</span>
+                            </button>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Field 3: Ngày chi tiền */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                          <Calendar size={13} className="text-blue-500" />
+                          <span className="sm:hidden">Ngày chi</span>
+                          <span className="hidden sm:inline">Ngày chi tiền</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={paymentForm.paymentDate}
+                          onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
+                          className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                        />
+                      </div>
+
+                      {/* Field 4: Người chi tiền */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                          <UserCheck size={13} className="text-purple-500" />
+                          <span>Người chi tiền *</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="VD: HieuNT, Kế toán..."
+                          value={paymentForm.payerName}
+                          onChange={(e) => setPaymentForm({ ...paymentForm, payerName: e.target.value })}
+                          className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                        />
+                      </div>
+
+                      {/* Field 5: Nguồn tiền */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                          <Wallet size={13} className="text-amber-500" />
+                          <span>Nguồn tiền *</span>
+                        </label>
+                        <Select
+                          value={paymentForm.fundSource}
+                          onChange={(val) => {
+                            const src = String(val) as any;
+                            setPaymentForm((prev) => ({
+                              ...prev,
+                              fundSource: src,
+                              isReimbursementNeeded: src === 'PERSONAL_FUND',
+                            }));
+                          }}
+                          options={[
+                            { value: 'CASH_FUND', label: 'Quỹ tiền mặt của shop', icon: Wallet },
+                            { value: 'BANK_ACCOUNT', label: 'Tài khoản ngân hàng công ty', icon: Landmark },
+                            { value: 'PERSONAL_FUND', label: 'Tiền cá nhân người chi (Chi hộ)', icon: UserCheck },
+                          ]}
+                          size="sm"
+                          className="w-full"
+                        />
+                      </div>
+
+                      {/* Field 6: Mã giao dịch / Phiếu chi */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                            <Hash size={13} className="text-indigo-500" />
+                            <span>Mã phiếu chi / GD</span>
+                          </label>
+                          <span className="text-[10px] text-gray-400 font-normal">Hệ thống tự cấp</span>
+                        </div>
+                        <input
+                          type="text"
+                          readOnly
+                          disabled
+                          tabIndex={-1}
+                          value={paymentForm.referenceCode || 'Hệ thống tự động cấp'}
+                          title="Mã phiếu được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
+                          className="w-full bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded px-2.5 py-1.5 text-xs font-mono uppercase font-bold text-gray-500 dark:text-gray-400 cursor-not-allowed select-none pointer-events-none"
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Cột phải: VietQR quét chuyển khoản */}
-                  {curSupplier && (
-                    <div className="lg:col-span-4 flex flex-col">
-                      <SupplierBankQr
-                        supplier={curSupplier}
-                        amount={paymentForm.amount}
-                        description={paymentForm.referenceCode || `Thanh toan NCC ${curSupplier.code}`}
-                        className="h-full"
-                      />
+                  {/* Ghi chú chi hộ nếu dùng tiền cá nhân */}
+                  {paymentForm.fundSource === 'PERSONAL_FUND' && (
+                    <div className="p-3 bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-900/40 rounded flex items-start gap-2.5 text-xs text-purple-900 dark:text-purple-200">
+                      <Info className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="font-semibold text-purple-900 dark:text-purple-200">
+                          Khoản chi hộ bằng tiền cá nhân ({paymentForm.payerName || 'Cá nhân'}):
+                        </span>
+                        <p className="text-[11px] text-purple-700 dark:text-purple-300">
+                          Công nợ nhà cung cấp sẽ giảm ngay, đồng thời hệ thống tự động ghi nhận một khoản cảnh báo{' '}
+                          <strong>Shop cần hoàn lại {paymentForm.amount.toLocaleString('vi-VN')}đ cho {paymentForm.payerName || 'người chi'}</strong> trong mục Quản lý hoàn ứng.
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>

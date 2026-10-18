@@ -33,7 +33,6 @@ import {
   SlidersHorizontal,
   QrCode,
 } from 'lucide-react';
-import { SupplierBankQr } from '../../components/suppliers/SupplierBankQr';
 import { purchaseReceiptsApi, PurchaseReceiptModel, CreatePurchaseReceiptPayload } from '../../services/purchaseReceiptsApi';
 import { suppliersApi, SupplierItem } from '../../services/suppliersApi';
 import { supplierPaymentsApi } from '../../services/supplierPaymentsApi';
@@ -1593,72 +1592,54 @@ export const PurchaseReceiptsPage: React.FC = () => {
                     </span>
                   </div>
 
-                  {createForm.immediatePayment && (() => {
-                    const curSupp = suppliers.find((s) => s.id === createForm.supplierId);
-                    return (
-                      <div className={`grid grid-cols-1 ${curSupp ? 'md:grid-cols-12' : ''} gap-3 pt-2 text-xs items-stretch`}>
-                        {/* Cột trái: Form nhập thông tin thanh toán */}
-                        <div className={`${curSupp ? 'md:col-span-7' : 'col-span-12'} space-y-2.5`}>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                            <div>
-                              <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
-                                <DollarSign size={11} className="text-emerald-500" />
-                                <span>Số tiền chi ngay (đ)</span>
-                              </label>
-                              <CurrencyInput
-                                value={createForm.immediatePaymentAmount}
-                                onChange={(val) => setCreateForm({ ...createForm, immediatePaymentAmount: val })}
-                                suffix="đ"
-                                inputClassName="h-8 font-bold text-emerald-600 dark:text-emerald-400 text-xs font-mono"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
-                                <User size={11} className="text-gray-400" />
-                                <span>Người thanh toán</span>
-                              </label>
-                              <input
-                                type="text"
-                                placeholder="Ví dụ: HieuNT, Bạn..."
-                                value={createForm.immediatePayerName || ''}
-                                onChange={(e) => setCreateForm({ ...createForm, immediatePayerName: e.target.value })}
-                                className="w-full h-8 px-2.5 bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
-                              <CreditCard size={11} className="text-gray-400" />
-                              <span>Nguồn tiền chi</span>
-                            </label>
-                            <Select
-                              value={createForm.immediateFundSource || 'CASH_FUND'}
-                              onChange={(val) => setCreateForm({ ...createForm, immediateFundSource: val })}
-                              options={[
-                                { value: 'CASH_FUND', label: 'Quỹ tiền mặt của shop' },
-                                { value: 'BANK_ACCOUNT', label: 'Tài khoản ngân hàng công ty' },
-                                { value: 'PERSONAL_FUND', label: 'Tiền cá nhân (Chi hộ - Shop cần hoàn trả)' },
-                              ]}
-                              size="sm"
-                              className="w-full"
-                            />
-                          </div>
+                  {createForm.immediatePayment && (
+                    <div className="w-full space-y-2.5 pt-2 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
+                            <DollarSign size={11} className="text-emerald-500" />
+                            <span>Số tiền chi ngay (đ)</span>
+                          </label>
+                          <CurrencyInput
+                            value={createForm.immediatePaymentAmount}
+                            onChange={(val) => setCreateForm({ ...createForm, immediatePaymentAmount: val })}
+                            suffix="đ"
+                            inputClassName="h-8 font-bold text-emerald-600 dark:text-emerald-400 text-xs font-mono"
+                          />
                         </div>
-
-                        {/* Cột phải: VietQR quét chuyển khoản */}
-                        {curSupp && (
-                          <div className="md:col-span-5 flex flex-col">
-                            <SupplierBankQr
-                              supplier={curSupp}
-                              amount={createForm.immediatePaymentAmount}
-                              description={`Thanh toan nhap hang ${createForm.receiptCode || ''}`}
-                              className="h-full"
-                            />
-                          </div>
-                        )}
+                        <div>
+                          <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
+                            <User size={11} className="text-gray-400" />
+                            <span>Người thanh toán</span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Ví dụ: HieuNT, Bạn..."
+                            value={createForm.immediatePayerName || ''}
+                            onChange={(e) => setCreateForm({ ...createForm, immediatePayerName: e.target.value })}
+                            className="w-full h-8 px-2.5 bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]"
+                          />
+                        </div>
                       </div>
-                    );
-                  })()}
+                      <div>
+                        <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
+                          <CreditCard size={11} className="text-gray-400" />
+                          <span>Nguồn tiền chi</span>
+                        </label>
+                        <Select
+                          value={createForm.immediateFundSource || 'CASH_FUND'}
+                          onChange={(val) => setCreateForm({ ...createForm, immediateFundSource: val })}
+                          options={[
+                            { value: 'CASH_FUND', label: 'Quỹ tiền mặt của shop' },
+                            { value: 'BANK_ACCOUNT', label: 'Tài khoản ngân hàng công ty' },
+                            { value: 'PERSONAL_FUND', label: 'Tiền cá nhân (Chi hộ - Shop cần hoàn trả)' },
+                          ]}
+                          size="sm"
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1824,13 +1805,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
           </div>
         }
         icon={CreditCard}
-        maxWidth={
-          ((quickPayReceipt?.supplier?.bankAccount ? quickPayReceipt.supplier : null) ||
-            suppliers.find((s) => s.id === quickPayReceipt?.supplierId) ||
-            quickPayReceipt?.supplier)?.bankAccount
-            ? 'max-w-2xl'
-            : 'max-w-md'
-        }
+        maxWidth="max-w-md"
       >
         <form onSubmit={handleQuickPaySubmit} className="space-y-4">
           <ModalBody className="p-3 sm:p-5 text-xs sm:text-sm">
@@ -1839,127 +1814,109 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 (quickPayReceipt?.supplier?.bankAccount ? quickPayReceipt.supplier : null) ||
                 suppliers.find((s) => s.id === quickPayReceipt?.supplierId) ||
                 quickPayReceipt?.supplier;
-              const hasBank = !!targetSupplier?.bankAccount?.trim();
 
               return (
-                <div className={`grid grid-cols-1 ${hasBank ? 'md:grid-cols-12' : ''} gap-3 sm:gap-3.5 items-stretch`}>
-                  {/* Cột trái: Form nhập liệu thanh toán */}
-                  <div className={`${hasBank ? 'md:col-span-7' : 'col-span-12'} space-y-2.5`}>
-                    <div className="p-2.5 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-200 dark:border-amber-900/30 flex justify-between">
-                      <div>
-                        <div className="text-[11px] text-gray-500 flex items-center gap-1">
-                          <Building2 size={12} />
-                          <span>Nhà cung cấp:</span>
-                        </div>
-                        <div className="font-bold text-gray-900 dark:text-white mt-0.5 text-xs">
-                          {targetSupplier?.name || quickPayReceipt?.supplier?.name}
-                        </div>
+                <div className="w-full space-y-2.5">
+                  <div className="p-2.5 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-200 dark:border-amber-900/30 flex justify-between">
+                    <div>
+                      <div className="text-[11px] text-gray-500 flex items-center gap-1">
+                        <Building2 size={12} />
+                        <span>Nhà cung cấp:</span>
                       </div>
-                      <div className="text-right">
-                        <div className="text-[11px] text-gray-500 flex items-center justify-end gap-1">
-                          <AlertCircle size={12} className="text-rose-500" />
-                          <span>Số tiền còn nợ:</span>
-                        </div>
-                        <div className="font-bold text-rose-600 font-mono mt-0.5 text-xs">
-                          {Number(quickPayReceipt?.remainingAmount || 0).toLocaleString('vi-VN')}đ
-                        </div>
+                      <div className="font-bold text-gray-900 dark:text-white mt-0.5 text-xs">
+                        {targetSupplier?.name || quickPayReceipt?.supplier?.name}
                       </div>
                     </div>
+                    <div className="text-right">
+                      <div className="text-[11px] text-gray-500 flex items-center justify-end gap-1">
+                        <AlertCircle size={12} className="text-rose-500" />
+                        <span>Số tiền còn nợ:</span>
+                      </div>
+                      <div className="font-bold text-rose-600 font-mono mt-0.5 text-xs">
+                        {Number(quickPayReceipt?.remainingAmount || 0).toLocaleString('vi-VN')}đ
+                      </div>
+                    </div>
+                  </div>
 
+                  <div>
+                    <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                      <DollarSign size={13} className="text-emerald-500" />
+                      <span>Số tiền thanh toán (đ) *</span>
+                    </label>
+                    <CurrencyInput
+                      value={quickPayForm.amount}
+                      onChange={(val) => setQuickPayForm({ ...quickPayForm, amount: val })}
+                      suffix="đ"
+                      inputClassName="p-2 font-bold text-emerald-600 dark:text-emerald-400 text-xs"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
                       <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                        <DollarSign size={13} className="text-emerald-500" />
-                        <span>Số tiền thanh toán (đ) *</span>
-                      </label>
-                      <CurrencyInput
-                        value={quickPayForm.amount}
-                        onChange={(val) => setQuickPayForm({ ...quickPayForm, amount: val })}
-                        suffix="đ"
-                        inputClassName="p-2 font-bold text-emerald-600 dark:text-emerald-400 text-xs"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                          <User size={13} className="text-gray-400" />
-                          <span>Người chi tiền *</span>
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="HieuNT, Bạn, Kế toán..."
-                          value={quickPayForm.payerName}
-                          onChange={(e) => setQuickPayForm({ ...quickPayForm, payerName: e.target.value })}
-                          className="w-full bg-white dark:bg-[#161a22] border border-gray-200 dark:border-gray-700 rounded p-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
-                          <Wallet size={13} className="text-[#5865f2]" />
-                          <span>Nguồn tiền *</span>
-                        </label>
-                        <Select
-                          value={quickPayForm.fundSource}
-                          onChange={(val) => setQuickPayForm({ ...quickPayForm, fundSource: val })}
-                          options={[
-                            { value: 'CASH_FUND', label: 'Quỹ tiền mặt' },
-                            { value: 'BANK_ACCOUNT', label: 'Tài khoản công ty' },
-                            { value: 'PERSONAL_FUND', label: 'Tiền cá nhân (Chi hộ)' },
-                          ]}
-                          size="sm"
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                          <FileText size={13} className="text-indigo-500" />
-                          <span>Mã phiếu chi / GD</span>
-                        </label>
-                        <span className="text-[10px] text-gray-400 font-normal">Hệ thống tự cấp</span>
-                      </div>
-                      <input
-                        type="text"
-                        readOnly
-                        disabled
-                        tabIndex={-1}
-                        value={quickPayForm.referenceCode || 'Hệ thống tự động cấp'}
-                        title="Mã phiếu được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
-                        className="w-full bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-2 text-xs font-mono uppercase font-bold text-gray-500 dark:text-gray-400 cursor-not-allowed select-none pointer-events-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
-                        <FileText size={13} className="text-gray-400" />
-                        <span>Ghi chú</span>
+                        <User size={13} className="text-gray-400" />
+                        <span>Người chi tiền *</span>
                       </label>
                       <input
                         type="text"
-                        value={quickPayForm.note}
-                        onChange={(e) => setQuickPayForm({ ...quickPayForm, note: e.target.value })}
+                        required
+                        placeholder="HieuNT, Bạn, Kế toán..."
+                        value={quickPayForm.payerName}
+                        onChange={(e) => setQuickPayForm({ ...quickPayForm, payerName: e.target.value })}
                         className="w-full bg-white dark:bg-[#161a22] border border-gray-200 dark:border-gray-700 rounded p-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                        <Wallet size={13} className="text-[#5865f2]" />
+                        <span>Nguồn tiền *</span>
+                      </label>
+                      <Select
+                        value={quickPayForm.fundSource}
+                        onChange={(val) => setQuickPayForm({ ...quickPayForm, fundSource: val })}
+                        options={[
+                          { value: 'CASH_FUND', label: 'Quỹ tiền mặt' },
+                          { value: 'BANK_ACCOUNT', label: 'Tài khoản công ty' },
+                          { value: 'PERSONAL_FUND', label: 'Tiền cá nhân (Chi hộ)' },
+                        ]}
+                        size="sm"
+                        className="w-full"
                       />
                     </div>
                   </div>
 
-                  {/* Cột phải: VietQR Realtime */}
-                  {hasBank && (
-                    <div className="md:col-span-5 flex flex-col">
-                      <SupplierBankQr
-                        supplier={targetSupplier}
-                        amount={quickPayForm.amount}
-                        description={
-                          quickPayForm.referenceCode || `Thanh toan don ${quickPayReceipt?.receiptCode}`
-                        }
-                        className="h-full"
-                      />
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                        <FileText size={13} className="text-indigo-500" />
+                        <span>Mã phiếu chi / GD</span>
+                      </label>
+                      <span className="text-[10px] text-gray-400 font-normal">Hệ thống tự cấp</span>
                     </div>
-                  )}
+                    <input
+                      type="text"
+                      readOnly
+                      disabled
+                      tabIndex={-1}
+                      value={quickPayForm.referenceCode || 'Hệ thống tự động cấp'}
+                      title="Mã phiếu được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
+                      className="w-full bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded p-2 text-xs font-mono uppercase font-bold text-gray-500 dark:text-gray-400 cursor-not-allowed select-none pointer-events-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
+                      <FileText size={13} className="text-gray-400" />
+                      <span>Ghi chú</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={quickPayForm.note}
+                      onChange={(e) => setQuickPayForm({ ...quickPayForm, note: e.target.value })}
+                      className="w-full bg-white dark:bg-[#161a22] border border-gray-200 dark:border-gray-700 rounded p-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
+                    />
+                  </div>
                 </div>
               );
             })()}

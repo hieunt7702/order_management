@@ -39,10 +39,22 @@ export const Modal: React.FC<ModalProps> = ({
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
     '2xl': 'max-w-6xl',
-    '3xl': 'max-w-7xl w-[96vw]',
-    full: 'max-w-[96vw] w-[96vw]',
+    '3xl': 'max-w-7xl sm:w-[96vw]',
+    full: 'max-w-[96vw] sm:w-[96vw]',
   };
-  const resolvedMaxWidth = maxWidth ?? (size ? sizeMap[size] : 'max-w-lg');
+  const rawMaxWidth = maxWidth ?? (size ? sizeMap[size] : 'max-w-lg');
+  const resolvedMaxWidth = (() => {
+    // Ensure that on mobile (< sm), max-width is ALWAYS 100% full width (w-full max-w-full)
+    // and the specific desktop max-width restriction is only applied at sm breakpoint (sm:max-w-...)
+    const tokens = rawMaxWidth.split(/\s+/).filter(Boolean);
+    const responsiveTokens = tokens.map((token) => {
+      if (token.startsWith('max-w-') && !token.startsWith('max-w-full') && !token.includes(':')) {
+        return `sm:${token}`;
+      }
+      return token;
+    });
+    return cn('w-full max-w-full', responsiveTokens.join(' '));
+  })();
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,9 +78,11 @@ export const Modal: React.FC<ModalProps> = ({
   return createPortal(
     <div
       className={cn(
-        'fixed inset-0 flex items-center justify-center p-2 sm:p-4 bg-black/60 dark:bg-black/75 backdrop-blur-[2px] animate-modal-backdrop',
+        'fixed inset-0 flex items-center justify-center p-0 sm:p-4 bg-black/60 dark:bg-black/75 backdrop-blur-[2px] animate-modal-backdrop',
         containerZIndex,
-        mobilePlacement === 'bottom' && 'flex-col justify-end sm:justify-center p-0 sm:p-4',
+        mobilePlacement === 'bottom'
+          ? 'flex-col justify-end sm:justify-center p-0 sm:p-4'
+          : 'p-0 sm:p-4',
       )}
     >
       <div
@@ -79,11 +93,11 @@ export const Modal: React.FC<ModalProps> = ({
       <div
         ref={modalRef}
         className={cn(
-          'bg-white dark:bg-[#181b22] rounded sm:rounded w-full shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh] max-h-[90dvh] sm:max-h-[90vh]',
+          'bg-white dark:bg-[#181b22] w-full shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col max-h-[92vh] max-h-[92dvh] sm:max-h-[90vh]',
           '[&>form]:flex [&>form]:flex-col [&>form]:flex-1 [&>form]:min-h-0 [&>form]:overflow-hidden [&>form]:space-y-0',
           mobilePlacement === 'bottom'
-            ? 'rounded-t sm:rounded rounded-b-none sm:rounded-b border-b-0 sm:border-b max-h-[88vh] max-h-[88dvh] sm:max-h-[90vh] animate-modal-sheet sm:animate-modal-center'
-            : 'animate-modal-center',
+            ? 'rounded-t-2xl sm:rounded-lg rounded-b-none sm:rounded-b border-x-0 sm:border-x border-b-0 sm:border-b max-h-[90vh] max-h-[90dvh] sm:max-h-[90vh] animate-modal-sheet sm:animate-modal-center'
+            : 'rounded-t-2xl sm:rounded-lg rounded-b-none sm:rounded-b border-x-0 sm:border-x border-b-0 sm:border-b sm:border animate-modal-center',
           resolvedMaxWidth,
           className,
         )}

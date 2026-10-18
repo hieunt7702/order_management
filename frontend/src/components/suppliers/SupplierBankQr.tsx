@@ -93,110 +93,102 @@ export const SupplierBankQr: React.FC<SupplierBankQrProps> = ({
   }
 
   return (
-    <div
-      className={`bg-white dark:bg-[#161a22] rounded border border-gray-200 dark:border-gray-800 p-3 sm:p-3.5 flex flex-col items-center justify-between shadow-xs transition-colors duration-200 ${className}`}
-    >
-      {/* Header bar */}
-      <div className="w-full flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800 shrink-0">
+    <div className={`flex flex-col items-center justify-center w-full space-y-3 ${className}`}>
+      {/* Thông tin ngân hàng & thao tác nhanh */}
+      <div className="w-full flex items-center justify-between px-1">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded bg-[#5865f2]/10 dark:bg-[#5865f2]/20 flex items-center justify-center text-[#5865f2] shrink-0">
-            <QrCode size={13} />
+          <div className="px-2 py-0.5 rounded text-[11px] font-bold bg-[#5865f2]/10 text-[#5865f2] dark:bg-[#5865f2]/20 dark:text-[#8ea1e1] shrink-0">
+            {bankInfo?.shortName || supplier.bankName || 'VietQR'}
           </div>
-          <div className="min-w-0">
-            <div className="font-semibold text-xs text-gray-900 dark:text-white flex items-center gap-1.5 leading-tight">
-              <span>VietQR 24/7</span>
-              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shrink-0">
-                Napas
-              </span>
-            </div>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate mt-0.5">
-              {bankInfo?.shortName || supplier.bankName || 'Quét bằng app ngân hàng'}
-            </p>
-          </div>
+          {supplier.bankBeneficiary && (
+            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate max-w-[180px]">
+              {supplier.bankBeneficiary}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={() => setIsZoomOpen(true)}
-            className="p-1 rounded text-gray-400 hover:text-[#5865f2] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-[#5865f2] hover:bg-gray-100 dark:hover:bg-gray-800/80 transition-colors cursor-pointer"
             title="Phóng to mã QR"
           >
-            <Eye size={13} />
+            <Eye size={15} />
           </button>
           <button
             type="button"
             onClick={handleDownload}
-            className="p-1 rounded text-gray-400 hover:text-emerald-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-gray-100 dark:hover:bg-gray-800/80 transition-colors cursor-pointer"
             title="Tải ảnh mã QR"
           >
-            <Download size={13} />
+            <Download size={15} />
           </button>
         </div>
       </div>
 
-      {/* QR Code Container */}
-      <div className="my-2.5 p-2 rounded bg-gray-50/80 dark:bg-[#12141a] border border-gray-200/60 dark:border-gray-800/80 flex flex-col items-center justify-center w-full">
+      {/* QR Code Container - Seamless elevated presentation */}
+      <div className="flex flex-col items-center justify-center w-full">
         {qrUrl && !imgError ? (
           <div
-            className="relative group cursor-pointer overflow-hidden rounded bg-white p-1.5 shadow-2xs border border-gray-200/60 dark:border-gray-700/80"
+            className="relative group cursor-pointer overflow-hidden rounded-2xl bg-white p-3 shadow-md hover:shadow-lg transition-all duration-200"
             onClick={() => setIsZoomOpen(true)}
-            title="Bấm để phóng to"
+            title="Bấm để phóng to mã QR"
           >
             <img
               src={qrUrl}
               alt="VietQR Chuyển khoản"
-              className="w-40 sm:w-44 h-auto max-w-full object-contain rounded transition-transform duration-200 group-hover:scale-[1.03]"
+              className="w-48 sm:w-52 h-auto max-w-full object-contain rounded-lg transition-transform duration-200 group-hover:scale-[1.02]"
               onError={() => setImgError(true)}
             />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[11px] font-medium gap-1 rounded backdrop-blur-[1px]">
-              <Eye size={13} />
-              <span>Phóng to</span>
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium gap-1.5 rounded-2xl backdrop-blur-[1px]">
+              <Eye size={16} />
+              <span>Phóng to mã QR</span>
             </div>
           </div>
         ) : (
-          <div className="w-36 h-36 flex flex-col items-center justify-center text-gray-400 text-xs">
-            <QrCode size={28} className="mb-1 opacity-50" />
-            <span>Không tải được QR</span>
+          <div className="w-48 h-48 flex flex-col items-center justify-center text-gray-400 text-xs rounded-2xl bg-gray-50 dark:bg-gray-800/40">
+            <QrCode size={32} className="mb-2 opacity-50 text-gray-400" />
+            <span>Không tải được mã QR</span>
           </div>
         )}
-        <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5 text-center select-none">
-          Chạm để xem mã lớn
+        <span className="text-[11px] text-gray-400 dark:text-gray-500 mt-2 text-center select-none">
+          Chạm vào mã để phóng to toàn màn hình
         </span>
       </div>
 
       {/* Quick Copy Action Chips */}
-      <div className="w-full flex flex-wrap items-center justify-center gap-1.5 pt-0.5 shrink-0">
+      <div className="w-full flex flex-wrap items-center justify-center gap-2 pt-1">
         {supplier.bankAccount && (
           <button
             type="button"
             onClick={() => handleCopy(supplier.bankAccount || '', 'Số tài khoản')}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-gray-100 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer text-[10px] font-mono font-medium border border-gray-200/60 dark:border-gray-700/60"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all cursor-pointer text-xs font-mono font-semibold shadow-xs"
             title="Sao chép số tài khoản"
           >
             {copiedField === 'Số tài khoản' ? (
-              <Check size={11} className="text-emerald-500 shrink-0" />
+              <Check size={13} className="text-emerald-500 shrink-0" />
             ) : (
-              <CreditCard size={11} className="text-[#5865f2] shrink-0" />
+              <CreditCard size={13} className="text-[#5865f2] shrink-0" />
             )}
-            <span className="truncate max-w-[130px]">{supplier.bankAccount}</span>
-            <Copy size={10} className="text-gray-400 shrink-0 opacity-70" />
+            <span className="truncate max-w-[140px]">{supplier.bankAccount}</span>
+            <Copy size={12} className="text-gray-400 shrink-0 opacity-70" />
           </button>
         )}
         {description && (
           <button
             type="button"
             onClick={() => handleCopy(description, 'Nội dung')}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-indigo-50/80 dark:bg-indigo-950/40 text-[#5865f2] dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer text-[10px] font-medium border border-indigo-200/50 dark:border-indigo-800/50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#5865f2]/10 dark:bg-[#5865f2]/20 text-[#5865f2] dark:text-[#8ea1e1] hover:bg-[#5865f2]/20 dark:hover:bg-[#5865f2]/30 active:scale-95 transition-all cursor-pointer text-xs font-medium shadow-xs"
             title="Sao chép nội dung chuyển khoản"
           >
             {copiedField === 'Nội dung' ? (
-              <Check size={11} className="text-emerald-500 shrink-0" />
+              <Check size={13} className="text-emerald-500 shrink-0" />
             ) : (
-              <FileText size={11} className="text-[#5865f2] shrink-0" />
+              <FileText size={13} className="text-[#5865f2] shrink-0" />
             )}
             <span>Nội dung CK</span>
-            <Copy size={10} className="opacity-70 shrink-0" />
+            <Copy size={12} className="opacity-70 shrink-0" />
           </button>
         )}
       </div>
@@ -208,7 +200,7 @@ export const SupplierBankQr: React.FC<SupplierBankQrProps> = ({
           onClick={() => setIsZoomOpen(false)}
         >
           <div
-            className="relative bg-white dark:bg-[#181b22] rounded p-4 max-w-xs sm:max-w-sm w-full space-y-3.5 shadow-2xl border border-gray-200 dark:border-gray-800"
+            className="relative bg-white dark:bg-[#181b22] rounded-xl p-4 max-w-xs sm:max-w-sm w-full space-y-3.5 shadow-2xl border border-gray-200 dark:border-gray-800"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
@@ -229,18 +221,18 @@ export const SupplierBankQr: React.FC<SupplierBankQrProps> = ({
               </button>
             </div>
 
-            <div className="flex flex-col items-center justify-center p-2 rounded bg-gray-50 dark:bg-[#12141a] border border-gray-200/60 dark:border-gray-800">
+            <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-white shadow-xs">
               <img
                 src={qrUrl}
                 alt="VietQR Phóng to"
-                className="w-full h-auto object-contain rounded bg-white p-2 shadow-xs"
+                className="w-full h-auto object-contain rounded"
               />
             </div>
 
             <button
               type="button"
               onClick={handleDownload}
-              className="w-full py-2 px-3 rounded bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
+              className="w-full py-2 px-3 rounded-lg bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
             >
               <Download size={13} />
               <span>Tải ảnh mã QR về máy</span>
