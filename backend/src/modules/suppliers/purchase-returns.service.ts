@@ -19,13 +19,21 @@ import {
 export class PurchaseReturnsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private generateReturnCode(): string {
+  async generateUniqueReturnCode(tenantId: string): Promise<string> {
     const now = new Date();
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const d = String(now.getDate()).padStart(2, '0');
-    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `TH-${y}${m}${d}-${rand}`;
+    const prefix = `TH-${y}${m}${d}`;
+    for (let i = 0; i < 100; i++) {
+      const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const code = `${prefix}-${rand}`;
+      const existing = await this.prisma.purchaseReturn.findUnique({
+        where: { tenantId_returnCode: { tenantId, returnCode: code } },
+      });
+      if (!existing) return code;
+    }
+    return `${prefix}-${Date.now().toString().slice(-4)}`;
   }
 
   async create(tenantId: string, userId: string, dto: CreatePurchaseReturnDto) {
@@ -41,13 +49,16 @@ export class PurchaseReturnsService {
     if (!supplier) throw new NotFoundException('Không tìm thấy nhà cung cấp');
     if (!warehouse) throw new NotFoundException('Không tìm thấy kho xuất trả');
 
-    const returnCode = dto.returnCode?.trim().toUpperCase() || this.generateReturnCode();
-
-    const existing = await this.prisma.purchaseReturn.findUnique({
-      where: { tenantId_returnCode: { tenantId, returnCode } },
-    });
-    if (existing) {
-      throw new ConflictException(`Mã phiếu trả '${returnCode}' đã tồn tại trong workspace`);
+    let returnCode = dto.returnCode?.trim().toUpperCase();
+    if (!returnCode) {
+      returnCode = await this.generateUniqueReturnCode(tenantId);
+    } else {
+      const existing = await this.prisma.purchaseReturn.findUnique({
+        where: { tenantId_returnCode: { tenantId, returnCode } },
+      });
+      if (existing) {
+        returnCode = await this.generateUniqueReturnCode(tenantId);
+      }
     }
 
     let totalReturnAmount = 0;

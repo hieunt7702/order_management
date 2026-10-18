@@ -41,18 +41,52 @@ export class ShopsService {
     return shop;
   }
 
-  async create(tenantId: string, dto: CreateShopDto) {
-    // Check if code exists in tenant
-    const existingCode = await this.prisma.shop.findUnique({
-      where: {
-        tenantId_code: {
-          tenantId,
-          code: dto.code,
-        },
-      },
+  async generateNextShopCode(tenantId: string): Promise<string> {
+    const shops = await this.prisma.shop.findMany({
+      where: { tenantId },
+      select: { code: true },
     });
-    if (existingCode) {
-      throw new ConflictException(`Mã shop "${dto.code}" đã tồn tại trong Workspace`);
+
+    let maxNum = 0;
+    for (const s of shops) {
+      const match = s.code?.match(/^SHOP-?(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    }
+
+    let nextNum = maxNum + 1;
+    let candidate = `SHOP-${String(nextNum).padStart(2, '0')}`;
+    while (
+      await this.prisma.shop.findUnique({
+        where: { tenantId_code: { tenantId, code: candidate } },
+      })
+    ) {
+      nextNum++;
+      candidate = `SHOP-${String(nextNum).padStart(2, '0')}`;
+    }
+    return candidate;
+  }
+
+  async create(tenantId: string, dto: CreateShopDto) {
+    let finalCode = dto.code?.trim().toUpperCase();
+    if (!finalCode) {
+      finalCode = await this.generateNextShopCode(tenantId);
+    } else {
+      const existingCode = await this.prisma.shop.findUnique({
+        where: {
+          tenantId_code: {
+            tenantId,
+            code: finalCode,
+          },
+        },
+      });
+      if (existingCode) {
+        finalCode = await this.generateNextShopCode(tenantId);
+      }
     }
 
     // If externalShopId provided, check composite unique
@@ -84,7 +118,7 @@ export class ShopsService {
     return this.prisma.shop.create({
       data: {
         tenantId,
-        code: dto.code,
+        code: finalCode,
         name: dto.name,
         platform: dto.platform || 'SHOPEE',
         externalShopId: dto.externalShopId,

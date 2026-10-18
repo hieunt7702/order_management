@@ -93,15 +93,35 @@ export const ShopsPage: React.FC = () => {
     }
   };
 
+  const handleOpenCreateModal = async () => {
+    let nextCode = '';
+    try {
+      const res: any = await shopsApi.getNextCode();
+      if (res?.code) nextCode = res.code;
+    } catch (e) {
+      console.warn('Failed to get next shop code', e);
+    }
+    if (!nextCode) {
+      nextCode = `SHOP-${String(shops.length + 1).padStart(2, '0')}`;
+    }
+    setCreateForm({
+      code: nextCode,
+      name: '',
+      platform: 'SHOPEE',
+      defaultWarehouseId: '',
+    });
+    setIsCreateModalOpen(true);
+  };
+
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createForm.code || !createForm.name) {
-      toast.warning('Vui lòng nhập mã shop và tên shop');
+    if (!createForm.name.trim()) {
+      toast.warning('Vui lòng nhập tên shop');
       return;
     }
     try {
       await shopsApi.create({
-        code: createForm.code.trim().toUpperCase(),
+        code: createForm.code?.trim() || undefined,
         name: createForm.name.trim(),
         platform: createForm.platform,
         defaultWarehouseId: createForm.defaultWarehouseId || undefined,
@@ -215,7 +235,7 @@ export const ShopsPage: React.FC = () => {
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <Button
             size="sm"
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={handleOpenCreateModal}
             className="h-8 px-2.5 sm:px-3 gap-1 sm:gap-1.5 text-xs"
           >
             <Plus size={14} />
@@ -724,16 +744,21 @@ export const ShopsPage: React.FC = () => {
           <form onSubmit={handleCreateSubmit} className="flex flex-col flex-1 min-h-0">
             <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Mã shop (Duy nhất trong Workspace) *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    Mã shop
+                  </label>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-400 font-medium">
+                    Hệ thống tự cấp
+                  </span>
+                </div>
                 <input
                   type="text"
-                  required
-                  placeholder="VD: SHOP_HN_01"
-                  value={createForm.code}
-                  onChange={(e) => setCreateForm({ ...createForm, code: e.target.value })}
-                  className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  readOnly
+                  disabled
+                  value={createForm.code || 'Hệ thống tự động cấp'}
+                  title="Mã shop được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
+                  className="w-full px-3 py-2 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none transition-colors"
                 />
               </div>
 

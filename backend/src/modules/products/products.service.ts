@@ -156,53 +156,103 @@ export class ProductsService {
     return product;
   }
 
-  async create(tenantId: string, dto: CreateProductDto) {
-    // Check product code
-    const existingCode = await this.prisma.product.findUnique({
-      where: {
-        tenantId_code: {
-          tenantId,
-          code: dto.code,
-        },
-      },
+  async generateNextProductCode(tenantId: string): Promise<string> {
+    const products = await this.prisma.product.findMany({
+      where: { tenantId },
+      select: { code: true },
     });
-    if (existingCode) {
-      throw new ConflictException(`Mã sản phẩm "${dto.code}" đã tồn tại trong Workspace`);
+
+    let maxNum = 0;
+    for (const p of products) {
+      const match = p.code?.match(/^SP-?(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
     }
 
-    // Check unique SKUs
-    for (const v of dto.variants) {
-      const existingSku = await this.prisma.productVariant.findUnique({
+    let nextNum = maxNum + 1;
+    let candidate = `SP${String(nextNum).padStart(3, '0')}`;
+    while (
+      await this.prisma.product.findUnique({
+        where: { tenantId_code: { tenantId, code: candidate } },
+      })
+    ) {
+      nextNum++;
+      candidate = `SP${String(nextNum).padStart(3, '0')}`;
+    }
+    return candidate;
+  }
+
+  async create(tenantId: string, dto: CreateProductDto) {
+    let productCode = dto.code?.trim().toUpperCase();
+    if (!productCode) {
+      productCode = await this.generateNextProductCode(tenantId);
+    } else {
+      const existingCode = await this.prisma.product.findUnique({
         where: {
-          tenantId_sku: {
+          tenantId_code: {
             tenantId,
-            sku: v.sku,
+            code: productCode,
           },
         },
       });
-      if (existingSku) {
-        throw new ConflictException(`SKU nội bộ "${v.sku}" đã tồn tại trong Workspace`);
+      if (existingCode) {
+        productCode = await this.generateNextProductCode(tenantId);
       }
+    }
+
+    // Process variants and ensure unique SKUs
+    const variantsToCreate: any[] = [];
+    const baseVariants = dto.variants && dto.variants.length > 0 ? dto.variants : [{ name: 'Mặc định' }];
+
+    for (let i = 0; i < baseVariants.length; i++) {
+      const v = baseVariants[i];
+      let sku = (v as any).sku?.trim().toUpperCase();
+      if (!sku || sku === 'SKU' || sku === 'SP' || sku.startsWith('SP-') || sku.startsWith('SP')) {
+        sku = `${productCode}-${i + 1}`;
+      }
+      let candidateSku = sku;
+      let counter = i + 1;
+      while (
+        await this.prisma.productVariant.findUnique({
+          where: {
+            tenantId_sku: {
+              tenantId,
+              sku: candidateSku,
+            },
+          },
+        })
+      ) {
+        counter++;
+        candidateSku = `${productCode}-${counter}`;
+      }
+      variantsToCreate.push({
+        ...v,
+        sku: candidateSku,
+      });
     }
 
     return this.prisma.$transaction(async (tx) => {
       const product = await tx.product.create({
         data: {
           tenantId,
-          code: dto.code,
+          code: productCode,
           name: dto.name,
           description: dto.description,
         },
       });
 
       const variants = [];
-      for (const v of dto.variants) {
+      for (const v of variantsToCreate) {
         const variant = await tx.productVariant.create({
           data: {
             tenantId,
             productId: product.id,
             sku: v.sku,
-            name: v.name,
+            name: v.name || 'Mặc định',
             barcode: v.barcode,
             unit: v.unit || 'cái',
             costPrice: v.costPrice ?? 0,

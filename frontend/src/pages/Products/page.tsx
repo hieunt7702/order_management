@@ -340,8 +340,18 @@ export const ProductsPage: React.FC = () => {
     return `SP${yy}${mm}-${String(nextSeq).padStart(3, '0')}`;
   };
 
-  const handleOpenCreateProductModal = () => {
-    const autoCode = generateNextProductCode();
+  const handleOpenCreateProductModal = async () => {
+    let autoCode = '';
+    try {
+      const res: any = await productsApi.getNextCode();
+      if (res?.code) autoCode = res.code;
+    } catch (e) {
+      console.warn('Failed to fetch next product code, fallback', e);
+    }
+    if (!autoCode) {
+      autoCode = `SP${String((products.length || 0) + 1).padStart(3, '0')}`;
+    }
+
     setCreateProductForm({
       name: '',
       sku: autoCode,
@@ -362,40 +372,9 @@ export const ProductsPage: React.FC = () => {
 
   // Create Product Handlers
   const handleProductNameChange = (newName: string) => {
-    const nameSku = generateSkuFromName(newName);
-    const prevNameSku = generateSkuFromName(createProductForm.name);
-    const isAuto =
-      !createProductForm.sku ||
-      createProductForm.sku === prevNameSku ||
-      createProductForm.sku.startsWith('SP');
-
-    const newSku = isAuto && nameSku ? nameSku : (createProductForm.sku || generateNextProductCode());
-
-    const updatedVariants = createProductForm.variants.map((v, i) => {
-      const suffix = createProductForm.variants.length > 1 ? `-${i + 1}` : '-1';
-      return {
-        ...v,
-        sku: `${newSku}${suffix}`,
-      };
-    });
-
     setCreateProductForm((prev) => ({
       ...prev,
       name: newName,
-      sku: newSku,
-      variants: updatedVariants,
-    }));
-  };
-
-  const handleRegenerateSku = () => {
-    const generatedSku = generateSkuFromName(createProductForm.name) || generateNextProductCode();
-    setCreateProductForm((prev) => ({
-      ...prev,
-      sku: generatedSku,
-      variants: prev.variants.map((v, i) => ({
-        ...v,
-        sku: `${generatedSku}-${i + 1}`,
-      })),
     }));
   };
 
@@ -2361,36 +2340,20 @@ export const ProductsPage: React.FC = () => {
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1.5">
-                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                        Mã sản phẩm / SKU cha *
-                      </label>
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-medium">
-                        Tự sinh
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleRegenerateSku}
-                      className="inline-flex items-center gap-1 text-[11px] text-[#5865f2] hover:text-[#4752c4] font-medium transition-colors cursor-pointer"
-                      title="Tự động sinh lại mã SKU mới"
-                    >
-                      <Sparkles size={11} />
-                      Đổi mã mới
-                    </button>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                      Mã sản phẩm / SKU cha *
+                    </label>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-400 font-medium">
+                      Hệ thống tự cấp
+                    </span>
                   </div>
                   <input
                     type="text"
-                    required
-                    placeholder="VD: ATN-01"
-                    value={createProductForm.sku}
-                    onChange={(e) =>
-                      setCreateProductForm({
-                        ...createProductForm,
-                        sku: e.target.value.toUpperCase(),
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs font-mono uppercase bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    readOnly
+                    disabled
+                    value={createProductForm.sku || 'Hệ thống tự động cấp'}
+                    title="Mã sản phẩm được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
+                    className="w-full px-3 py-2 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none transition-colors"
                   />
                 </div>
               </div>
@@ -2497,19 +2460,21 @@ export const ProductsPage: React.FC = () => {
                             />
                           </div>
                           <div>
-                            <label className="text-[11px] font-medium text-gray-500">
-                              Mã SKU biến thể *
-                            </label>
+                            <div className="flex items-center justify-between mb-0.5">
+                              <label className="text-[11px] font-medium text-gray-500">
+                                Mã SKU biến thể
+                              </label>
+                              <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-400 font-medium">
+                                Tự cấp
+                              </span>
+                            </div>
                             <input
                               type="text"
-                              required
+                              readOnly
+                              disabled
                               value={v.sku}
-                              onChange={(e) => {
-                                const next = [...createProductForm.variants];
-                                next[idx].sku = e.target.value;
-                                setCreateProductForm({ ...createProductForm, variants: next });
-                              }}
-                              className="w-full px-2.5 py-1.5 text-xs font-mono uppercase bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white"
+                              title="SKU biến thể được hệ thống tự động sinh ngầm"
+                              className="w-full px-2.5 py-1.5 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none transition-colors"
                             />
                           </div>
                           <div>

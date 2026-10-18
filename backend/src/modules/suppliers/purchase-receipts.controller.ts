@@ -50,6 +50,20 @@ export class PurchaseReceiptsController {
     return this.receiptsService.findAll(tenantId, filter);
   }
 
+  @Get('next-code')
+  @Roles(
+    MembershipRole.OWNER,
+    MembershipRole.ADMIN,
+    MembershipRole.WAREHOUSE,
+    MembershipRole.ACCOUNTANT,
+    MembershipRole.VIEWER,
+  )
+  @ApiOperation({ summary: 'Lấy mã phiếu nhập kho tiếp theo tự động' })
+  async getNextCode(@CurrentTenantId() tenantId: string) {
+    const code = await this.receiptsService.generateUniqueReceiptCode(tenantId);
+    return { code };
+  }
+
   @Get(':id')
   @Roles(
     MembershipRole.OWNER,

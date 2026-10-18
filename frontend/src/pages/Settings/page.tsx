@@ -177,10 +177,24 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  const handleOpenCreateWh = () => {
+    let maxNum = 0;
+    for (const w of warehouses) {
+      const match = (w.code || '').match(/^KHO[-_]?(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+    const nextCode = `KHO-${String(maxNum + 1).padStart(2, '0')}`;
+    setCreateWhForm({ code: nextCode, name: '', address: '', phone: '' });
+    setIsCreateWhModalOpen(true);
+  };
+
   const handleCreateWhSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createWhForm.code || !createWhForm.name) {
-      toast.warning('Vui lòng nhập mã kho và tên kho');
+    if (!createWhForm.name.trim()) {
+      toast.warning('Vui lòng nhập tên kho hàng');
       return;
     }
     try {
@@ -506,7 +520,7 @@ export const SettingsPage: React.FC = () => {
             <Button
               variant="default"
               size="sm"
-              onClick={() => setIsCreateWhModalOpen(true)}
+              onClick={handleOpenCreateWh}
               className="gap-1.5 h-7 px-2.5 sm:h-8 sm:px-3 text-xs"
             >
               <Plus size={14} />
@@ -778,16 +792,17 @@ export const SettingsPage: React.FC = () => {
           <form onSubmit={handleCreateWhSubmit} className="flex flex-col flex-1 min-h-0">
             <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Mã kho (Duy nhất) *
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center justify-between">
+                  <span>Mã kho</span>
+                  <span className="text-[10px] text-gray-400 font-normal">Hệ thống tự cấp</span>
                 </label>
                 <input
                   type="text"
-                  required
-                  placeholder="VD: KHO_TONG_HN"
-                  value={createWhForm.code}
-                  onChange={(e) => setCreateWhForm({ ...createWhForm, code: e.target.value })}
-                  className="w-full h-8 px-3 text-xs font-mono uppercase bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  readOnly
+                  disabled
+                  value={createWhForm.code || 'Hệ thống tự động cấp'}
+                  title="Mã kho được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
+                  className="w-full h-8 px-3 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none"
                 />
               </div>
 

@@ -7,6 +7,7 @@ import {
 import {
   Prisma,
   OrderReconciliationStatus,
+  PlatformOrderStatus,
   CashTransactionType,
   CashTransactionStatus,
   CashCategoryType,
@@ -18,12 +19,54 @@ export class ReconciliationService {
 
   /**
    * Đồng bộ khởi tạo bản ghi đối soát cho các đơn hàng chưa có OrderReconciliationRecord
+   * - Tự động dọn dẹp các bản ghi của đơn hàng đã bị hủy (nếu chưa từng có quyết toán/bồi hoàn)
+   * - Chỉ khởi tạo bản ghi cho các đơn hàng KHÔNG BỊ HỦY
    */
   async syncMissingOrders(tenantId: string, shopId?: string) {
+    // 1. Dọn dẹp bản ghi đối soát của các đơn hàng bị hủy mà không có quyết toán hoặc bồi hoàn
+    await this.prisma.orderReconciliationRecord.deleteMany({
+      where: {
+        tenantId,
+        ...(shopId && { shopId }),
+        order: {
+          platformStatus: {
+            in: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
+          },
+        },
+        settledPayout: 0,
+        adjustmentAmount: 0,
+      },
+    });
+
+    // 2. Nếu đơn bị hủy nhưng có quyết toán/bồi hoàn phát sinh từ sàn, reset tiền dự kiến và tiền hàng về 0 để không tính sai
+    await this.prisma.orderReconciliationRecord.updateMany({
+      where: {
+        tenantId,
+        ...(shopId && { shopId }),
+        order: {
+          platformStatus: {
+            in: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
+          },
+        },
+        OR: [
+          { settledPayout: { gt: 0 } },
+          { adjustmentAmount: { not: 0 } },
+        ],
+      },
+      data: {
+        estimatedPayout: 0,
+        orderItemAmount: 0,
+      },
+    });
+
+    // 3. Chỉ lấy các đơn KHÔNG BỊ HỦY để tạo bản ghi đối soát mới
     const ordersWithoutReconciliation = await this.prisma.order.findMany({
       where: {
         tenantId,
         ...(shopId && { shopId }),
+        platformStatus: {
+          notIn: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
+        },
         reconciliation: null,
       },
       select: {
@@ -35,7 +78,7 @@ export class ReconciliationService {
         shippingFee: true,
         discountAmount: true,
       },
-      take: 200,
+      take: 2000,
     });
 
     if (ordersWithoutReconciliation.length === 0) {
@@ -76,7 +119,7 @@ export class ReconciliationService {
   }
 
   /**
-   * Lấy danh sách đối soát đơn hàng kèm 4 cột tiền trọng yếu
+   * Lấy danh sách đối soát đơn hàng kèm 4 cột tiền trọng yếu (chỉ tính các đơn không bị hủy)
    */
   async getReconciliationList(tenantId: string, filter: ReconciliationFilterDto) {
     // Tự động kiểm tra và đồng bộ đơn mới nếu cần
@@ -86,38 +129,67 @@ export class ReconciliationService {
     const limit = Number(filter.limit) || 50;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.OrderReconciliationRecordWhereInput = {
-      tenantId,
-      ...(filter.shopId && { shopId: filter.shopId }),
-      ...(filter.reconciliationStatus && {
-        reconciliationStatus: filter.reconciliationStatus,
-      }),
-      ...(filter.startDate || filter.endDate
-        ? {
-            createdAt: {
-              ...(filter.startDate && { gte: new Date(filter.startDate) }),
-              ...(filter.endDate && { lte: new Date(filter.endDate) }),
-            },
-          }
-        : {}),
-      ...(filter.search?.trim()
-        ? {
-            OR: [
-              { externalOrderId: { contains: filter.search.trim(), mode: 'insensitive' } },
-              { note: { contains: filter.search.trim(), mode: 'insensitive' } },
-              {
-                order: {
-                  OR: [
-                    { internalOrderCode: { contains: filter.search.trim(), mode: 'insensitive' } },
-                    { trackingCode: { contains: filter.search.trim(), mode: 'insensitive' } },
-                    { recipientName: { contains: filter.search.trim(), mode: 'insensitive' } },
-                    { recipientPhone: { contains: filter.search.trim(), mode: 'insensitive' } },
-                  ],
-                },
+    const whereConditions: Prisma.OrderReconciliationRecordWhereInput[] = [
+      { tenantId },
+      // Loại trừ các đơn hàng bị hủy (chỉ giữ lại nếu có tiền quyết toán hoặc điều chỉnh thực tế từ sàn)
+      {
+        OR: [
+          {
+            order: {
+              platformStatus: {
+                notIn: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
               },
-            ],
-          }
-        : {}),
+            },
+          },
+          {
+            settledPayout: { gt: 0 },
+          },
+          {
+            adjustmentAmount: { not: 0 },
+          },
+        ],
+      },
+    ];
+
+    if (filter.shopId) {
+      whereConditions.push({ shopId: filter.shopId });
+    }
+
+    if (filter.reconciliationStatus) {
+      whereConditions.push({ reconciliationStatus: filter.reconciliationStatus });
+    }
+
+    if (filter.startDate || filter.endDate) {
+      whereConditions.push({
+        createdAt: {
+          ...(filter.startDate && { gte: new Date(filter.startDate) }),
+          ...(filter.endDate && { lte: new Date(filter.endDate) }),
+        },
+      });
+    }
+
+    if (filter.search?.trim()) {
+      const s = filter.search.trim();
+      whereConditions.push({
+        OR: [
+          { externalOrderId: { contains: s, mode: 'insensitive' } },
+          { note: { contains: s, mode: 'insensitive' } },
+          {
+            order: {
+              OR: [
+                { internalOrderCode: { contains: s, mode: 'insensitive' } },
+                { trackingCode: { contains: s, mode: 'insensitive' } },
+                { recipientName: { contains: s, mode: 'insensitive' } },
+                { recipientPhone: { contains: s, mode: 'insensitive' } },
+              ],
+            },
+          },
+        ],
+      });
+    }
+
+    const where: Prisma.OrderReconciliationRecordWhereInput = {
+      AND: whereConditions,
     };
 
     const [total, items, stats] = await Promise.all([
@@ -170,12 +242,27 @@ export class ReconciliationService {
       }),
     ]);
 
-    // Thống kê theo trạng thái
+    // Thống kê theo trạng thái (chỉ tính các đơn hợp lệ không hủy, hoặc có tiền quyết toán/bồi hoàn)
     const statusCounts = await this.prisma.orderReconciliationRecord.groupBy({
       by: ['reconciliationStatus'],
       where: {
         tenantId,
         ...(filter.shopId && { shopId: filter.shopId }),
+        OR: [
+          {
+            order: {
+              platformStatus: {
+                notIn: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
+              },
+            },
+          },
+          {
+            settledPayout: { gt: 0 },
+          },
+          {
+            adjustmentAmount: { not: 0 },
+          },
+        ],
       },
       _count: {
         id: true,

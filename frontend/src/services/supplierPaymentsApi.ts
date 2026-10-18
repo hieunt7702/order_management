@@ -31,6 +31,9 @@ export interface SupplierPaymentModel {
     code: string;
     name: string;
     phone?: string;
+    bankName?: string | null;
+    bankAccount?: string | null;
+    bankBeneficiary?: string | null;
   };
   allocations?: Array<{
     id: string;

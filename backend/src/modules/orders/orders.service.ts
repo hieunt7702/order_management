@@ -345,6 +345,15 @@ export class OrdersService {
           },
         });
 
+        // Xóa bản ghi đối soát nếu đơn bị hủy và chưa từng nhận tiền
+        await tx.orderReconciliationRecord.deleteMany({
+          where: {
+            orderId: order.id,
+            settledPayout: 0,
+            adjustmentAmount: 0,
+          },
+        });
+
         await this.auditService.log({
           tenantId,
           userId,
@@ -363,6 +372,15 @@ export class OrdersService {
         data: {
           platformStatus: PlatformOrderStatus.CANCELLED,
           note: dto.reason ? `${order.note || ''} [Hủy sau xuất: ${dto.reason}]` : order.note,
+        },
+      });
+
+      // Xóa bản ghi đối soát nếu đơn bị hủy và chưa từng nhận tiền
+      await tx.orderReconciliationRecord.deleteMany({
+        where: {
+          orderId: order.id,
+          settledPayout: 0,
+          adjustmentAmount: 0,
         },
       });
 

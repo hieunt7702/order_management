@@ -93,6 +93,10 @@ model Tenant {
   cashTransactions    CashTransaction[]
   cashTransfers       CashTransfer[]
   orderReconciliations OrderReconciliationRecord[]
+  supplierLoans            SupplierLoan[]
+  supplierLoanRepayments   SupplierLoanRepayment[]
+  supplierProductBorrows   SupplierProductBorrow[]
+  supplierProductBorrowItems SupplierProductBorrowItem[]
 
   @@map("tenants")
 }
@@ -222,6 +226,7 @@ model Warehouse {
   scanEvents        ScanEvent[]
   purchaseReceipts  PurchaseReceipt[]
   orderReturns      OrderReturn[]
+  productBorrows    SupplierProductBorrow[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -270,6 +275,7 @@ model ProductVariant {
   purchaseReceiptItems PurchaseReceiptItem[]
   purchaseReturnItems  PurchaseReturnItem[]
   orderReturnItems     OrderReturnItem[]
+  borrowItems          SupplierProductBorrowItem[]
 
   @@unique([tenantId, sku])
   @@index([tenantId])
@@ -319,6 +325,8 @@ enum InventoryMovementType {
   PURCHASE_RETURN // Xuất trả hàng NCC
   SCRAP_DISPOSAL  // Xuất hủy hàng lỗi
   OPENING_BALANCE // Số dư đầu kỳ
+  BORROW_RECEIVE  // Nhận mượn hàng NCC
+  BORROW_RETURN   // Xuất trả hàng mượn NCC
 }
 
 model InventoryBalance {
@@ -357,7 +365,7 @@ model InventoryLedger {
   beforeOnHand      Int?
   afterOnHand       Int?
   voucherCode       String?               // NK001, ĐH001, PH001, TNCC001
-  performerName     String?               // Chị Hồng, Nhân viên A
+  performerName     String?               // HieuNT, Nhân viên A
   batchCode         String?               // Lô hàng
   expiryDate        DateTime?             // Hạn sử dụng
   referenceType     String?               // ORDER, IMPORT, ADJUSTMENT, RETURN, SCAN, PURCHASE_RECEIPT
@@ -799,6 +807,8 @@ model Supplier {
   purchaseReceipts PurchaseReceipt[]
   supplierPayments SupplierPayment[]
   purchaseReturns  PurchaseReturn[]
+  loans            SupplierLoan[]
+  productBorrows   SupplierProductBorrow[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -884,7 +894,7 @@ model SupplierPayment {
   paymentCode           String
   amount                Decimal             @db.Decimal(15, 2) // Số tiền thực tế chi ra
   paymentDate           DateTime            @default(now())
-  payerName             String              // Ai trả: "Chị Hồng", "Kế toán", "Bạn"
+  payerName             String              // Ai trả: "HieuNT", "Kế toán", "Bạn"
   payerUserId           String?
   fundSource            FundSourceType      @default(CASH_FUND)
   paymentMethod         String              @default("BANK_TRANSFER") // BANK_TRANSFER, CASH, OTHER
@@ -977,6 +987,148 @@ model PurchaseReturnItem {
   @@index([tenantId, returnId])
   @@index([tenantId, variantId])
   @@map("purchase_return_items")
+}
+
+// -------------------------------------------------------------
+// 6.2 SUPPLIER FINANCING & PRODUCT BORROWING (LOANS & BORROWS)
+// -------------------------------------------------------------
+
+enum SupplierLoanType {
+  BORROWED_FROM_SUPPLIER // Shop vay vốn từ nhà cung cấp
+  LENT_TO_SUPPLIER       // Shop cho nhà cung cấp vay vốn
+}
+
+enum SupplierLoanStatus {
+  ACTIVE             // Đang hoạt động / Còn nợ
+  PARTIALLY_REPAID   // Đã trả một phần
+  SETTLED            // Đã tất toán hoàn toàn
+  CANCELLED          // Đã hủy
+}
+
+enum ProductBorrowType {
+  BORROW_FROM_SUPPLIER // Shop mượn sản phẩm từ NCC (Cộng kho onHand)
+  LEND_TO_SUPPLIER     // Shop cho NCC mượn sản phẩm (Trừ kho onHand)
+}
+
+enum ProductBorrowStatus {
+  BORROWED              // Đang mượn / Chưa trả
+  PARTIALLY_RETURNED    // Đã trả / mua một phần
+  RETURNED              // Đã trả lại đủ hàng
+  CONVERTED_TO_PURCHASE // Đã mua đứt (chuyển thành phiếu nhập)
+  CANCELLED             // Đã hủy
+}
+
+model SupplierLoan {
+  id              String             @id @default(uuid())
+  tenantId        String
+  supplierId      String
+  loanCode        String             // VD: VAY-20261018-XXXX
+  type            SupplierLoanType   @default(BORROWED_FROM_SUPPLIER)
+  amount          Decimal            @db.Decimal(15, 2) // Tiền gốc vay
+  repaidAmount    Decimal            @default(0) @db.Decimal(15, 2) // Tiền gốc đã trả
+  remainingAmount Decimal            @db.Decimal(15, 2) // Dư nợ vay còn lại
+  interestRate    Decimal            @default(0) @db.Decimal(5, 2) // Lãi suất % nếu có
+  loanDate        DateTime           @default(now())
+  dueDate         DateTime?          // Hạn thanh toán nợ vay
+  status          SupplierLoanStatus @default(ACTIVE)
+  fundAccountId   String?            // Tài khoản quỹ/ngân hàng nhận/chi tiền ban đầu
+  paymentMethod   String             @default("BANK_TRANSFER")
+  referenceCode   String?            // Mã GD / Ủy nhiệm chi
+  note            String?
+  createdById     String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  tenant          Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier        Supplier                  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  repayments      SupplierLoanRepayment[]
+
+  @@unique([tenantId, loanCode])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, status])
+  @@map("supplier_loans")
+}
+
+model SupplierLoanRepayment {
+  id              String         @id @default(uuid())
+  tenantId        String
+  loanId          String
+  repaymentCode   String         // VD: TRV-20261018-XXXX
+  amount          Decimal        @db.Decimal(15, 2) // Số tiền trả nợ đợt này
+  repaymentDate   DateTime       @default(now())
+  payerName       String?
+  fromAccountId   String?        // Nguồn tiền chi trả (Quỹ / Bank)
+  toAccountId     String?        // Nguồn tiền thu về (nếu thu hồi nợ cho vay)
+  paymentMethod   String         @default("BANK_TRANSFER")
+  referenceCode   String?
+  note            String?
+  createdById     String?
+  createdAt       DateTime       @default(now())
+
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  loan            SupplierLoan   @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, repaymentCode])
+  @@index([tenantId, loanId])
+  @@map("supplier_loan_repayments")
+}
+
+model SupplierProductBorrow {
+  id                   String              @id @default(uuid())
+  tenantId             String
+  supplierId           String
+  warehouseId          String
+  borrowCode           String              // VD: PMH-20261018-XXXX (Phiếu mượn hàng)
+  type                 ProductBorrowType   @default(BORROW_FROM_SUPPLIER)
+  borrowDate           DateTime            @default(now())
+  dueDate              DateTime?           // Hạn trả hàng
+  totalQuantity        Int                 @default(0) // Tổng số lượng mượn
+  returnedQuantity     Int                 @default(0) // Đã trả lại NCC
+  purchasedQuantity    Int                 @default(0) // Đã chuyển thành mua
+  remainingQuantity    Int                 @default(0) // Số lượng còn đang mượn
+  estimatedTotalAmount Decimal             @default(0) @db.Decimal(15, 2) // Giá trị ước tính
+  status               ProductBorrowStatus @default(BORROWED)
+  note                 String?
+  createdById          String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  tenant               Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier             Supplier                   @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  warehouse            Warehouse                  @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  items                SupplierProductBorrowItem[]
+
+  @@unique([tenantId, borrowCode])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, warehouseId])
+  @@index([tenantId, status])
+  @@map("supplier_product_borrows")
+}
+
+model SupplierProductBorrowItem {
+  id                String                @id @default(uuid())
+  tenantId          String
+  borrowId          String
+  variantId         String
+  productName       String
+  variationName     String?
+  sku               String
+  borrowQuantity    Int                   @default(1)
+  returnedQuantity  Int                   @default(0)
+  purchasedQuantity Int                   @default(0)
+  remainingQuantity Int                   @default(1)
+  unitPrice         Decimal               @default(0) @db.Decimal(15, 2)
+  subtotal          Decimal               @default(0) @db.Decimal(15, 2)
+  note              String?
+  createdAt         DateTime              @default(now())
+
+  tenant            Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  borrow            SupplierProductBorrow @relation(fields: [borrowId], references: [id], onDelete: Cascade)
+  variant           ProductVariant        @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, borrowId])
+  @@index([tenantId, variantId])
+  @@map("supplier_product_borrow_items")
 }
 
 // -------------------------------------------------------------

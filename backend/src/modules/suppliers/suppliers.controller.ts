@@ -59,6 +59,20 @@ export class SuppliersController {
     return this.suppliersService.findAll(tenantId, filter);
   }
 
+  @Get('next-code')
+  @Roles(
+    MembershipRole.OWNER,
+    MembershipRole.ADMIN,
+    MembershipRole.ACCOUNTANT,
+    MembershipRole.WAREHOUSE,
+    MembershipRole.VIEWER,
+  )
+  @ApiOperation({ summary: 'Lấy mã nhà cung cấp tiếp theo tự động' })
+  async getNextCode(@CurrentTenantId() tenantId: string) {
+    const code = await this.suppliersService.generateNextSupplierCode(tenantId);
+    return { code };
+  }
+
   @Get(':id')
   @Roles(
     MembershipRole.OWNER,

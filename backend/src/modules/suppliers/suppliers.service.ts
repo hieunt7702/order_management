@@ -16,24 +16,54 @@ import { Prisma } from '@prisma/client';
 export class SuppliersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(tenantId: string, dto: CreateSupplierDto) {
-    const existing = await this.prisma.supplier.findUnique({
-      where: {
-        tenantId_code: {
-          tenantId,
-          code: dto.code.trim().toUpperCase(),
-        },
-      },
+  async generateNextSupplierCode(tenantId: string): Promise<string> {
+    const suppliers = await this.prisma.supplier.findMany({
+      where: { tenantId, code: { startsWith: 'NCC' } },
+      select: { code: true },
     });
+    let maxNum = 0;
+    for (const s of suppliers) {
+      const match = s.code.match(/^NCC(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+    let candidateNum = maxNum + 1;
+    let candidateCode = `NCC${String(candidateNum).padStart(3, '0')}`;
+    while (
+      await this.prisma.supplier.findUnique({
+        where: { tenantId_code: { tenantId, code: candidateCode } },
+      })
+    ) {
+      candidateNum++;
+      candidateCode = `NCC${String(candidateNum).padStart(3, '0')}`;
+    }
+    return candidateCode;
+  }
 
-    if (existing) {
-      throw new ConflictException(`Mã nhà cung cấp '${dto.code}' đã tồn tại trong workspace`);
+  async create(tenantId: string, dto: CreateSupplierDto) {
+    let finalCode = dto.code?.trim().toUpperCase();
+    if (!finalCode) {
+      finalCode = await this.generateNextSupplierCode(tenantId);
+    } else {
+      const existing = await this.prisma.supplier.findUnique({
+        where: {
+          tenantId_code: {
+            tenantId,
+            code: finalCode,
+          },
+        },
+      });
+      if (existing) {
+        finalCode = await this.generateNextSupplierCode(tenantId);
+      }
     }
 
     return this.prisma.supplier.create({
       data: {
         tenantId,
-        code: dto.code.trim().toUpperCase(),
+        code: finalCode,
         name: dto.name.trim(),
         phone: dto.phone?.trim() || null,
         email: dto.email?.trim() || null,
@@ -140,6 +170,24 @@ export class SuppliersService {
             status: true,
           },
         },
+        loans: {
+          select: {
+            id: true,
+            type: true,
+            amount: true,
+            remainingAmount: true,
+            status: true,
+          },
+        },
+        productBorrows: {
+          select: {
+            id: true,
+            type: true,
+            totalQuantity: true,
+            remainingQuantity: true,
+            status: true,
+          },
+        },
       },
     });
 
@@ -169,15 +217,34 @@ export class SuppliersService {
         .filter((p) => p.paymentType === 'REFUND_RECEIVED')
         .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-      const advanceAmountHeld = s.supplierPayments.reduce(
-        (sum, p) => sum + Number(p.advanceAmount || 0),
-        0
-      );
-
       // Công thức chuẩn kế toán:
       // Số dư cuối kỳ = Nợ đầu kỳ + Phát sinh phải trả - Giảm trừ công nợ - Tiền đã trả + Tiền NCC hoàn lại
       const closingDebt =
         openingDebt + totalPurchases - totalReturns - totalPaid + totalRefunded;
+
+      // Tiền ứng trước / cọc do NCC giữ:
+      // Chỉ khi số dư cuối kỳ âm (closingDebt < 0) thì NCC mới đang thực sự giữ tiền cọc/ứng của shop.
+      // Nếu closingDebt >= 0 thì shop vẫn đang nợ NCC tiền (hoặc cân bằng), tiền trả là trả nợ chứ không phải cọc giữ lại.
+      const advanceAmountHeld = closingDebt < 0 ? Math.abs(closingDebt) : 0;
+
+      // Tính toán nợ vay tiền và mượn sản phẩm
+      let totalLoanDebt = 0; // Shop vay NCC còn nợ
+      let totalLoanReceivable = 0; // Shop cho NCC vay
+      for (const l of s.loans || []) {
+        if (l.status !== 'CANCELLED') {
+          if (l.type === 'BORROWED_FROM_SUPPLIER') totalLoanDebt += Number(l.remainingAmount);
+          else if (l.type === 'LENT_TO_SUPPLIER') totalLoanReceivable += Number(l.remainingAmount);
+        }
+      }
+
+      let totalBorrowedProducts = 0; // Số lượng SP đang mượn từ NCC
+      let totalLentProducts = 0; // Số lượng SP cho NCC mượn
+      for (const pb of s.productBorrows || []) {
+        if (pb.status !== 'CANCELLED') {
+          if (pb.type === 'BORROW_FROM_SUPPLIER') totalBorrowedProducts += pb.remainingQuantity;
+          else if (pb.type === 'LEND_TO_SUPPLIER') totalLentProducts += pb.remainingQuantity;
+        }
+      }
 
       return {
         id: s.id,
@@ -199,6 +266,10 @@ export class SuppliersService {
         advanceAmountHeld,
         totalReceiptsRemaining,
         closingDebt, // > 0: Shop nợ NCC; < 0: NCC giữ tiền ứng trước/dư của shop; = 0: Cân bằng
+        totalLoanDebt,
+        totalLoanReceivable,
+        totalBorrowedProducts,
+        totalLentProducts,
         receiptCount: s.purchaseReceipts.length,
         createdAt: s.createdAt,
       };
@@ -260,13 +331,10 @@ export class SuppliersService {
       .filter((p) => p.paymentType === 'REFUND_RECEIVED')
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-    const advanceAmountHeld = s.supplierPayments.reduce(
-      (sum, p) => sum + Number(p.advanceAmount || 0),
-      0
-    );
-
     const closingDebt =
       openingDebt + totalPurchases - totalReturns - totalPaid + totalRefunded;
+
+    const advanceAmountHeld = closingDebt < 0 ? Math.abs(closingDebt) : 0;
 
     return {
       ...s,

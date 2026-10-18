@@ -31,7 +31,9 @@ import {
   Percent,
   X,
   SlidersHorizontal,
+  QrCode,
 } from 'lucide-react';
+import { SupplierBankQr } from '../../components/suppliers/SupplierBankQr';
 import { purchaseReceiptsApi, PurchaseReceiptModel, CreatePurchaseReceiptPayload } from '../../services/purchaseReceiptsApi';
 import { suppliersApi, SupplierItem } from '../../services/suppliersApi';
 import { supplierPaymentsApi } from '../../services/supplierPaymentsApi';
@@ -105,7 +107,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
   const [quickPayReceipt, setQuickPayReceipt] = useState<PurchaseReceiptModel | null>(null);
   const [quickPayForm, setQuickPayForm] = useState({
     amount: 0,
-    payerName: 'Chị Hồng',
+    payerName: 'HieuNT',
     fundSource: 'CASH_FUND' as 'CASH_FUND' | 'BANK_ACCOUNT' | 'PERSONAL_FUND',
     paymentMethod: 'BANK_TRANSFER',
     referenceCode: '',
@@ -291,10 +293,18 @@ export const PurchaseReceiptsPage: React.FC = () => {
     return `PNK-${y}${m}${d}-${rand}`;
   };
 
-  const handleOpenCreateModal = () => {
+  const handleOpenCreateModal = async () => {
     loadSuppliers();
     loadVariants();
-    const code = generateNextReceiptCode();
+    let code = '';
+    try {
+      const res: any = await purchaseReceiptsApi.getNextCode();
+      code = res?.code || res?.data?.code || '';
+    } catch {
+      // ignore
+    }
+    if (!code) code = generateNextReceiptCode();
+
     setCreateForm({
       ...initialCreateForm,
       receiptCode: code,
@@ -791,7 +801,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                                   setQuickPayReceipt(r);
                                   setQuickPayForm({
                                     amount: Number(r.remainingAmount),
-                                    payerName: 'Chị Hồng',
+                                    payerName: 'HieuNT',
                                     fundSource: 'CASH_FUND',
                                     paymentMethod: 'BANK_TRANSFER',
                                     referenceCode: '',
@@ -951,7 +961,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                         setQuickPayReceipt(r);
                         setQuickPayForm({
                           amount: Number(r.remainingAmount),
-                          payerName: 'Chị Hồng',
+                          payerName: 'HieuNT',
                           fundSource: 'CASH_FUND',
                           paymentMethod: 'BANK_TRANSFER',
                           referenceCode: '',
@@ -1104,32 +1114,21 @@ export const PurchaseReceiptsPage: React.FC = () => {
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                      <FileText size={13} className="text-[#5865f2]" />
-                      <span>Mã phiếu nhập *</span>
-                    </label>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-400 font-medium">
-                      Tự sinh
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setCreateForm((prev) => ({ ...prev, receiptCode: generateNextReceiptCode() }))}
-                    className="inline-flex items-center gap-1 text-[11px] text-[#5865f2] dark:text-indigo-400 hover:underline font-medium cursor-pointer"
-                    title="Tạo mã phiếu mới ngẫu nhiên"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    <span>Đổi mã</span>
-                  </button>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                    <FileText size={13} className="text-[#5865f2]" />
+                    <span>Mã phiếu nhập</span>
+                  </label>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-400 font-medium">
+                    Hệ thống tự cấp
+                  </span>
                 </div>
                 <input
                   type="text"
-                  required
-                  placeholder="Ví dụ: PNK-20261015-ABCD"
-                  value={createForm.receiptCode || ''}
-                  onChange={(e) => setCreateForm({ ...createForm, receiptCode: e.target.value.toUpperCase() })}
-                  className="w-full h-8 px-2.5 text-xs font-mono uppercase bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2] transition-colors"
+                  readOnly
+                  disabled
+                  value={createForm.receiptCode || 'Hệ thống tự động cấp'}
+                  title="Mã phiếu được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
+                  className="w-full h-8 px-2.5 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none transition-colors"
                 />
               </div>
 
@@ -1612,7 +1611,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                         </label>
                         <input
                           type="text"
-                          placeholder="Ví dụ: Chị Hồng, Bạn..."
+                          placeholder="Ví dụ: HieuNT, Bạn..."
                           value={createForm.immediatePayerName || ''}
                           onChange={(e) => setCreateForm({ ...createForm, immediatePayerName: e.target.value })}
                           className="w-full h-8 px-2.5 bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]"
@@ -1635,6 +1634,19 @@ export const PurchaseReceiptsPage: React.FC = () => {
                           className="w-full"
                         />
                       </div>
+                      {(() => {
+                        const curSupp = suppliers.find((s) => s.id === createForm.supplierId);
+                        if (!curSupp) return null;
+                        return (
+                          <div className="sm:col-span-2 pt-1">
+                            <SupplierBankQr
+                              supplier={curSupp}
+                              amount={createForm.immediatePaymentAmount}
+                              description={`Thanh toan nhap hang ${createForm.receiptCode || ''}`}
+                            />
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
@@ -1847,7 +1859,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="Chị Hồng, Bạn, Kế toán..."
+                  placeholder="HieuNT, Bạn, Kế toán..."
                   value={quickPayForm.payerName}
                   onChange={(e) => setQuickPayForm({ ...quickPayForm, payerName: e.target.value })}
                   className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-xs"
@@ -1899,6 +1911,26 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-xs"
               />
             </div>
+
+            {/* VietQR Bank Transfer QR Code */}
+            {(() => {
+              const targetSupplier =
+                (quickPayReceipt?.supplier?.bankAccount ? quickPayReceipt.supplier : null) ||
+                suppliers.find((s) => s.id === quickPayReceipt?.supplierId) ||
+                quickPayReceipt?.supplier;
+              if (!targetSupplier) return null;
+              return (
+                <div className="pt-1">
+                  <SupplierBankQr
+                    supplier={targetSupplier}
+                    amount={quickPayForm.amount}
+                    description={
+                      quickPayForm.referenceCode || `Thanh toan don ${quickPayReceipt?.receiptCode}`
+                    }
+                  />
+                </div>
+              );
+            })()}
           </ModalBody>
 
           <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">

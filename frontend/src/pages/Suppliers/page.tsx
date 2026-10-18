@@ -24,7 +24,9 @@ import {
   UserCheck,
   X,
   Check,
+  QrCode,
 } from 'lucide-react';
+import { SupplierBankQr } from '../../components/suppliers/SupplierBankQr';
 import { suppliersApi, SupplierItem } from '../../services/suppliersApi';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
@@ -69,6 +71,7 @@ export const SuppliersPage: React.FC = () => {
   const [selectedSupplierForEdit, setSelectedSupplierForEdit] = useState<SupplierItem | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [selectedSupplierForDelete, setSelectedSupplierForDelete] = useState<SupplierItem | null>(null);
+  const [viewingQrSupplier, setViewingQrSupplier] = useState<SupplierItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Create Form
@@ -117,10 +120,28 @@ export const SuppliersPage: React.FC = () => {
     }
   };
 
-  const handleOpenCreateModal = () => {
-    const nextSeq = suppliers.length + 1;
+  const handleOpenCreateModal = async () => {
+    let nextCode = '';
+    try {
+      const res: any = await suppliersApi.getNextCode();
+      nextCode = res?.code || res?.data?.code || '';
+    } catch {
+      // ignore
+    }
+    if (!nextCode) {
+      let maxNum = 0;
+      for (const s of suppliers) {
+        const match = s.code.match(/^NCC(\d+)$/i);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxNum) maxNum = num;
+        }
+      }
+      nextCode = `NCC${String(maxNum + 1).padStart(3, '0')}`;
+    }
+
     setCreateForm({
-      code: `NCC${String(nextSeq).padStart(3, '0')}`,
+      code: nextCode,
       name: '',
       phone: '',
       email: '',
@@ -137,8 +158,8 @@ export const SuppliersPage: React.FC = () => {
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createForm.code.trim() || !createForm.name.trim()) {
-      toast.warning('Vui lòng nhập đầy đủ Mã NCC và Tên Nhà cung cấp');
+    if (!createForm.name.trim()) {
+      toast.warning('Vui lòng nhập Tên Nhà cung cấp');
       return;
     }
 
@@ -502,6 +523,20 @@ export const SuppliersPage: React.FC = () => {
                           {s.receiptCount} phiếu nhập kho
                         </div>
                       )}
+                      {((s.totalLoanDebt || 0) > 0 || (s.totalBorrowedProducts || 0) > 0) && (
+                        <div className="flex items-center gap-1 mt-1 flex-wrap">
+                          {(s.totalLoanDebt || 0) > 0 && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
+                              Vay: {formatCurrency(s.totalLoanDebt || 0)}đ
+                            </span>
+                          )}
+                          {(s.totalBorrowedProducts || 0) > 0 && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
+                              Mượn {s.totalBorrowedProducts} sp
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </SystemTd>
 
                     <SystemTd>
@@ -535,8 +570,19 @@ export const SuppliersPage: React.FC = () => {
                     <SystemTd>
                       {s.bankAccount ? (
                         <div className="space-y-0.5 text-xs">
-                          <div className="font-mono font-semibold text-gray-900 dark:text-white">
-                            {s.bankAccount}
+                          <div className="flex items-center gap-1.5 font-mono font-semibold text-gray-900 dark:text-white">
+                            <span>{s.bankAccount}</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setViewingQrSupplier(s);
+                              }}
+                              className="p-0.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 rounded cursor-pointer transition-colors shrink-0"
+                              title="Xem mã QR thanh toán VietQR"
+                            >
+                              <QrCode size={13} />
+                            </button>
                           </div>
                           <div className="text-[11px] text-gray-500 dark:text-gray-400">
                             {s.bankName} {s.bankBeneficiary ? `• ${s.bankBeneficiary}` : ''}
@@ -597,6 +643,24 @@ export const SuppliersPage: React.FC = () => {
                               <span>Xem sổ công nợ</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              onClick={() => navigate(`/supplier-debts?tab=LOANS&supplierId=${s.id}`)}
+                            >
+                              <Landmark size={14} className="text-amber-500" />
+                              <span>Vay vốn & Cho vay</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => navigate(`/supplier-debts?tab=PRODUCT_BORROWS&supplierId=${s.id}`)}
+                            >
+                              <Boxes size={14} className="text-blue-500" />
+                              <span>Mượn / Vay sản phẩm</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setViewingQrSupplier(s)}
+                            >
+                              <QrCode size={14} className="text-indigo-500" />
+                              <span>Xem mã QR VietQR</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={() => handleOpenEditModal(s)}
                             >
                               <Edit2 size={14} className="text-gray-400" />
@@ -651,6 +715,20 @@ export const SuppliersPage: React.FC = () => {
                     <h3 className="font-semibold text-xs text-gray-900 dark:text-white mt-0.5">
                       {s.name}
                     </h3>
+                    {((s.totalLoanDebt || 0) > 0 || (s.totalBorrowedProducts || 0) > 0) && (
+                      <div className="flex items-center gap-1 mt-1 flex-wrap">
+                        {(s.totalLoanDebt || 0) > 0 && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
+                            Vay: {formatCurrency(s.totalLoanDebt || 0)}đ
+                          </span>
+                        )}
+                        {(s.totalBorrowedProducts || 0) > 0 && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
+                            Mượn {s.totalBorrowedProducts} sp
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span
@@ -675,6 +753,18 @@ export const SuppliersPage: React.FC = () => {
                         <DropdownMenuItem onClick={() => navigate(`/supplier-debts?supplierId=${s.id}`)}>
                           <Receipt size={14} className="text-[#5865f2]" />
                           <span>Xem sổ công nợ</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate(`/supplier-debts?tab=LOANS&supplierId=${s.id}`)}>
+                          <Landmark size={14} className="text-amber-500" />
+                          <span>Vay vốn & Cho vay</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate(`/supplier-debts?tab=PRODUCT_BORROWS&supplierId=${s.id}`)}>
+                          <Boxes size={14} className="text-blue-500" />
+                          <span>Mượn / Vay sản phẩm</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setViewingQrSupplier(s)}>
+                          <QrCode size={14} className="text-indigo-500" />
+                          <span>Xem mã QR VietQR</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleOpenEditModal(s)}>
                           <Edit2 size={14} className="text-gray-400" />
@@ -771,17 +861,20 @@ export const SuppliersPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
-                      <Hash size={13} className="text-[#5865f2]" />
-                      <span>Mã NCC *</span>
+                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Hash size={13} className="text-[#5865f2]" />
+                        <span>Mã NCC</span>
+                      </span>
+                      <span className="text-[10px] text-gray-400 font-normal">Hệ thống tự cấp</span>
                     </label>
                     <input
                       type="text"
-                      required
-                      value={createForm.code}
-                      onChange={(e) => setCreateForm({ ...createForm, code: e.target.value.toUpperCase() })}
-                      placeholder="NCC001"
-                      className="w-full px-2.5 py-1.5 h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-semibold"
+                      readOnly
+                      disabled
+                      value={createForm.code || 'Hệ thống tự động cấp'}
+                      title="Mã được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
+                      className="w-full px-2.5 py-1.5 h-8 bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded text-xs text-gray-500 dark:text-gray-400 font-mono font-bold cursor-not-allowed select-none"
                     />
                   </div>
                   <div className="sm:col-span-2">
@@ -1217,6 +1310,59 @@ export const SuppliersPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* MODAL XEM MÃ QR THANH TOÁN VIETQR */}
+      <Modal
+        isOpen={!!viewingQrSupplier}
+        onClose={() => setViewingQrSupplier(null)}
+        title={
+          <div className="flex items-center gap-2">
+            <span>Mã QR Chuyển Khoản VietQR</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+              Napas 247
+            </span>
+          </div>
+        }
+        subtitle={viewingQrSupplier ? `${viewingQrSupplier.code} - ${viewingQrSupplier.name}` : ''}
+        icon={QrCode}
+        size="md"
+      >
+        <ModalBody className="p-3 sm:p-5">
+          {viewingQrSupplier && (
+            <SupplierBankQr
+              supplier={viewingQrSupplier}
+              amount={viewingQrSupplier.closingDebt > 0 ? viewingQrSupplier.closingDebt : 0}
+              description={`Thanh toan NCC ${viewingQrSupplier.code}`}
+            />
+          )}
+        </ModalBody>
+        <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
+          <ModalButton
+            type="button"
+            variant="outline"
+            onClick={() => setViewingQrSupplier(null)}
+            className="gap-1.5 px-4 py-2 sm:py-1.5 text-xs font-semibold"
+          >
+            <X size={14} />
+            <span>Đóng</span>
+          </ModalButton>
+          {viewingQrSupplier && (
+            <ModalButton
+              type="button"
+              variant="primary"
+              onClick={() => {
+                const sId = viewingQrSupplier.id;
+                setViewingQrSupplier(null);
+                navigate(`/supplier-debts?supplierId=${sId}`);
+              }}
+              className="gap-1.5 px-4 py-2 sm:py-1.5 text-xs font-semibold"
+            >
+              <Receipt size={14} />
+              <span>Xem công nợ & chi trả</span>
+            </ModalButton>
+          )}
+        </ModalFooter>
+      </Modal>
     </div>
   );
 };

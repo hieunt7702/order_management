@@ -20,12 +20,16 @@ import {
   BarChart3,
   LayoutGrid,
   Store,
+  Package,
+  CheckCircle2,
+  RotateCcw,
 } from 'lucide-react';
 import { reportsApi } from '../../services/reportsApi';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { formatCurrency } from '../../utils';
 import { Button } from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
+import { Select } from '../../components/ui/Select';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import {
@@ -225,22 +229,20 @@ export const DashboardPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             {/* Shop Selector */}
             {shops && shops.length > 0 && (
-              <div className="w-full sm:w-auto flex items-center">
-                <div className="flex items-center gap-1.5 bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 rounded px-2.5 h-8 text-xs min-w-0 w-full sm:w-auto">
-                  <Store size={13} className="text-gray-400 shrink-0" />
-                  <select
-                    value={selectedShopId || ''}
-                    onChange={(e) => setSelectedShopId(e.target.value || null)}
-                    className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none w-full min-w-0 cursor-pointer font-sans truncate"
-                  >
-                    <option value="" className="dark:bg-[#181b22]">Tất cả shop ({shops.length})</option>
-                    {shops.map((s) => (
-                      <option key={s.id} value={s.id} className="dark:bg-[#181b22]">
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="w-full sm:w-[190px]">
+                <Select
+                  value={selectedShopId || ''}
+                  onChange={(val: any) => setSelectedShopId(val ? String(val) : null)}
+                  options={[
+                    { value: '', label: `Tất cả shop (${shops.length})`, icon: Store },
+                    ...shops.map((s) => ({ value: s.id, label: s.name, icon: Store })),
+                  ]}
+                  placeholder={`Tất cả shop (${shops.length})`}
+                  icon={Store}
+                  size="sm"
+                  className="w-full"
+                  searchable={shops.length > 6}
+                />
               </div>
             )}
 
@@ -723,107 +725,157 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* 1. Operational Fulfillment KPIs */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-            Vận hành xuất kho hôm nay
+      {/* 1. Operational Fulfillment & Order Status KPIs */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            Trạng thái Đơn hàng & Vận hành
           </h2>
           <span className="text-xs text-gray-400">
             Tỷ lệ xuất kho:{' '}
-            <strong className="text-[#5865f2]">
+            <strong className="text-[#5865f2] dark:text-[#7b85f5]">
               {data?.fulfillmentStats?.verificationRatePercent || 0}%
             </strong>
           </span>
         </div>
 
+        {/* 6 Core Order Lifecycle Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
           {/* Tổng đơn */}
           <div
             onClick={() => navigate('/orders')}
-            className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 shadow-xs cursor-pointer hover:border-[#5865f2] transition-colors"
+            className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 shadow-xs cursor-pointer hover:border-[#5865f2] transition-colors group"
           >
             <div className="flex items-center justify-between text-gray-400 mb-1">
-              <span className="text-[11px] font-medium">Tổng đơn</span>
-              <ShoppingCart size={14} />
+              <span className="text-[11px] font-medium group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Tổng đơn</span>
+              <ShoppingCart size={14} className="group-hover:text-[#5865f2] transition-colors" />
             </div>
             <div className="text-xl font-bold text-gray-900 dark:text-white">
               {isLoading ? '...' : data?.orderStats?.totalOrders || 0}
             </div>
           </div>
 
-          {/* Đang chuẩn bị */}
+          {/* Chờ lấy hàng */}
           <div
             onClick={() => navigate('/orders?platformStatus=READY_TO_SHIP')}
-            className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 shadow-xs cursor-pointer hover:border-amber-400 transition-colors"
+            className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 shadow-xs cursor-pointer hover:border-amber-400 transition-colors group"
           >
             <div className="flex items-center justify-between text-amber-500 mb-1">
               <span className="text-[11px] font-medium">Chờ lấy hàng</span>
-              <Truck size={14} />
+              <Package size={14} />
             </div>
             <div className="text-xl font-bold text-amber-500">
               {isLoading ? '...' : data?.orderStats?.readyToShip || 0}
             </div>
           </div>
 
-          {/* Chưa quét xuất */}
+          {/* Đang giao hàng */}
           <div
-            onClick={() => navigate('/orders?verificationStatus=NOT_VERIFIED')}
-            className="p-3 rounded bg-white dark:bg-[#181b22] border border-rose-200 dark:border-rose-900/40 shadow-xs cursor-pointer hover:border-rose-400 transition-colors"
+            onClick={() => navigate('/orders?platformStatus=SHIPPED')}
+            className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 shadow-xs cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors group"
+          >
+            <div className="flex items-center justify-between text-indigo-500 dark:text-indigo-400 mb-1">
+              <span className="text-[11px] font-medium">Đang giao hàng</span>
+              <Truck size={14} />
+            </div>
+            <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+              {isLoading ? '...' : data?.orderStats?.shipped || 0}
+            </div>
+          </div>
+
+          {/* Giao thành công */}
+          <div
+            onClick={() => navigate('/orders?platformStatus=COMPLETED')}
+            className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 shadow-xs cursor-pointer hover:border-emerald-400 transition-colors group"
+          >
+            <div className="flex items-center justify-between text-emerald-500 mb-1">
+              <span className="text-[11px] font-medium">Giao thành công</span>
+              <CheckCircle2 size={14} />
+            </div>
+            <div className="text-xl font-bold text-emerald-500">
+              {isLoading ? '...' : data?.orderStats?.completed || 0}
+            </div>
+          </div>
+
+          {/* Đã xuất kho */}
+          <div
+            onClick={() => navigate('/orders?verificationStatus=VERIFIED')}
+            className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 shadow-xs cursor-pointer hover:border-blue-400 transition-colors group"
+          >
+            <div className="flex items-center justify-between text-blue-500 mb-1">
+              <span className="text-[11px] font-medium">Đã xuất kho</span>
+              <ShieldCheck size={14} />
+            </div>
+            <div className="text-xl font-bold text-blue-500">
+              {isLoading ? '...' : data?.fulfillmentStats?.verifiedOrders || 0}
+            </div>
+          </div>
+
+          {/* Hủy & Hoàn */}
+          <div
+            onClick={() => navigate('/orders?platformStatus=CANCELLED')}
+            className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 shadow-xs cursor-pointer hover:border-rose-400 transition-colors group"
           >
             <div className="flex items-center justify-between text-rose-500 mb-1">
-              <span className="text-[11px] font-medium">Chưa quét kho</span>
-              <AlertTriangle size={14} />
+              <span className="text-[11px] font-medium">Hủy & Hoàn</span>
+              <RotateCcw size={14} />
             </div>
             <div className="text-xl font-bold text-rose-500">
               {isLoading
                 ? '...'
-                : data?.fulfillmentStats?.notVerifiedOrders || 0}
+                : (data?.orderStats?.cancelled || 0) + (data?.orderStats?.returned || 0)}
+            </div>
+          </div>
+        </div>
+
+        {/* Secondary Warehouse Scanning & Stock Alert Strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-0.5">
+          {/* Chưa quét xuất kho */}
+          <div
+            onClick={() => navigate('/orders?verificationStatus=NOT_VERIFIED')}
+            className="px-3 py-2 rounded bg-white dark:bg-[#181b22] border border-rose-200/80 dark:border-rose-900/40 shadow-xs cursor-pointer hover:border-rose-400 transition-colors flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-2 text-rose-500">
+              <AlertTriangle size={15} className="shrink-0" />
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                Chưa quét xuất kho
+              </span>
+            </div>
+            <div className="text-base font-bold text-rose-500">
+              {isLoading ? '...' : data?.fulfillmentStats?.notVerifiedOrders || 0}
             </div>
           </div>
 
-          {/* Đã quét một phần */}
+          {/* Quét xuất một phần */}
           <div
             onClick={() =>
               navigate('/orders?verificationStatus=PARTIALLY_VERIFIED')
             }
-            className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 shadow-xs cursor-pointer hover:border-blue-400 transition-colors"
+            className="px-3 py-2 rounded bg-white dark:bg-[#181b22] border border-blue-200/80 dark:border-blue-900/40 shadow-xs cursor-pointer hover:border-blue-400 transition-colors flex items-center justify-between group"
           >
-            <div className="flex items-center justify-between text-blue-500 mb-1">
-              <span className="text-[11px] font-medium">Quét 1 phần</span>
-              <ShieldCheck size={14} />
+            <div className="flex items-center gap-2 text-blue-500">
+              <ShieldCheck size={15} className="shrink-0" />
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                Quét xuất một phần
+              </span>
             </div>
-            <div className="text-xl font-bold text-blue-500">
-              {isLoading
-                ? '...'
-                : data?.fulfillmentStats?.partiallyVerifiedOrders || 0}
-            </div>
-          </div>
-
-          {/* Đã quét xuất đủ */}
-          <div
-            onClick={() => navigate('/orders?verificationStatus=VERIFIED')}
-            className="p-3 rounded bg-white dark:bg-[#181b22] border border-emerald-200 dark:border-emerald-900/40 shadow-xs cursor-pointer hover:border-emerald-400 transition-colors"
-          >
-            <div className="flex items-center justify-between text-emerald-500 mb-1">
-              <span className="text-[11px] font-medium">Đã xuất kho</span>
-              <CheckCircle size={14} />
-            </div>
-            <div className="text-xl font-bold text-emerald-500">
-              {isLoading ? '...' : data?.fulfillmentStats?.verifiedOrders || 0}
+            <div className="text-base font-bold text-blue-500">
+              {isLoading ? '...' : data?.fulfillmentStats?.partiallyVerifiedOrders || 0}
             </div>
           </div>
 
           {/* Cảnh báo tồn thấp */}
           <div
             onClick={() => navigate('/inventory')}
-            className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 shadow-xs cursor-pointer hover:border-amber-400 transition-colors"
+            className="px-3 py-2 rounded bg-white dark:bg-[#181b22] border border-amber-200/80 dark:border-amber-900/40 shadow-xs cursor-pointer hover:border-amber-400 transition-colors flex items-center justify-between group"
           >
-            <div className="flex items-center justify-between text-amber-500 mb-1">
-              <span className="text-[11px] font-medium">Tồn kho thấp</span>
-              <Boxes size={14} />
+            <div className="flex items-center gap-2 text-amber-500">
+              <Boxes size={15} className="shrink-0" />
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                Tồn kho dưới định mức
+              </span>
             </div>
-            <div className="text-xl font-bold text-amber-500">
+            <div className="text-base font-bold text-amber-500">
               {isLoading
                 ? '...'
                 : data?.inventoryAlerts?.lowStockVariantsCount || 0}

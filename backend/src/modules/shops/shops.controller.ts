@@ -43,6 +43,20 @@ export class ShopsController {
     return this.shopsService.findAll(tenantId, allowedShopIds);
   }
 
+  @Get('next-code')
+  @Roles(
+    MembershipRole.OWNER,
+    MembershipRole.ADMIN,
+    MembershipRole.WAREHOUSE,
+    MembershipRole.ACCOUNTANT,
+    MembershipRole.VIEWER,
+  )
+  @ApiOperation({ summary: 'Lấy mã shop tự sinh tiếp theo không trùng lặp' })
+  async getNextCode(@CurrentTenantId() tenantId: string) {
+    const code = await this.shopsService.generateNextShopCode(tenantId);
+    return { code };
+  }
+
   @Get(':id')
   @Roles(
     MembershipRole.OWNER,

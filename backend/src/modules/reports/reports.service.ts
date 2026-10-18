@@ -177,10 +177,14 @@ export class ReportsService {
       orderStats: {
         totalOrders,
         readyToShip: statusMap[PlatformOrderStatus.READY_TO_SHIP] || 0,
-        shipped: statusMap[PlatformOrderStatus.SHIPPED] || 0,
-        completed: statusMap[PlatformOrderStatus.COMPLETED] || 0,
-        cancelled: statusMap[PlatformOrderStatus.CANCELLED] || 0,
-        returned: statusMap[PlatformOrderStatus.TO_RETURN] || 0,
+        shipped: (statusMap[PlatformOrderStatus.SHIPPED] || 0) + (statusMap[PlatformOrderStatus.RETRY_SHIP] || 0),
+        delivering: (statusMap[PlatformOrderStatus.SHIPPED] || 0) + (statusMap[PlatformOrderStatus.RETRY_SHIP] || 0),
+        completed: (statusMap[PlatformOrderStatus.COMPLETED] || 0) + (statusMap[PlatformOrderStatus.TO_CONFIRM_RECEIVE] || 0),
+        completedOnly: statusMap[PlatformOrderStatus.COMPLETED] || 0,
+        toConfirmReceive: statusMap[PlatformOrderStatus.TO_CONFIRM_RECEIVE] || 0,
+        cancelled: (statusMap[PlatformOrderStatus.CANCELLED] || 0) + (statusMap[PlatformOrderStatus.IN_CANCEL] || 0),
+        returned: (statusMap[PlatformOrderStatus.TO_RETURN] || 0) + (statusMap[PlatformOrderStatus.RETURN_REFUND] || 0),
+        statusMap,
       },
       fulfillmentStats: {
         totalPackages,

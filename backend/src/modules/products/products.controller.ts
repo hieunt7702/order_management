@@ -126,6 +126,20 @@ export class ProductsController {
     );
   }
 
+  @Get('next-code')
+  @Roles(
+    MembershipRole.OWNER,
+    MembershipRole.ADMIN,
+    MembershipRole.WAREHOUSE,
+    MembershipRole.ACCOUNTANT,
+    MembershipRole.VIEWER,
+  )
+  @ApiOperation({ summary: 'Lấy mã sản phẩm tự sinh tiếp theo không trùng lặp' })
+  async getNextCode(@CurrentTenantId() tenantId: string) {
+    const code = await this.productsService.generateNextProductCode(tenantId);
+    return { code };
+  }
+
   @Get(':id')
   @Roles(
     MembershipRole.OWNER,

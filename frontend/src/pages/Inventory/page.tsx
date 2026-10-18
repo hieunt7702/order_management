@@ -1623,35 +1623,22 @@ export const InventoryPage: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
-                    Số phiếu nhập kho (Mã tham chiếu / PO) *
+                    Số phiếu nhập kho
                   </label>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setReceiveForm((prev) => ({
-                        ...prev,
-                        referenceCode: generateReceiptCode(),
-                      }))
-                    }
-                    className="inline-flex items-center gap-1 text-[11px] text-[#5865f2] hover:text-[#4752c4] font-medium transition-colors cursor-pointer"
-                    title="Tạo lại mã phiếu ngẫu nhiên mới"
-                  >
-                    <RefreshCw size={11} />
-                    Tạo mã mới
-                  </button>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-400 font-medium">
+                    Hệ thống tự cấp
+                  </span>
                 </div>
                 <input
                   type="text"
-                  required
-                  placeholder="VD: PNK-20261014-9X2A"
-                  value={receiveForm.referenceCode}
-                  onChange={(e) =>
-                    setReceiveForm({ ...receiveForm, referenceCode: e.target.value })
-                  }
-                  className="w-full px-3 py-2 text-xs font-mono font-bold bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  readOnly
+                  disabled
+                  value={receiveForm.referenceCode || 'Hệ thống tự động cấp'}
+                  title="Mã phiếu được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
+                  className="w-full px-3 py-2 text-xs font-mono font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none"
                 />
                 <p className="text-[10px] text-gray-400 mt-1">
-                  Mã phiếu tự động sinh theo ngày và định danh duy nhất (có thể sửa lại theo hóa đơn nhà cung cấp)
+                  Mã phiếu tự động sinh ngầm theo ngày và định danh duy nhất cam kết không bị trùng lặp
                 </p>
               </div>
 

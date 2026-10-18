@@ -46,12 +46,20 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
   const [note, setNote] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Sync initialName when modal opens
+  // Sync initialName and fetch nextCode when modal opens
   React.useEffect(() => {
     if (initialName) {
       setName(initialName);
     }
-  }, [initialName]);
+    if (isOpen) {
+      suppliersApi.getNextCode()
+        .then((res: any) => {
+          const next = res?.code || res?.data?.code;
+          if (next) setCode(next);
+        })
+        .catch(() => {});
+    }
+  }, [isOpen, initialName]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,17 +125,20 @@ export const QuickCreateSupplierModal: React.FC<QuickCreateSupplierModalProps> =
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
-                  <Hash size={13} className="text-[#5865f2]" />
-                  <span>Mã NCC *</span>
+                <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Hash size={13} className="text-[#5865f2]" />
+                    <span>Mã NCC</span>
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-normal">Tự động</span>
                 </label>
                 <input
                   type="text"
-                  required
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  placeholder="NCC001"
-                  className="w-full px-2.5 py-1.5 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-900 dark:text-white font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 font-semibold"
+                  readOnly
+                  disabled
+                  value={code || 'Hệ thống tự cấp'}
+                  title="Mã được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
+                  className="w-full px-2.5 py-1.5 bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded text-xs text-gray-500 dark:text-gray-400 font-mono font-bold cursor-not-allowed select-none"
                 />
               </div>
 

@@ -42,6 +42,9 @@ export interface PurchaseReceiptModel {
     code: string;
     name: string;
     phone?: string;
+    bankName?: string | null;
+    bankAccount?: string | null;
+    bankBeneficiary?: string | null;
   };
   warehouse?: {
     id: string;
@@ -129,6 +132,8 @@ export const purchaseReceiptsApi = {
   }) => api.get<PurchaseReceiptsResponse>(`/purchase-receipts${buildQuery(params)}`),
 
   findOne: (id: string) => api.get<PurchaseReceiptModel>(`/purchase-receipts/${id}`),
+
+  getNextCode: () => api.get<{ code: string }>('/purchase-receipts/next-code'),
 
   create: (data: CreatePurchaseReceiptPayload) =>
     api.post<PurchaseReceiptModel>('/purchase-receipts', data),

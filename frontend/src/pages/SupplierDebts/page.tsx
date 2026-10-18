@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Building2,
   Receipt,
@@ -34,7 +35,11 @@ import {
   FileText,
   Wallet,
   Filter,
+  QrCode,
 } from 'lucide-react';
+import { SupplierBankQr } from '../../components/suppliers/SupplierBankQr';
+import { SupplierLoansTab } from '../../components/suppliers/SupplierLoansTab';
+import { SupplierProductBorrowsTab } from '../../components/suppliers/SupplierProductBorrowsTab';
 import { cn } from '../../lib/utils';
 import { suppliersApi, SupplierItem, SupplierStatement, DebtReportsResponse } from '../../services/suppliersApi';
 import { supplierPaymentsApi, SupplierPaymentModel, CreateSupplierPaymentPayload } from '../../services/supplierPaymentsApi';
@@ -68,8 +73,14 @@ import {
 
 export const SupplierDebtsPage: React.FC = () => {
   const { warehouses, selectedWarehouseId } = useWorkspaceStore();
+  const [searchParams] = useSearchParams();
+  const initialTabParam = searchParams.get('tab');
+  const validTabs: Array<'DEBT_LIST' | 'LOANS' | 'PRODUCT_BORROWS' | 'PAYMENTS' | 'RETURNS' | 'REPORTS'> = [
+    'DEBT_LIST', 'LOANS', 'PRODUCT_BORROWS', 'PAYMENTS', 'RETURNS', 'REPORTS'
+  ];
+  const defaultTab = validTabs.includes(initialTabParam as any) ? (initialTabParam as any) : 'DEBT_LIST';
 
-  const [activeTab, setActiveTab] = useState<'DEBT_LIST' | 'PAYMENTS' | 'RETURNS' | 'REPORTS'>('DEBT_LIST');
+  const [activeTab, setActiveTab] = useState<'DEBT_LIST' | 'LOANS' | 'PRODUCT_BORROWS' | 'PAYMENTS' | 'RETURNS' | 'REPORTS'>(defaultTab);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -103,6 +114,7 @@ export const SupplierDebtsPage: React.FC = () => {
 
   // Payment Voucher Modal
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
+  const [qrModalSupplier, setQrModalSupplier] = useState<SupplierItem | null>(null);
   const [unpaidReceipts, setUnpaidReceipts] = useState<PurchaseReceiptModel[]>([]);
   const [paymentForm, setPaymentForm] = useState<{
     supplierId: string;
@@ -120,7 +132,7 @@ export const SupplierDebtsPage: React.FC = () => {
     supplierId: '',
     amount: 0,
     paymentDate: new Date().toISOString().split('T')[0],
-    payerName: 'Chị Hồng',
+    payerName: 'HieuNT',
     fundSource: 'CASH_FUND',
     paymentMethod: 'BANK_TRANSFER',
     referenceCode: '',
@@ -157,7 +169,7 @@ export const SupplierDebtsPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'DEBT_LIST') loadSuppliers();
+    if (activeTab === 'DEBT_LIST' || activeTab === 'LOANS' || activeTab === 'PRODUCT_BORROWS') loadSuppliers();
     if (activeTab === 'PAYMENTS') loadPayments();
     if (activeTab === 'RETURNS') loadReturns();
     if (activeTab === 'REPORTS') loadDebtReports();
@@ -298,12 +310,29 @@ export const SupplierDebtsPage: React.FC = () => {
   };
 
   // Supplier CRUD
-  const handleOpenAddSupplier = () => {
+  const handleOpenAddSupplier = async () => {
     setEditingSupplier(null);
-    const nextSeq = suppliers.length + 1;
-    const code = `NCC${String(nextSeq).padStart(3, '0')}`;
+    let nextCode = '';
+    try {
+      const res: any = await suppliersApi.getNextCode();
+      nextCode = res?.code || res?.data?.code || '';
+    } catch {
+      // ignore
+    }
+    if (!nextCode) {
+      let maxNum = 0;
+      for (const s of suppliers) {
+        const match = s.code.match(/^NCC(\d+)$/i);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxNum) maxNum = num;
+        }
+      }
+      nextCode = `NCC${String(maxNum + 1).padStart(3, '0')}`;
+    }
+
     setSupplierForm({
-      code,
+      code: nextCode,
       name: '',
       phone: '',
       email: '',
@@ -336,8 +365,8 @@ export const SupplierDebtsPage: React.FC = () => {
 
   const handleSaveSupplier = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supplierForm.code.trim() || !supplierForm.name.trim()) {
-      toast.warning('Vui lòng nhập mã và tên nhà cung cấp');
+    if (!supplierForm.name.trim()) {
+      toast.warning('Vui lòng nhập tên nhà cung cấp');
       return;
     }
 
@@ -379,7 +408,7 @@ export const SupplierDebtsPage: React.FC = () => {
       supplierId: sId,
       amount: 0,
       paymentDate: new Date().toISOString().split('T')[0],
-      payerName: 'Chị Hồng',
+      payerName: 'HieuNT',
       fundSource: 'CASH_FUND',
       paymentMethod: 'BANK_TRANSFER',
       referenceCode: autoRefCode,
@@ -723,6 +752,30 @@ export const SupplierDebtsPage: React.FC = () => {
         </button>
 
         <button
+          onClick={() => setActiveTab('LOANS')}
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 cursor-pointer border-0 shrink-0 ${
+            activeTab === 'LOANS'
+              ? 'bg-[#5865f2] text-white font-medium shadow-xs'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
+          }`}
+        >
+          <Landmark size={13} />
+          <span>Vay Vốn NCC (Vay / Cho vay)</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('PRODUCT_BORROWS')}
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 cursor-pointer border-0 shrink-0 ${
+            activeTab === 'PRODUCT_BORROWS'
+              ? 'bg-[#5865f2] text-white font-medium shadow-xs'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
+          }`}
+        >
+          <Boxes size={13} />
+          <span>Mượn / Vay Sản Phẩm</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('PAYMENTS')}
           className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 cursor-pointer border-0 shrink-0 ${
             activeTab === 'PAYMENTS'
@@ -820,13 +873,40 @@ export const SupplierDebtsPage: React.FC = () => {
                             {s.name}
                           </div>
                           <div className="text-[11px] font-mono text-gray-400 mt-0.5">{s.code}</div>
+                          {((s.totalLoanDebt || 0) > 0 || (s.totalBorrowedProducts || 0) > 0) && (
+                            <div className="flex items-center gap-1 mt-1 flex-wrap">
+                              {(s.totalLoanDebt || 0) > 0 && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
+                                  Vay tiền: {Number(s.totalLoanDebt).toLocaleString('vi-VN')}đ
+                                </span>
+                              )}
+                              {(s.totalBorrowedProducts || 0) > 0 && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
+                                  Mượn {s.totalBorrowedProducts} sp
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </SystemTd>
 
                         <SystemTd className="text-gray-600 dark:text-gray-300">
                           <div>{s.phone || 'Chưa có SĐT'}</div>
                           {s.bankAccount && (
-                            <div className="text-[11px] text-gray-400 mt-0.5">
-                              {s.bankName}: {s.bankAccount} ({s.bankBeneficiary})
+                            <div className="flex items-center gap-1.5 text-[11px] text-gray-400 mt-0.5">
+                              <span className="truncate">
+                                {s.bankName}: {s.bankAccount} {s.bankBeneficiary ? `(${s.bankBeneficiary})` : ''}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setQrModalSupplier(s);
+                                }}
+                                className="p-0.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 rounded cursor-pointer transition-colors shrink-0"
+                                title="Xem mã QR thanh toán VietQR"
+                              >
+                                <QrCode size={13} />
+                              </button>
                             </div>
                           )}
                         </SystemTd>
@@ -902,6 +982,10 @@ export const SupplierDebtsPage: React.FC = () => {
                                   <CreditCard className="w-4 h-4 text-emerald-500" />
                                   <span>Lập phiếu chi trả</span>
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setQrModalSupplier(s)}>
+                                  <QrCode className="w-4 h-4 text-[#5865f2]" />
+                                  <span>Mã QR Chuyển khoản VietQR</span>
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleOpenEditSupplier(s)}>
                                   <Edit className="w-4 h-4 text-gray-500" />
                                   <span>Chỉnh sửa thông tin</span>
@@ -959,6 +1043,20 @@ export const SupplierDebtsPage: React.FC = () => {
                         <div className="text-[11px] font-mono text-gray-400 mt-0.5">
                           {s.code}
                         </div>
+                        {((s.totalLoanDebt || 0) > 0 || (s.totalBorrowedProducts || 0) > 0) && (
+                          <div className="flex items-center gap-1 mt-1 flex-wrap">
+                            {(s.totalLoanDebt || 0) > 0 && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
+                                Vay: {Number(s.totalLoanDebt).toLocaleString('vi-VN')}đ
+                              </span>
+                            )}
+                            {(s.totalBorrowedProducts || 0) > 0 && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
+                                Mượn {s.totalBorrowedProducts} sp
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       {isShopOwing ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 shrink-0">
@@ -1015,6 +1113,16 @@ export const SupplierDebtsPage: React.FC = () => {
 
                     {/* Card Actions */}
                     <div className="flex items-center justify-end gap-2 pt-1 border-t border-gray-100 dark:border-gray-800/80" onClick={(e) => e.stopPropagation()}>
+                      {s.bankAccount && (
+                        <button
+                          type="button"
+                          onClick={() => setQrModalSupplier(s)}
+                          className="px-2.5 py-1 text-xs rounded border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 flex items-center gap-1 font-medium cursor-pointer"
+                        >
+                          <QrCode size={12} />
+                          <span>QR</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleOpenStatement(s.id)}
@@ -1521,6 +1629,22 @@ export const SupplierDebtsPage: React.FC = () => {
         </div>
       )}
 
+      {/* TAB: VAY VỐN & CHO VAY VỚI NHÀ CUNG CẤP */}
+      {activeTab === 'LOANS' && (
+        <SupplierLoansTab
+          suppliers={suppliers}
+          onRefreshData={loadAllData}
+        />
+      )}
+
+      {/* TAB: MƯỢN / VAY SẢN PHẨM TỒN KHO */}
+      {activeTab === 'PRODUCT_BORROWS' && (
+        <SupplierProductBorrowsTab
+          suppliers={suppliers}
+          onRefreshData={loadAllData}
+        />
+      )}
+
       {/* Mobile bottom spacer for floating navigation dock */}
       <div className="h-10 md:hidden shrink-0" aria-hidden="true" />
 
@@ -2016,7 +2140,7 @@ export const SupplierDebtsPage: React.FC = () => {
                   <input
                     type="text"
                     required
-                    placeholder="VD: Chị Hồng, Kế toán..."
+                    placeholder="VD: HieuNT, Kế toán..."
                     value={paymentForm.payerName}
                     onChange={(e) => setPaymentForm({ ...paymentForm, payerName: e.target.value })}
                     className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
@@ -2056,29 +2180,32 @@ export const SupplierDebtsPage: React.FC = () => {
                       <Hash size={13} className="text-indigo-500" />
                       <span>Mã phiếu chi / GD</span>
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-                        const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-                        setPaymentForm((prev) => ({ ...prev, referenceCode: `PC-${dateStr}-${rand}` }));
-                      }}
-                      className="text-[11px] text-[#5865f2] hover:underline flex items-center gap-1 cursor-pointer font-medium active:scale-95 transition-transform"
-                    >
-                      <RefreshCw size={10} />
-                      <span>Đổi mã</span>
-                    </button>
+                    <span className="text-[10px] text-gray-400 font-normal">Hệ thống tự cấp</span>
                   </div>
                   <input
                     type="text"
-                    placeholder="Mã chuyển khoản / UNC / PC..."
-                    value={paymentForm.referenceCode}
-                    onChange={(e) => setPaymentForm({ ...paymentForm, referenceCode: e.target.value.toUpperCase() })}
-                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs font-mono uppercase text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                    readOnly
+                    disabled
+                    value={paymentForm.referenceCode || 'Hệ thống tự động cấp'}
+                    title="Mã phiếu được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
+                    className="w-full bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded px-2.5 py-1.5 text-xs font-mono uppercase font-bold text-gray-500 dark:text-gray-400 cursor-not-allowed select-none"
                   />
                 </div>
               </div>
             </div>
+
+            {/* VietQR Bank Transfer QR Code */}
+            {(() => {
+              const curSupplier = suppliers.find((s) => s.id === paymentForm.supplierId);
+              if (!curSupplier) return null;
+              return (
+                <SupplierBankQr
+                  supplier={curSupplier}
+                  amount={paymentForm.amount}
+                  description={paymentForm.referenceCode || `Thanh toan NCC ${curSupplier.code}`}
+                />
+              );
+            })()}
 
             {/* Personal fund note */}
             {paymentForm.fundSource === 'PERSONAL_FUND' && (
@@ -2392,32 +2519,17 @@ export const SupplierDebtsPage: React.FC = () => {
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                       <Hash size={13} className="text-[#5865f2]" />
-                      <span>Mã NCC *</span>
+                      <span>Mã NCC</span>
                     </label>
-                    {!editingSupplier && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSupplierForm((prev) => ({
-                            ...prev,
-                            code: `NCC${String(suppliers.length + 1).padStart(3, '0')}`,
-                          }))
-                        }
-                        className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer font-medium"
-                      >
-                        Đổi mã
-                      </button>
-                    )}
+                    <span className="text-[10px] text-gray-400 font-normal">Hệ thống tự cấp</span>
                   </div>
                   <input
                     type="text"
-                    required
-                    value={supplierForm.code}
-                    onChange={(e) =>
-                      setSupplierForm({ ...supplierForm, code: e.target.value.toUpperCase() })
-                    }
-                    placeholder="NCC001"
-                    className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs font-mono uppercase font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]"
+                    readOnly
+                    disabled
+                    value={supplierForm.code || 'Hệ thống tự động cấp'}
+                    title="Mã được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
+                    className="w-full bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded px-2.5 py-1.5 text-xs font-mono uppercase font-bold text-gray-500 dark:text-gray-400 cursor-not-allowed select-none"
                   />
                 </div>
 
@@ -2934,6 +3046,59 @@ export const SupplierDebtsPage: React.FC = () => {
             </ModalButton>
           </ModalFooter>
         </form>
+      </Modal>
+
+      {/* MODAL XEM MÃ QR THANH TOÁN VIETQR */}
+      <Modal
+        isOpen={!!qrModalSupplier}
+        onClose={() => setQrModalSupplier(null)}
+        title={
+          <div className="flex items-center gap-2">
+            <span>Mã QR Chuyển Khoản VietQR</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+              Napas 247
+            </span>
+          </div>
+        }
+        subtitle={qrModalSupplier ? `${qrModalSupplier.code} - ${qrModalSupplier.name}` : ''}
+        icon={QrCode}
+        size="md"
+      >
+        <ModalBody className="p-3 sm:p-5">
+          {qrModalSupplier && (
+            <SupplierBankQr
+              supplier={qrModalSupplier}
+              amount={qrModalSupplier.closingDebt > 0 ? qrModalSupplier.closingDebt : 0}
+              description={`Thanh toan NCC ${qrModalSupplier.code}`}
+            />
+          )}
+        </ModalBody>
+        <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
+          <ModalButton
+            type="button"
+            variant="outline"
+            onClick={() => setQrModalSupplier(null)}
+            className="gap-1.5 px-4 py-2 sm:py-1.5 text-xs font-semibold"
+          >
+            <X size={14} />
+            <span>Đóng</span>
+          </ModalButton>
+          {qrModalSupplier && (
+            <ModalButton
+              type="button"
+              variant="primary"
+              onClick={() => {
+                const supp = qrModalSupplier;
+                setQrModalSupplier(null);
+                handleOpenPaymentModal(supp.id);
+              }}
+              className="gap-1.5 px-4 py-2 sm:py-1.5 text-xs font-semibold"
+            >
+              <CreditCard size={14} />
+              <span>Lập phiếu chi cho NCC này</span>
+            </ModalButton>
+          )}
+        </ModalFooter>
       </Modal>
     </div>
   );

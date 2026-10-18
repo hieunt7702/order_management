@@ -25,14 +25,22 @@ import {
 export class SupplierPaymentsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private generatePaymentCode(type: SupplierPaymentType): string {
+  async generateUniquePaymentCode(tenantId: string, type: SupplierPaymentType): Promise<string> {
     const now = new Date();
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const d = String(now.getDate()).padStart(2, '0');
-    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
     const prefix = type === SupplierPaymentType.REFUND_RECEIVED ? 'PT' : 'PC';
-    return `${prefix}-${y}${m}${d}-${rand}`;
+    const base = `${prefix}-${y}${m}${d}`;
+    for (let i = 0; i < 100; i++) {
+      const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const code = `${base}-${rand}`;
+      const exists = await this.prisma.supplierPayment.findUnique({
+        where: { tenantId_paymentCode: { tenantId, paymentCode: code } },
+      });
+      if (!exists) return code;
+    }
+    return `${base}-${Date.now().toString().slice(-4)}`;
   }
 
   async create(tenantId: string, userId: string, dto: CreateSupplierPaymentDto) {
@@ -45,14 +53,16 @@ export class SupplierPaymentsService {
     }
 
     const paymentType = dto.paymentType || SupplierPaymentType.PAYMENT;
-    const paymentCode =
-      dto.paymentCode?.trim().toUpperCase() || this.generatePaymentCode(paymentType);
-
-    const existingCode = await this.prisma.supplierPayment.findUnique({
-      where: { tenantId_paymentCode: { tenantId, paymentCode } },
-    });
-    if (existingCode) {
-      throw new ConflictException(`Mã phiếu thanh toán '${paymentCode}' đã tồn tại trong workspace`);
+    let paymentCode = dto.paymentCode?.trim().toUpperCase();
+    if (!paymentCode) {
+      paymentCode = await this.generateUniquePaymentCode(tenantId, paymentType);
+    } else {
+      const existingCode = await this.prisma.supplierPayment.findUnique({
+        where: { tenantId_paymentCode: { tenantId, paymentCode } },
+      });
+      if (existingCode) {
+        paymentCode = await this.generateUniquePaymentCode(tenantId, paymentType);
+      }
     }
 
     const isPersonalFund = dto.fundSource === FundSourceType.PERSONAL_FUND;
@@ -80,10 +90,30 @@ export class SupplierPaymentsService {
       );
     }
 
-    const advanceAmount =
-      paymentType === SupplierPaymentType.ADVANCE_DEPOSIT
-        ? dto.amount
-        : Math.max(0, dto.amount - allocatedTotal);
+    let advanceAmount = 0;
+    if (paymentType === SupplierPaymentType.ADVANCE_DEPOSIT) {
+      advanceAmount = dto.amount;
+    } else if (allocations.length > 0) {
+      advanceAmount = Math.max(0, dto.amount - allocatedTotal);
+    } else {
+      // Thanh toán nợ chung không qua phiếu nhập (ví dụ: trả nợ đầu kỳ)
+      const sup = await this.prisma.supplier.findFirst({
+        where: { id: dto.supplierId, tenantId },
+        include: {
+          purchaseReceipts: { select: { payableAmount: true } },
+          purchaseReturns: { where: { status: 'CONFIRMED' }, select: { debtOffsetAmount: true } },
+          supplierPayments: { where: { paymentType: { in: ['PAYMENT', 'ADVANCE_DEPOSIT'] } }, select: { amount: true } },
+        },
+      });
+      if (sup) {
+        const opening = Number(sup.openingDebt || 0);
+        const purchases = sup.purchaseReceipts.reduce((sum, r) => sum + Number(r.payableAmount || 0), 0);
+        const returns = sup.purchaseReturns.reduce((sum, r) => sum + Number(r.debtOffsetAmount || 0), 0);
+        const paid = sup.supplierPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+        const currentDebt = Math.max(0, opening + purchases - returns - paid);
+        advanceAmount = Math.max(0, dto.amount - currentDebt);
+      }
+    }
 
     return this.prisma.$transaction(async (tx) => {
       // 1. Tạo phiếu chi / giao dịch thanh toán
@@ -291,6 +321,9 @@ export class SupplierPaymentsService {
               code: true,
               name: true,
               phone: true,
+              bankName: true,
+              bankAccount: true,
+              bankBeneficiary: true,
             },
           },
           allocations: {

@@ -21,6 +21,7 @@ import {
   CashTransactionType,
   CashTransactionStatus,
   OrderReconciliationStatus,
+  PlatformOrderStatus,
 } from '@prisma/client';
 
 @Injectable()
@@ -302,18 +303,33 @@ export class CashflowService {
   }
 
   async createCategory(tenantId: string, dto: CreateCashCategoryDto) {
-    const code = dto.code.trim().toUpperCase();
-    const existing = await this.prisma.cashCategory.findUnique({
-      where: { tenantId_code: { tenantId, code } },
-    });
-    if (existing) {
-      throw new ConflictException(`Mã khoản mục '${code}' đã tồn tại`);
+    let baseCode = dto.code?.trim().toUpperCase();
+    if (!baseCode) {
+      const prefix = dto.type === CashCategoryType.EXPENSE ? 'CHI' : 'THU';
+      const cleanName = (dto.name || 'MUC')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .replace(/_+/g, '_')
+        .toUpperCase();
+      baseCode = `${prefix}_${cleanName}`.slice(0, 30);
+    }
+
+    let finalCode = baseCode;
+    let counter = 1;
+    while (
+      await this.prisma.cashCategory.findUnique({
+        where: { tenantId_code: { tenantId, code: finalCode } },
+      })
+    ) {
+      finalCode = `${baseCode.slice(0, 25)}_${counter}`;
+      counter++;
     }
 
     return this.prisma.cashCategory.create({
       data: {
         tenantId,
-        code,
+        code: finalCode,
         name: dto.name.trim(),
         type: dto.type,
         description: dto.description?.trim() || null,
@@ -366,12 +382,11 @@ export class CashflowService {
   // -------------------------------------------------------------
   // 4. CASH TRANSACTIONS MANAGEMENT
   // -------------------------------------------------------------
-  private generateTransactionCode(type: CashTransactionType): string {
+  async generateUniqueTransactionCode(tenantId: string, type: CashTransactionType): Promise<string> {
     const now = new Date();
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const d = String(now.getDate()).padStart(2, '0');
-    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
 
     let prefix = 'PC';
     switch (type) {
@@ -394,7 +409,16 @@ export class CashflowService {
         prefix = 'PH';
         break;
     }
-    return `${prefix}-${y}${m}${d}-${rand}`;
+    const base = `${prefix}-${y}${m}${d}`;
+    for (let i = 0; i < 100; i++) {
+      const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const code = `${base}-${rand}`;
+      const exists = await this.prisma.cashTransaction.findUnique({
+        where: { tenantId_transactionCode: { tenantId, transactionCode: code } },
+      });
+      if (!exists) return code;
+    }
+    return `${base}-${Date.now().toString().slice(-4)}`;
   }
 
   async checkDuplicateWarning(
@@ -491,7 +515,7 @@ export class CashflowService {
     }
 
     const txStatus = dto.status || CashTransactionStatus.CONFIRMED;
-    const txCode = this.generateTransactionCode(dto.type);
+    const txCode = await this.generateUniqueTransactionCode(tenantId, dto.type);
     const txDate = dto.transactionDate ? new Date(dto.transactionDate) : new Date();
     const amountDec = new Prisma.Decimal(dto.amount);
 
@@ -919,11 +943,16 @@ export class CashflowService {
     const netOperatingCashflow = periodIncome - periodExpense;
 
     // 3. Tiền sàn chờ đối soát / chưa quyết toán
-    // Lấy từ OrderReconciliationRecord có trạng thái NO_DATA hoặc UNMATCHED
+    // Lấy từ OrderReconciliationRecord có trạng thái NO_DATA hoặc UNMATCHED (chỉ các đơn KHÔNG BỊ HỦY)
     const pendingReconciliations = await this.prisma.orderReconciliationRecord.aggregate({
       where: {
         tenantId,
         ...(filter?.shopId && { shopId: filter.shopId }),
+        order: {
+          platformStatus: {
+            notIn: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
+          },
+        },
         reconciliationStatus: {
           in: [
             OrderReconciliationStatus.NO_DATA,
@@ -941,17 +970,70 @@ export class CashflowService {
       },
     });
 
-    // 4. Công nợ nhà cung cấp còn phải trả
-    const pendingPurchaseReceipts = await this.prisma.purchaseReceipt.aggregate({
+    // 4. Công nợ nhà cung cấp còn phải trả (Bao gồm nợ đầu kỳ, phiếu nhập, trừ trả hàng và các khoản đã thanh toán)
+    const suppliers = await this.prisma.supplier.findMany({
+      where: { tenantId },
+      include: {
+        purchaseReceipts: {
+          select: { payableAmount: true, remainingAmount: true },
+        },
+        purchaseReturns: {
+          where: { status: 'CONFIRMED' },
+          select: { debtOffsetAmount: true },
+        },
+        supplierPayments: {
+          select: { amount: true, paymentType: true },
+        },
+        loans: {
+          where: { status: { not: 'CANCELLED' } },
+          select: { type: true, remainingAmount: true },
+        },
+      },
+    });
+
+    let totalSupplierDebt = 0;
+    let suppliersWithDebtCount = 0;
+
+    suppliers.forEach((s) => {
+      const openingDebt = Number(s.openingDebt || 0);
+      const totalPurchases = s.purchaseReceipts.reduce(
+        (sum, r) => sum + Number(r.payableAmount || 0),
+        0
+      );
+      const totalReturns = s.purchaseReturns.reduce(
+        (sum, ret) => sum + Number(ret.debtOffsetAmount || 0),
+        0
+      );
+      const totalPaid = s.supplierPayments
+        .filter((p) => p.paymentType === 'PAYMENT' || p.paymentType === 'ADVANCE_DEPOSIT')
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const totalRefunded = s.supplierPayments
+        .filter((p) => p.paymentType === 'REFUND_RECEIVED')
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+      // Công thức chuẩn kế toán:
+      // Số dư cuối kỳ = Nợ đầu kỳ + Phát sinh phải trả - Giảm trừ công nợ - Tiền đã trả + Tiền NCC hoàn lại
+      let closingDebt = openingDebt + totalPurchases - totalReturns - totalPaid + totalRefunded;
+
+      // Cộng thêm các khoản vay tiền từ NCC nếu có
+      for (const l of s.loans || []) {
+        if (l.type === 'BORROWED_FROM_SUPPLIER') {
+          closingDebt += Number(l.remainingAmount || 0);
+        } else if (l.type === 'LENT_TO_SUPPLIER') {
+          closingDebt -= Number(l.remainingAmount || 0);
+        }
+      }
+
+      if (closingDebt > 0) {
+        totalSupplierDebt += closingDebt;
+        suppliersWithDebtCount++;
+      }
+    });
+
+    const pendingReceiptsCount = await this.prisma.purchaseReceipt.count({
       where: {
         tenantId,
         paymentStatus: { in: ['UNPAID', 'PARTIALLY_PAID'] },
-      },
-      _sum: {
-        remainingAmount: true,
-      },
-      _count: {
-        id: true,
       },
     });
 
@@ -1001,8 +1083,8 @@ export class CashflowService {
       outstanding: {
         pendingPlatformMoney: Number(pendingReconciliations._sum.estimatedPayout || 0),
         pendingPlatformCount: pendingReconciliations._count.id,
-        supplierDebt: Number(pendingPurchaseReceipts._sum.remainingAmount || 0),
-        unpaidReceiptsCount: pendingPurchaseReceipts._count.id,
+        supplierDebt: totalSupplierDebt,
+        unpaidReceiptsCount: pendingReceiptsCount || suppliersWithDebtCount,
         staffPersonalDebt: Number(pendingReimbursements._sum.amount || 0),
         pendingReimbursementCount: pendingReimbursements._count.id,
       },

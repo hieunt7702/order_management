@@ -1,7 +1,7 @@
 import { api } from './apiClient';
 
 export interface CreateWarehouseDto {
-  code: string;
+  code?: string;
   name: string;
   address?: string;
   phone?: string;

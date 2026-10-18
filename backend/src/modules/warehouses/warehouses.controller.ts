@@ -39,6 +39,20 @@ export class WarehousesController {
     return this.warehousesService.findAll(tenantId);
   }
 
+  @Get('next-code')
+  @Roles(
+    MembershipRole.OWNER,
+    MembershipRole.ADMIN,
+    MembershipRole.WAREHOUSE,
+    MembershipRole.ACCOUNTANT,
+    MembershipRole.VIEWER,
+  )
+  @ApiOperation({ summary: 'Lấy mã kho hàng tiếp theo tự động' })
+  async getNextCode(@CurrentTenantId() tenantId: string) {
+    const code = await this.warehousesService.generateNextWarehouseCode(tenantId);
+    return { code };
+  }
+
   @Get(':id')
   @Roles(
     MembershipRole.OWNER,

@@ -12,6 +12,7 @@ export const productsApi = {
     return api.get(`/products${buildQuery(params)}`);
   },
   findOne: (id: string) => api.get(`/products/${id}`),
+  getNextCode: () => api.get<{ code: string }>('/products/next-code'),
   create: (data: any) => api.post('/products', data),
   update: (id: string, data: any) => api.patch(`/products/${id}`, data),
   delete: (id: string) => api.delete(`/products/${id}`),

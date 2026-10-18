@@ -51,7 +51,7 @@ export class CreateSupplierPaymentDto {
   @IsString()
   paymentDate?: string;
 
-  @ApiProperty({ example: 'Chị Hồng', description: 'Người thanh toán (Chị Hồng, Bạn, Kế toán)' })
+  @ApiProperty({ example: 'HieuNT', description: 'Người thanh toán (HieuNT, Bạn, Kế toán)' })
   @IsNotEmpty()
   @IsString()
   payerName!: string;
@@ -124,7 +124,7 @@ export class SupplierPaymentFilterDto {
   @IsEnum(FundSourceType)
   fundSource?: FundSourceType;
 
-  @ApiPropertyOptional({ example: 'Chị Hồng' })
+  @ApiPropertyOptional({ example: 'HieuNT' })
   @IsOptional()
   @IsString()
   payerName?: string;

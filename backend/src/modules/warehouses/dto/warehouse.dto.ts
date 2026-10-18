@@ -3,10 +3,10 @@ import { IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-valid
 import { WarehouseStatus } from '@prisma/client';
 
 export class CreateWarehouseDto {
-  @ApiProperty({ example: 'WH_HANOI_MAIN' })
-  @IsNotEmpty({ message: 'Mã kho không được để trống' })
+  @ApiPropertyOptional({ example: 'KHO_HN_01' })
+  @IsOptional()
   @IsString()
-  code!: string;
+  code?: string;
 
   @ApiProperty({ example: 'Kho Tổng Long Biên Hà Nội' })
   @IsNotEmpty({ message: 'Tên kho không được để trống' })

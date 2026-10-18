@@ -33,10 +33,32 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
     }
   }, [isOpen, defaultType]);
 
+  const generateCodeFromName = (catName: string, catType: CashCategoryType) => {
+    if (!catName.trim()) return '';
+    const prefix = catType === 'EXPENSE' ? 'CHI' : 'THU';
+    const clean = catName
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]/g, '_')
+      .replace(/_+/g, '_')
+      .toUpperCase();
+    return `${prefix}_${clean}`.slice(0, 30);
+  };
+
+  const handleNameChange = (val: string) => {
+    setName(val);
+    setCode(generateCodeFromName(val, type));
+  };
+
+  const handleTypeChange = (newType: CashCategoryType) => {
+    setType(newType);
+    setCode(generateCodeFromName(name, newType));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!code.trim() || !name.trim()) {
-      toast.warning('Vui lòng nhập Mã và Tên khoản mục');
+    if (!name.trim()) {
+      toast.warning('Vui lòng nhập Tên khoản mục');
       return;
     }
 
@@ -81,16 +103,17 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
         <ModalBody className="space-y-3.5 sm:space-y-4 p-3 sm:p-6">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                Mã khoản mục <span className="text-rose-500">*</span>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-between">
+                <span>Mã khoản mục</span>
+                <span className="text-[10px] text-slate-400 font-normal">Tự động sinh</span>
               </label>
               <input
                 type="text"
-                required
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="VD: CHI_MARKETING"
-                className="w-full px-3.5 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold uppercase focus:outline-none"
+                readOnly
+                disabled
+                value={code || 'Hệ thống tự động cấp'}
+                title="Mã khoản mục được hệ thống tự động sinh ngầm khi lưu"
+                className="w-full px-3.5 py-2 rounded border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-sm font-semibold uppercase text-slate-500 dark:text-slate-400 cursor-not-allowed select-none"
               />
             </div>
 
@@ -100,7 +123,7 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
               </label>
               <Select
                 value={type}
-                onChange={(val) => setType(val as CashCategoryType)}
+                onChange={(val) => handleTypeChange(val as CashCategoryType)}
                 options={[
                   { value: 'EXPENSE', label: 'Khoản chi (Chi phí)', icon: ArrowUpRight, color: 'text-rose-500' },
                   { value: 'INCOME', label: 'Khoản thu (Doanh thu)', icon: ArrowDownLeft, color: 'text-emerald-500' },
@@ -118,7 +141,7 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
               type="text"
               required
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => handleNameChange(e.target.value)}
               placeholder="VD: Chi phí chạy quảng cáo Facebook/Shopee Ads"
               className="w-full px-3.5 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm focus:outline-none"
             />

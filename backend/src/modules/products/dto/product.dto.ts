@@ -53,10 +53,10 @@ export class CreateVariantDto {
 }
 
 export class CreateProductDto {
-  @ApiProperty({ example: 'PROD_HAOHAO_TOM' })
-  @IsNotEmpty()
+  @ApiPropertyOptional({ example: 'SP001' })
+  @IsOptional()
   @IsString()
-  code!: string;
+  code?: string;
 
   @ApiProperty({ example: 'Muối Chấm Hảo Hảo Hũ 120gr' })
   @IsNotEmpty()

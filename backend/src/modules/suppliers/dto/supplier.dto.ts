@@ -9,10 +9,10 @@ import {
 } from 'class-validator';
 
 export class CreateSupplierDto {
-  @ApiProperty({ example: 'NCC-001' })
-  @IsNotEmpty()
+  @ApiPropertyOptional({ example: 'NCC001' })
+  @IsOptional()
   @IsString()
-  code!: string;
+  code?: string;
 
   @ApiProperty({ example: 'Công ty Cổ phần Thực phẩm One One' })
   @IsNotEmpty()

@@ -76,8 +76,8 @@ export class UpdateCashAccountDto {
 
 export class CreateCashCategoryDto {
   @IsString()
-  @IsNotEmpty()
-  code!: string;
+  @IsOptional()
+  code?: string;
 
   @IsString()
   @IsNotEmpty()

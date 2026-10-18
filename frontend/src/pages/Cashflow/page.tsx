@@ -49,6 +49,7 @@ import {
   OrderReconciliationStatus,
 } from '../../services/cashflowApi';
 import { shopsApi } from '../../services/shopsApi';
+import { suppliersApi, SupplierItem } from '../../services/suppliersApi';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import {
@@ -111,6 +112,8 @@ export const CashflowPage: React.FC = () => {
   const [accounts, setAccounts] = useState<CashAccountModel[]>([]);
   const [categories, setCategories] = useState<CashCategoryModel[]>([]);
   const [shops, setShops] = useState<Array<{ id: string; name: string }>>([]);
+  const [supplierList, setSupplierList] = useState<SupplierItem[]>([]);
+  const [loadingSuppliers, setLoadingSuppliers] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Global Filters
@@ -192,7 +195,7 @@ export const CashflowPage: React.FC = () => {
   const loadBaseData = async () => {
     try {
       setLoading(true);
-      const [ovRes, accRes, catRes, shopRes] = await Promise.all([
+      const [ovRes, accRes, catRes, shopRes, supRes] = await Promise.all([
         cashflowApi.getOverview({
           shopId: selectedShopId === 'ALL' ? undefined : selectedShopId,
           startDate: startDate || undefined,
@@ -201,12 +204,15 @@ export const CashflowPage: React.FC = () => {
         cashflowApi.getAccounts(),
         cashflowApi.getCategories(),
         storeShops.length > 0 ? Promise.resolve(storeShops) : shopsApi.findAll(),
+        suppliersApi.findAll(),
       ]);
 
       setOverview(ovRes);
       setAccounts(accRes || []);
       setCategories(catRes || []);
       setShops(Array.isArray(shopRes) ? shopRes : (shopRes as any)?.data || []);
+      const supData = (supRes as any)?.data || (Array.isArray(supRes) ? supRes : []);
+      setSupplierList(supData);
     } catch (e: any) {
       console.error(e);
       toast.error('Không thể tải dữ liệu sổ quỹ');
@@ -214,6 +220,25 @@ export const CashflowPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const loadSuppliersData = async () => {
+    setLoadingSuppliers(true);
+    try {
+      const res: any = await suppliersApi.findAll();
+      const data = (res as any)?.data || (Array.isArray(res) ? res : []);
+      setSupplierList(data);
+    } catch (e) {
+      console.error('Error loading suppliers in cashflow', e);
+    } finally {
+      setLoadingSuppliers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'SUPPLIERS') {
+      loadSuppliersData();
+    }
+  }, [activeTab]);
 
   // Load Transactions when tab or filters change
   useEffect(() => {
@@ -1308,7 +1333,7 @@ export const CashflowPage: React.FC = () => {
                   Quy tắc đối soát tiền đơn hàng Shopee
                 </h4>
                 <p className="text-xs text-indigo-800 dark:text-indigo-300 mt-0.5 leading-relaxed">
-                  Nhập file đơn hàng không đồng nghĩa đã thu được tiền. Tiền bán hàng chỉ được ghi nhận khi khớp từ <b>File quyết toán / Thu nhập Shopee</b>. Khi rút tiền về tài khoản ngân hàng, thực hiện <b>Chuyển quỹ nội bộ</b> để tránh tính doanh thu 2 lần!
+                  Nhập file đơn hàng không đồng nghĩa đã thu được tiền. Tiền bán hàng chỉ được ghi nhận khi khớp từ <b>File quyết toán / Thu nhập Shopee</b>. Hệ thống <b>tự động loại trừ các đơn hàng bị hủy</b> (chỉ tính các đơn hiệu lực có phát sinh tiền hàng).
                 </p>
               </div>
             </div>
@@ -1343,14 +1368,14 @@ export const CashflowPage: React.FC = () => {
                 leftItem={{
                   title: '1. Giá trị hàng hóa',
                   value: `${(reconSummary.totalGoodsValue || 0).toLocaleString('vi-VN')} đ`,
-                  subtitle: 'Tổng tiền SP theo đơn',
+                  subtitle: 'Tổng tiền SP các đơn không hủy',
                   icon: ShoppingBag,
                   colorScheme: 'blue',
                 }}
                 rightItem={{
                   title: '2. Tiền dự kiến nhận',
                   value: `${(reconSummary.totalEstimatedPayout || 0).toLocaleString('vi-VN')} đ`,
-                  subtitle: 'Tạm tính trừ các phí sàn',
+                  subtitle: 'Tạm tính (không gồm đơn hủy)',
                   icon: CircleDollarSign,
                   colorScheme: 'purple',
                 }}
@@ -1682,22 +1707,167 @@ export const CashflowPage: React.FC = () => {
               </p>
             </div>
 
-            <Button
-              size="sm"
-              onClick={() => handleOpenExpense('CHI_NHAP_HANG')}
-              className="gap-1.5 bg-[#5865f2] hover:bg-[#4752c4] text-white shrink-0"
-            >
-              <Plus size={14} />
-              <span>Tạo phiếu thanh toán NCC</span>
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/supplier-debts')}
+                className="gap-1.5"
+                title="Mở toàn bộ sổ công nợ nhà cung cấp"
+              >
+                <span>Mở Sổ công nợ chi tiết</span>
+                <ChevronRight size={13} />
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => handleOpenExpense('CHI_NHAP_HANG')}
+                className="gap-1.5 bg-[#5865f2] hover:bg-[#4752c4] text-white"
+              >
+                <Plus size={14} />
+                <span>Tạo phiếu thanh toán NCC</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Top KPI Cards in Suppliers Tab */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
+            <SystemMetricPairCard
+              leftItem={{
+                title: 'Tổng nợ phải trả NCC',
+                value: `${(overview?.outstanding.supplierDebt || 0).toLocaleString('vi-VN')} đ`,
+                subtitle: 'Nghĩa vụ phải trả toàn shop',
+                icon: Receipt,
+                colorScheme: 'red',
+                onClick: () => navigate('/supplier-debts'),
+              }}
+              rightItem={{
+                title: 'Ứng trước / Đặt cọc',
+                value: `${supplierList.reduce((sum, s) => sum + (s.advanceAmountHeld || 0), 0).toLocaleString('vi-VN')} đ`,
+                subtitle: 'NCC đang giữ của shop',
+                icon: ArrowDownLeft,
+                colorScheme: 'blue',
+                onClick: () => navigate('/supplier-debts'),
+              }}
+            />
+          </div>
+
+          {/* Unified Supplier Debts Summary Table */}
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                Danh sách công nợ nhà cung cấp ({supplierList.length})
+              </h4>
+              <span className="text-[11px] text-gray-500">
+                Số dư cuối kỳ = Nợ đầu kỳ + Phát sinh phải trả − Giảm trừ trả hàng − Tiền đã trả
+              </span>
+            </div>
+            <SystemTableWrapper tableClassName="min-w-[850px]">
+              <SystemThead>
+                <SystemTr>
+                  <SystemTh className="w-12 text-center">STT</SystemTh>
+                  <SystemTh className="w-56">Mã & Nhà Cung Cấp</SystemTh>
+                  <SystemTh align="right" className="w-32">Nợ đầu kỳ</SystemTh>
+                  <SystemTh align="right" className="w-32">Phát sinh (+)</SystemTh>
+                  <SystemTh align="right" className="w-32">Đã trả (-)</SystemTh>
+                  <SystemTh align="right" className="w-32">Ứng trước / Dư</SystemTh>
+                  <SystemTh align="right" className="w-36">Số dư nợ cuối kỳ</SystemTh>
+                  <SystemTh align="center" className="w-28">Trạng thái</SystemTh>
+                  <SystemTh align="right" className="w-32">Thao tác</SystemTh>
+                </SystemTr>
+              </SystemThead>
+              <SystemTbody>
+                {loadingSuppliers ? (
+                  <SystemTableSkeleton rows={3} cols={9} />
+                ) : supplierList.length === 0 ? (
+                  <SystemTableEmpty title="Chưa có dữ liệu nhà cung cấp nào" description="Chưa có nhà cung cấp nào trong Workspace." colSpan={9} />
+                ) : (
+                supplierList.map((s, idx) => {
+                  const isShopDebt = s.closingDebt > 0;
+                  const isSupplierHoldsAdvance = s.closingDebt < 0;
+
+                  return (
+                    <SystemTr key={s.id}>
+                      <SystemTd align="center" className="text-gray-400 font-mono text-xs">
+                        {idx + 1}
+                      </SystemTd>
+                      <SystemTd>
+                        <div className="font-semibold text-gray-900 dark:text-white truncate">
+                          {s.name}
+                        </div>
+                        <div className="text-[11px] font-mono text-gray-500 flex items-center gap-1.5 mt-0.5">
+                          <span className="px-1 py-0.2 bg-gray-100 dark:bg-gray-800 rounded font-medium">
+                            {s.code}
+                          </span>
+                          {s.phone && <span>· {s.phone}</span>}
+                        </div>
+                      </SystemTd>
+                      <SystemTd align="right" className="font-mono text-gray-600 dark:text-gray-400">
+                        {Number(s.openingDebt || 0).toLocaleString('vi-VN')}đ
+                      </SystemTd>
+                      <SystemTd align="right" className="font-mono text-gray-700 dark:text-gray-300">
+                        +{Number(s.totalPurchases || 0).toLocaleString('vi-VN')}đ
+                      </SystemTd>
+                      <SystemTd align="right" className="font-mono text-emerald-600 dark:text-emerald-400">
+                        -{Number(s.totalPaid || 0).toLocaleString('vi-VN')}đ
+                      </SystemTd>
+                      <SystemTd align="right" className="font-mono text-blue-600 dark:text-blue-400 font-medium">
+                        {Number(s.advanceAmountHeld || 0).toLocaleString('vi-VN')}đ
+                      </SystemTd>
+                      <SystemTd align="right">
+                        <span
+                          className={`font-mono font-bold text-xs ${
+                            isShopDebt
+                              ? 'text-rose-600 dark:text-rose-400'
+                              : isSupplierHoldsAdvance
+                              ? 'text-blue-600 dark:text-blue-400'
+                              : 'text-gray-600 dark:text-gray-400'
+                          }`}
+                        >
+                          {isShopDebt ? '+' : ''}
+                          {Number(s.closingDebt || 0).toLocaleString('vi-VN')}đ
+                        </span>
+                      </SystemTd>
+                      <SystemTd align="center">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${
+                            isShopDebt
+                              ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                              : isSupplierHoldsAdvance
+                              ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700'
+                          }`}
+                        >
+                          {isShopDebt ? 'Shop nợ NCC' : isSupplierHoldsAdvance ? 'NCC giữ tiền' : 'Cân bằng'}
+                        </span>
+                      </SystemTd>
+                      <SystemTd align="right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => navigate('/supplier-debts')}
+                            className="h-7 px-2 text-[11px] text-[#5865f2] hover:bg-[#5865f2]/10"
+                            title="Mở sổ công nợ chi tiết"
+                          >
+                            <span>Chi tiết</span>
+                            <ArrowRight size={11} className="ml-1" />
+                          </Button>
+                        </div>
+                      </SystemTd>
+                    </SystemTr>
+                  );
+                })
+              )}
+            </SystemTbody>
+          </SystemTableWrapper>
           </div>
 
           <div className="p-4 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 rounded text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
             <span className="font-semibold">Quy tắc phân bổ & Chi hộ cá nhân:</span>
             <ul className="list-disc pl-5 mt-1.5 space-y-1">
-              <li>Một lần chuyển tiền có thể phân bổ cho một hoặc nhiều phiếu nhập kho.</li>
-              <li>Nếu trả dư tiền hàng, phần dư được tự động theo dõi là <b>tiền ứng trước cho nhà cung cấp</b>.</li>
-              <li>Nếu chị Hồng hoặc nhân viên dùng tiền cá nhân trả hộ, chọn <i>"Tiền cá nhân chi hộ"</i>: hệ thống ghi nhận shop nợ chị Hồng, không trừ quỹ shop, và khi hoàn trả sẽ không tính lại chi phí lần hai.</li>
+              <li>Một lần chuyển tiền có thể phân bổ cho một hoặc nhiều phiếu nhập kho hoặc thanh toán nợ đầu kỳ.</li>
+              <li>Nếu trả dư tiền hàng (Số dư cuối kỳ âm), phần dư được tự động theo dõi là <b>tiền ứng trước cho nhà cung cấp</b>.</li>
+              <li>Nếu dùng tiền cá nhân trả hộ, chọn <i>"Tiền cá nhân chi hộ"</i>: hệ thống ghi nhận shop nợ cá nhân, không trừ quỹ shop, và khi hoàn trả sẽ không tính lại chi phí lần hai.</li>
             </ul>
           </div>
         </div>

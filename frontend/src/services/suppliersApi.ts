@@ -20,6 +20,10 @@ export interface SupplierItem {
   advanceAmountHeld: number;
   totalReceiptsRemaining: number;
   closingDebt: number; // > 0: Shop nợ NCC; < 0: NCC giữ tiền ứng trước; = 0: Cân bằng
+  totalLoanDebt?: number;
+  totalLoanReceivable?: number;
+  totalBorrowedProducts?: number;
+  totalLentProducts?: number;
   receiptCount?: number;
   createdAt?: string;
 }
@@ -99,8 +103,10 @@ export const suppliersApi = {
 
   getDebtReports: () => api.get<DebtReportsResponse>('/suppliers/debt-reports'),
 
+  getNextCode: () => api.get<{ code: string }>('/suppliers/next-code'),
+
   create: (data: {
-    code: string;
+    code?: string;
     name: string;
     phone?: string;
     email?: string;

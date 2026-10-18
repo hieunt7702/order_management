@@ -24,13 +24,21 @@ export class OrderReturnsService {
     private readonly auditService: AuditService,
   ) {}
 
-  private generateReturnCode(): string {
+  async generateUniqueReturnCode(tenantId: string): Promise<string> {
     const now = new Date();
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const d = String(now.getDate()).padStart(2, '0');
-    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `PH-${y}${m}${d}-${rand}`;
+    const prefix = `PH-${y}${m}${d}`;
+    for (let i = 0; i < 100; i++) {
+      const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const code = `${prefix}-${rand}`;
+      const existing = await this.prisma.orderReturn.findUnique({
+        where: { tenantId_returnCode: { tenantId, returnCode: code } },
+      });
+      if (!existing) return code;
+    }
+    return `${prefix}-${Date.now().toString().slice(-4)}`;
   }
 
   // DANH SÁCH CHỜ NHẬN HÀNG HOÀN (Return Processing Queue)
@@ -215,13 +223,16 @@ export class OrderReturnsService {
       }
     }
 
-    const returnCode = dto.returnCode?.trim().toUpperCase() || this.generateReturnCode();
-
-    const existingCode = await this.prisma.orderReturn.findUnique({
-      where: { tenantId_returnCode: { tenantId, returnCode } },
-    });
-    if (existingCode) {
-      throw new ConflictException(`Mã phiếu hoàn '${returnCode}' đã tồn tại trong workspace`);
+    let returnCode = dto.returnCode?.trim().toUpperCase();
+    if (!returnCode) {
+      returnCode = await this.generateUniqueReturnCode(tenantId);
+    } else {
+      const existingCode = await this.prisma.orderReturn.findUnique({
+        where: { tenantId_returnCode: { tenantId, returnCode } },
+      });
+      if (existingCode) {
+        returnCode = await this.generateUniqueReturnCode(tenantId);
+      }
     }
 
     return this.prisma.$transaction(async (tx) => {

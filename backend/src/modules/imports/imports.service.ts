@@ -452,6 +452,20 @@ export class ImportsService {
               },
             });
 
+            // Nếu đơn cập nhật sang trạng thái hủy và chưa nhận tiền quyết toán, xóa bản ghi đối soát
+            if (
+              newPlatformStatus === PlatformOrderStatus.CANCELLED ||
+              newPlatformStatus === PlatformOrderStatus.IN_CANCEL
+            ) {
+              await tx.orderReconciliationRecord.deleteMany({
+                where: {
+                  orderId: existingOrder.id,
+                  settledPayout: 0,
+                  adjustmentAmount: 0,
+                },
+              });
+            }
+
             // Update packages with latest tracking code and carrier name
             if (parsed.trackingCode || parsed.carrier) {
               await tx.package.updateMany({

@@ -511,7 +511,7 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
                   onChange={(e) => setIsPersonalAdvance(e.target.checked)}
                   className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500"
                 />
-                Tiền cá nhân chi hộ (Chị Hồng / nhân viên ứng trước)
+                Tiền cá nhân chi hộ (HieuNT / nhân viên ứng trước)
               </label>
             )}
           </div>

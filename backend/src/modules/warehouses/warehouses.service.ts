@@ -24,17 +24,48 @@ export class WarehousesService {
     return wh;
   }
 
-  async create(tenantId: string, dto: CreateWarehouseDto) {
-    const existing = await this.prisma.warehouse.findUnique({
-      where: {
-        tenantId_code: {
-          tenantId,
-          code: dto.code,
-        },
-      },
+  async generateNextWarehouseCode(tenantId: string): Promise<string> {
+    const warehouses = await this.prisma.warehouse.findMany({
+      where: { tenantId, code: { startsWith: 'KHO' } },
+      select: { code: true },
     });
-    if (existing) {
-      throw new ConflictException(`Mã kho "${dto.code}" đã tồn tại trong Workspace`);
+    let maxNum = 0;
+    for (const w of warehouses) {
+      const match = w.code.match(/^KHO[-_]?(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+    let candidateNum = maxNum + 1;
+    let candidateCode = `KHO-${String(candidateNum).padStart(2, '0')}`;
+    while (
+      await this.prisma.warehouse.findUnique({
+        where: { tenantId_code: { tenantId, code: candidateCode } },
+      })
+    ) {
+      candidateNum++;
+      candidateCode = `KHO-${String(candidateNum).padStart(2, '0')}`;
+    }
+    return candidateCode;
+  }
+
+  async create(tenantId: string, dto: CreateWarehouseDto) {
+    let finalCode = dto.code?.trim().toUpperCase();
+    if (!finalCode) {
+      finalCode = await this.generateNextWarehouseCode(tenantId);
+    } else {
+      const existing = await this.prisma.warehouse.findUnique({
+        where: {
+          tenantId_code: {
+            tenantId,
+            code: finalCode,
+          },
+        },
+      });
+      if (existing) {
+        finalCode = await this.generateNextWarehouseCode(tenantId);
+      }
     }
 
     const status =
@@ -47,7 +78,7 @@ export class WarehousesService {
     return this.prisma.warehouse.create({
       data: {
         tenantId,
-        code: dto.code,
+        code: finalCode,
         name: dto.name,
         address: dto.address,
         status,

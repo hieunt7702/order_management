@@ -23,13 +23,21 @@ import {
 export class PurchaseReceiptsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private generateReceiptCode(): string {
+  async generateUniqueReceiptCode(tenantId: string): Promise<string> {
     const now = new Date();
     const y = now.getFullYear();
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const d = String(now.getDate()).padStart(2, '0');
-    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `PNK-${y}${m}${d}-${rand}`;
+    const prefix = `PNK-${y}${m}${d}`;
+    for (let i = 0; i < 100; i++) {
+      const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const code = `${prefix}-${rand}`;
+      const exists = await this.prisma.purchaseReceipt.findUnique({
+        where: { tenantId_receiptCode: { tenantId, receiptCode: code } },
+      });
+      if (!exists) return code;
+    }
+    return `${prefix}-${Date.now().toString().slice(-4)}`;
   }
 
   async create(tenantId: string, userId: string, dto: CreatePurchaseReceiptDto) {
@@ -46,13 +54,16 @@ export class PurchaseReceiptsService {
     if (!supplier) throw new NotFoundException('Không tìm thấy nhà cung cấp');
     if (!warehouse) throw new NotFoundException('Không tìm thấy kho nhập hàng');
 
-    const receiptCode = dto.receiptCode?.trim().toUpperCase() || this.generateReceiptCode();
-
-    const existingCode = await this.prisma.purchaseReceipt.findUnique({
-      where: { tenantId_receiptCode: { tenantId, receiptCode } },
-    });
-    if (existingCode) {
-      throw new ConflictException(`Mã phiếu nhập '${receiptCode}' đã tồn tại trong workspace`);
+    let receiptCode = dto.receiptCode?.trim().toUpperCase();
+    if (!receiptCode) {
+      receiptCode = await this.generateUniqueReceiptCode(tenantId);
+    } else {
+      const existingCode = await this.prisma.purchaseReceipt.findUnique({
+        where: { tenantId_receiptCode: { tenantId, receiptCode } },
+      });
+      if (existingCode) {
+        receiptCode = await this.generateUniqueReceiptCode(tenantId);
+      }
     }
 
     // 1. Tính toán giá trị hàng thực nhận (totalItemsAmount)
@@ -343,7 +354,17 @@ export class PurchaseReceiptsService {
         take: limit,
         orderBy: { receiptDate: 'desc' },
         include: {
-          supplier: { select: { id: true, name: true, code: true, phone: true } },
+          supplier: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              phone: true,
+              bankName: true,
+              bankAccount: true,
+              bankBeneficiary: true,
+            },
+          },
           warehouse: { select: { id: true, name: true, code: true } },
           shop: { select: { id: true, name: true, code: true } },
           items: true,

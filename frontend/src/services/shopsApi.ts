@@ -14,6 +14,7 @@ export interface CreateShopDto {
 export const shopsApi = {
   findAll: () => api.get('/shops'),
   findOne: (id: string) => api.get(`/shops/${id}`),
+  getNextCode: () => api.get<{ code: string }>('/shops/next-code'),
   create: (data: CreateShopDto) => api.post('/shops', data),
   update: (id: string, data: Partial<CreateShopDto>) =>
     api.patch(`/shops/${id}`, data),

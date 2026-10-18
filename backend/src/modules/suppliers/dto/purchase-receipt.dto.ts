@@ -147,7 +147,7 @@ export class CreatePurchaseReceiptDto {
   @Min(0)
   immediatePaymentAmount?: number;
 
-  @ApiPropertyOptional({ example: 'Chị Hồng' })
+  @ApiPropertyOptional({ example: 'HieuNT' })
   @IsOptional()
   @IsString()
   immediatePayerName?: string;

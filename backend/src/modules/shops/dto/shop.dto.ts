@@ -3,10 +3,10 @@ import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Platform, ShopStatus } from '@prisma/client';
 
 export class CreateShopDto {
-  @ApiProperty({ example: 'SHOP_SHOPEE_01' })
-  @IsNotEmpty({ message: 'Mã shop nội bộ không được để trống' })
+  @ApiPropertyOptional({ example: 'SHOP-01' })
+  @IsOptional()
   @IsString()
-  code!: string;
+  code?: string;
 
   @ApiProperty({ example: 'Shop Bách Hóa Tiêu Dùng Hà Nội' })
   @IsNotEmpty({ message: 'Tên shop không được để trống' })
