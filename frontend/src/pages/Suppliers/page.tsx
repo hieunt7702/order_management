@@ -512,8 +512,25 @@ export const SuppliersPage: React.FC = () => {
                       {stt}
                     </SystemTd>
                     <SystemTd>
-                      <div className="font-mono font-bold text-xs text-gray-900 dark:text-white flex items-center gap-1.5">
+                      <div className="font-mono font-bold text-xs text-gray-900 dark:text-white flex items-center gap-1.5 flex-wrap">
                         <span className="text-[#5865f2]">{s.code}</span>
+                        {(s.totalBorrowedProducts || 0) > 0 && (
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/50"
+                            title={`Đang mượn ${s.totalBorrowedProducts} sản phẩm từ nhà cung cấp`}
+                          >
+                            <Boxes size={10} className="shrink-0 text-indigo-500" />
+                            <span>Mượn {s.totalBorrowedProducts} sp</span>
+                          </span>
+                        )}
+                        {(s.totalLoanDebt || 0) > 0 && (
+                          <span
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40"
+                            title={`Dư nợ hợp đồng vay: ${formatCurrency(s.totalLoanDebt || 0)}đ`}
+                          >
+                            Vay: {formatCurrency(s.totalLoanDebt || 0)}đ
+                          </span>
+                        )}
                       </div>
                       <div className="font-medium text-xs text-gray-800 dark:text-gray-200 truncate mt-0.5" title={s.name}>
                         {s.name}
@@ -521,20 +538,6 @@ export const SuppliersPage: React.FC = () => {
                       {s.receiptCount !== undefined && s.receiptCount > 0 && (
                         <div className="text-[10px] text-gray-400 mt-0.5">
                           {s.receiptCount} phiếu nhập kho
-                        </div>
-                      )}
-                      {((s.totalLoanDebt || 0) > 0 || (s.totalBorrowedProducts || 0) > 0) && (
-                        <div className="flex items-center gap-1 mt-1 flex-wrap">
-                          {(s.totalLoanDebt || 0) > 0 && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
-                              Vay: {formatCurrency(s.totalLoanDebt || 0)}đ
-                            </span>
-                          )}
-                          {(s.totalBorrowedProducts || 0) > 0 && (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
-                              Mượn {s.totalBorrowedProducts} sp
-                            </span>
-                          )}
                         </div>
                       )}
                     </SystemTd>
@@ -709,26 +712,31 @@ export const SuppliersPage: React.FC = () => {
               >
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <span className="font-mono font-bold text-xs text-[#5865f2]">
-                      {s.code}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-mono font-bold text-xs text-[#5865f2]">
+                        {s.code}
+                      </span>
+                      {(s.totalBorrowedProducts || 0) > 0 && (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/50"
+                          title={`Đang mượn ${s.totalBorrowedProducts} sản phẩm từ nhà cung cấp`}
+                        >
+                          <Boxes size={10} className="shrink-0 text-indigo-500" />
+                          <span>Mượn {s.totalBorrowedProducts} sp</span>
+                        </span>
+                      )}
+                      {(s.totalLoanDebt || 0) > 0 && (
+                        <span
+                          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40"
+                          title={`Dư nợ hợp đồng vay: ${formatCurrency(s.totalLoanDebt || 0)}đ`}
+                        >
+                          Vay: {formatCurrency(s.totalLoanDebt || 0)}đ
+                        </span>
+                      )}
+                    </div>
                     <h3 className="font-semibold text-xs text-gray-900 dark:text-white mt-0.5">
                       {s.name}
                     </h3>
-                    {((s.totalLoanDebt || 0) > 0 || (s.totalBorrowedProducts || 0) > 0) && (
-                      <div className="flex items-center gap-1 mt-1 flex-wrap">
-                        {(s.totalLoanDebt || 0) > 0 && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
-                            Vay: {formatCurrency(s.totalLoanDebt || 0)}đ
-                          </span>
-                        )}
-                        {(s.totalBorrowedProducts || 0) > 0 && (
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
-                            Mượn {s.totalBorrowedProducts} sp
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span
