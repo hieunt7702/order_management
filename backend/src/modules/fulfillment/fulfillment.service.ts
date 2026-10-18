@@ -661,6 +661,9 @@ export class FulfillmentService {
           },
         });
 
+        const orderCode = order?.externalOrderId || order?.internalOrderCode;
+        const packageCode = pkg.packageCode || pkg.trackingCode;
+
         await tx.inventoryLedger.create({
           data: {
             tenantId,
@@ -671,8 +674,10 @@ export class FulfillmentService {
             deltaReserved: item.quantity,
             referenceType: 'SCAN_REVERSAL',
             referenceId: pkg.id,
+            voucherCode: orderCode || packageCode,
+            performerName: 'HieuNT',
             performedByUserId: userId,
-            note: `Hoàn tác quét xuất kiện ${pkg.packageCode}: ${dto.reason}`,
+            note: `Hoàn tác quét xuất kiện ${packageCode}${orderCode ? ` cho đơn ${orderCode}` : ''}: ${dto.reason}`,
           },
         });
       }

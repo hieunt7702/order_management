@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InventoryMovementType } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ClearDataDto } from './dto/clear-data.dto';
@@ -16,16 +17,18 @@ export class SystemService {
     const hasSpecificFlags =
       dto.clearOrders !== undefined ||
       dto.clearPurchaseReceipts !== undefined ||
-      dto.clearCashflow !== undefined;
+      dto.clearCashflow !== undefined ||
+      dto.clearInventory !== undefined;
 
     // Nếu không truyền cờ cụ thể nào, mặc định xóa toàn bộ dữ liệu giao dịch
     const clearOrders = hasSpecificFlags ? Boolean(dto.clearOrders) : true;
     const clearPurchaseReceipts = hasSpecificFlags ? Boolean(dto.clearPurchaseReceipts) : true;
     const clearCashflow = hasSpecificFlags ? Boolean(dto.clearCashflow) : true;
+    const clearInventory = hasSpecificFlags ? Boolean(dto.clearInventory) : true;
     const { clearProducts = false, clearSuppliers = false } = dto;
 
     this.logger.warn(
-      `Tenant ${tenantId} requested clear data: Orders=${clearOrders}, PurchaseReceipts=${clearPurchaseReceipts}, Cashflow=${clearCashflow}, Products=${clearProducts}, Suppliers=${clearSuppliers}`,
+      `Tenant ${tenantId} requested clear data: Orders=${clearOrders}, PurchaseReceipts=${clearPurchaseReceipts}, Cashflow=${clearCashflow}, Inventory=${clearInventory}, Products=${clearProducts}, Suppliers=${clearSuppliers}`,
     );
 
     const counts: Record<string, number> = {};
@@ -48,8 +51,11 @@ export class SystemService {
         });
       }
 
-      // 2. MUA HÀNG, PHIẾU NHẬP & CÔNG NỢ NCC
+      // 2. MUA HÀNG, PHIẾU NHẬP, CÔNG NỢ NCC & MƯỢN TRẢ HÀNG
       if (clearPurchaseReceipts || clearSuppliers) {
+        await tx.supplierProductBorrowItem.deleteMany({ where: { tenantId } });
+        await tx.supplierProductBorrow.deleteMany({ where: { tenantId } });
+
         const delAllocations = await tx.paymentAllocation.deleteMany({ where: { tenantId } });
         counts.paymentAllocations = delAllocations.count;
 
@@ -68,16 +74,20 @@ export class SystemService {
         const delReceipts = await tx.purchaseReceipt.deleteMany({ where: { tenantId } });
         counts.purchaseReceipts = delReceipts.count;
 
-        // Xóa sổ cái liên quan đến nhập hàng & trả hàng NCC
-        await tx.inventoryLedger.deleteMany({
+        // Xóa sổ cái liên quan đến nhập hàng & trả hàng NCC & mượn trả
+        const delPRLedgers = await tx.inventoryLedger.deleteMany({
           where: {
             tenantId,
-            referenceType: { in: ['PURCHASE_RECEIPT', 'PURCHASE_RETURN'] },
+            OR: [
+              { referenceType: { in: ['PURCHASE_RECEIPT', 'PURCHASE_RETURN', 'PRODUCT_BORROW', 'BORROW_RETURN', 'IMPORT'] } },
+              { movementType: { in: [InventoryMovementType.RECEIVE, InventoryMovementType.PURCHASE_RETURN] } },
+            ],
           },
         });
+        counts.purchaseLedgers = delPRLedgers.count;
       }
 
-      // 3. ĐƠN HÀNG, QUÉT KHO & HÀNG HOÀN
+      // 3. ĐƠN HÀNG, QUÉT KHO, KIỆN HÀNG & HÀNG HOÀN
       if (clearOrders) {
         const delOrderReturnItems = await tx.orderReturnItem.deleteMany({ where: { tenantId } });
         counts.orderReturnItems = delOrderReturnItems.count;
@@ -113,17 +123,32 @@ export class SystemService {
           await tx.orderReconciliationRecord.deleteMany({ where: { tenantId } });
         }
 
-        // Xóa sổ cái liên quan đến đơn hàng và xuất kho
-        await tx.inventoryLedger.deleteMany({
+        // Xóa toàn bộ sổ cái liên quan đến đơn hàng, quét kiện và xuất/giữ hàng
+        const delOrdLedgers = await tx.inventoryLedger.deleteMany({
           where: {
             tenantId,
-            referenceType: { in: ['ORDER', 'ORDER_RETURN', 'DISPATCH'] },
+            OR: [
+              { referenceType: { in: ['ORDER', 'ORDER_RETURN', 'DISPATCH', 'PACKAGE', 'SCAN_REVERSAL'] } },
+              {
+                movementType: {
+                  in: [
+                    InventoryMovementType.DISPATCH,
+                    InventoryMovementType.RESERVE,
+                    InventoryMovementType.RELEASE,
+                    InventoryMovementType.RETURN_RECEIVE,
+                    InventoryMovementType.RETURN_DAMAGE,
+                  ],
+                },
+              },
+            ],
           },
         });
+        counts.orderLedgers = delOrdLedgers.count;
       }
 
       // 4. ĐỒNG BỘ LẠI TỒN KHO & SỔ CÁI
-      if (clearOrders && clearPurchaseReceipts) {
+      if (clearInventory || (clearOrders && clearPurchaseReceipts) || clearProducts) {
+        // Xóa sạch toàn bộ sổ cái biến động kho
         const delLedgers = await tx.inventoryLedger.deleteMany({ where: { tenantId } });
         counts.inventoryLedgers = delLedgers.count;
 

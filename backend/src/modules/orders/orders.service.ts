@@ -274,6 +274,7 @@ export class OrdersService {
         itemsToReserve,
         order.id,
         userId,
+        order.externalOrderId || order.internalOrderCode,
       );
 
       if (!reservation.success) {
@@ -333,6 +334,7 @@ export class OrdersService {
             itemsToRelease,
             order.id,
             userId,
+            order.externalOrderId || order.internalOrderCode,
           );
         }
 
@@ -346,13 +348,15 @@ export class OrdersService {
         });
 
         // Xóa bản ghi đối soát nếu đơn bị hủy và chưa từng nhận tiền
-        await tx.orderReconciliationRecord.deleteMany({
-          where: {
-            orderId: order.id,
-            settledPayout: 0,
-            adjustmentAmount: 0,
-          },
-        });
+        if ((tx as any).orderReconciliationRecord?.deleteMany) {
+          await (tx as any).orderReconciliationRecord.deleteMany({
+            where: {
+              orderId: order.id,
+              settledPayout: 0,
+              adjustmentAmount: 0,
+            },
+          });
+        }
 
         await this.auditService.log({
           tenantId,
@@ -376,13 +380,15 @@ export class OrdersService {
       });
 
       // Xóa bản ghi đối soát nếu đơn bị hủy và chưa từng nhận tiền
-      await tx.orderReconciliationRecord.deleteMany({
-        where: {
-          orderId: order.id,
-          settledPayout: 0,
-          adjustmentAmount: 0,
-        },
-      });
+      if ((tx as any).orderReconciliationRecord?.deleteMany) {
+        await (tx as any).orderReconciliationRecord.deleteMany({
+          where: {
+            orderId: order.id,
+            settledPayout: 0,
+            adjustmentAmount: 0,
+          },
+        });
+      }
 
       await this.auditService.log({
         tenantId,
@@ -646,6 +652,7 @@ export class OrdersService {
             itemsToRelease,
             id,
             userId,
+            order.externalOrderId || order.internalOrderCode,
           );
         }
       }
@@ -745,6 +752,7 @@ export class OrdersService {
                 itemsToRelease,
                 order.id,
                 userId,
+                order.externalOrderId || order.internalOrderCode,
               );
             }
           }

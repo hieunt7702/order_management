@@ -600,7 +600,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
 
                   {/* Chứng từ liên quan */}
                   <SystemTd className="font-mono font-bold text-[#5865f2] whitespace-nowrap">
-                    {row.voucherCode || row.referenceId?.substring(0, 8) || '-'}
+                    {row.voucherCode || (row.referenceType === 'PACKAGE' ? `Kiện ${row.referenceId?.substring(0, 8)}` : row.referenceId?.substring(0, 8)) || '-'}
                   </SystemTd>
 
                   {/* Kho & Trạng thái */}
@@ -708,7 +708,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
                   <span>Chứng từ tham chiếu:</span>
                 </span>
                 <span className="font-mono font-bold text-[#5865f2] mt-1 block">
-                  {selectedEntry.voucherCode || selectedEntry.referenceId || '--'}
+                  {selectedEntry.voucherCode || (selectedEntry.referenceType === 'PACKAGE' ? `Kiện ${selectedEntry.referenceId?.substring(0, 8)}` : selectedEntry.referenceId) || '--'}
                 </span>
               </div>
               <div className="p-2.5 bg-gray-50 dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">

@@ -955,11 +955,11 @@ export const InventoryPage: React.FC = () => {
                               <SystemTd className="text-right font-medium text-gray-900 dark:text-white">
                                 {l.afterOnHand ?? '--'}
                               </SystemTd>
-                              <SystemTd className="font-mono text-gray-600 dark:text-gray-400">
-                                {l.order?.orderSn || l.referenceCode || '--'}
+                              <SystemTd className="font-mono text-[#5865f2] font-semibold">
+                                {l.voucherCode || l.order?.orderSn || l.referenceCode || (l.referenceId ? (l.referenceType === 'PACKAGE' ? `Kiện ${l.referenceId.substring(0, 8)}` : l.referenceId.substring(0, 8)) : '--')}
                               </SystemTd>
                               <SystemTd className="text-gray-600 dark:text-gray-400 truncate max-w-xs">
-                                {l.user?.name || l.user?.email || 'Hệ thống'}
+                                {l.performerName || l.user?.name || l.user?.email || 'Hệ thống'}
                                 {l.note && (
                                   <span className="block text-[11px] text-gray-400">{l.note}</span>
                                 )}

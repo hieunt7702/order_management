@@ -4,6 +4,7 @@ export interface ClearDataParams {
   clearOrders?: boolean;
   clearPurchaseReceipts?: boolean;
   clearCashflow?: boolean;
+  clearInventory?: boolean;
   clearProducts?: boolean;
   clearSuppliers?: boolean;
 }

@@ -17,6 +17,11 @@ export class ClearDataDto {
   @IsOptional()
   clearCashflow?: boolean;
 
+  @ApiProperty({ description: 'Xóa toàn bộ sổ cái biến động kho & đặt lại số dư tồn kho về 0', default: false, required: false })
+  @IsBoolean()
+  @IsOptional()
+  clearInventory?: boolean;
+
   @ApiProperty({ description: 'Xóa cả danh mục sản phẩm và phân loại SKU', default: false, required: false })
   @IsBoolean()
   @IsOptional()

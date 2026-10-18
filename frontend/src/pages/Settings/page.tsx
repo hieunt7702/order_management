@@ -72,6 +72,7 @@ export const SettingsPage: React.FC = () => {
   const [clearOrders, setClearOrders] = useState<boolean>(true);
   const [clearPurchaseReceipts, setClearPurchaseReceipts] = useState<boolean>(true);
   const [clearCashflow, setClearCashflow] = useState<boolean>(true);
+  const [clearInventory, setClearInventory] = useState<boolean>(true);
   const [clearProducts, setClearProducts] = useState<boolean>(false);
   const [clearSuppliers, setClearSuppliers] = useState<boolean>(false);
   const [confirmClearText, setConfirmClearText] = useState<string>('');
@@ -152,7 +153,7 @@ export const SettingsPage: React.FC = () => {
       return;
     }
 
-    if (!clearOrders && !clearPurchaseReceipts && !clearCashflow && !clearProducts && !clearSuppliers) {
+    if (!clearOrders && !clearPurchaseReceipts && !clearCashflow && !clearInventory && !clearProducts && !clearSuppliers) {
       toast.warning('Vui lòng chọn ít nhất 1 nhóm dữ liệu cần xóa');
       return;
     }
@@ -163,6 +164,7 @@ export const SettingsPage: React.FC = () => {
         clearOrders,
         clearPurchaseReceipts,
         clearCashflow,
+        clearInventory,
         clearProducts,
         clearSuppliers,
       });
@@ -1060,6 +1062,7 @@ export const SettingsPage: React.FC = () => {
                         setClearOrders(false);
                         setClearPurchaseReceipts(true);
                         setClearCashflow(true);
+                        setClearInventory(true);
                         setClearProducts(false);
                         setClearSuppliers(false);
                       }}
@@ -1071,14 +1074,15 @@ export const SettingsPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        const allSelected = clearOrders && clearPurchaseReceipts && clearCashflow;
+                        const allSelected = clearOrders && clearPurchaseReceipts && clearCashflow && clearInventory;
                         setClearOrders(!allSelected);
                         setClearPurchaseReceipts(!allSelected);
                         setClearCashflow(!allSelected);
+                        setClearInventory(!allSelected);
                       }}
                       className="text-[10px] text-gray-500 hover:text-gray-900 dark:hover:text-white cursor-pointer"
                     >
-                      {clearOrders && clearPurchaseReceipts && clearCashflow ? 'Bỏ hết' : 'Tất cả'}
+                      {clearOrders && clearPurchaseReceipts && clearCashflow && clearInventory ? 'Bỏ hết' : 'Tất cả'}
                     </button>
                   </div>
                 </div>
@@ -1120,7 +1124,7 @@ export const SettingsPage: React.FC = () => {
                       Phiếu nhập hàng & Công nợ NCC
                     </span>
                     <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
-                      Phiếu nhập kho, trả hàng NCC, phiếu chi thanh toán nợ NCC
+                      Phiếu nhập kho, trả hàng NCC, mượn trả hàng, phiếu chi nợ NCC
                     </span>
                   </div>
                 </div>
@@ -1141,7 +1145,28 @@ export const SettingsPage: React.FC = () => {
                       Đơn hàng Shopee & Vận hành kho
                     </span>
                     <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
-                      Đơn hàng, kiện hàng, lịch sử quét mã, đơn hàng hoàn trả
+                      Đơn hàng, kiện hàng, lịch sử quét mã xuất kho, đơn hàng hoàn trả
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4. Sổ cái biến động kho & Cân bằng tồn */}
+                <div
+                  onClick={() => setClearInventory(!clearInventory)}
+                  className="flex items-start gap-2 py-1 px-1 rounded hover:bg-gray-100/60 dark:hover:bg-gray-800/40 cursor-pointer select-none"
+                >
+                  <Checkbox
+                    checked={clearInventory}
+                    onChange={(e) => setClearInventory(e.target.checked)}
+                    size="sm"
+                    className="mt-0.5"
+                  />
+                  <div className="min-w-0">
+                    <span className="text-xs font-medium text-gray-900 dark:text-gray-100 block">
+                      Sổ cái biến động kho & Cân bằng tồn kho
+                    </span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
+                      Xóa toàn bộ bút toán lịch sử biến động sổ cái kho, đặt lại số lượng tồn kho khả dụng và giữ về 0
                     </span>
                   </div>
                 </div>
@@ -1209,7 +1234,7 @@ export const SettingsPage: React.FC = () => {
                 disabled={
                   confirmClearText.trim().toUpperCase() !== 'CONFIRM' ||
                   isClearingData ||
-                  (!clearOrders && !clearPurchaseReceipts && !clearCashflow && !clearProducts && !clearSuppliers)
+                  (!clearOrders && !clearPurchaseReceipts && !clearCashflow && !clearInventory && !clearProducts && !clearSuppliers)
                 }
                 className="flex-1 sm:flex-initial gap-1.5 font-semibold"
               >

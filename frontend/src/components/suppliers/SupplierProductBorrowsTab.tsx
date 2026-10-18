@@ -407,7 +407,7 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
             className="gap-1.5 bg-[#5865f2] hover:bg-[#4752c4] text-white"
           >
             <Plus size={14} />
-            <span>+ Mượn hàng từ NCC</span>
+            <span>Mượn hàng từ NCC</span>
           </Button>
           <Button
             size="sm"
@@ -416,7 +416,7 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
             className="gap-1.5 text-blue-600 border-blue-200 dark:border-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-950/20"
           >
             <ArrowUpRight size={14} />
-            <span>+ Cho NCC mượn</span>
+            <span>Cho NCC mượn</span>
           </Button>
           <Button size="sm" variant="outline" onClick={loadBorrows} className="p-2" title="Làm mới">
             <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
@@ -610,23 +610,22 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
                     </SystemTd>
                     <SystemTd align="center">
                       <span
-                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          b.status === 'RETURNED'
+                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${b.status === 'RETURNED'
                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
                             : b.status === 'CONVERTED_TO_PURCHASE'
-                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
-                            : b.status === 'PARTIALLY_RETURNED'
-                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                            : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
-                        }`}
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
+                              : b.status === 'PARTIALLY_RETURNED'
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                                : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
+                          }`}
                       >
                         {b.status === 'RETURNED'
                           ? 'Đã trả đủ'
                           : b.status === 'CONVERTED_TO_PURCHASE'
-                          ? 'Đã mua đứt'
-                          : b.status === 'PARTIALLY_RETURNED'
-                          ? 'Đã trả 1 phần'
-                          : 'Đang mượn'}
+                            ? 'Đã mua đứt'
+                            : b.status === 'PARTIALLY_RETURNED'
+                              ? 'Đã trả 1 phần'
+                              : 'Đang mượn'}
                       </span>
                     </SystemTd>
                     <SystemTd align="center" onClick={(e) => e.stopPropagation()}>
@@ -718,11 +717,10 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
                     </div>
                   </div>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
-                      !hasRemaining
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${!hasRemaining
                         ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
                         : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
-                    }`}
+                      }`}
                   >
                     {!hasRemaining ? 'Hoàn tất' : 'Đang mượn'}
                   </span>

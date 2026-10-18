@@ -266,36 +266,108 @@ export class InventoryService {
       this.prisma.inventoryLedger.count({ where }),
     ]);
 
+    // Resolve human-readable order code / package code for entries missing human-readable voucherCode
+    const packageIds = items
+      .filter((i) => (i.referenceType === 'PACKAGE' || i.referenceType === 'SCAN_REVERSAL') && i.referenceId)
+      .map((i) => i.referenceId!);
+    const orderIds = items
+      .filter((i) => (i.referenceType === 'ORDER' || i.referenceType === 'ORDER_RETURN') && i.referenceId)
+      .map((i) => i.referenceId!);
+
+    const [packages, orders] = await Promise.all([
+      packageIds.length > 0
+        ? this.prisma.package.findMany({
+            where: { id: { in: packageIds } },
+            include: {
+              order: {
+                select: { id: true, externalOrderId: true, internalOrderCode: true, trackingCode: true },
+              },
+            },
+          })
+        : [],
+      orderIds.length > 0
+        ? this.prisma.order.findMany({
+            where: { id: { in: orderIds } },
+            select: { id: true, externalOrderId: true, internalOrderCode: true, trackingCode: true },
+          })
+        : [],
+    ]);
+
+    const packageMap = new Map(packages.map((p) => [p.id, p]));
+    const orderMap = new Map(orders.map((o) => [o.id, o]));
+
     return {
-      items: items.map((i) => ({
-        id: i.id,
-        createdAt: i.createdAt,
-        warehouseId: i.warehouseId,
-        warehouseCode: i.warehouse?.code || '',
-        warehouseName: i.warehouse?.name || '',
-        warehouse: i.warehouse,
-        variantId: i.variantId,
-        sku: i.variant?.sku || '',
-        productName: i.variant?.product?.name || '',
-        variantName: i.variant?.name || '',
-        variant: i.variant,
-        movementType: i.movementType,
-        stockState: i.stockState || 'SELLABLE',
-        deltaOnHand: i.deltaOnHand,
-        deltaReserved: i.deltaReserved,
-        deltaDamaged: i.deltaDamaged,
-        deltaInspection: i.deltaInspection,
-        beforeOnHand: i.beforeOnHand,
-        afterOnHand: i.afterOnHand,
-        voucherCode: i.voucherCode,
-        performerName: i.performerName,
-        batchCode: i.batchCode,
-        expiryDate: i.expiryDate,
-        referenceType: i.referenceType,
-        referenceId: i.referenceId,
-        performedByUserId: i.performedByUserId,
-        note: i.note,
-      })),
+      items: items.map((i) => {
+        let resolvedVoucher = i.voucherCode;
+        let resolvedNote = i.note || '';
+
+        if (i.referenceType === 'PACKAGE' || i.referenceType === 'SCAN_REVERSAL') {
+          const pkg = i.referenceId ? packageMap.get(i.referenceId) : null;
+          const ord = pkg?.order;
+          const orderCode = ord?.externalOrderId || ord?.internalOrderCode || ord?.trackingCode;
+          const pkgCode = pkg?.packageCode || pkg?.trackingCode;
+
+          if (!resolvedVoucher || /^[0-9a-f-]{36}$/i.test(resolvedVoucher)) {
+            resolvedVoucher = orderCode || pkgCode || (i.referenceId ? `Kiện ${i.referenceId.substring(0, 8)}` : '');
+          }
+
+          if (resolvedNote && i.referenceId) {
+            if (pkgCode) {
+              resolvedNote = resolvedNote.split(i.referenceId).join(pkgCode);
+            }
+            if (ord?.id && orderCode) {
+              resolvedNote = resolvedNote.split(ord.id).join(orderCode);
+            }
+          }
+        } else if (i.referenceType === 'ORDER' || i.referenceType === 'ORDER_RETURN') {
+          const ord = i.referenceId ? orderMap.get(i.referenceId) : null;
+          const orderCode = ord?.externalOrderId || ord?.internalOrderCode || ord?.trackingCode;
+
+          if (!resolvedVoucher || /^[0-9a-f-]{36}$/i.test(resolvedVoucher)) {
+            resolvedVoucher = orderCode || (i.referenceId ? `Đơn ${i.referenceId.substring(0, 8)}` : '');
+          }
+
+          if (resolvedNote && i.referenceId && orderCode) {
+            resolvedNote = resolvedNote.split(i.referenceId).join(orderCode);
+          }
+        }
+
+        // Format clean note (shorten any remaining UUIDs so no raw 36-char string is ever shown)
+        resolvedNote = resolvedNote.replace(
+          /([0-9a-f]{8})-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+          (match, prefix) => prefix,
+        );
+
+        return {
+          id: i.id,
+          createdAt: i.createdAt,
+          warehouseId: i.warehouseId,
+          warehouseCode: i.warehouse?.code || '',
+          warehouseName: i.warehouse?.name || '',
+          warehouse: i.warehouse,
+          variantId: i.variantId,
+          sku: i.variant?.sku || '',
+          productName: i.variant?.product?.name || '',
+          variantName: i.variant?.name || '',
+          variant: i.variant,
+          movementType: i.movementType,
+          stockState: i.stockState || 'SELLABLE',
+          deltaOnHand: i.deltaOnHand,
+          deltaReserved: i.deltaReserved,
+          deltaDamaged: i.deltaDamaged,
+          deltaInspection: i.deltaInspection,
+          beforeOnHand: i.beforeOnHand,
+          afterOnHand: i.afterOnHand,
+          voucherCode: resolvedVoucher || (i.referenceId ? i.referenceId.substring(0, 8) : ''),
+          performerName: i.performerName || 'HieuNT',
+          batchCode: i.batchCode,
+          expiryDate: i.expiryDate,
+          referenceType: i.referenceType,
+          referenceId: i.referenceId,
+          performedByUserId: i.performedByUserId,
+          note: resolvedNote || i.note,
+        };
+      }),
       total,
       page,
       limit,
@@ -471,9 +543,33 @@ export class InventoryService {
     items: StockReservationItem[],
     orderId: string,
     userId?: string,
+    orderCode?: string,
   ): Promise<{ success: boolean; errorSku?: string }> {
     // Sort items by variantId deterministically to avoid database deadlocks
     const sortedItems = [...items].sort((a, b) => a.variantId.localeCompare(b.variantId));
+
+    let resolvedOrderCode = orderCode;
+    if (!resolvedOrderCode && (tx as any).order?.findUnique) {
+      const ord = await (tx as any).order
+        .findUnique({
+          where: { id: orderId },
+          select: { externalOrderId: true, internalOrderCode: true },
+        })
+        .catch(() => null);
+      resolvedOrderCode = ord?.externalOrderId || ord?.internalOrderCode || orderId;
+    }
+    resolvedOrderCode = resolvedOrderCode || orderId;
+
+    let performerName = 'HieuNT';
+    if (userId && (tx as any).user?.findUnique) {
+      const user = await (tx as any).user
+        .findUnique({
+          where: { id: userId },
+          select: { name: true, email: true },
+        })
+        .catch(() => null);
+      performerName = user?.name || user?.email || 'HieuNT';
+    }
 
     for (const item of sortedItems) {
       // Find and verify current available stock
@@ -515,8 +611,12 @@ export class InventoryService {
           deltaReserved: item.quantity,
           referenceType: 'ORDER',
           referenceId: orderId,
+          voucherCode: resolvedOrderCode,
+          performerName,
+          beforeOnHand: balance.onHand,
+          afterOnHand: balance.onHand,
           performedByUserId: userId,
-          note: `Giữ hàng cho đơn ${orderId}`,
+          note: `Giữ hàng cho đơn ${resolvedOrderCode}`,
         },
       });
     }
@@ -532,8 +632,32 @@ export class InventoryService {
     items: StockReservationItem[],
     orderId: string,
     userId?: string,
+    orderCode?: string,
   ) {
     const sortedItems = [...items].sort((a, b) => a.variantId.localeCompare(b.variantId));
+
+    let resolvedOrderCode = orderCode;
+    if (!resolvedOrderCode && (tx as any).order?.findUnique) {
+      const ord = await (tx as any).order
+        .findUnique({
+          where: { id: orderId },
+          select: { externalOrderId: true, internalOrderCode: true },
+        })
+        .catch(() => null);
+      resolvedOrderCode = ord?.externalOrderId || ord?.internalOrderCode || orderId;
+    }
+    resolvedOrderCode = resolvedOrderCode || orderId;
+
+    let performerName = 'HieuNT';
+    if (userId && (tx as any).user?.findUnique) {
+      const user = await (tx as any).user
+        .findUnique({
+          where: { id: userId },
+          select: { name: true, email: true },
+        })
+        .catch(() => null);
+      performerName = user?.name || user?.email || 'HieuNT';
+    }
 
     for (const item of sortedItems) {
       const balance = await tx.inventoryBalance.findUnique({
@@ -563,8 +687,12 @@ export class InventoryService {
             deltaReserved: -item.quantity,
             referenceType: 'ORDER',
             referenceId: orderId,
+            voucherCode: resolvedOrderCode,
+            performerName,
+            beforeOnHand: balance.onHand,
+            afterOnHand: balance.onHand,
             performedByUserId: userId,
-            note: `Giải phóng giữ hàng cho đơn ${orderId}`,
+            note: `Giải phóng giữ hàng cho đơn ${resolvedOrderCode}`,
           },
         });
       }
@@ -580,8 +708,53 @@ export class InventoryService {
     orderId: string,
     packageId: string,
     userId?: string,
+    meta?: {
+      orderCode?: string;
+      externalOrderId?: string;
+      packageCode?: string;
+      trackingCode?: string;
+      performerName?: string;
+      note?: string;
+    },
   ) {
     const sortedItems = [...items].sort((a, b) => a.variantId.localeCompare(b.variantId));
+
+    let orderCode = meta?.orderCode || meta?.externalOrderId;
+    let packageCode = meta?.packageCode || meta?.trackingCode;
+    let performerName = meta?.performerName;
+
+    if (!orderCode && (tx as any).order?.findUnique) {
+      const ord = await (tx as any).order
+        .findUnique({
+          where: { id: orderId },
+          select: { externalOrderId: true, internalOrderCode: true, trackingCode: true },
+        })
+        .catch(() => null);
+      orderCode = ord?.externalOrderId || ord?.internalOrderCode || ord?.trackingCode || orderId;
+    }
+    orderCode = orderCode || orderId;
+
+    if (!packageCode && (tx as any).package?.findUnique) {
+      const pkg = await (tx as any).package
+        .findUnique({
+          where: { id: packageId },
+          select: { packageCode: true, trackingCode: true },
+        })
+        .catch(() => null);
+      packageCode = pkg?.packageCode || pkg?.trackingCode || packageId;
+    }
+    packageCode = packageCode || packageId;
+
+    if (!performerName && userId && (tx as any).user?.findUnique) {
+      const user = await (tx as any).user
+        .findUnique({
+          where: { id: userId },
+          select: { name: true, email: true },
+        })
+        .catch(() => null);
+      performerName = user?.name || user?.email;
+    }
+    performerName = performerName || 'HieuNT';
 
     for (const item of sortedItems) {
       let balance = await tx.inventoryBalance.findUnique({
@@ -627,8 +800,12 @@ export class InventoryService {
           deltaReserved: -item.quantity,
           referenceType: 'PACKAGE',
           referenceId: packageId,
+          voucherCode: orderCode || packageCode,
+          performerName,
+          beforeOnHand: balance.onHand,
+          afterOnHand: newOnHand,
           performedByUserId: userId,
-          note: `Xuất kho thực tế khi quét kiện ${packageId} cho đơn ${orderId}`,
+          note: meta?.note || `Xuất kho thực tế khi quét kiện ${packageCode} cho đơn ${orderCode}`,
         },
       });
     }
@@ -646,7 +823,42 @@ export class InventoryService {
   ) {
     const sortedItems = [...items].sort((a, b) => a.variantId.localeCompare(b.variantId));
 
+    let resolvedOrderCode = orderId;
+    if ((tx as any).order?.findUnique) {
+      const ord = await (tx as any).order
+        .findUnique({
+          where: { id: orderId },
+          select: { externalOrderId: true, internalOrderCode: true },
+        })
+        .catch(() => null);
+      if (ord) {
+        resolvedOrderCode = ord.externalOrderId || ord.internalOrderCode || orderId;
+      }
+    }
+
+    let performerName = 'HieuNT';
+    if (userId && (tx as any).user?.findUnique) {
+      const user = await (tx as any).user
+        .findUnique({
+          where: { id: userId },
+          select: { name: true, email: true },
+        })
+        .catch(() => null);
+      performerName = user?.name || user?.email || 'HieuNT';
+    }
+
     for (const item of sortedItems) {
+      const currentBalance = await tx.inventoryBalance.findUnique({
+        where: {
+          tenantId_warehouseId_variantId: {
+            tenantId,
+            warehouseId,
+            variantId: item.variantId,
+          },
+        },
+      });
+      const currentOnHand = currentBalance?.onHand || 0;
+
       await tx.inventoryBalance.upsert({
         where: {
           tenantId_warehouseId_variantId: {
@@ -677,8 +889,12 @@ export class InventoryService {
           deltaReserved: 0,
           referenceType: 'ORDER_RETURN',
           referenceId: orderId,
+          voucherCode: resolvedOrderCode,
+          performerName,
+          beforeOnHand: currentOnHand,
+          afterOnHand: currentOnHand + item.quantity,
           performedByUserId: userId,
-          note: note || `Nhập lại hàng hoàn thực tế từ đơn ${orderId}`,
+          note: note || `Nhập lại hàng hoàn thực tế từ đơn ${resolvedOrderCode}`,
         },
       });
     }

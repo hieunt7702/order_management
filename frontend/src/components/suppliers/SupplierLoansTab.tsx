@@ -243,7 +243,7 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
             className="gap-1.5 bg-[#5865f2] hover:bg-[#4752c4] text-white"
           >
             <Plus size={14} />
-            <span>+ Vay tiền từ NCC</span>
+            <span>Vay tiền từ NCC</span>
           </Button>
           <Button
             size="sm"
@@ -252,7 +252,7 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
             className="gap-1.5 text-blue-600 border-blue-200 dark:border-blue-900/50 hover:bg-blue-50 dark:hover:bg-blue-950/20"
           >
             <ArrowUpRight size={14} />
-            <span>+ Cho NCC vay vốn</span>
+            <span>Cho NCC vay vốn</span>
           </Button>
           <Button size="sm" variant="outline" onClick={loadLoans} className="p-2" title="Làm mới">
             <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
@@ -431,19 +431,18 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
                     </SystemTd>
                     <SystemTd align="center">
                       <span
-                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          isSettled
-                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                            : loan.status === 'PARTIALLY_REPAID'
+                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${isSettled
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                          : loan.status === 'PARTIALLY_REPAID'
                             ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
                             : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                        }`}
+                          }`}
                       >
                         {isSettled
                           ? 'Đã tất toán'
                           : loan.status === 'PARTIALLY_REPAID'
-                          ? 'Đã trả 1 phần'
-                          : 'Đang còn nợ'}
+                            ? 'Đã trả 1 phần'
+                            : 'Đang còn nợ'}
                       </span>
                     </SystemTd>
                     <SystemTd align="center" onClick={(e) => e.stopPropagation()}>
@@ -521,11 +520,10 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
                     </div>
                   </div>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
-                      isSettled
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                        : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                    }`}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${isSettled
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                      : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                      }`}
                   >
                     {isSettled ? 'Đã tất toán' : 'Còn nợ'}
                   </span>
@@ -816,9 +814,8 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         title={`Chi tiết: ${selectedLoanDetail?.loanCode || ''}`}
-        subtitle={`${selectedLoanDetail?.supplier?.name} • ${
-          selectedLoanDetail?.type === 'BORROWED_FROM_SUPPLIER' ? 'Shop vay NCC' : 'Shop cho NCC vay'
-        }`}
+        subtitle={`${selectedLoanDetail?.supplier?.name} • ${selectedLoanDetail?.type === 'BORROWED_FROM_SUPPLIER' ? 'Shop vay NCC' : 'Shop cho NCC vay'
+          }`}
         icon={Landmark}
         size="lg"
       >
