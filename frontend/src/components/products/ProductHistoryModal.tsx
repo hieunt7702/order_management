@@ -287,8 +287,8 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={<><span className="sm:hidden">Sổ cái: {sku}</span><span className="hidden sm:inline">{`Sổ Cái & Lịch Sử Tồn Kho: ${sku}`}</span></>}
-      subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Sản phẩm: ${productName} • Theo dõi bút toán và diễn giải số dư kho`}</span>}
+      title={<><span className="sm:hidden">Lịch sử kho: {sku}</span><span className="hidden sm:inline">{`Lịch Sử Xuất Nhập & Tồn Kho: ${sku}`}</span></>}
+      subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Sản phẩm: ${productName} • Lịch sử các lần xuất, nhập, hoàn và số dư sau mỗi lần`}</span>}
       icon={History}
       size="3xl"
       maxWidth="max-w-[96vw] xl:max-w-7xl w-full"
@@ -618,8 +618,8 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
               ) : ledgerEntries.length === 0 ? (
                 <SystemTableEmpty
                   colSpan={9}
-                  title="Chưa có bút toán biến động"
-                  description="Không tìm thấy lịch sử biến động nào cho sản phẩm này theo điều kiện lọc hiện tại."
+                  title="Chưa có lịch sử xuất nhập"
+                  description="Không tìm thấy lịch sử xuất nhập nào cho sản phẩm này theo điều kiện lọc hiện tại."
                 />
               ) : (
                 ledgerEntries.map((row) => (
@@ -843,7 +843,7 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
         <Modal
           isOpen={!!selectedEntry}
           onClose={() => setSelectedEntry(null)}
-          title={<><span className="sm:hidden">Chi tiết bút toán</span><span className="hidden sm:inline">Chi tiết bút toán sổ cái tồn kho</span></>}
+          title={<><span className="sm:hidden">Chi tiết biến động</span><span className="hidden sm:inline">Chi tiết biến động xuất nhập tồn kho</span></>}
           subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Mã: ${selectedEntry.id} • SKU: ${sku}`}</span>}
           icon={FileText}
           maxWidth="max-w-lg"

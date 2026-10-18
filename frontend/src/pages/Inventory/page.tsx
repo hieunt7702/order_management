@@ -305,7 +305,7 @@ export const InventoryPage: React.FC = () => {
             <span className="truncate">Kho & Tồn kho</span>
           </h1>
           <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
-            Theo dõi số dư thực tế, nhập kho, điều chỉnh kiểm kê và sổ cái biến động bất biến
+            Theo dõi số lượng tồn thực tế, lịch sử xuất nhập kho và đối soát lệch tồn
           </p>
         </div>
 
@@ -454,8 +454,8 @@ export const InventoryPage: React.FC = () => {
           }`}
         >
           <History size={14} className="shrink-0" />
-          <span className="hidden sm:inline">Sổ cái biến động (Inventory Ledger)</span>
-          <span className="sm:hidden">Sổ cái biến động</span>
+          <span className="hidden sm:inline">Lịch sử xuất nhập (Biến động kho)</span>
+          <span className="sm:hidden">Lịch sử kho</span>
         </button>
         <button
           onClick={() => {
@@ -469,8 +469,8 @@ export const InventoryPage: React.FC = () => {
           }`}
         >
           <ShieldCheck size={14} className="shrink-0" />
-          <span className="hidden sm:inline">Đối soát kiểm toán số dư</span>
-          <span className="sm:hidden">Đối soát kiểm toán</span>
+          <span className="hidden sm:inline">Đối soát lệch kho (Kiểm tra số dư)</span>
+          <span className="sm:hidden">Đối soát lệch kho</span>
         </button>
       </div>
 
@@ -849,9 +849,9 @@ export const InventoryPage: React.FC = () => {
                 <div className="bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-800/40 p-3 rounded flex items-start gap-3 shrink-0">
                   <History className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                   <div className="text-xs text-blue-800 dark:text-blue-300">
-                    <span className="font-bold">Sổ cái biến động kho bất biến (Append-Only Ledger):</span>{' '}
-                    Mọi hoạt động tăng giảm tồn kho (nhập, giữ, hủy giữ, xuất bán, trả hàng, điều chỉnh kiểm kê)
-                    được ghi vĩnh viễn vào sổ cái. Không có thao tác sửa hay xóa bút toán trực tiếp.
+                    <span className="font-bold">Nhật ký biến động kho tự động:</span>{' '}
+                    Ghi lại chi tiết từng lần xuất bán, nhập hàng, hủy đơn, hoàn hàng và kiểm kê thực tế.
+                    Mọi thay đổi đều được lưu vết tự động, minh bạch và không thể chỉnh sửa nhằm đảm bảo số tồn chuẩn xác 100%.
                   </div>
                 </div>
 
@@ -876,21 +876,21 @@ export const InventoryPage: React.FC = () => {
                     <SystemThead>
                       <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                       <SystemTh className="w-40">Thời gian</SystemTh>
-                      <SystemTh className="w-32">Loại bút toán</SystemTh>
+                      <SystemTh className="w-36">Loại xuất / nhập</SystemTh>
                       <SystemTh className="w-44">SKU Biến thể</SystemTh>
-                      <SystemTh className="w-36">Kho</SystemTh>
-                      <SystemTh className="w-32 text-right">Biến động (Delta)</SystemTh>
-                      <SystemTh className="w-32 text-right">Tồn sau GD</SystemTh>
-                      <SystemTh className="w-40">Chứng từ / Đơn hàng</SystemTh>
-                      <SystemTh className="w-48">Người thực hiện / Ghi chú</SystemTh>
+                      <SystemTh className="w-36">Kho hàng</SystemTh>
+                      <SystemTh className="w-32 text-right">Số lượng thay đổi</SystemTh>
+                      <SystemTh className="w-32 text-right">Tồn sau thay đổi</SystemTh>
+                      <SystemTh className="w-40">Mã đơn / Phiếu kho</SystemTh>
+                      <SystemTh className="w-48">Người thực hiện & Ghi chú</SystemTh>
                     </SystemThead>
                     <SystemTbody>
                       {isLoadingLedger ? (
                         <SystemTableSkeleton cols={9} rows={7} />
                       ) : ledgerEntries.length === 0 ? (
                         <SystemTableEmpty
-                          title="Chưa có bút toán nào"
-                          description="Chưa có bản ghi biến động nào trong sổ cái kho."
+                          title="Chưa có lịch sử biến động"
+                          description="Chưa có bản ghi xuất nhập nào được ghi nhận trong kho này."
                           colSpan={9}
                         />
                       ) : (
@@ -965,13 +965,13 @@ export const InventoryPage: React.FC = () => {
                   {isLoadingLedger ? (
                     <div className="py-8 text-center text-xs text-gray-400 font-normal">
                       <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
-                      Đang tải sổ cái kho...
+                      Đang tải lịch sử kho...
                     </div>
                   ) : ledgerEntries.length === 0 ? (
                     <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 p-6">
                       <History className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-                      <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Chưa có bút toán nào</p>
-                      <p className="text-[11px] text-gray-400">Chưa có bản ghi biến động nào trong sổ cái kho.</p>
+                      <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Chưa có lịch sử biến động</p>
+                      <p className="text-[11px] text-gray-400">Chưa có bản ghi xuất nhập nào trong kho này.</p>
                     </div>
                   ) : (
                     paginatedLedger.map((l, index) => {
@@ -1009,7 +1009,7 @@ export const InventoryPage: React.FC = () => {
 
                           <div className="grid grid-cols-2 gap-2 text-xs py-1.5 px-2.5 rounded bg-gray-50 dark:bg-[#1a1b23] border border-gray-100 dark:border-gray-800">
                             <div>
-                              <span className="text-[10px] text-gray-400 block">Biến động (Delta)</span>
+                              <span className="text-[10px] text-gray-400 block">Số lượng thay đổi</span>
                               <span
                                 className={`font-mono font-bold text-xs ${
                                   isPositive
@@ -1023,7 +1023,7 @@ export const InventoryPage: React.FC = () => {
                               </span>
                             </div>
                             <div className="text-right">
-                              <span className="text-[10px] text-gray-400 block">Tồn sau GD</span>
+                              <span className="text-[10px] text-gray-400 block">Tồn sau thay đổi</span>
                               <span className="font-mono font-medium text-xs text-gray-900 dark:text-white">
                                 {l.afterOnHand ?? '--'}
                               </span>
@@ -1115,10 +1115,10 @@ export const InventoryPage: React.FC = () => {
                     </div>
                     <div>
                       <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        Kiểm toán tính toàn vẹn sổ cái (Balance vs Ledger Reconciliation)
+                        Đối soát lệch kho (Khớp tồn thực tế & Lịch sử)
                       </h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        So sánh trực tiếp tổng phát sinh từ sổ cái bất biến với bảng số dư hiện tại để phát hiện chênh lệch.
+                        Tự động đối chiếu số dư tồn kho hiện tại với tổng lịch sử xuất - nhập - hoàn để phát hiện ngay sản phẩm bị lệch kho.
                       </p>
                     </div>
                   </div>
@@ -1130,7 +1130,7 @@ export const InventoryPage: React.FC = () => {
                     className="gap-1.5 shrink-0"
                   >
                     <RefreshCw size={13} className={isReconciling ? 'animate-spin' : ''} />
-                    <span>{isReconciling ? 'Đang kiểm toán...' : 'Chạy kiểm toán ngay'}</span>
+                    <span>{isReconciling ? 'Đang kiểm tra...' : 'Kiểm tra lệch kho ngay'}</span>
                   </Button>
                 </div>
 
@@ -1138,9 +1138,9 @@ export const InventoryPage: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
                   <SystemMetricPairCard
                     leftItem={{
-                      title: 'Tổng SKU kiểm toán',
+                      title: 'Tổng SKU kiểm tra',
                       value: totalAudited,
-                      subtitle: 'SKU có số dư tồn kho',
+                      subtitle: 'Sản phẩm đang theo dõi',
                       icon: Package,
                       colorScheme: 'blue',
                       isActive: reconciliationFilter === 'ALL',
@@ -1150,9 +1150,9 @@ export const InventoryPage: React.FC = () => {
                       },
                     }}
                     rightItem={{
-                      title: 'Số lượng khớp 100%',
+                      title: 'Khớp số tồn 100%',
                       value: matchingCount,
-                      subtitle: 'Khớp sổ cái hoàn toàn',
+                      subtitle: 'Khớp chính xác với lịch sử',
                       icon: CheckCircle,
                       colorScheme: 'green',
                       isActive: reconciliationFilter === 'BALANCED',
@@ -1164,11 +1164,11 @@ export const InventoryPage: React.FC = () => {
                   />
                   <SystemMetricPairCard
                     leftItem={{
-                      title: 'Số lượng sai lệch',
+                      title: 'Sản phẩm bị lệch kho',
                       value: discrepancyCount,
                       subtitle:
                         discrepancyCount > 0
-                          ? 'Phát hiện chênh lệch tồn'
+                          ? 'Cần rà soát lại xuất nhập'
                           : 'Không có chênh lệch',
                       icon: AlertTriangle,
                       colorScheme: discrepancyCount > 0 ? 'red' : 'purple',
@@ -1179,9 +1179,9 @@ export const InventoryPage: React.FC = () => {
                       },
                     }}
                     rightItem={{
-                      title: 'Tỷ lệ toàn vẹn sổ cái',
+                      title: 'Độ chính xác tồn kho',
                       value: `${totalAudited > 0 ? ((matchingCount / totalAudited) * 100).toFixed(1) : 100}%`,
-                      subtitle: discrepancyCount === 0 ? 'Đảm bảo chính xác 100%' : 'Cần rà soát sổ cái',
+                      subtitle: discrepancyCount === 0 ? 'Số liệu chuẩn xác 100%' : 'Có sản phẩm bị lệch số',
                       icon: ShieldCheck,
                       colorScheme: discrepancyCount === 0 ? 'green' : 'orange',
                     }}
@@ -1215,9 +1215,9 @@ export const InventoryPage: React.FC = () => {
                         setReconciliationPage(1);
                       }}
                       options={[
-                        { value: 'ALL', label: `Tất cả kết quả (${rawItems.length})`, icon: Boxes },
-                        { value: 'DISCREPANCY', label: `Chỉ SKU sai lệch (${discrepancyCount})`, icon: AlertTriangle },
-                        { value: 'BALANCED', label: `Chỉ SKU khớp 100% (${matchingCount})`, icon: CheckCircle },
+                        { value: 'ALL', label: `Tất cả sản phẩm (${rawItems.length})`, icon: Boxes },
+                        { value: 'DISCREPANCY', label: `Chỉ sản phẩm lệch kho (${discrepancyCount})`, icon: AlertTriangle },
+                        { value: 'BALANCED', label: `Chỉ sản phẩm khớp 100% (${matchingCount})`, icon: CheckCircle },
                       ]}
                       size="sm"
                       className="w-56"
@@ -1250,10 +1250,10 @@ export const InventoryPage: React.FC = () => {
                       <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
                       <SystemTh className="w-52">SKU & Biến thể</SystemTh>
                       <SystemTh className="w-36">Kho hàng</SystemTh>
-                      <SystemTh className="w-40 text-right">Số dư Bảng Tồn (onHand)</SystemTh>
-                      <SystemTh className="w-48 text-right">Tổng phát sinh Sổ cái (Sum Ledger)</SystemTh>
+                      <SystemTh className="w-40 text-right">Tồn kho hiện tại</SystemTh>
+                      <SystemTh className="w-48 text-right">Tổng lịch sử xuất nhập</SystemTh>
                       <SystemTh className="w-32 text-right">Chênh lệch</SystemTh>
-                      <SystemTh className="w-40 text-center">Kết quả kiểm toán</SystemTh>
+                      <SystemTh className="w-40 text-center">Trạng thái đối soát</SystemTh>
                     </SystemThead>
                     <SystemTbody>
                       {isReconciling ? (
@@ -1262,13 +1262,13 @@ export const InventoryPage: React.FC = () => {
                         <SystemTableEmpty
                           title={
                             reconciliationResult
-                              ? 'Không tìm thấy SKU nào phù hợp'
-                              : 'Chưa có kết quả kiểm toán'
+                              ? 'Không tìm thấy sản phẩm nào phù hợp'
+                              : 'Chưa có kết quả đối soát'
                           }
                           description={
                             reconciliationResult
-                              ? 'Không có biến thể nào khớp với từ khóa tìm kiếm hoặc bộ lọc trạng thái hiện tại.'
-                              : "Vui lòng bấm 'Chạy kiểm toán ngay' để quét và so khớp toàn bộ số dư với sổ cái bất biến."
+                              ? 'Không có biến thể nào khớp với từ khóa tìm kiếm hoặc bộ lọc hiện tại.'
+                              : "Vui lòng bấm 'Kiểm tra lệch kho ngay' để tự động đối chiếu số dư tồn kho với toàn bộ lịch sử xuất nhập."
                           }
                           colSpan={7}
                         />
@@ -1361,18 +1361,18 @@ export const InventoryPage: React.FC = () => {
                   {isReconciling ? (
                     <div className="py-8 text-center text-xs text-gray-400 font-normal">
                       <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
-                      Đang kiểm toán đối soát số dư...
+                      Đang đối soát số dư tồn kho...
                     </div>
                   ) : filteredItems.length === 0 ? (
                     <div className="py-10 text-center text-xs text-gray-400 font-normal bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 p-6">
                       <ShieldCheck className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
                       <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {reconciliationResult ? 'Không tìm thấy SKU nào phù hợp' : 'Chưa có kết quả kiểm toán'}
+                        {reconciliationResult ? 'Không tìm thấy sản phẩm nào phù hợp' : 'Chưa có kết quả đối soát'}
                       </p>
                       <p className="text-[11px] text-gray-400">
                         {reconciliationResult
                           ? 'Không có biến thể nào khớp với bộ lọc hiện tại.'
-                          : 'Bấm "Chạy kiểm toán ngay" để so khớp số dư với sổ cái bất biến.'}
+                          : 'Bấm "Kiểm tra lệch kho ngay" để so khớp số dư với lịch sử xuất nhập.'}
                       </p>
                     </div>
                   ) : (
@@ -1426,13 +1426,13 @@ export const InventoryPage: React.FC = () => {
 
                           <div className="grid grid-cols-3 gap-2 text-xs py-2 px-2.5 rounded bg-gray-50 dark:bg-[#1a1b23] border border-gray-100 dark:border-gray-800 text-center">
                             <div>
-                              <span className="text-[10px] text-gray-400 block">Số dư OnHand</span>
+                              <span className="text-[10px] text-gray-400 block">Tồn hiện tại</span>
                               <span className="font-mono font-medium text-xs text-gray-900 dark:text-white">
                                 {onHand.toLocaleString('vi-VN')}
                               </span>
                             </div>
                             <div>
-                              <span className="text-[10px] text-gray-400 block">Sổ cái Sum</span>
+                              <span className="text-[10px] text-gray-400 block">Tổng lịch sử</span>
                               <span className="font-mono font-medium text-xs text-gray-900 dark:text-white">
                                 {ledgerSum.toLocaleString('vi-VN')}
                               </span>
@@ -1456,7 +1456,7 @@ export const InventoryPage: React.FC = () => {
                               Kho: {r.warehouseCode || 'Kho chính'}
                             </span>
                             <span className="text-[10px] font-medium text-gray-400">
-                              {isBalanced ? 'Bút toán toàn vẹn' : 'Cần kiểm tra bút toán'}
+                              {isBalanced ? 'Số tồn chuẩn xác' : 'Cần kiểm tra lại phiếu xuất nhập'}
                             </span>
                           </div>
                         </div>
@@ -1491,7 +1491,7 @@ export const InventoryPage: React.FC = () => {
           isOpen={isReceiveModalOpen}
           onClose={() => setIsReceiveModalOpen(false)}
           title={<><span className="sm:hidden">Nhập kho hàng hóa</span><span className="hidden sm:inline">Tạo phiếu nhập kho hàng hóa</span></>}
-          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Ghi nhận số lượng thực nhập, tính lại giá vốn bình quân gia quyền và ghi sổ cái bất biến</span>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Ghi nhận số lượng thực nhập vào kho, cập nhật giá vốn và lưu vết lịch sử</span>}
           icon={ArrowDownLeft}
           maxWidth="max-w-lg"
         >
@@ -1652,7 +1652,7 @@ export const InventoryPage: React.FC = () => {
           isOpen={isAdjustModalOpen}
           onClose={() => setIsAdjustModalOpen(false)}
           title={<><span className="sm:hidden">Điều chỉnh kiểm kê</span><span className="hidden sm:inline">Điều chỉnh tồn kho kiểm kê</span></>}
-          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Lập biên bản điều chỉnh thừa/thiếu tồn kho thực tế và hạch toán sổ cái kiểm toán</span>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Điều chỉnh thừa/thiếu số lượng tồn kho theo số liệu kiểm đếm thực tế</span>}
           icon={Sliders}
           maxWidth="max-w-lg"
         >

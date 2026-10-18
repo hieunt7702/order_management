@@ -1164,10 +1164,10 @@ export const SettingsPage: React.FC = () => {
                   />
                   <div className="min-w-0">
                     <span className="text-xs font-medium text-gray-900 dark:text-gray-100 block">
-                      Sổ cái biến động kho & Cân bằng tồn kho
+                      Dữ liệu tồn kho & Lịch sử xuất nhập
                     </span>
                     <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
-                      Xóa toàn bộ bút toán lịch sử biến động sổ cái kho, đặt lại số lượng tồn kho khả dụng và giữ về 0
+                      Xóa toàn bộ lịch sử xuất nhập tồn, đặt lại số lượng tồn kho và hàng giữ về 0
                     </span>
                   </div>
                 </div>

@@ -85,7 +85,7 @@ export const navigationGroups: NavGroup[] = [
   {
     id: 'inventory-products',
     title: 'KHO & SẢN PHẨM',
-    description: 'Kiểm soát số dư thực có, sổ cái biến động và nhập kho',
+    description: 'Kiểm soát số lượng tồn thực tế, lịch sử xuất nhập và kiểm kho',
     items: [
       {
         id: 'products',
@@ -102,7 +102,7 @@ export const navigationGroups: NavGroup[] = [
         shortName: 'Kho & tồn kho',
         href: '/inventory',
         icon: Warehouse,
-        description: 'Báo cáo tồn thực có (onHand), hàng giữ và đối soát sổ cái kho bất biến',
+        description: 'Theo dõi tồn kho thực tế, hàng giữ cho đơn và đối soát lệch kho',
         colorScheme: 'indigo',
       },
       {

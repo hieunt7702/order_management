@@ -1219,7 +1219,7 @@ export const ProductsPage: React.FC = () => {
                                       }
                                     }}
                                     className="text-[11px] font-mono text-[#5865f2] font-semibold mt-0.5 hover:underline cursor-pointer"
-                                    title="Nhấn để xem sổ cái & lịch sử kho của SKU này"
+                                    title="Nhấn để xem lịch sử xuất nhập & biến động kho của SKU này"
                                   >
                                     {variant.sku}
                                   </div>
@@ -1324,7 +1324,7 @@ export const ProductsPage: React.FC = () => {
                                             }}
                                           >
                                             <History size={13} className="text-indigo-500" />
-                                            <span>Sổ cái & Lịch sử kho</span>
+                                            <span>Lịch sử xuất nhập kho</span>
                                           </DropdownMenuItem>
                                         )}
                                         <DropdownMenuItem
@@ -1488,7 +1488,7 @@ export const ProductsPage: React.FC = () => {
                                             }}
                                           >
                                             <History size={13} className="text-gray-400" />
-                                            <span>Lịch sử biến động</span>
+                                            <span>Lịch sử xuất nhập kho</span>
                                           </DropdownMenuItem>
                                         )}
                                         <DropdownMenuItem onClick={() => handleOpenShopeeVariantsModal(product, v)}>
