@@ -1977,15 +1977,15 @@ export const SupplierDebtsPage: React.FC = () => {
 
               {/* DESKTOP: Timeline Ledger Table (hidden sm:block) */}
               <div className="hidden sm:block border border-gray-200 dark:border-gray-800 rounded-[4px] overflow-x-auto text-xs">
-                <table className="w-full text-left min-w-[700px]">
+                <table className="w-full text-left min-w-[960px]">
                   <thead className="bg-gray-100 dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300">
                     <tr>
-                      <th className="p-2.5">Thời Gian</th>
-                      <th className="p-2.5">Loại & Mã Giao Dịch</th>
-                      <th className="p-2.5">Nội Dung Nghiệp Vụ</th>
-                      <th className="p-2.5 text-right text-rose-600">Phát Sinh Nợ (+)</th>
-                      <th className="p-2.5 text-right text-emerald-600">Giảm Nợ (-)</th>
-                      <th className="p-2.5 text-right font-bold">Số Dư Lũy Kế</th>
+                      <th className="p-2.5 w-28 min-w-[110px] whitespace-nowrap">Thời Gian</th>
+                      <th className="p-2.5 w-48 min-w-[170px] whitespace-nowrap">Loại & Mã Giao Dịch</th>
+                      <th className="p-2.5 min-w-[280px] whitespace-nowrap">Nội Dung Nghiệp Vụ</th>
+                      <th className="p-2.5 w-36 min-w-[140px] text-right text-rose-600 dark:text-rose-400 whitespace-nowrap">Phát Sinh Nợ (+)</th>
+                      <th className="p-2.5 w-36 min-w-[140px] text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap">Giảm Nợ (-)</th>
+                      <th className="p-2.5 w-40 min-w-[150px] text-right font-bold whitespace-nowrap">Số Dư Lũy Kế</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-mono">
@@ -2007,13 +2007,13 @@ export const SupplierDebtsPage: React.FC = () => {
                           <td className="p-2.5 font-sans text-gray-800 dark:text-gray-200">
                             {tx.description}
                           </td>
-                          <td className="p-2.5 text-right text-rose-600 whitespace-nowrap">
+                          <td className="p-2.5 text-right text-rose-600 dark:text-rose-400 whitespace-nowrap font-medium">
                             {tx.increaseDebt > 0 ? `+${tx.increaseDebt.toLocaleString('vi-VN')}đ` : '-'}
                           </td>
-                          <td className="p-2.5 text-right text-emerald-600 whitespace-nowrap">
+                          <td className="p-2.5 text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap font-medium">
                             {tx.decreaseDebt > 0 ? `-${tx.decreaseDebt.toLocaleString('vi-VN')}đ` : '-'}
                           </td>
-                          <td className={`p-2.5 text-right font-bold whitespace-nowrap ${tx.runningBalance > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                          <td className={`p-2.5 text-right font-bold whitespace-nowrap ${tx.runningBalance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                             {tx.runningBalance.toLocaleString('vi-VN')}đ
                           </td>
                         </tr>
@@ -2368,14 +2368,14 @@ export const SupplierDebtsPage: React.FC = () => {
                   {/* Desktop Table View (>= sm) */}
                   <div className="hidden sm:block border border-gray-200/80 dark:border-gray-800 rounded overflow-hidden bg-white dark:bg-[#1a1b23]">
                     <div className="overflow-x-auto max-h-56">
-                      <table className="w-full text-left text-xs">
+                      <table className="w-full text-left text-xs min-w-[680px]">
                         <thead className="bg-gray-50 dark:bg-gray-800/80 text-gray-600 dark:text-gray-400 sticky top-0 border-b border-gray-200 dark:border-gray-700">
                           <tr>
-                            <th className="px-3 py-2 font-semibold">Mã Phiếu Nhập</th>
-                            <th className="px-3 py-2 font-semibold">Ngày Nhập</th>
-                            <th className="px-3 py-2 text-right font-semibold">Tổng Phải Trả</th>
-                            <th className="px-3 py-2 text-right font-semibold">Còn Nợ</th>
-                            <th className="px-3 py-2 text-right font-semibold w-40">Tiền Phân Bổ (đ)</th>
+                            <th className="px-3 py-2 font-semibold whitespace-nowrap w-44">Mã Phiếu Nhập</th>
+                            <th className="px-3 py-2 font-semibold whitespace-nowrap w-32">Ngày Nhập</th>
+                            <th className="px-3 py-2 text-right font-semibold whitespace-nowrap w-36">Tổng Phải Trả</th>
+                            <th className="px-3 py-2 text-right font-semibold whitespace-nowrap w-36">Còn Nợ</th>
+                            <th className="px-3 py-2 text-right font-semibold whitespace-nowrap w-40">Tiền Phân Bổ (đ)</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-mono">
