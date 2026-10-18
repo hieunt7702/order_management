@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Wallet,
   TrendingUp,
@@ -118,7 +118,31 @@ export const DashboardPage: React.FC = () => {
   // Multi-select Shopee Order Statuses
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState<boolean>(false);
-  const [mobileTab, setMobileTab] = useState<'dashboard' | 'hub'>('dashboard');
+
+  // Mobile Tab: 'hub' (Menu Chức năng) is DEFAULT on mobile when at '/', 'dashboard' when at '/dashboard'
+  const searchParams = new URLSearchParams(location.search);
+  const isDirectDashboard = location.pathname === '/dashboard' || searchParams.get('tab') === 'dashboard';
+  const [mobileTab, setMobileTab] = useState<'hub' | 'dashboard'>(isDirectDashboard ? 'dashboard' : 'hub');
+
+  // Keep mobileTab synced if URL changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (location.pathname === '/dashboard' || params.get('tab') === 'dashboard') {
+      setMobileTab('dashboard');
+    } else if (location.pathname === '/' && !params.get('tab')) {
+      setMobileTab('hub');
+    }
+  }, [location.pathname, location.search]);
+
+  const handleMobileTabChange = (tab: 'hub' | 'dashboard') => {
+    setMobileTab(tab);
+    if (tab === 'dashboard') {
+      navigate('/dashboard', { replace: true });
+    } else {
+      navigate('/', { replace: true });
+    }
+  };
+
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const statusDrawerRef = useRef<HTMLDivElement>(null);
   useClickOutside(() => setIsStatusDropdownOpen(false), isStatusDropdownOpen, [statusDropdownRef, statusDrawerRef]);
@@ -156,36 +180,10 @@ export const DashboardPage: React.FC = () => {
       {/* Mobile & Tablet Segmented Tab Switcher (lg:hidden) */}
       <div className="lg:hidden sticky top-0 z-30 pt-0.5 pb-1 bg-[#f9f9fa] dark:bg-[#0f1115] transition-colors">
         <div className="bg-gray-200/80 dark:bg-[#161922] p-1 rounded-xl border border-gray-200 dark:border-white/[0.08] grid grid-cols-2 gap-1 shadow-2xs">
+          {/* Tab 1: Menu Chức năng (MẶC ĐỊNH TRÊN MOBILE) */}
           <button
             type="button"
-            onClick={() => setMobileTab('dashboard')}
-            className={`h-9 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer ${
-              mobileTab === 'dashboard'
-                ? 'bg-white dark:bg-[#202533] text-[#5865f2] dark:text-[#7b85f5] shadow-xs'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-            }`}
-          >
-            <BarChart3
-              size={15}
-              className={mobileTab === 'dashboard' ? 'text-[#5865f2] dark:text-[#7b85f5]' : 'text-gray-400'}
-            />
-            <span>Số liệu Dashboard</span>
-            {data?.orderStats?.totalOrders !== undefined && (
-              <span
-                className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold ${
-                  mobileTab === 'dashboard'
-                    ? 'bg-[#5865f2]/10 text-[#5865f2] dark:bg-[#5865f2]/25 dark:text-indigo-300'
-                    : 'bg-gray-300/70 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
-                }`}
-              >
-                {data.orderStats.totalOrders}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMobileTab('hub')}
+            onClick={() => handleMobileTabChange('hub')}
             className={`h-9 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer ${
               mobileTab === 'hub'
                 ? 'bg-white dark:bg-[#202533] text-[#5865f2] dark:text-[#7b85f5] shadow-xs'
@@ -198,15 +196,43 @@ export const DashboardPage: React.FC = () => {
             />
             <span>Menu Chức năng</span>
           </button>
+
+          {/* Tab 2: Dashboard (Số liệu) */}
+          <button
+            type="button"
+            onClick={() => handleMobileTabChange('dashboard')}
+            className={`h-9 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer ${
+              mobileTab === 'dashboard'
+                ? 'bg-white dark:bg-[#202533] text-[#5865f2] dark:text-[#7b85f5] shadow-xs'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <BarChart3
+              size={15}
+              className={mobileTab === 'dashboard' ? 'text-[#5865f2] dark:text-[#7b85f5]' : 'text-gray-400'}
+            />
+            <span>Dashboard</span>
+            {data?.orderStats?.totalOrders !== undefined && (
+              <span
+                className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold ${
+                  mobileTab === 'dashboard'
+                    ? 'bg-[#5865f2]/10 text-[#5865f2] dark:bg-[#5865f2]/25 dark:text-indigo-300'
+                    : 'bg-gray-300/70 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                }`}
+              >
+                {data.orderStats.totalOrders}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Mobile Tab 2: Feature Hub (Only on mobile when hub tab selected) */}
+      {/* Mobile Tab 1: Feature Hub (Mặc định trên mobile) */}
       <div className={`lg:hidden ${mobileTab === 'hub' ? 'block' : 'hidden'}`}>
-        <MobileFeatureHub onSelectDashboard={() => setMobileTab('dashboard')} />
+        <MobileFeatureHub onSelectDashboard={() => handleMobileTabChange('dashboard')} />
       </div>
 
-      {/* Main Dashboard: Always displayed on Desktop (lg:block), and displayed on mobile when mobileTab === 'dashboard' */}
+      {/* Mobile Tab 2 & Desktop: Main Dashboard (Hiển thị khi mobileTab === 'dashboard' hoặc trên Desktop lg:block) */}
       <div className={`${mobileTab === 'dashboard' ? 'block' : 'hidden'} lg:block space-y-4 animate-in fade-in duration-150`}>
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">

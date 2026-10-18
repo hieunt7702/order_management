@@ -13,7 +13,7 @@ import {
 
 export const AppLayout: React.FC = () => {
   const location = useLocation();
-  const isHomeActive = location.pathname === '/';
+  const isHomeActive = location.pathname === '/' || location.pathname === '/dashboard';
   const isOrdersActive = location.pathname.startsWith('/orders');
   const isScanActive =
     location.pathname === '/scan' ||

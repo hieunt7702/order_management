@@ -9,6 +9,8 @@ import {
   LogOut,
   ChevronRight,
   Sparkles,
+  BarChart3,
+  Home,
 } from 'lucide-react';
 import { useNavigationStore } from '../../stores/navigationStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -245,7 +247,39 @@ export const MobileNavDrawer: React.FC = () => {
               <p className="text-[11px]">Thử tìm với từ khóa khác như: đơn, kho, thu chi, ncc</p>
             </div>
           ) : (
-            filteredGroups.map((group) => (
+            <>
+              {!searchQuery && (
+                <div className="space-y-1.5 pb-1">
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <Link
+                      to="/"
+                      onClick={closeMobileMenu}
+                      className={`flex items-center gap-2.5 p-2.5 rounded border transition-all ${
+                        location.pathname === '/'
+                          ? 'bg-[#5865f2]/10 border-[#5865f2]/30 text-[#5865f2] dark:text-[#7b85f5] font-semibold'
+                          : 'bg-white dark:bg-[#181b22] border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      <Home size={17} className="text-[#5865f2] dark:text-[#7b85f5] shrink-0" />
+                      <span className="text-xs truncate">Trang chủ</span>
+                    </Link>
+
+                    <Link
+                      to="/dashboard"
+                      onClick={closeMobileMenu}
+                      className={`flex items-center gap-2.5 p-2.5 rounded border transition-all ${
+                        location.pathname === '/dashboard'
+                          ? 'bg-[#5865f2]/10 border-[#5865f2]/30 text-[#5865f2] dark:text-[#7b85f5] font-semibold'
+                          : 'bg-white dark:bg-[#181b22] border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      <BarChart3 size={17} className="text-[#5865f2] dark:text-[#7b85f5] shrink-0" />
+                      <span className="text-xs truncate">Dashboard</span>
+                    </Link>
+                  </div>
+                </div>
+              )}
+              {filteredGroups.map((group) => (
               <div key={group.id} className="space-y-1.5">
                 <div className="px-2 pt-1 pb-0.5 flex items-center justify-between">
                   <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
@@ -327,7 +361,8 @@ export const MobileNavDrawer: React.FC = () => {
                   })}
                 </div>
               </div>
-            ))
+            ))}
+          </>
           )}
         </div>
 

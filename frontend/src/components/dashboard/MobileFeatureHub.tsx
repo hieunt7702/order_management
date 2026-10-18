@@ -7,6 +7,8 @@ import {
   FileText,
   PackagePlus,
   Home,
+  BarChart3,
+  ChevronRight,
 } from 'lucide-react';
 import { navigationGroups } from '../../config/navigation';
 
@@ -76,6 +78,34 @@ export const MobileFeatureHub: React.FC<MobileFeatureHubProps> = ({ onSelectDash
           </button>
         )}
       </div>
+
+      {/* 2.5 Quick Dashboard Metric Entry Banner */}
+      {!searchQuery && onSelectDashboard && (
+        <button
+          type="button"
+          onClick={onSelectDashboard}
+          className="w-full flex items-center justify-between p-3 sm:p-3.5 bg-gradient-to-r from-[#5865f2]/10 via-[#5865f2]/5 to-transparent hover:from-[#5865f2]/15 hover:via-[#5865f2]/10 dark:from-[#5865f2]/20 dark:via-[#5865f2]/10 border border-[#5865f2]/25 dark:border-[#5865f2]/35 rounded text-left transition-all duration-200 group shadow-2xs cursor-pointer"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded bg-[#5865f2] text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+              <BarChart3 size={19} />
+            </div>
+            <div>
+              <div className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                <span>Số liệu Dashboard & Doanh thu</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                Xem tổng quan đơn sàn, doanh số và tồn kho thời gian thực
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 text-[#5865f2] dark:text-[#7b85f5] text-xs font-semibold shrink-0 group-hover:translate-x-1 transition-transform">
+            <span>Xem</span>
+            <ChevronRight size={15} />
+          </div>
+        </button>
+      )}
 
       {/* 3. Thao tác nhanh (Quick Actions) */}
       {!searchQuery && (
