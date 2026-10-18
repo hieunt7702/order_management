@@ -71,6 +71,10 @@ export const AUDIT_ACTIONS: Record<string, ActionMetadata> = {
   ORDER_CREATED_MANUAL: { label: 'Tạo đơn thủ công', variant: 'default', description: 'Tạo mới đơn hàng trên hệ thống' },
   ORDER_UPDATED: { label: 'Cập nhật đơn hàng', variant: 'secondary', description: 'Chỉnh sửa thông tin đơn hàng' },
   ORDER_DELETED: { label: 'Xóa đơn hàng', variant: 'destructive', description: 'Xóa đơn hàng' },
+  ORDER_BULK_DELETED: { label: 'Xóa nhiều đơn hàng', variant: 'destructive', description: 'Xóa hàng loạt đơn hàng' },
+
+  // Hệ thống
+  SYSTEM_CLEAR_DATA: { label: 'Xóa dữ liệu hệ thống', variant: 'destructive', description: 'Xóa dữ liệu mẫu hoặc reset hệ thống' },
 
   // Mua hàng & Công nợ NCC
   PURCHASE_RECEIPT_CREATED: { label: 'Lập phiếu nhập NCC', variant: 'info', description: 'Tạo phiếu nhập mua hàng từ NCC' },
@@ -107,6 +111,7 @@ export const AUDIT_ACTIONS: Record<string, ActionMetadata> = {
 };
 
 export const ENTITY_TYPE_LABELS: Record<string, string> = {
+  System: 'Hệ thống',
   Order: 'Đơn hàng',
   Package: 'Kiện hàng',
   Warehouse: 'Kho hàng',
@@ -224,6 +229,8 @@ export const AuditPage: React.FC = () => {
         primaryText = `${getEntityLabel(log.entityType)} ${code}`;
       } else if (name) {
         primaryText = name;
+      } else if (log.entityType === 'System') {
+        primaryText = 'Toàn bộ hệ thống';
       } else if (rawId) {
         primaryText = `${getEntityLabel(log.entityType)} #${rawId.substring(0, 8)}`;
       } else {
@@ -405,19 +412,20 @@ export const AuditPage: React.FC = () => {
             onChange={(val: any) => setEntityFilter(val)}
             options={[
               { value: 'ALL', label: 'Tất cả thực thể' },
-              { value: 'BORROW', label: 'Mượn / Cho mượn SP (ProductBorrow)' },
-              { value: 'LOAN', label: 'Vay vốn NCC (SupplierLoan)' },
-              { value: 'ORDER', label: 'Đơn hàng (Order)' },
-              { value: 'PACKAGE', label: 'Kiện hàng (Package)' },
-              { value: 'INVENTORY', label: 'Kho tồn (Inventory)' },
-              { value: 'IMPORT', label: 'Import Excel (ImportJob)' },
-              { value: 'RETURN', label: 'Hàng hoàn (OrderReturn)' },
-              { value: 'PURCHASE', label: 'Phiếu nhập NCC (PurchaseReceipt)' },
-              { value: 'SUPPLIER', label: 'Nhà cung cấp (Supplier)' },
-              { value: 'WAREHOUSE', label: 'Kho hàng (Warehouse)' },
-              { value: 'SHOP', label: 'Gian hàng (Shop)' },
-              { value: 'MEMBER', label: 'Nhân sự (Membership)' },
-              { value: 'SETTLEMENT', label: 'Đối soát sàn (Settlement)' },
+              { value: 'SYSTEM', label: 'Hệ thống' },
+              { value: 'ORDER', label: 'Đơn hàng' },
+              { value: 'PACKAGE', label: 'Kiện hàng' },
+              { value: 'INVENTORY', label: 'Kho & Tồn kho' },
+              { value: 'BORROW', label: 'Mượn / Vay sản phẩm' },
+              { value: 'LOAN', label: 'Vay vốn NCC' },
+              { value: 'PURCHASE', label: 'Phiếu nhập NCC' },
+              { value: 'SUPPLIER', label: 'Nhà cung cấp' },
+              { value: 'RETURN', label: 'Hàng hoàn' },
+              { value: 'IMPORT', label: 'File Import đơn' },
+              { value: 'WAREHOUSE', label: 'Kho hàng' },
+              { value: 'SHOP', label: 'Gian hàng' },
+              { value: 'MEMBER', label: 'Nhân sự / Quyền' },
+              { value: 'SETTLEMENT', label: 'Đối soát sàn' },
             ]}
             size="sm"
             className="w-full sm:w-52"
@@ -429,7 +437,7 @@ export const AuditPage: React.FC = () => {
       {/* Desktop Table with Bottom-Pinned SystemPagination */}
       <div className="hidden md:flex flex-1 flex-col min-h-fit md:min-h-0">
         <SystemTableWrapper
-          tableClassName="min-w-[980px]"
+          tableClassName="min-w-[1100px]"
           pagination={
             <SystemPagination
               page={page - 1}
@@ -444,11 +452,11 @@ export const AuditPage: React.FC = () => {
           <SystemThead>
             <SystemTr>
               <SystemTh className="w-12 text-center" align="center">STT</SystemTh>
-              <SystemTh className="w-36" align="left">Thời gian</SystemTh>
-              <SystemTh className="w-44" align="left">Người thực hiện</SystemTh>
-              <SystemTh className="w-40" align="left">Hành động</SystemTh>
-              <SystemTh className="w-28" align="left">Loại đối tượng</SystemTh>
-              <SystemTh className="min-w-[220px]" align="left">Mã / Đối tượng tác động</SystemTh>
+              <SystemTh className="w-40" align="left">Thời gian</SystemTh>
+              <SystemTh className="w-52" align="left">Người thực hiện</SystemTh>
+              <SystemTh className="w-44" align="left">Hành động</SystemTh>
+              <SystemTh className="w-36" align="left">Loại đối tượng</SystemTh>
+              <SystemTh className="min-w-[240px]" align="left">Mã / Đối tượng tác động</SystemTh>
               <SystemTh className="w-36 text-center" align="center">IP Client</SystemTh>
               <SystemTh className="w-16 text-center" align="center">Xem</SystemTh>
             </SystemTr>
@@ -477,46 +485,43 @@ export const AuditPage: React.FC = () => {
                     <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
                       {stt}
                     </SystemTd>
-                    <SystemTd className="text-gray-500 dark:text-gray-400 font-mono text-[11px] whitespace-nowrap">
-                      {new Date(log.createdAt).toLocaleString('vi-VN')}
-                    </SystemTd>
-                    <SystemTd>
-                      <div className="font-medium text-xs text-gray-900 dark:text-white truncate max-w-[160px]" title={log.user?.name || 'Hệ thống'}>
-                        {log.user?.name || 'Hệ thống'}
+                    <SystemTd className="whitespace-nowrap">
+                      <div className="font-mono text-xs font-medium text-gray-900 dark:text-gray-200">
+                        {new Date(log.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                       </div>
-                      <div className="text-[11px] font-mono text-gray-400 truncate max-w-[160px]" title={log.user?.email || log.userId || '--'}>
-                        {log.user?.email || log.userId || '--'}
+                      <div className="font-mono text-[11px] text-gray-400">
+                        {new Date(log.createdAt).toLocaleDateString('vi-VN')}
                       </div>
                     </SystemTd>
                     <SystemTd>
-                      <div className="flex flex-col items-start gap-1">
-                        <Badge variant={actionInfo.variant} className="text-[11px] font-semibold">
-                          {actionInfo.label}
-                        </Badge>
-                        <span className="font-mono text-[10px] text-gray-400 select-all tracking-tight">
-                          {log.action}
-                        </span>
-                      </div>
-                    </SystemTd>
-                    <SystemTd>
-                      <div className="flex items-center gap-1.5">
-                        <span className="p-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                          <EntityIcon type={log.entityType} size={13} />
-                        </span>
-                        <div className="flex flex-col">
-                          <span className="text-gray-900 dark:text-gray-100 font-medium text-xs">
-                            {getEntityLabel(log.entityType)}
-                          </span>
-                          <span className="font-mono text-[10px] text-gray-400">
-                            {log.entityType}
-                          </span>
+                      <div className="min-w-0">
+                        <div className="font-medium text-xs text-gray-900 dark:text-white truncate" title={log.user?.name || 'Hệ thống'}>
+                          {log.user?.name || 'Hệ thống'}
+                        </div>
+                        <div className="text-[11px] font-mono text-gray-400 truncate" title={log.user?.email || log.userId || '--'}>
+                          {log.user?.email || log.userId || '--'}
                         </div>
                       </div>
                     </SystemTd>
+                    <SystemTd className="whitespace-nowrap">
+                      <Badge variant={actionInfo.variant} className="text-[11px] font-semibold">
+                        {actionInfo.label}
+                      </Badge>
+                    </SystemTd>
+                    <SystemTd className="whitespace-nowrap">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="p-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 shrink-0">
+                          <EntityIcon type={log.entityType} size={13} />
+                        </span>
+                        <span className="text-gray-900 dark:text-gray-100 font-medium text-xs truncate">
+                          {getEntityLabel(log.entityType)}
+                        </span>
+                      </div>
+                    </SystemTd>
                     <SystemTd>
-                      <div className="flex flex-col gap-0.5">
+                      <div className="flex flex-col gap-0.5 min-w-0">
                         <div className="flex items-center gap-1.5 font-medium text-xs text-gray-900 dark:text-gray-100">
-                          <span className="truncate max-w-[240px]" title={display.title}>
+                          <span className="truncate" title={display.title}>
                             {display.title}
                           </span>
                         </div>
@@ -528,7 +533,7 @@ export const AuditPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={(e) => handleCopy(e, display.rawId, 'UUID')}
-                              className="text-gray-400 hover:text-[#5865f2] transition-colors p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+                              className="text-gray-400 hover:text-[#5865f2] transition-colors p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
                               title="Sao chép toàn bộ UUID"
                             >
                               {copiedId === display.rawId ? (
@@ -541,7 +546,7 @@ export const AuditPage: React.FC = () => {
                         )}
                       </div>
                     </SystemTd>
-                    <SystemTd align="center" className="text-center">
+                    <SystemTd align="center" className="text-center whitespace-nowrap">
                       {renderIpBadge(log.ipAddress)}
                     </SystemTd>
                     <SystemTd align="center">
@@ -667,7 +672,7 @@ export const AuditPage: React.FC = () => {
             }
             subtitle={
               <span className="line-clamp-1 sm:line-clamp-none">
-                {`${actionInfo.label} (${selectedLog.action}) • ${getEntityLabel(selectedLog.entityType)}`}
+                {`${actionInfo.label} • ${getEntityLabel(selectedLog.entityType)}`}
               </span>
             }
             icon={ShieldAlert}
