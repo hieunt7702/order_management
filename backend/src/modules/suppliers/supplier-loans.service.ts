@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import {
   CreateSupplierLoanDto,
   CreateSupplierLoanRepaymentDto,
@@ -25,7 +26,10 @@ import {
 export class SupplierLoansService {
   private readonly logger = new Logger(SupplierLoansService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   async generateUniqueLoanCode(tenantId: string, type: SupplierLoanType): Promise<string> {
     const prefix = type === SupplierLoanType.BORROWED_FROM_SUPPLIER ? 'VAY' : 'CHV';
@@ -87,9 +91,9 @@ export class SupplierLoansService {
       }
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const loan = await this.prisma.$transaction(async (tx) => {
       // 1. Tạo khoản vay
-      const loan = await tx.supplierLoan.create({
+      const createdLoan = await tx.supplierLoan.create({
         data: {
           tenantId,
           supplierId: dto.supplierId,
@@ -162,7 +166,7 @@ export class SupplierLoansService {
               ? `Nhận tiền vay vốn từ NCC ${supplier.name} (Hợp đồng: ${loanCode})`
               : `Giải ngân cho NCC ${supplier.name} vay vốn (Hợp đồng: ${loanCode})`,
             relatedEntityType: 'SUPPLIER_LOAN',
-            relatedEntityId: loan.id,
+            relatedEntityId: createdLoan.id,
             createdById: userId,
             confirmedById: userId,
             confirmedAt: new Date(),
@@ -183,8 +187,29 @@ export class SupplierLoansService {
         }
       }
 
-      return loan;
+      return createdLoan;
     });
+
+    await this.auditService.log({
+      tenantId,
+      userId,
+      action: 'SUPPLIER_LOAN_CREATED',
+      entityType: 'SupplierLoan',
+      entityId: loan.id,
+      newValues: {
+        loanCode,
+        type,
+        supplierId: dto.supplierId,
+        supplierName: supplier?.name,
+        amount: dto.amount,
+        interestRate: dto.interestRate,
+        loanDate: dto.loanDate,
+        dueDate: dto.dueDate,
+        note: dto.note || undefined,
+      },
+    });
+
+    return loan;
   }
 
   async repay(tenantId: string, userId: string, dto: CreateSupplierLoanRepaymentDto) {
@@ -225,8 +250,9 @@ export class SupplierLoansService {
       }
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const isBorrow = loan.type === SupplierLoanType.BORROWED_FROM_SUPPLIER;
+    const currentLoan = loan;
+    const repayment = await this.prisma.$transaction(async (tx) => {
+      const isBorrow = currentLoan.type === SupplierLoanType.BORROWED_FROM_SUPPLIER;
       const repayAmount = new Prisma.Decimal(dto.amount);
       const newRepaidTotal = Prisma.Decimal.add(loan.repaidAmount, repayAmount);
       const newRemaining = Prisma.Decimal.sub(loan.remainingAmount, repayAmount);
@@ -335,6 +361,24 @@ export class SupplierLoansService {
 
       return repayment;
     });
+
+    await this.auditService.log({
+      tenantId,
+      userId,
+      action: 'SUPPLIER_LOAN_REPAID',
+      entityType: 'SupplierLoan',
+      entityId: currentLoan.id,
+      newValues: {
+        loanCode: currentLoan.loanCode,
+        repaymentCode,
+        amount: dto.amount,
+        remainingAmount: Number(currentLoan.remainingAmount) - dto.amount,
+        repaymentDate: dto.repaymentDate,
+        note: dto.note || undefined,
+      },
+    });
+
+    return repayment;
   }
 
   async findAll(tenantId: string, filter: SupplierLoanFilterDto = {}) {

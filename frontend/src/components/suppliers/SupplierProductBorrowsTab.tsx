@@ -18,6 +18,8 @@ import {
   ArrowUpRight,
   Package,
   MoreHorizontal,
+  History,
+  ShieldAlert,
 } from 'lucide-react';
 import {
   supplierProductBorrowsApi,
@@ -382,9 +384,22 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
     }
   };
 
-  const handleOpenDetail = (borrow: SupplierProductBorrowModel) => {
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [detailTab, setDetailTab] = useState<'ITEMS' | 'HISTORY'>('ITEMS');
+
+  const handleOpenDetail = async (borrow: SupplierProductBorrowModel) => {
     setSelectedBorrowDetail(borrow);
     setIsDetailModalOpen(true);
+    setDetailTab('ITEMS');
+    setIsLoadingDetail(true);
+    try {
+      const fullDetail: any = await supplierProductBorrowsApi.findOne(borrow.id);
+      setSelectedBorrowDetail(fullDetail);
+    } catch (err) {
+      console.error('Lỗi tải chi tiết phiếu mượn:', err);
+    } finally {
+      setIsLoadingDetail(false);
+    }
   };
 
   return (
@@ -1180,37 +1195,155 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
             </div>
           </div>
 
-          <div className="border border-gray-200 dark:border-gray-800 rounded overflow-hidden">
-            <div className="bg-gray-100 dark:bg-gray-800/80 px-3 py-2 font-semibold text-gray-700 dark:text-gray-300">
-              Danh sách sản phẩm trong phiếu ({selectedBorrowDetail?.items?.length || 0})
-            </div>
-            <div className="p-3">
-              {selectedBorrowDetail?.items && selectedBorrowDetail.items.length > 0 ? (
-                <div className="space-y-2">
-                  {selectedBorrowDetail.items.map((it) => (
-                    <div key={it.id} className="p-2.5 bg-gray-50 dark:bg-[#12151b] rounded flex justify-between items-center">
-                      <div>
-                        <div className="font-semibold text-gray-900 dark:text-white">{it.productName}</div>
-                        <div className="text-[11px] font-mono text-gray-400 mt-0.5">
-                          SKU: {it.sku} {it.variationName ? `• ${it.variationName}` : ''}
+          {/* Sub-tab Navigation */}
+          <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-800 pb-2">
+            <button
+              type="button"
+              onClick={() => setDetailTab('ITEMS')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
+                detailTab === 'ITEMS'
+                  ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <Boxes size={13} />
+              <span>Sản phẩm mượn ({selectedBorrowDetail?.items?.length || 0})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDetailTab('HISTORY')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
+                detailTab === 'HISTORY'
+                  ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <History size={13} />
+              <span>
+                Lịch sử biến động & thao tác ({((selectedBorrowDetail as any)?.ledgers?.length || 0) + ((selectedBorrowDetail as any)?.auditLogs?.length || 0)})
+              </span>
+            </button>
+          </div>
+
+          {detailTab === 'ITEMS' ? (
+            <div className="border border-gray-200 dark:border-gray-800 rounded overflow-hidden">
+              <div className="bg-gray-100 dark:bg-gray-800/80 px-3 py-2 font-semibold text-gray-700 dark:text-gray-300">
+                Danh sách sản phẩm trong phiếu ({selectedBorrowDetail?.items?.length || 0})
+              </div>
+              <div className="p-3">
+                {selectedBorrowDetail?.items && selectedBorrowDetail.items.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedBorrowDetail.items.map((it) => (
+                      <div key={it.id} className="p-2.5 bg-gray-50 dark:bg-[#12151b] rounded flex justify-between items-center">
+                        <div>
+                          <div className="font-semibold text-gray-900 dark:text-white">{it.productName}</div>
+                          <div className="text-[11px] font-mono text-gray-400 mt-0.5">
+                            SKU: {it.sku} {it.variationName ? `• ${it.variationName}` : ''}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-mono font-bold text-gray-900 dark:text-white">
+                            Mượn: {it.borrowQuantity}
+                          </div>
+                          <div className="text-[11px] text-gray-400 mt-0.5">
+                            Trả: {it.returnedQuantity} • Mua: {it.purchasedQuantity} • <span className="text-rose-500 font-bold">Còn: {it.remainingQuantity}</span>
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-mono font-bold text-gray-900 dark:text-white">
-                          Mượn: {it.borrowQuantity}
-                        </div>
-                        <div className="text-[11px] text-gray-400 mt-0.5">
-                          Trả: {it.returnedQuantity} • Mua: {it.purchasedQuantity} • <span className="text-rose-500 font-bold">Còn: {it.remainingQuantity}</span>
-                        </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-400 py-3 italic">Chưa có sản phẩm nào</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {isLoadingDetail ? (
+                <div className="text-center py-6 text-gray-400">Đang tải lịch sử chi tiết...</div>
+              ) : (
+                <>
+                  {/* Bảng biến động kho */}
+                  <div className="border border-gray-200 dark:border-gray-800 rounded overflow-hidden">
+                    <div className="bg-gray-100 dark:bg-gray-800/80 px-3 py-2 font-semibold text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <History size={13} className="text-indigo-500" />
+                        <span>Biến động kho thực tế ({((selectedBorrowDetail as any)?.ledgers?.length || 0)})</span>
+                      </span>
+                    </div>
+                    <div className="divide-y divide-gray-100 dark:divide-gray-800 max-h-60 overflow-y-auto">
+                      {(selectedBorrowDetail as any)?.ledgers && (selectedBorrowDetail as any).ledgers.length > 0 ? (
+                        (selectedBorrowDetail as any).ledgers.map((l: any) => (
+                          <div key={l.id} className="p-2.5 bg-white dark:bg-[#12151b] text-[11px] flex items-center justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                  l.movementType === 'BORROW_RECEIVE'
+                                    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                    : 'bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400'
+                                }`}>
+                                  {l.movementType === 'BORROW_RECEIVE' ? 'Nhập kho mượn' : 'Xuất kho trả / Cho mượn'}
+                                </span>
+                                <span className="font-semibold text-gray-800 dark:text-gray-200 truncate">
+                                  {l.variant?.name || l.variant?.sku}
+                                </span>
+                              </div>
+                              <div className="text-gray-400 mt-0.5 truncate text-[10px]">
+                                {new Date(l.createdAt).toLocaleString('vi-VN')} {l.performerName ? `• Bởi: ${l.performerName}` : ''} {l.note ? `• ${l.note}` : ''}
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className={`font-mono font-bold ${l.deltaOnHand > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                {l.deltaOnHand > 0 ? `+${l.deltaOnHand}` : l.deltaOnHand} cái
+                              </div>
+                              {l.beforeOnHand !== null && l.afterOnHand !== null && (
+                                <div className="text-[10px] text-gray-400 font-mono">
+                                  {l.beforeOnHand} &rarr; {l.afterOnHand}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center text-gray-400 py-4 italic text-xs">Chưa có bản ghi biến động kho</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bản ghi nhật ký kiểm toán */}
+                  {(selectedBorrowDetail as any)?.auditLogs && (selectedBorrowDetail as any).auditLogs.length > 0 && (
+                    <div className="border border-gray-200 dark:border-gray-800 rounded overflow-hidden">
+                      <div className="bg-gray-100 dark:bg-gray-800/80 px-3 py-2 font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                        <ShieldAlert size={13} className="text-[#5865f2]" />
+                        <span>Nhật ký thao tác Audit Trail ({(selectedBorrowDetail as any).auditLogs.length})</span>
+                      </div>
+                      <div className="divide-y divide-gray-100 dark:divide-gray-800 max-h-48 overflow-y-auto">
+                        {(selectedBorrowDetail as any).auditLogs.map((a: any) => (
+                          <div key={a.id} className="p-2.5 bg-white dark:bg-[#12151b] text-[11px] flex items-center justify-between gap-2">
+                            <div>
+                              <div className="font-semibold text-gray-800 dark:text-gray-200">
+                                {a.action === 'PRODUCT_BORROW_CREATED' && 'Tạo phiếu mượn hàng NCC'}
+                                {a.action === 'PRODUCT_LEND_CREATED' && 'Tạo phiếu xuất cho NCC mượn'}
+                                {a.action === 'PRODUCT_BORROW_RETURNED' && 'Hoàn trả hàng mượn'}
+                                {a.action === 'PRODUCT_BORROW_CONVERTED' && 'Chuyển mượn sang mua đứt'}
+                                {!['PRODUCT_BORROW_CREATED', 'PRODUCT_LEND_CREATED', 'PRODUCT_BORROW_RETURNED', 'PRODUCT_BORROW_CONVERTED'].includes(a.action) && a.action}
+                              </div>
+                              <div className="text-[10px] text-gray-400 mt-0.5">
+                                {new Date(a.createdAt).toLocaleString('vi-VN')} • Thực hiện bởi: {a.user?.name || a.user?.email || 'Hệ thống'}
+                              </div>
+                            </div>
+                            <div className="text-right text-[10px] font-mono text-gray-400">
+                              IP: {a.ipAddress || '127.0.0.1'}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-gray-400 py-3 italic">Chưa có sản phẩm nào</div>
+                  )}
+                </>
               )}
             </div>
-          </div>
+          )}
         </ModalBody>
         <ModalFooter>
           <ModalButton variant="outline" onClick={() => setIsDetailModalOpen(false)}>

@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import {
   CreateSupplierProductBorrowDto,
   ReturnSupplierProductBorrowDto,
@@ -25,7 +26,10 @@ import {
 export class SupplierProductBorrowsService {
   private readonly logger = new Logger(SupplierProductBorrowsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   async generateUniqueBorrowCode(tenantId: string, type: ProductBorrowType): Promise<string> {
     const prefix = type === ProductBorrowType.BORROW_FROM_SUPPLIER ? 'PMH' : 'PXH';
@@ -115,7 +119,7 @@ export class SupplierProductBorrowsService {
       };
     });
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       // 1. Tạo phiếu mượn hàng
       const borrow = await tx.supplierProductBorrow.create({
         data: {
@@ -145,10 +149,29 @@ export class SupplierProductBorrowsService {
         },
       });
 
+      // Lấy tên người thao tác
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true },
+      });
+      const performerName = user?.name || user?.email || 'Hệ thống';
+
       // 2. Cập nhật tồn kho và ghi sổ cái InventoryLedger
       for (const item of itemsData) {
         if (type === ProductBorrowType.BORROW_FROM_SUPPLIER) {
           // Shop mượn hàng từ NCC -> Cộng tồn kho onHand để bán/xuất đơn
+          const curBalance = await tx.inventoryBalance.findUnique({
+            where: {
+              tenantId_warehouseId_variantId: {
+                tenantId,
+                warehouseId: dto.warehouseId,
+                variantId: item.variantId,
+              },
+            },
+          });
+          const beforeOnHand = curBalance?.onHand || 0;
+          const afterOnHand = beforeOnHand + item.borrowQuantity;
+
           await tx.inventoryBalance.upsert({
             where: {
               tenantId_warehouseId_variantId: {
@@ -177,6 +200,10 @@ export class SupplierProductBorrowsService {
               movementType: InventoryMovementType.BORROW_RECEIVE,
               deltaOnHand: item.borrowQuantity,
               deltaReserved: 0,
+              beforeOnHand,
+              afterOnHand,
+              voucherCode: borrowCode,
+              performerName,
               referenceType: 'PRODUCT_BORROW',
               referenceId: borrow.id,
               performedByUserId: userId,
@@ -202,6 +229,9 @@ export class SupplierProductBorrowsService {
             );
           }
 
+          const beforeOnHand = curBalance?.onHand || 0;
+          const afterOnHand = beforeOnHand - item.borrowQuantity;
+
           await tx.inventoryBalance.update({
             where: {
               tenantId_warehouseId_variantId: {
@@ -223,6 +253,10 @@ export class SupplierProductBorrowsService {
               movementType: InventoryMovementType.BORROW_RETURN,
               deltaOnHand: -item.borrowQuantity,
               deltaReserved: 0,
+              beforeOnHand,
+              afterOnHand,
+              voucherCode: borrowCode,
+              performerName,
               referenceType: 'PRODUCT_BORROW',
               referenceId: borrow.id,
               performedByUserId: userId,
@@ -234,6 +268,31 @@ export class SupplierProductBorrowsService {
 
       return borrow;
     });
+
+    // 3. Ghi vết Audit Trail
+    const isBorrow = type === ProductBorrowType.BORROW_FROM_SUPPLIER;
+    await this.auditService.log({
+      tenantId,
+      userId,
+      action: isBorrow ? 'PRODUCT_BORROW_CREATED' : 'PRODUCT_LEND_CREATED',
+      entityType: 'SupplierProductBorrow',
+      entityId: result.id,
+      newValues: {
+        borrowCode,
+        type,
+        supplierId: dto.supplierId,
+        supplierName: supplier.name,
+        warehouseId: dto.warehouseId,
+        warehouseName: warehouse.name,
+        totalQuantity,
+        estimatedTotalAmount,
+        note: dto.note || undefined,
+        itemCount: itemsData.length,
+        items: itemsData.map((i) => ({ sku: i.sku, productName: i.productName, qty: i.borrowQuantity, price: i.unitPrice })),
+      },
+    });
+
+    return result;
   }
 
   async returnItems(tenantId: string, userId: string, dto: ReturnSupplierProductBorrowDto) {
@@ -256,8 +315,14 @@ export class SupplierProductBorrowsService {
       throw new BadRequestException('Phiếu mượn này đã được hoàn tất trước đó');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       let returnedThisTimeTotal = 0;
+
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true },
+      });
+      const performerName = user?.name || user?.email || 'Hệ thống';
 
       for (const ret of dto.items) {
         const item = borrow.items.find((it) => it.id === ret.itemId);
@@ -287,6 +352,18 @@ export class SupplierProductBorrowsService {
         // Điều chỉnh tồn kho:
         if (borrow.type === ProductBorrowType.BORROW_FROM_SUPPLIER) {
           // Shop mượn NCC -> Nay trả lại cho NCC -> Trừ onHand
+          const curBalance = await tx.inventoryBalance.findUnique({
+            where: {
+              tenantId_warehouseId_variantId: {
+                tenantId,
+                warehouseId: borrow.warehouseId,
+                variantId: item.variantId,
+              },
+            },
+          });
+          const beforeOnHand = curBalance?.onHand || 0;
+          const afterOnHand = beforeOnHand - ret.returnQuantity;
+
           await tx.inventoryBalance.update({
             where: {
               tenantId_warehouseId_variantId: {
@@ -308,6 +385,10 @@ export class SupplierProductBorrowsService {
               movementType: InventoryMovementType.BORROW_RETURN,
               deltaOnHand: -ret.returnQuantity,
               deltaReserved: 0,
+              beforeOnHand,
+              afterOnHand,
+              voucherCode: borrow.borrowCode,
+              performerName,
               referenceType: 'PRODUCT_BORROW_RETURN',
               referenceId: borrow.id,
               performedByUserId: userId,
@@ -316,6 +397,18 @@ export class SupplierProductBorrowsService {
           });
         } else {
           // Shop cho NCC mượn -> Nay NCC trả lại hàng cho shop -> Cộng onHand
+          const curBalance = await tx.inventoryBalance.findUnique({
+            where: {
+              tenantId_warehouseId_variantId: {
+                tenantId,
+                warehouseId: borrow.warehouseId,
+                variantId: item.variantId,
+              },
+            },
+          });
+          const beforeOnHand = curBalance?.onHand || 0;
+          const afterOnHand = beforeOnHand + ret.returnQuantity;
+
           await tx.inventoryBalance.update({
             where: {
               tenantId_warehouseId_variantId: {
@@ -337,6 +430,10 @@ export class SupplierProductBorrowsService {
               movementType: InventoryMovementType.BORROW_RECEIVE,
               deltaOnHand: ret.returnQuantity,
               deltaReserved: 0,
+              beforeOnHand,
+              afterOnHand,
+              voucherCode: borrow.borrowCode,
+              performerName,
               referenceType: 'PRODUCT_BORROW_RETURN',
               referenceId: borrow.id,
               performedByUserId: userId,
@@ -354,7 +451,7 @@ export class SupplierProductBorrowsService {
           ? ProductBorrowStatus.RETURNED
           : ProductBorrowStatus.PARTIALLY_RETURNED;
 
-      return tx.supplierProductBorrow.update({
+      const updated = await tx.supplierProductBorrow.update({
         where: { id: borrow.id },
         data: {
           returnedQuantity: newBorrowReturned,
@@ -363,7 +460,43 @@ export class SupplierProductBorrowsService {
         },
         include: { items: true },
       });
+
+      return {
+        updated,
+        returnedThisTimeTotal,
+        newBorrowRemaining,
+        newBorrowReturned,
+        newStatus,
+      };
     });
+
+    // Ghi vết Audit Trail
+    await this.auditService.log({
+      tenantId,
+      userId,
+      action: 'PRODUCT_BORROW_RETURNED',
+      entityType: 'SupplierProductBorrow',
+      entityId: borrow.id,
+      oldValues: {
+        borrowCode: borrow.borrowCode,
+        status: borrow.status,
+        remainingQuantity: borrow.remainingQuantity,
+        returnedQuantity: borrow.returnedQuantity,
+      },
+      newValues: {
+        borrowCode: borrow.borrowCode,
+        status: result.newStatus,
+        returnedThisTime: result.returnedThisTimeTotal,
+        remainingQuantity: result.newBorrowRemaining,
+        returnedQuantity: result.newBorrowReturned,
+        returnedItems: dto.items.map((r) => {
+          const it = borrow.items.find((item) => item.id === r.itemId);
+          return { sku: it?.sku, productName: it?.productName, returnQuantity: r.returnQuantity };
+        }),
+      },
+    });
+
+    return result.updated;
   }
 
   async convertToPurchase(tenantId: string, userId: string, dto: ConvertBorrowToPurchaseDto) {
@@ -395,7 +528,7 @@ export class SupplierProductBorrowsService {
       }
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       let totalItemsAmount = 0;
       let convertedThisTimeTotal = 0;
       const receiptItemsData = [];
@@ -490,8 +623,42 @@ export class SupplierProductBorrowsService {
       return {
         borrow: updatedBorrow,
         purchaseReceipt: receipt,
+        convertedThisTimeTotal,
+        totalItemsAmount,
       };
     });
+
+    // 3. Ghi vết Audit Trail
+    await this.auditService.log({
+      tenantId,
+      userId,
+      action: 'PRODUCT_BORROW_CONVERTED',
+      entityType: 'SupplierProductBorrow',
+      entityId: borrow.id,
+      oldValues: {
+        borrowCode: borrow.borrowCode,
+        remainingQuantity: borrow.remainingQuantity,
+        purchasedQuantity: borrow.purchasedQuantity,
+      },
+      newValues: {
+        borrowCode: borrow.borrowCode,
+        receiptCode: result.purchaseReceipt.receiptCode,
+        receiptId: result.purchaseReceipt.id,
+        convertedThisTime: result.convertedThisTimeTotal,
+        totalItemsAmount: result.totalItemsAmount,
+        remainingQuantity: result.borrow.remainingQuantity,
+        purchasedQuantity: result.borrow.purchasedQuantity,
+        purchasedItems: dto.items.map((c) => {
+          const it = borrow.items.find((item) => item.id === c.itemId);
+          return { sku: it?.sku, productName: it?.productName, purchaseQuantity: c.purchaseQuantity, unitPrice: c.unitPrice };
+        }),
+      },
+    });
+
+    return {
+      borrow: result.borrow,
+      purchaseReceipt: result.purchaseReceipt,
+    };
   }
 
   async findAll(tenantId: string, filter: SupplierProductBorrowFilterDto = {}) {
@@ -626,6 +793,37 @@ export class SupplierProductBorrowsService {
       throw new NotFoundException('Không tìm thấy phiếu mượn hàng');
     }
 
-    return borrow;
+    const [ledgers, auditLogs] = await Promise.all([
+      this.prisma.inventoryLedger.findMany({
+        where: {
+          tenantId,
+          referenceId: id,
+        },
+        include: {
+          variant: {
+            select: { id: true, sku: true, name: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.auditLog.findMany({
+        where: {
+          tenantId,
+          entityId: id,
+        },
+        include: {
+          user: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    return {
+      ...borrow,
+      ledgers,
+      auditLogs,
+    };
   }
 }

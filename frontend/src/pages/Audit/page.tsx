@@ -78,6 +78,17 @@ export const AUDIT_ACTIONS: Record<string, ActionMetadata> = {
   PURCHASE_RECEIPT_CANCELLED: { label: 'Hủy phiếu nhập NCC', variant: 'destructive', description: 'Hủy phiếu nhập mua hàng từ NCC' },
   SUPPLIER_PAYMENT_CREATED: { label: 'Thanh toán nợ NCC', variant: 'success', description: 'Lập phiếu chi thanh toán công nợ NCC' },
 
+  // Mượn & Cho mượn sản phẩm NCC
+  PRODUCT_BORROW_CREATED: { label: 'Mượn hàng NCC', variant: 'info', description: 'Tạo phiếu mượn hàng từ NCC' },
+  PRODUCT_LEND_CREATED: { label: 'Cho NCC mượn hàng', variant: 'warning', description: 'Tạo phiếu xuất cho NCC mượn hàng' },
+  PRODUCT_BORROW_RETURNED: { label: 'Trả / Nhận lại hàng mượn', variant: 'purple', description: 'Hoàn trả hàng mượn hoặc nhận lại hàng cho mượn' },
+  PRODUCT_BORROW_CONVERTED: { label: 'Chuyển mượn sang mua đứt', variant: 'success', description: 'Chuyển hàng đang mượn sang mua hàng chính thức' },
+
+  // Vay & Cho vay vốn NCC
+  SUPPLIER_LOAN_CREATED: { label: 'Tạo khoản vay NCC', variant: 'info', description: 'Tạo mới khoản vay hoặc cho vay vốn NCC' },
+  SUPPLIER_LOAN_REPAID: { label: 'Trả nợ vay NCC', variant: 'success', description: 'Thanh toán hoàn trả nợ vay vốn NCC' },
+  SUPPLIER_LOAN_DELETED: { label: 'Xóa khoản vay NCC', variant: 'destructive', description: 'Xóa khoản vay vốn NCC' },
+
   // Tài chính & Đối soát
   SETTLEMENT_RECORDED: { label: 'Ghi nhận đối soát', variant: 'success', description: 'Cập nhật đối soát doanh thu sàn' },
 
@@ -110,6 +121,10 @@ export const ENTITY_TYPE_LABELS: Record<string, string> = {
   Shop: 'Gian hàng',
   User: 'Tài khoản',
   ProductVariant: 'Biến thể SP',
+  SupplierProductBorrow: 'Mượn / Vay sản phẩm',
+  ProductBorrow: 'Mượn / Vay sản phẩm',
+  SupplierLoan: 'Vay vốn NCC',
+  SupplierLoanRepayment: 'Phiếu trả nợ NCC',
 };
 
 export const getActionInfo = (action: string): ActionMetadata => {
@@ -137,6 +152,8 @@ const EntityIcon: React.FC<{ type?: string; size?: number; className?: string }>
   className = '',
 }) => {
   const t = type.toLowerCase();
+  if (t.includes('borrow')) return <Boxes size={size} className={className} />;
+  if (t.includes('loan')) return <CreditCard size={size} className={className} />;
   if (t.includes('orderreturn')) return <RotateCcw size={size} className={className} />;
   if (t.includes('order')) return <ShoppingBag size={size} className={className} />;
   if (t.includes('package')) return <Package size={size} className={className} />;
@@ -388,6 +405,8 @@ export const AuditPage: React.FC = () => {
             onChange={(val: any) => setEntityFilter(val)}
             options={[
               { value: 'ALL', label: 'Tất cả thực thể' },
+              { value: 'BORROW', label: 'Mượn / Cho mượn SP (ProductBorrow)' },
+              { value: 'LOAN', label: 'Vay vốn NCC (SupplierLoan)' },
               { value: 'ORDER', label: 'Đơn hàng (Order)' },
               { value: 'PACKAGE', label: 'Kiện hàng (Package)' },
               { value: 'INVENTORY', label: 'Kho tồn (Inventory)' },

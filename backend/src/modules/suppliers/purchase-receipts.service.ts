@@ -5,6 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import {
   CreatePurchaseReceiptDto,
   UpdatePurchaseReceiptDto,
@@ -21,7 +22,10 @@ import {
 
 @Injectable()
 export class PurchaseReceiptsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   async generateUniqueReceiptCode(tenantId: string): Promise<string> {
     const now = new Date();
@@ -112,7 +116,7 @@ export class PurchaseReceiptsService {
     }
 
     // 3. Thực thi Transaction đảm bảo Bất biến Sổ cái Kho & Công nợ
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       // A. Tạo phiếu nhập PurchaseReceipt
       const receipt = await tx.purchaseReceipt.create({
         data: {
@@ -317,6 +321,27 @@ export class PurchaseReceiptsService {
 
       return receipt;
     });
+
+    await this.auditService.log({
+      tenantId,
+      userId,
+      action: 'PURCHASE_RECEIPT_CREATED',
+      entityType: 'PurchaseReceipt',
+      entityId: result.id,
+      newValues: {
+        receiptCode: result.receiptCode,
+        supplierId: dto.supplierId,
+        supplierName: supplier.name,
+        warehouseId: dto.warehouseId,
+        warehouseName: warehouse.name,
+        totalItemsAmount,
+        payableAmount,
+        receivingStatus,
+        itemCount: itemsData.length,
+      },
+    });
+
+    return result;
   }
 
   async findAll(tenantId: string, filter: PurchaseReceiptFilterDto = {}) {

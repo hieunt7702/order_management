@@ -75,11 +75,15 @@ export class AuditService {
     const variantIds = new Set<string>();
     const userIds = new Set<string>();
     const receiptIds = new Set<string>();
+    const borrowIds = new Set<string>();
+    const loanIds = new Set<string>();
 
     for (const item of items) {
       if (!item.entityId) continue;
       const type = (item.entityType || '').toLowerCase();
-      if (type.includes('order')) orderIds.add(item.entityId);
+      if (type.includes('borrow')) borrowIds.add(item.entityId);
+      else if (type.includes('loan')) loanIds.add(item.entityId);
+      else if (type.includes('order')) orderIds.add(item.entityId);
       else if (type.includes('warehouse')) warehouseIds.add(item.entityId);
       else if (type.includes('shop')) shopIds.add(item.entityId);
       else if (type.includes('supplier')) supplierIds.add(item.entityId);
@@ -89,7 +93,7 @@ export class AuditService {
       else if (type.includes('receipt')) receiptIds.add(item.entityId);
     }
 
-    const [orders, warehouses, shops, suppliers, packages, variants, users, receipts] = await Promise.all([
+    const [orders, warehouses, shops, suppliers, packages, variants, users, receipts, borrows, loans] = await Promise.all([
       orderIds.size > 0
         ? this.prisma.order.findMany({
             where: { id: { in: Array.from(orderIds) }, tenantId },
@@ -138,6 +142,28 @@ export class AuditService {
             select: { id: true, receiptCode: true },
           })
         : [],
+      borrowIds.size > 0
+        ? this.prisma.supplierProductBorrow.findMany({
+            where: { id: { in: Array.from(borrowIds) }, tenantId },
+            select: {
+              id: true,
+              borrowCode: true,
+              type: true,
+              supplier: { select: { name: true, code: true } },
+            },
+          })
+        : [],
+      loanIds.size > 0
+        ? this.prisma.supplierLoan.findMany({
+            where: { id: { in: Array.from(loanIds) }, tenantId },
+            select: {
+              id: true,
+              loanCode: true,
+              type: true,
+              supplier: { select: { name: true, code: true } },
+            },
+          })
+        : [],
     ]);
 
     const orderMap = new Map(orders.map((o) => [o.id, o]));
@@ -148,6 +174,8 @@ export class AuditService {
     const variantMap = new Map(variants.map((v) => [v.id, v]));
     const userMap = new Map(users.map((u) => [u.id, u]));
     const receiptMap = new Map(receipts.map((r) => [r.id, r]));
+    const borrowMap = new Map(borrows.map((b) => [b.id, b]));
+    const loanMap = new Map(loans.map((l) => [l.id, l]));
 
     const enrichedItems = items.map((item) => {
       let entityCode: string | undefined;
@@ -155,6 +183,20 @@ export class AuditService {
       let entitySummary: string | undefined;
 
       // 1. Resolve from database lookup
+      const borrow = borrowMap.get(item.entityId);
+      if (borrow) {
+        entityCode = borrow.borrowCode;
+        const isBorrow = borrow.type === 'BORROW_FROM_SUPPLIER';
+        entityName = borrow.supplier?.name;
+        entitySummary = `${isBorrow ? 'Mượn SP' : 'Cho mượn SP'} ${borrow.borrowCode}${borrow.supplier?.name ? ` (${borrow.supplier.name})` : ''}`;
+      }
+      const loan = loanMap.get(item.entityId);
+      if (loan) {
+        entityCode = loan.loanCode;
+        const isBorrow = loan.type === 'BORROWED_FROM_SUPPLIER';
+        entityName = loan.supplier?.name;
+        entitySummary = `${isBorrow ? 'Vay vốn' : 'Cho vay'} ${loan.loanCode}${loan.supplier?.name ? ` (${loan.supplier.name})` : ''}`;
+      }
       const order = orderMap.get(item.entityId);
       if (order) {
         entityCode = order.externalOrderId || order.internalOrderCode;
@@ -205,6 +247,8 @@ export class AuditService {
       if (!entitySummary) {
         const payload = (item.newValues || item.oldValues || {}) as Record<string, any>;
         const code =
+          payload.borrowCode ||
+          payload.loanCode ||
           payload.orderSn ||
           payload.orderCode ||
           payload.externalOrderId ||

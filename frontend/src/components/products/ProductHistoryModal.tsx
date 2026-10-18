@@ -152,6 +152,18 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
             <ArrowDownLeft className="w-3 h-3" /> Nhập từ NCC
           </span>
         );
+      case 'BORROW_RECEIVE':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50">
+            <ArrowDownLeft className="w-3 h-3" /> Mượn hàng NCC
+          </span>
+        );
+      case 'BORROW_RETURN':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-orange-200/50">
+            <ArrowUpRight className="w-3 h-3" /> Cho mượn / Trả mượn
+          </span>
+        );
       case 'DISPATCH':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/50">
@@ -411,6 +423,8 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
               options={[
                 { value: '', label: 'Tất cả loại biến động', icon: Layers },
                 { value: 'RECEIVE', label: 'Nhập từ NCC', icon: ArrowDownLeft },
+                { value: 'BORROW_RECEIVE', label: 'Mượn hàng NCC', icon: ArrowDownLeft },
+                { value: 'BORROW_RETURN', label: 'Cho mượn / Trả mượn', icon: ArrowUpRight },
                 { value: 'DISPATCH', label: 'Xuất bán', icon: ArrowUpRight },
                 { value: 'RETURN_RECEIVE', label: 'Khách hoàn (Đạt chuẩn)', icon: RotateCcw },
                 { value: 'RETURN_DAMAGE', label: 'Khách hoàn (Hàng lỗi)', icon: AlertTriangle },
