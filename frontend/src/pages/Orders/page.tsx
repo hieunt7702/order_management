@@ -69,8 +69,8 @@ const PRESET_TABS = [
   { id: 'ALL', label: 'Tất cả' },
   { id: 'READY_TO_SHIP', label: 'Chờ giao hàng' },
   { id: 'SHIPPED', label: 'Đang giao' },
-  { id: 'TO_CONFIRM_RECEIVE', label: 'Đã giao' },
-  { id: 'COMPLETED', label: 'Hoàn thành' },
+  { id: 'COMPLETED', label: 'Giao thành công' },
+  { id: 'CANCELLED_AND_RETURNED', label: 'Hủy & Hoàn hàng' },
   { id: 'CANCELLED', label: 'Đã hủy' },
   { id: 'TO_RETURN', label: 'Trả hàng/Hoàn tiền' },
   { id: 'NOT_VERIFIED', label: 'Chưa quét kho' },
@@ -230,6 +230,8 @@ export const OrdersPage: React.FC = () => {
         params.platformStatus = 'TO_CONFIRM_RECEIVE';
       } else if (activeTab === 'COMPLETED') {
         params.platformStatus = 'COMPLETED';
+      } else if (activeTab === 'CANCELLED_AND_RETURNED' || activeTab === 'CANCELLED_OR_RETURNED') {
+        params.platformStatus = 'CANCELLED_AND_RETURNED';
       } else if (activeTab === 'CANCELLED') {
         params.platformStatus = 'CANCELLED';
       } else if (activeTab === 'TO_RETURN') {
@@ -945,22 +947,25 @@ export const OrdersPage: React.FC = () => {
         />
         <SystemMetricPairCard
           leftItem={{
-            title: 'Hoàn thành',
+            title: 'Giao thành công',
             value: orderSummary.completed,
-            subtitle: 'Giao thành công',
+            subtitle: 'Hoàn thành & Đã giao',
             icon: CheckCircle2,
             colorScheme: 'green',
-            isActive: activeTab === 'COMPLETED',
+            isActive: activeTab === 'COMPLETED' || activeTab === 'TO_CONFIRM_RECEIVE',
             onClick: () => handleKpiFilter('COMPLETED'),
           }}
           rightItem={{
-            title: 'Hoàn hàng',
+            title: 'Hủy & Hoàn hàng',
             value: orderSummary.returned,
-            subtitle: 'Trả hàng/hoàn tiền',
+            subtitle: 'Đã hủy & Trả hàng',
             icon: RotateCcw,
             colorScheme: 'red',
-            isActive: activeTab === 'TO_RETURN',
-            onClick: () => handleKpiFilter('TO_RETURN'),
+            isActive:
+              activeTab === 'CANCELLED_AND_RETURNED' ||
+              activeTab === 'CANCELLED' ||
+              activeTab === 'TO_RETURN',
+            onClick: () => handleKpiFilter('CANCELLED_AND_RETURNED'),
           }}
         />
       </div>

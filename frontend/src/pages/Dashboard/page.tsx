@@ -813,7 +813,7 @@ export const DashboardPage: React.FC = () => {
 
           {/* Hủy & Hoàn */}
           <div
-            onClick={() => navigate('/orders?platformStatus=CANCELLED')}
+            onClick={() => navigate('/orders?platformStatus=CANCELLED_AND_RETURNED')}
             className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 shadow-xs cursor-pointer hover:border-rose-400 transition-colors group"
           >
             <div className="flex items-center justify-between text-rose-500 mb-1">

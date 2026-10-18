@@ -27,10 +27,10 @@ export class OrderFilterDto {
   @IsString()
   shopId?: string;
 
-  @ApiPropertyOptional({ enum: PlatformOrderStatus })
+  @ApiPropertyOptional({ description: 'PlatformOrderStatus or composite aliases like CANCELLED_AND_RETURNED' })
   @IsOptional()
-  @IsEnum(PlatformOrderStatus)
-  platformStatus?: PlatformOrderStatus;
+  @IsString()
+  platformStatus?: string;
 
   @ApiPropertyOptional({ enum: FulfillmentStatus })
   @IsOptional()

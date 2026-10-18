@@ -49,15 +49,48 @@ export class OrdersService {
 
     const andConditions: any[] = [];
 
-    if (filter.platformStatus === 'TO_RETURN') {
+    if (
+      filter.platformStatus === 'CANCELLED_AND_RETURNED' ||
+      filter.platformStatus === 'CANCELLED_OR_RETURNED'
+    ) {
+      andConditions.push({
+        OR: [
+          { platformStatus: { in: ['CANCELLED', 'IN_CANCEL', 'TO_RETURN', 'RETURN_REFUND'] } },
+          { fulfillmentStatus: { in: ['RETURN_RECEIVED', 'PARTIALLY_RETURN_RECEIVED'] } },
+        ],
+      });
+    } else if (
+      filter.platformStatus === 'COMPLETED' ||
+      filter.platformStatus === 'DELIVERED_SUCCESS'
+    ) {
+      andConditions.push({
+        platformStatus: { in: ['COMPLETED', 'TO_CONFIRM_RECEIVE'] },
+      });
+    } else if (filter.platformStatus === 'TO_RETURN') {
       andConditions.push({
         OR: [
           { platformStatus: { in: ['TO_RETURN', 'RETURN_REFUND'] } },
           { fulfillmentStatus: { in: ['RETURN_RECEIVED', 'PARTIALLY_RETURN_RECEIVED'] } },
         ],
       });
+    } else if (filter.platformStatus === 'CANCELLED') {
+      andConditions.push({
+        platformStatus: { in: ['CANCELLED', 'IN_CANCEL'] },
+      });
+    } else if (filter.platformStatus === 'SHIPPED') {
+      andConditions.push({
+        platformStatus: { in: ['SHIPPED', 'RETRY_SHIP'] },
+      });
     } else if (filter.platformStatus) {
-      where.platformStatus = filter.platformStatus;
+      if (filter.platformStatus.includes(',')) {
+        const statuses = filter.platformStatus
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+        where.platformStatus = { in: statuses };
+      } else {
+        where.platformStatus = filter.platformStatus;
+      }
     }
 
     // Enforce allowed shop memberships
@@ -148,19 +181,53 @@ export class OrdersService {
       }
     }
 
-    const [total, readyToShip, shipped, verified, completed, returned, unmapped] = await Promise.all([
+    const [
+      total,
+      readyToShip,
+      shipped,
+      verified,
+      completed,
+      returned,
+      unmapped,
+      cancelledOnly,
+      returnedOnly,
+    ] = await Promise.all([
       this.prisma.order.count({ where }),
       this.prisma.order.count({
         where: { ...where, platformStatus: 'READY_TO_SHIP' },
       }),
       this.prisma.order.count({
-        where: { ...where, platformStatus: 'SHIPPED' },
+        where: {
+          ...where,
+          platformStatus: { in: ['SHIPPED', 'RETRY_SHIP'] },
+        },
       }),
       this.prisma.order.count({
         where: { ...where, verificationStatus: 'VERIFIED' },
       }),
       this.prisma.order.count({
-        where: { ...where, platformStatus: 'COMPLETED' },
+        where: {
+          ...where,
+          platformStatus: { in: ['COMPLETED', 'TO_CONFIRM_RECEIVE'] },
+        },
+      }),
+      this.prisma.order.count({
+        where: {
+          ...where,
+          OR: [
+            { platformStatus: { in: ['CANCELLED', 'IN_CANCEL', 'TO_RETURN', 'RETURN_REFUND'] } },
+            { fulfillmentStatus: { in: ['RETURN_RECEIVED', 'PARTIALLY_RETURN_RECEIVED'] } },
+          ],
+        },
+      }),
+      this.prisma.order.count({
+        where: { ...where, fulfillmentStatus: 'UNMAPPED' },
+      }),
+      this.prisma.order.count({
+        where: {
+          ...where,
+          platformStatus: { in: ['CANCELLED', 'IN_CANCEL'] },
+        },
       }),
       this.prisma.order.count({
         where: {
@@ -171,9 +238,6 @@ export class OrdersService {
           ],
         },
       }),
-      this.prisma.order.count({
-        where: { ...where, fulfillmentStatus: 'UNMAPPED' },
-      }),
     ]);
 
     return {
@@ -183,6 +247,9 @@ export class OrdersService {
       verified,
       completed,
       returned,
+      cancelledAndReturned: returned,
+      cancelledOnly,
+      returnedOnly,
       unmapped,
     };
   }
