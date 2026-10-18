@@ -9,6 +9,9 @@ import {
   Home,
   BarChart3,
   ChevronRight,
+  ArrowDownLeft,
+  ArrowUpRight,
+  RotateCcw,
 } from 'lucide-react';
 import { navigationGroups } from '../../config/navigation';
 
@@ -107,21 +110,26 @@ export const MobileFeatureHub: React.FC<MobileFeatureHubProps> = ({ onSelectDash
         </button>
       )}
 
-      {/* 3. Thao tác nhanh (Quick Actions) */}
+      {/* 3. Thao tác nhanh (Quick Actions - 6 chức năng) */}
       {!searchQuery && (
         <div className="space-y-2">
-          <h2 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">
-            Thao tác nhanh
-          </h2>
+          <div className="flex items-center justify-between px-0.5">
+            <h2 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">
+              Thao tác nhanh
+            </h2>
+            <span className="text-[11px] font-medium text-gray-400">
+              6 chức năng chính
+            </span>
+          </div>
 
-          <div className="bg-white dark:bg-[#161922] border border-gray-200/60 dark:border-white/[0.08] rounded grid grid-cols-3 divide-x divide-gray-100/80 dark:divide-white/[0.05] overflow-hidden shadow-2xs">
+          <div className="bg-white dark:bg-[#161922] border border-gray-200/60 dark:border-white/[0.08] rounded grid grid-cols-3 divide-x divide-y divide-gray-100/80 dark:divide-white/[0.05] overflow-hidden shadow-2xs">
             {/* Action 1: Quét xuất hàng (Highlighted) */}
             <Link
               to="/scan"
-              className="flex flex-col items-center justify-center py-4 px-2 gap-2 text-center hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 active:bg-indigo-100/60 dark:active:bg-indigo-900/30 transition-colors group cursor-pointer"
+              className="flex flex-col items-center justify-center py-3.5 px-2 gap-1.5 text-center hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 active:bg-indigo-100/60 dark:active:bg-indigo-900/30 transition-colors group cursor-pointer"
             >
               <div className="text-[#5865f2] dark:text-[#7b85f5] group-hover:scale-110 transition-transform">
-                <ScanLine size={24} strokeWidth={1.9} />
+                <ScanLine size={23} strokeWidth={1.9} />
               </div>
               <span className="text-xs font-semibold text-[#5865f2] dark:text-[#7b85f5] leading-tight">
                 Quét xuất hàng
@@ -131,10 +139,10 @@ export const MobileFeatureHub: React.FC<MobileFeatureHubProps> = ({ onSelectDash
             {/* Action 2: Đơn hàng */}
             <Link
               to="/orders"
-              className="flex flex-col items-center justify-center py-4 px-2 gap-2 text-center hover:bg-gray-50 dark:hover:bg-white/[0.03] active:bg-gray-100 dark:active:bg-white/[0.06] transition-colors group cursor-pointer"
+              className="flex flex-col items-center justify-center py-3.5 px-2 gap-1.5 text-center hover:bg-gray-50 dark:hover:bg-white/[0.03] active:bg-gray-100 dark:active:bg-white/[0.06] transition-colors group cursor-pointer"
             >
-              <div className="text-gray-600 dark:text-gray-300 group-hover:scale-110 transition-transform">
-                <FileText size={24} strokeWidth={1.8} />
+              <div className="text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                <FileText size={23} strokeWidth={1.8} />
               </div>
               <span className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-tight">
                 Đơn hàng
@@ -144,13 +152,52 @@ export const MobileFeatureHub: React.FC<MobileFeatureHubProps> = ({ onSelectDash
             {/* Action 3: Nhập kho */}
             <Link
               to="/purchase-receipts"
-              className="flex flex-col items-center justify-center py-4 px-2 gap-2 text-center hover:bg-gray-50 dark:hover:bg-white/[0.03] active:bg-gray-100 dark:active:bg-white/[0.06] transition-colors group cursor-pointer"
+              className="flex flex-col items-center justify-center py-3.5 px-2 gap-1.5 text-center hover:bg-gray-50 dark:hover:bg-white/[0.03] active:bg-gray-100 dark:active:bg-white/[0.06] transition-colors group cursor-pointer"
             >
-              <div className="text-gray-600 dark:text-gray-300 group-hover:scale-110 transition-transform">
-                <PackagePlus size={24} strokeWidth={1.8} />
+              <div className="text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                <PackagePlus size={23} strokeWidth={1.8} />
               </div>
               <span className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-tight">
                 Nhập kho
+              </span>
+            </Link>
+
+            {/* Action 4: Mượn hàng (Nhập mượn NCC) */}
+            <Link
+              to="/supplier-debts?tab=PRODUCT_BORROWS&type=BORROW_FROM_SUPPLIER"
+              className="flex flex-col items-center justify-center py-3.5 px-2 gap-1.5 text-center hover:bg-gray-50 dark:hover:bg-white/[0.03] active:bg-gray-100 dark:active:bg-white/[0.06] transition-colors group cursor-pointer"
+            >
+              <div className="text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
+                <ArrowDownLeft size={23} strokeWidth={1.8} />
+              </div>
+              <span className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-tight">
+                Mượn hàng
+              </span>
+            </Link>
+
+            {/* Action 5: Cho mượn hàng (Xuất cho NCC mượn) */}
+            <Link
+              to="/supplier-debts?tab=PRODUCT_BORROWS&type=LEND_TO_SUPPLIER"
+              className="flex flex-col items-center justify-center py-3.5 px-2 gap-1.5 text-center hover:bg-gray-50 dark:hover:bg-white/[0.03] active:bg-gray-100 dark:active:bg-white/[0.06] transition-colors group cursor-pointer"
+            >
+              <div className="text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform">
+                <ArrowUpRight size={23} strokeWidth={1.8} />
+              </div>
+              <span className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-tight">
+                Cho mượn hàng
+              </span>
+            </Link>
+
+            {/* Action 6: Hàng hoàn (Xử lý đơn hoàn) */}
+            <Link
+              to="/order-returns"
+              className="flex flex-col items-center justify-center py-3.5 px-2 gap-1.5 text-center hover:bg-gray-50 dark:hover:bg-white/[0.03] active:bg-gray-100 dark:active:bg-white/[0.06] transition-colors group cursor-pointer"
+            >
+              <div className="text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform">
+                <RotateCcw size={23} strokeWidth={1.8} />
+              </div>
+              <span className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-tight">
+                Hàng hoàn
               </span>
             </Link>
           </div>

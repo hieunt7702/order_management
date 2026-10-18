@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Boxes,
   Plus,
@@ -66,10 +67,21 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
 }) => {
   const { warehouses, selectedWarehouseId } = useWorkspaceStore();
 
+  const [searchParams] = useSearchParams();
+  const urlType = searchParams.get('type');
+  const initialType: 'ALL' | 'BORROW_FROM_SUPPLIER' | 'LEND_TO_SUPPLIER' =
+    urlType === 'BORROW_FROM_SUPPLIER' || urlType === 'LEND_TO_SUPPLIER' ? urlType : 'ALL';
   const [borrows, setBorrows] = useState<SupplierProductBorrowModel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'ALL' | 'BORROW_FROM_SUPPLIER' | 'LEND_TO_SUPPLIER'>('ALL');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'BORROW_FROM_SUPPLIER' | 'LEND_TO_SUPPLIER'>(initialType);
+
+  useEffect(() => {
+    const t = searchParams.get('type');
+    if (t === 'BORROW_FROM_SUPPLIER' || t === 'LEND_TO_SUPPLIER') {
+      setTypeFilter(t);
+    }
+  }, [searchParams]);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>('ALL');
   const [page, setPage] = useState(1);
