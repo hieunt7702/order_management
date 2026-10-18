@@ -101,7 +101,7 @@ export class OrdersService {
           orderItems: {
             include: {
               variant: {
-                select: { id: true, sku: true, barcode: true, costPrice: true },
+                select: { id: true, sku: true, barcode: true, name: true, unit: true, costPrice: true },
               },
             },
           },
@@ -657,8 +657,52 @@ export class OrdersService {
         }
       }
 
+      // Clean up child tables to prevent foreign key constraint failures
       await tx.scanEvent.deleteMany({
-        where: { orderId: id },
+        where: {
+          tenantId,
+          OR: [{ orderId: id }, { package: { orderId: id } }],
+        },
+      });
+
+      await tx.orderReconciliationRecord.deleteMany({
+        where: { orderId: id, tenantId },
+      });
+
+      const orderReturns = await tx.orderReturn.findMany({
+        where: { orderId: id, tenantId },
+        select: { id: true },
+      });
+      if (orderReturns.length > 0) {
+        const returnIds = orderReturns.map((r) => r.id);
+        await tx.orderReturnItem.deleteMany({
+          where: { returnId: { in: returnIds }, tenantId },
+        });
+        await tx.orderReturn.deleteMany({
+          where: { id: { in: returnIds }, tenantId },
+        });
+      }
+
+      const packages = await tx.package.findMany({
+        where: { orderId: id, tenantId },
+        select: { id: true },
+      });
+      if (packages.length > 0) {
+        const pkgIds = packages.map((p) => p.id);
+        await tx.packageItem.deleteMany({
+          where: { packageId: { in: pkgIds }, tenantId },
+        });
+        await tx.package.deleteMany({
+          where: { id: { in: pkgIds }, tenantId },
+        });
+      }
+
+      await tx.settlement.deleteMany({
+        where: { orderId: id, tenantId },
+      });
+
+      await tx.orderItem.deleteMany({
+        where: { orderId: id, tenantId },
       });
 
       await tx.order.delete({
@@ -675,7 +719,7 @@ export class OrdersService {
       });
 
       return { success: true, message: 'Đã xóa đơn hàng thành công' };
-    });
+    }, { timeout: 30000 });
   }
 
   async bulkDeleteOrders(
@@ -687,7 +731,7 @@ export class OrdersService {
       tenantId,
     };
 
-    if (dto.shopId) {
+    if (dto.shopId && dto.shopId !== 'ALL' && dto.shopId.trim() !== '') {
       whereClause.shopId = dto.shopId;
     }
 
@@ -759,17 +803,68 @@ export class OrdersService {
         }
       }
 
-      // 2. Xóa các scan events liên kết
+      // 2. Xóa các scan events liên kết (cả theo orderId và theo packages của đơn)
       await tx.scanEvent.deleteMany({
-        where: { orderId: { in: idsToDelete } },
+        where: {
+          tenantId,
+          OR: [
+            { orderId: { in: idsToDelete } },
+            { package: { orderId: { in: idsToDelete } } },
+          ],
+        },
       });
 
-      // 3. Xóa các đơn hàng (cascade xóa order items, packages, order returns, settlements)
+      // 3. Xóa các bản ghi đối soát
+      await tx.orderReconciliationRecord.deleteMany({
+        where: { orderId: { in: idsToDelete }, tenantId },
+      });
+
+      // 4. Xóa các bản ghi hoàn hàng
+      const orderReturns = await tx.orderReturn.findMany({
+        where: { orderId: { in: idsToDelete }, tenantId },
+        select: { id: true },
+      });
+      if (orderReturns.length > 0) {
+        const returnIds = orderReturns.map((r) => r.id);
+        await tx.orderReturnItem.deleteMany({
+          where: { returnId: { in: returnIds }, tenantId },
+        });
+        await tx.orderReturn.deleteMany({
+          where: { id: { in: returnIds }, tenantId },
+        });
+      }
+
+      // 5. Xóa các kiện hàng và package items
+      const packages = await tx.package.findMany({
+        where: { orderId: { in: idsToDelete }, tenantId },
+        select: { id: true },
+      });
+      if (packages.length > 0) {
+        const pkgIds = packages.map((p) => p.id);
+        await tx.packageItem.deleteMany({
+          where: { packageId: { in: pkgIds }, tenantId },
+        });
+        await tx.package.deleteMany({
+          where: { id: { in: pkgIds }, tenantId },
+        });
+      }
+
+      // 6. Xóa các settlements
+      await tx.settlement.deleteMany({
+        where: { orderId: { in: idsToDelete }, tenantId },
+      });
+
+      // 7. Xóa các order items
+      await tx.orderItem.deleteMany({
+        where: { orderId: { in: idsToDelete }, tenantId },
+      });
+
+      // 8. Xóa các đơn hàng
       await tx.order.deleteMany({
         where: { id: { in: idsToDelete }, tenantId },
       });
 
-      // 4. Ghi audit log
+      // 9. Ghi audit log
       await this.auditService.log({
         tenantId,
         userId,
@@ -783,7 +878,7 @@ export class OrdersService {
           force: !!dto.force,
         },
       });
-    });
+    }, { timeout: 60000 });
 
     return {
       success: true,

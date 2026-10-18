@@ -26,6 +26,7 @@ import {
 } from '../../utils/orderStatus';
 import { VerificationStatusBadge } from '../../components/orders/VerificationStatusBadge';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
+import { getOrderProductSummary } from './orderUtils';
 
 interface OrderDetailDrawerProps {
   order: any;
@@ -45,6 +46,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   onDelete,
 }) => {
   const navigate = useNavigate();
+  const prodSummary = getOrderProductSummary(order?.orderItems);
   const [isLoadingAction, setIsLoadingAction] = useState<boolean>(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -234,9 +236,17 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
 
           {/* Line Items */}
           <div className="space-y-2">
-            <h3 className="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
-              Sản phẩm ({order.orderItems?.length || 0})
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
+                Sản phẩm ({order.orderItems?.length || 0} loại)
+              </h3>
+              {prodSummary.mainText && prodSummary.totalQuantity > 0 && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40 flex items-center gap-1">
+                  <Package size={12} className="text-indigo-500 shrink-0" />
+                  Tổng SL: {prodSummary.mainText}
+                </span>
+              )}
+            </div>
             <div className="divide-y divide-gray-100 dark:divide-gray-800 border border-gray-200 dark:border-gray-700/60 rounded overflow-hidden">
               {order.orderItems?.map((item: any) => (
                 <div key={item.id} className="p-3 bg-white dark:bg-gray-800/30 flex items-start justify-between gap-3 text-xs">
@@ -262,7 +272,9 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                     <p className="font-semibold text-gray-900 dark:text-white">
                       {formatCurrency(item.discountedPrice || item.originalPrice)} đ
                     </p>
-                    <p className="text-xs text-gray-400">SL: x{item.quantity}</p>
+                    <span className="inline-block mt-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/30 px-2 py-0.5 rounded border border-indigo-200/50 dark:border-indigo-900/40">
+                      SL: {item.quantity} {item.variant?.unit || item.unit || 'cái'}
+                    </span>
                   </div>
                 </div>
               ))}

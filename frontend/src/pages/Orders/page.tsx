@@ -63,6 +63,7 @@ import { Select } from '../../components/ui/Select';
 import { Checkbox } from '../../components/ui/Checkbox';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
 import { OrderDetailDrawer } from './OrderDetailDrawer';
+import { getOrderProductSummary } from './orderUtils';
 
 const PRESET_TABS = [
   { id: 'ALL', label: 'Tất cả' },
@@ -556,10 +557,14 @@ export const OrdersPage: React.FC = () => {
     try {
       const res: any = await ordersApi.bulkDelete({
         deleteAll: true,
-        shopId: selectedShopId || undefined,
+        shopId: selectedShopId && selectedShopId !== 'ALL' ? selectedShopId : undefined,
         force: forceDeleteAll,
       });
-      toast.success(res?.message || 'Đã xóa toàn bộ đơn hàng thành công');
+      if (res?.count === 0) {
+        toast.info(res?.message || 'Không tìm thấy đơn hàng nào phù hợp để xóa');
+      } else {
+        toast.success(res?.message || 'Đã xóa toàn bộ đơn hàng thành công');
+      }
       setIsDeleteAllModalOpen(false);
       setSelectedOrderIds([]);
       setConfirmDeleteAll(false);
@@ -869,7 +874,7 @@ export const OrdersPage: React.FC = () => {
               size="sm"
               onClick={() => {
                 setConfirmDeleteAll(false);
-                setForceDeleteAll(false);
+                setForceDeleteAll(true);
                 setIsDeleteAllModalOpen(true);
               }}
               className="gap-1.5 p-2 sm:px-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 border-red-200 dark:border-red-900/50"
@@ -1062,7 +1067,7 @@ export const OrdersPage: React.FC = () => {
             <SystemTh className="w-56">Mã đơn / Shop</SystemTh>
             <SystemTh className="w-32">Ngày đặt</SystemTh>
             <SystemTh className="w-48">Khách hàng</SystemTh>
-            <SystemTh className="w-28 text-center">Sản phẩm</SystemTh>
+            <SystemTh className="w-32 text-center">Sản phẩm / SL</SystemTh>
             <SystemTh className="w-36 text-right">Tổng tiền</SystemTh>
             <SystemTh className="w-40 text-center">Trạng thái sàn</SystemTh>
             <SystemTh className="w-24 text-center">Kho / Quét</SystemTh>
@@ -1081,6 +1086,7 @@ export const OrdersPage: React.FC = () => {
               orders.map((o, index) => {
                 const pCfg = getPlatformStatusConfig(o.platformStatus);
                 const stt = (page - 1) * limit + index + 1;
+                const prodSummary = getOrderProductSummary(o.orderItems);
 
                 return (
                   <SystemTr
@@ -1128,7 +1134,20 @@ export const OrdersPage: React.FC = () => {
                     </SystemTd>
 
                     <SystemTd className="text-center font-normal text-xs text-gray-600 dark:text-gray-400">
-                      {o.orderItems?.length || 0} SP
+                      <div
+                        className="flex flex-col items-center justify-center cursor-default group/prod relative"
+                        title={prodSummary.tooltipText}
+                      >
+                        <span className="font-semibold text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-200/60 dark:border-indigo-800/40 inline-flex items-center gap-1 max-w-[125px] truncate">
+                          <Package size={12} className="text-indigo-500 shrink-0" />
+                          <span className="truncate">{prodSummary.mainText}</span>
+                        </span>
+                        {prodSummary.subText && (
+                          <span className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 truncate max-w-[125px]">
+                            {prodSummary.subText}
+                          </span>
+                        )}
+                      </div>
                     </SystemTd>
 
                     <SystemTd className="text-right font-medium text-xs text-gray-900 dark:text-white">
@@ -1215,6 +1234,7 @@ export const OrdersPage: React.FC = () => {
         ) : (
           orders.map((o) => {
             const pCfg = getPlatformStatusConfig(o.platformStatus);
+            const prodSummary = getOrderProductSummary(o.orderItems);
 
             return (
               <div
@@ -1278,6 +1298,24 @@ export const OrdersPage: React.FC = () => {
                   <span className="truncate">{o.recipientName || 'Khách lẻ'}</span>
                   <span className="font-medium text-gray-900 dark:text-white shrink-0">
                     {formatCurrency(o.totalAmount)} đ
+                  </span>
+                </div>
+
+                {/* Product quantity & unit breakdown */}
+                <div className="flex items-center justify-between text-xs py-1 border-t border-dashed border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-1.5 min-w-0 text-gray-700 dark:text-gray-300">
+                    <Package size={13} className="text-indigo-500 shrink-0" />
+                    <span className="font-semibold text-xs text-indigo-600 dark:text-indigo-400">
+                      {prodSummary.mainText}
+                    </span>
+                    {prodSummary.subText && (
+                      <span className="text-[11px] text-gray-400 truncate">
+                        • {prodSummary.subText}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[11px] text-gray-400 shrink-0">
+                    {o.orderDate ? new Date(o.orderDate).toLocaleDateString('vi-VN') : ''}
                   </span>
                 </div>
 
@@ -2045,7 +2083,7 @@ export const OrdersPage: React.FC = () => {
           title={<><span className="sm:hidden">Xóa toàn bộ đơn</span><span className="hidden sm:inline">Xác nhận xóa toàn bộ đơn hàng</span></>}
           subtitle={
             <span className="line-clamp-1 sm:line-clamp-none">
-              {selectedShopId
+              {selectedShopId && selectedShopId !== 'ALL'
                 ? `Xóa toàn bộ đơn hàng của gian hàng đang lọc (${shops.find((s) => s.id === selectedShopId)?.name || 'Shop'})`
                 : 'Xóa toàn bộ tất cả đơn hàng trong hệ thống'}
             </span>
