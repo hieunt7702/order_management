@@ -89,7 +89,7 @@ export interface DebtReportsResponse {
 }
 
 export const suppliersApi = {
-  findAll: (params?: { search?: string; status?: string }) =>
+  findAll: (params?: { search?: string; status?: string; shopId?: string; limit?: number; page?: number }) =>
     api.get<SupplierItem[]>(`/suppliers${buildQuery(params)}`),
 
   findOne: (id: string) => api.get<SupplierItem>(`/suppliers/${id}`),

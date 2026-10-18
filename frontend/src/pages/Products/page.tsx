@@ -1437,10 +1437,6 @@ export const ProductsPage: React.FC = () => {
                                   <Eye size={13} className="text-[#5865f2]" />
                                   <span>Xem chi tiết SKU sàn</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleOpenAddVariant(product)}>
-                                  <Plus className="w-4 h-4 text-emerald-500" />
-                                  <span>Thêm biến thể</span>
-                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleOpenEditProduct(product)}>
                                   <Edit2 className="w-4 h-4 text-[#5865f2]" />
                                   <span>Sửa thông tin sản phẩm</span>
@@ -1489,24 +1485,35 @@ export const ProductsPage: React.FC = () => {
                                         </button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => handleOpenEditVariant(product, v)}>
+                                        <DropdownMenuItem onClick={() => handleOpenEditVariant(v)}>
                                           <Edit2 size={13} className="text-[#5865f2]" />
                                           <span>Sửa biến thể</span>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleOpenHistory(v)}>
-                                          <History size={13} className="text-gray-400" />
-                                          <span>Lịch sử biến động</span>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleOpenShopeeVariants(product, v)}>
+                                        {!v.isSynthetic && (
+                                          <DropdownMenuItem
+                                            onClick={() => {
+                                              setSelectedVariantForHistory({
+                                                id: v.id,
+                                                sku: v.sku,
+                                                productName: product.name,
+                                              });
+                                              setIsHistoryModalOpen(true);
+                                            }}
+                                          >
+                                            <History size={13} className="text-gray-400" />
+                                            <span>Lịch sử biến động</span>
+                                          </DropdownMenuItem>
+                                        )}
+                                        <DropdownMenuItem onClick={() => handleOpenShopeeVariantsModal(product, v)}>
                                           <Store size={13} className="text-orange-500" />
                                           <span>Xem SKU Shopee ({shopeeCount})</span>
                                         </DropdownMenuItem>
-                                        {variants.length > 1 && (
+                                        {variants.length > 1 && !v.isSynthetic && (
                                           <>
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem
                                               variant="destructive"
-                                              onClick={() => handleOpenDeleteVariant(product, v)}
+                                              onClick={() => handleOpenDeleteVariant(v)}
                                             >
                                               <Trash2 size={13} />
                                               <span>Xóa biến thể</span>
@@ -1536,7 +1543,7 @@ export const ProductsPage: React.FC = () => {
                                     <span>Barcode: {v.barcode || '--'}</span>
                                     {shopeeCount > 0 ? (
                                       <span
-                                        onClick={() => handleOpenShopeeVariants(product, v)}
+                                        onClick={() => handleOpenShopeeVariantsModal(product, v)}
                                         className="text-orange-600 dark:text-orange-400 font-semibold cursor-pointer hover:underline"
                                       >
                                         {shopeeCount} SKU Shopee

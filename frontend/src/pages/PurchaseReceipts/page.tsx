@@ -58,6 +58,7 @@ import {
 import { Button } from '../../components/ui/Button';
 import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import { Select } from '../../components/ui/Select';
+import { Checkbox } from '../../components/ui/Checkbox';
 import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import { toast } from '../../components/ui/Toast';
 import { QuickCreateSupplierModal } from '../../components/suppliers/QuickCreateSupplierModal';
@@ -882,13 +883,13 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   <div className="flex items-center gap-1.5 truncate">
                     <Building2 size={12} className="text-gray-400 shrink-0" />
                     <span className="font-medium text-gray-800 dark:text-gray-200 truncate">
-                      {r.supplier?.name || r.supplierName || 'Nhà cung cấp'}
+                      {r.supplier?.name || 'Nhà cung cấp'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-gray-400">
                     <div className="flex items-center gap-1 truncate">
                       <Warehouse size={11} className="shrink-0" />
-                      <span className="truncate">{r.warehouse?.name || r.warehouseName || 'Kho chính'}</span>
+                      <span className="truncate">{r.warehouse?.name || 'Kho chính'}</span>
                     </div>
                     <span>{r.receiptDate ? new Date(r.receiptDate).toLocaleDateString('vi-VN') : ''}</span>
                   </div>
@@ -899,13 +900,13 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   <div>
                     <div className="text-[10px] text-gray-400">Hàng thực nhận</div>
                     <div className="font-mono font-medium text-xs text-gray-900 dark:text-white mt-0.5">
-                      {Number(r.totalAmount || 0).toLocaleString('vi-VN')}đ
+                      {Number(r.totalItemsAmount || 0).toLocaleString('vi-VN')}đ
                     </div>
                   </div>
                   <div>
                     <div className="text-[10px] text-gray-400">Phải trả NCC</div>
                     <div className="font-mono font-semibold text-xs text-gray-900 dark:text-white mt-0.5">
-                      {Number(r.totalPayable || 0).toLocaleString('vi-VN')}đ
+                      {Number(r.payableAmount || 0).toLocaleString('vi-VN')}đ
                     </div>
                   </div>
                   <div>
@@ -1562,23 +1563,33 @@ export const PurchaseReceiptsPage: React.FC = () => {
 
                 {/* Immediate payment switch */}
                 <div className="mt-4 pt-3 border-t border-indigo-100 dark:border-indigo-900/30 space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-gray-900 dark:text-white select-none">
-                    <input
-                      type="checkbox"
+                  <div
+                    onClick={() => {
+                      const nextChecked = !createForm.immediatePayment;
+                      setCreateForm({
+                        ...createForm,
+                        immediatePayment: nextChecked,
+                        immediatePaymentAmount: nextChecked ? formPayable : 0,
+                      });
+                    }}
+                    className="flex items-center gap-2 cursor-pointer select-none group"
+                  >
+                    <Checkbox
                       checked={createForm.immediatePayment || false}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
+                      onChange={() => {
+                        const nextChecked = !createForm.immediatePayment;
                         setCreateForm({
                           ...createForm,
-                          immediatePayment: checked,
-                          immediatePaymentAmount: checked ? formPayable : 0,
+                          immediatePayment: nextChecked,
+                          immediatePaymentAmount: nextChecked ? formPayable : 0,
                         });
                       }}
-                      className="rounded text-[#5865f2] focus:ring-[#5865f2]"
+                      size="sm"
                     />
-                    <Wallet size={14} className="text-emerald-500 shrink-0" />
-                    <span>Thanh toán ngay khi nhập hàng (Tạo phiếu chi đồng thời)</span>
-                  </label>
+                    <span className="text-[11px] font-normal text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                      Thanh toán ngay khi nhập hàng (Tạo phiếu chi đồng thời)
+                    </span>
+                  </div>
 
                   {createForm.immediatePayment && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 text-xs">

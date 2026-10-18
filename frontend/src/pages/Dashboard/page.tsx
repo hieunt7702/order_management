@@ -17,6 +17,9 @@ import {
   ChevronDown,
   ListFilter,
   X,
+  BarChart3,
+  LayoutGrid,
+  Store,
 } from 'lucide-react';
 import { reportsApi } from '../../services/reportsApi';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
@@ -98,7 +101,7 @@ const SHOPEE_STATUS_OPTIONS = [
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const selectedShopId = useWorkspaceStore((s) => s.selectedShopId);
+  const { selectedShopId, setSelectedShopId, shops } = useWorkspaceStore();
   const isMobile = useIsMobile();
 
   const [data, setData] = useState<any>(null);
@@ -111,7 +114,7 @@ export const DashboardPage: React.FC = () => {
   // Multi-select Shopee Order Statuses
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState<boolean>(false);
-  const [showMobileKPIs, setShowMobileKPIs] = useState<boolean>(false);
+  const [mobileTab, setMobileTab] = useState<'dashboard' | 'hub'>('dashboard');
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const statusDrawerRef = useRef<HTMLDivElement>(null);
   useClickOutside(() => setIsStatusDropdownOpen(false), isStatusDropdownOpen, [statusDropdownRef, statusDrawerRef]);
@@ -146,19 +149,71 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Mobile & Tablet: ONLY Feature Hub / Functions Menu */}
-      <div className="lg:hidden">
-        <MobileFeatureHub />
+      {/* Mobile & Tablet Segmented Tab Switcher (lg:hidden) */}
+      <div className="lg:hidden sticky top-0 z-30 pt-0.5 pb-1 bg-[#f9f9fa] dark:bg-[#0f1115] transition-colors">
+        <div className="bg-gray-200/80 dark:bg-[#161922] p-1 rounded-xl border border-gray-200 dark:border-white/[0.08] grid grid-cols-2 gap-1 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setMobileTab('dashboard')}
+            className={`h-9 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer ${
+              mobileTab === 'dashboard'
+                ? 'bg-white dark:bg-[#202533] text-[#5865f2] dark:text-[#7b85f5] shadow-xs'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <BarChart3
+              size={15}
+              className={mobileTab === 'dashboard' ? 'text-[#5865f2] dark:text-[#7b85f5]' : 'text-gray-400'}
+            />
+            <span>Số liệu Dashboard</span>
+            {data?.orderStats?.totalOrders !== undefined && (
+              <span
+                className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold ${
+                  mobileTab === 'dashboard'
+                    ? 'bg-[#5865f2]/10 text-[#5865f2] dark:bg-[#5865f2]/25 dark:text-indigo-300'
+                    : 'bg-gray-300/70 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                }`}
+              >
+                {data.orderStats.totalOrders}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMobileTab('hub')}
+            className={`h-9 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer ${
+              mobileTab === 'hub'
+                ? 'bg-white dark:bg-[#202533] text-[#5865f2] dark:text-[#7b85f5] shadow-xs'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+            }`}
+          >
+            <LayoutGrid
+              size={15}
+              className={mobileTab === 'hub' ? 'text-[#5865f2] dark:text-[#7b85f5]' : 'text-gray-400'}
+            />
+            <span>Menu Chức năng</span>
+          </button>
+        </div>
       </div>
 
-      {/* Desktop Dashboard ONLY (hidden on mobile and tablet) */}
-      <div className="hidden lg:block space-y-4">
+      {/* Mobile Tab 2: Feature Hub (Only on mobile when hub tab selected) */}
+      <div className={`lg:hidden ${mobileTab === 'hub' ? 'block' : 'hidden'}`}>
+        <MobileFeatureHub onSelectDashboard={() => setMobileTab('dashboard')} />
+      </div>
+
+      {/* Main Dashboard: Always displayed on Desktop (lg:block), and displayed on mobile when mobileTab === 'dashboard' */}
+      <div className={`${mobileTab === 'dashboard' ? 'block' : 'hidden'} lg:block space-y-4 animate-in fade-in duration-150`}>
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div>
-            <h1 className="text-base font-medium text-gray-900 dark:text-white leading-tight">
+            <h1 className="text-base font-semibold text-gray-900 dark:text-white leading-tight flex items-center gap-2">
               <span className="sm:hidden">Tổng quan</span>
               <span className="hidden sm:inline">Tổng quan Vận hành & Doanh thu</span>
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Live
+              </span>
             </h1>
             <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
               <span className="sm:hidden">Số liệu theo thời gian thực</span>
@@ -166,8 +221,29 @@ export const DashboardPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Filter Controls: Shopee Status Multi-select, Date Filter & Refresh */}
+          {/* Filter Controls: Shop Selector, Shopee Status Multi-select, Date Filter & Refresh */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            {/* Shop Selector */}
+            {shops && shops.length > 0 && (
+              <div className="w-full sm:w-auto flex items-center">
+                <div className="flex items-center gap-1.5 bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 rounded px-2.5 h-8 text-xs min-w-0 w-full sm:w-auto">
+                  <Store size={13} className="text-gray-400 shrink-0" />
+                  <select
+                    value={selectedShopId || ''}
+                    onChange={(e) => setSelectedShopId(e.target.value || null)}
+                    className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none w-full min-w-0 cursor-pointer font-sans truncate"
+                  >
+                    <option value="" className="dark:bg-[#181b22]">Tất cả shop ({shops.length})</option>
+                    {shops.map((s) => (
+                      <option key={s.id} value={s.id} className="dark:bg-[#181b22]">
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
             {/* Shopee Status Multi-Select Dropdown */}
             <div ref={statusDropdownRef} className="relative w-full sm:w-auto">
             <button
@@ -869,39 +945,82 @@ export const DashboardPage: React.FC = () => {
               Chưa có dữ liệu bán hàng trong kỳ này
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-gray-50 dark:bg-[#1a1b23] border-b border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400">
-                  <tr>
-                    <th className="py-2.5 px-4 font-medium">Tên sản phẩm</th>
-                    <th className="py-2.5 px-4 font-medium border-l border-gray-200 dark:border-gray-800">
-                      SKU sàn
-                    </th>
-                    <th className="py-2.5 px-4 text-right font-medium border-l border-gray-200 dark:border-gray-800">
-                      Số lượng đã bán
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
-                  {data.topSellingItems.map((item: any, idx: number) => (
-                    <tr
-                      key={idx}
-                      className="hover:bg-gray-50/60 dark:hover:bg-[#1c212d] transition-colors"
-                    >
-                      <td className="py-2.5 px-4 font-medium text-gray-900 dark:text-white">
-                        {item.productName}
-                      </td>
-                      <td className="py-2.5 px-4 text-gray-500 dark:text-gray-400 font-mono text-[11px] border-l border-gray-200 dark:border-gray-800">
-                        {item.sku || 'N/A'}
-                      </td>
-                      <td className="py-2.5 px-4 text-right font-bold text-[#5865f2] border-l border-gray-200 dark:border-gray-800">
+            <>
+              {/* Mobile Compact List View (sm:hidden) */}
+              <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/60">
+                {data.topSellingItems.map((item: any, idx: number) => (
+                  <div
+                    key={idx}
+                    className="p-3 flex items-center justify-between gap-2.5 hover:bg-gray-50/60 dark:hover:bg-[#1c212d] transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <span
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                          idx === 0
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'
+                            : idx === 1
+                            ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                            : idx === 2
+                            ? 'bg-amber-800/15 text-amber-900 dark:bg-amber-950/60 dark:text-amber-400'
+                            : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                        }`}
+                      >
+                        {idx + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                          {item.productName}
+                        </p>
+                        <p className="text-[11px] font-mono text-gray-400 truncate mt-0.5">
+                          {item.sku || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-sm font-bold text-[#5865f2] dark:text-[#7b85f5]">
                         {item.totalQuantitySold}
-                      </td>
+                      </span>
+                      <span className="text-[10px] text-gray-400 block leading-tight">đã bán</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tablet & Desktop Table (hidden sm:block) */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-gray-50 dark:bg-[#1a1b23] border-b border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400">
+                    <tr>
+                      <th className="py-2.5 px-4 font-medium">Tên sản phẩm</th>
+                      <th className="py-2.5 px-4 font-medium border-l border-gray-200 dark:border-gray-800">
+                        SKU sàn
+                      </th>
+                      <th className="py-2.5 px-4 text-right font-medium border-l border-gray-200 dark:border-gray-800">
+                        Số lượng đã bán
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
+                    {data.topSellingItems.map((item: any, idx: number) => (
+                      <tr
+                        key={idx}
+                        className="hover:bg-gray-50/60 dark:hover:bg-[#1c212d] transition-colors"
+                      >
+                        <td className="py-2.5 px-4 font-medium text-gray-900 dark:text-white">
+                          {item.productName}
+                        </td>
+                        <td className="py-2.5 px-4 text-gray-500 dark:text-gray-400 font-mono text-[11px] border-l border-gray-200 dark:border-gray-800">
+                          {item.sku || 'N/A'}
+                        </td>
+                        <td className="py-2.5 px-4 text-right font-bold text-[#5865f2] border-l border-gray-200 dark:border-gray-800">
+                          {item.totalQuantitySold}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

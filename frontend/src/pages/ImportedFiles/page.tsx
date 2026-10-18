@@ -19,6 +19,7 @@ import {
   RotateCcw,
   X,
   ShoppingBag,
+  RefreshCw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {

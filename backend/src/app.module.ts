@@ -17,6 +17,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { OrderReturnsModule } from './modules/order-returns/order-returns.module';
 import { CashflowModule } from './modules/cashflow/cashflow.module';
+import { SystemModule } from './modules/system/system.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -47,6 +48,7 @@ import { HealthController } from './health.controller';
     SuppliersModule,
     OrderReturnsModule,
     CashflowModule,
+    SystemModule,
   ],
   controllers: [HealthController],
 })

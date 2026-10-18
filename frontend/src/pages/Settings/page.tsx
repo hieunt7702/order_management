@@ -18,14 +18,17 @@ import {
   LogOut,
   User as UserIcon,
   Compass,
+  ShieldAlert,
 } from 'lucide-react';
 import { warehousesApi } from '../../services/warehousesApi';
 import { shopsApi } from '../../services/shopsApi';
+import { systemApi } from '../../services/systemApi';
 import { useAuthStore } from '../../stores/authStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useNavigationStore } from '../../stores/navigationStore';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
+import { Checkbox } from '../../components/ui/Checkbox';
 import { Card, CardHeader, CardTitle, CardContent, CardAction } from '../../components/ui/Card';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
 import { Select } from '../../components/ui/Select';
@@ -62,6 +65,16 @@ export const SettingsPage: React.FC = () => {
   const [isDeleteWhModalOpen, setIsDeleteWhModalOpen] = useState<boolean>(false);
   const [selectedWhForDelete, setSelectedWhForDelete] = useState<any>(null);
   const [isDeletingWh, setIsDeletingWh] = useState<boolean>(false);
+
+  // Clear Data Modal State
+  const [isClearDataModalOpen, setIsClearDataModalOpen] = useState<boolean>(false);
+  const [isClearingData, setIsClearingData] = useState<boolean>(false);
+  const [clearOrders, setClearOrders] = useState<boolean>(true);
+  const [clearPurchaseReceipts, setClearPurchaseReceipts] = useState<boolean>(true);
+  const [clearCashflow, setClearCashflow] = useState<boolean>(true);
+  const [clearProducts, setClearProducts] = useState<boolean>(false);
+  const [clearSuppliers, setClearSuppliers] = useState<boolean>(false);
+  const [confirmClearText, setConfirmClearText] = useState<string>('');
 
   // Theme preferences
   const [isDark, setIsDark] = useState<boolean>(() => {
@@ -131,6 +144,37 @@ export const SettingsPage: React.FC = () => {
     logout();
     navigate('/login');
     toast.success('Đã đăng xuất tài khoản');
+  };
+
+  const handleClearData = async () => {
+    if (confirmClearText.trim().toUpperCase() !== 'CONFIRM') {
+      toast.warning('Vui lòng nhập chính xác "CONFIRM" để xác nhận');
+      return;
+    }
+
+    if (!clearOrders && !clearPurchaseReceipts && !clearCashflow && !clearProducts && !clearSuppliers) {
+      toast.warning('Vui lòng chọn ít nhất 1 nhóm dữ liệu cần xóa');
+      return;
+    }
+
+    setIsClearingData(true);
+    try {
+      const res = await systemApi.clearData({
+        clearOrders,
+        clearPurchaseReceipts,
+        clearCashflow,
+        clearProducts,
+        clearSuppliers,
+      });
+      toast.success(res.message || 'Đã xóa dữ liệu thành công!');
+      setIsClearDataModalOpen(false);
+      setConfirmClearText('');
+      await loadContextData();
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể xóa dữ liệu hệ thống');
+    } finally {
+      setIsClearingData(false);
+    }
   };
 
   const handleCreateWhSubmit = async (e: React.FormEvent) => {
@@ -630,7 +674,10 @@ export const SettingsPage: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-3.5 sm:p-4 space-y-2.5">
-          <label className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
+          <div
+            onClick={() => setScannerSound(!scannerSound)}
+            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-700 transition-colors select-none"
+          >
             <div className="flex items-center gap-2.5">
               <Volume2 size={16} className="text-emerald-500" />
               <div>
@@ -642,15 +689,17 @@ export const SettingsPage: React.FC = () => {
                 </span>
               </div>
             </div>
-            <input
-              type="checkbox"
+            <Checkbox
               checked={scannerSound}
               onChange={(e) => setScannerSound(e.target.checked)}
-              className="w-4 h-4 text-[#5865f2] rounded border-gray-300 focus:ring-[#5865f2] cursor-pointer"
+              size="md"
             />
-          </label>
+          </div>
 
-          <label className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-700 transition-colors">
+          <div
+            onClick={() => setAutoSelectNext(!autoSelectNext)}
+            className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 cursor-pointer hover:border-gray-300 dark:hover:border-gray-700 transition-colors select-none"
+          >
             <div className="flex items-center gap-2.5">
               <Scan size={16} className="text-[#5865f2]" />
               <div>
@@ -662,13 +711,57 @@ export const SettingsPage: React.FC = () => {
                 </span>
               </div>
             </div>
-            <input
-              type="checkbox"
+            <Checkbox
               checked={autoSelectNext}
               onChange={(e) => setAutoSelectNext(e.target.checked)}
-              className="w-4 h-4 text-[#5865f2] rounded border-gray-300 focus:ring-[#5865f2] cursor-pointer"
+              size="md"
             />
-          </label>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 6. DANGER ZONE: CLEAR ALL DATA */}
+      <Card className="shrink-0 border-rose-200 dark:border-rose-900/60 bg-white dark:bg-[#15171e] shadow-2xs overflow-hidden">
+        <CardHeader className="py-2.5 px-3.5 sm:py-3 sm:px-4 bg-rose-50/60 dark:bg-rose-950/20 border-b border-rose-100 dark:border-rose-900/40 flex flex-row items-center justify-between">
+          <CardTitle className="text-xs font-semibold flex items-center gap-2 text-rose-700 dark:text-rose-400">
+            <ShieldAlert size={16} className="text-rose-600 dark:text-rose-400" />
+            <span>Vùng nguy hiểm (Danger Zone)</span>
+          </CardTitle>
+          <div className="flex items-center gap-1.5 text-[11px] text-rose-600 dark:text-rose-400 font-medium select-none">
+            <AlertTriangle size={13} className="shrink-0" />
+            <span>Không thể khôi phục</span>
+          </div>
+        </CardHeader>
+        <CardContent className="p-3.5 sm:p-4 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-rose-50/30 dark:bg-rose-950/10 rounded border border-rose-100 dark:border-rose-900/30">
+            <div className="space-y-1 min-w-0 flex-1">
+              <span className="font-semibold text-xs text-gray-900 dark:text-white block">
+                Clear toàn bộ hoặc tùy chọn phân hệ dữ liệu
+              </span>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                Tùy chọn xóa sạch phiếu thu chi, phiếu nhập kho, đơn hàng Shopee hoặc đặt lại dữ liệu vận hành. Thông tin đăng nhập, Shop và Kho hàng luôn được giữ nguyên an toàn.
+              </p>
+            </div>
+            <div className="shrink-0 pt-1 sm:pt-0">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  setConfirmClearText('');
+                  setClearOrders(true);
+                  setClearPurchaseReceipts(true);
+                  setClearCashflow(true);
+                  setClearProducts(false);
+                  setClearSuppliers(false);
+                  setIsClearDataModalOpen(true);
+                }}
+                className="gap-1.5 h-8 px-3 text-xs font-semibold shadow-xs whitespace-nowrap cursor-pointer active:scale-95"
+              >
+                <Trash2 size={13} />
+                <span>Xóa dữ liệu...</span>
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -804,17 +897,19 @@ export const SettingsPage: React.FC = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
+              <div
+                onClick={() => setEditWhForm({ ...editWhForm, isActive: !editWhForm.isActive })}
+                className="flex items-center gap-2 pt-1 cursor-pointer select-none group"
+              >
+                <Checkbox
                   id="isWhActiveCheck"
                   checked={editWhForm.isActive}
                   onChange={(e) => setEditWhForm({ ...editWhForm, isActive: e.target.checked })}
-                  className="w-4 h-4 text-[#5865f2] rounded border-gray-300 focus:ring-[#5865f2] cursor-pointer"
+                  size="sm"
                 />
                 <label
                   htmlFor="isWhActiveCheck"
-                  className="text-xs text-gray-700 dark:text-gray-300 font-medium cursor-pointer"
+                  className="text-xs text-gray-700 dark:text-gray-300 font-medium cursor-pointer group-hover:text-gray-900 dark:group-hover:text-white transition-colors"
                 >
                   Kích hoạt trạng thái hoạt động của kho
                 </label>
@@ -911,6 +1006,203 @@ export const SettingsPage: React.FC = () => {
               <span>Đăng xuất</span>
             </ModalButton>
           </ModalFooter>
+        </Modal>
+      )}
+
+      {/* MODAL: CLEAR DATA CONFIRMATION */}
+      {isClearDataModalOpen && (
+        <Modal
+          isOpen={isClearDataModalOpen}
+          onClose={() => !isClearingData && setIsClearDataModalOpen(false)}
+          title={
+            <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold">
+              <ShieldAlert size={18} />
+              <span>Xóa dữ liệu hệ thống</span>
+            </div>
+          }
+          subtitle="Dữ liệu đã chọn sau khi xóa sẽ không thể khôi phục"
+          icon={Trash2}
+          maxWidth="max-w-md"
+        >
+          <div className="flex flex-col flex-1 min-h-0">
+            <ModalBody className="space-y-3 p-3.5 sm:p-4">
+              {/* Short Alert Notice */}
+              <div className="p-2.5 rounded bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-start gap-2 text-xs text-rose-800 dark:text-rose-300">
+                <AlertTriangle size={15} className="shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+                <p className="text-[11px] leading-relaxed">
+                  Hành động này sẽ xóa vĩnh viễn các phân hệ được tích chọn bên dưới. Tài khoản đăng nhập, Shop và Kho hàng luôn được bảo toàn an toàn.
+                </p>
+              </div>
+
+              {/* Granular Module Checkboxes */}
+              <div className="space-y-1.5 p-2.5 rounded bg-gray-50 dark:bg-[#161a22] border border-gray-200 dark:border-gray-800">
+                <div className="flex items-center justify-between pb-1 border-b border-gray-200/60 dark:border-gray-800 text-[11px] text-gray-500 font-medium">
+                  <span>Chọn dữ liệu cần xóa:</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setClearOrders(false);
+                        setClearPurchaseReceipts(true);
+                        setClearCashflow(true);
+                        setClearProducts(false);
+                        setClearSuppliers(false);
+                      }}
+                      className="text-[10px] text-[#5865f2] hover:underline cursor-pointer"
+                    >
+                      Chỉ thu chi & nhập hàng
+                    </button>
+                    <span className="text-gray-300 dark:text-gray-700">|</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allSelected = clearOrders && clearPurchaseReceipts && clearCashflow;
+                        setClearOrders(!allSelected);
+                        setClearPurchaseReceipts(!allSelected);
+                        setClearCashflow(!allSelected);
+                      }}
+                      className="text-[10px] text-gray-500 hover:text-gray-900 dark:hover:text-white cursor-pointer"
+                    >
+                      {clearOrders && clearPurchaseReceipts && clearCashflow ? 'Bỏ hết' : 'Tất cả'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 1. Phiếu thu chi & Sổ quỹ */}
+                <div
+                  onClick={() => setClearCashflow(!clearCashflow)}
+                  className="flex items-start gap-2 py-1 px-1 rounded hover:bg-gray-100/60 dark:hover:bg-gray-800/40 cursor-pointer select-none"
+                >
+                  <Checkbox
+                    checked={clearCashflow}
+                    onChange={(e) => setClearCashflow(e.target.checked)}
+                    size="sm"
+                    className="mt-0.5"
+                  />
+                  <div className="min-w-0">
+                    <span className="text-xs font-medium text-gray-900 dark:text-gray-100 block">
+                      Phiếu thu chi & Sổ quỹ tiền
+                    </span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
+                      Giao dịch thu chi, chuyển quỹ, đặt lại số dư tài khoản về 0
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Phiếu nhập hàng & Công nợ NCC */}
+                <div
+                  onClick={() => setClearPurchaseReceipts(!clearPurchaseReceipts)}
+                  className="flex items-start gap-2 py-1 px-1 rounded hover:bg-gray-100/60 dark:hover:bg-gray-800/40 cursor-pointer select-none"
+                >
+                  <Checkbox
+                    checked={clearPurchaseReceipts}
+                    onChange={(e) => setClearPurchaseReceipts(e.target.checked)}
+                    size="sm"
+                    className="mt-0.5"
+                  />
+                  <div className="min-w-0">
+                    <span className="text-xs font-medium text-gray-900 dark:text-gray-100 block">
+                      Phiếu nhập hàng & Công nợ NCC
+                    </span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
+                      Phiếu nhập kho, trả hàng NCC, phiếu chi thanh toán nợ NCC
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. Đơn hàng Shopee */}
+                <div
+                  onClick={() => setClearOrders(!clearOrders)}
+                  className="flex items-start gap-2 py-1 px-1 rounded hover:bg-gray-100/60 dark:hover:bg-gray-800/40 cursor-pointer select-none"
+                >
+                  <Checkbox
+                    checked={clearOrders}
+                    onChange={(e) => setClearOrders(e.target.checked)}
+                    size="sm"
+                    className="mt-0.5"
+                  />
+                  <div className="min-w-0">
+                    <span className="text-xs font-medium text-gray-900 dark:text-gray-100 block">
+                      Đơn hàng Shopee & Vận hành kho
+                    </span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
+                      Đơn hàng, kiện hàng, lịch sử quét mã, đơn hàng hoàn trả
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4. Tùy chọn mở rộng: Sản phẩm & NCC */}
+                <div className="pt-1.5 border-t border-gray-200/60 dark:border-gray-800/80 flex items-center justify-between gap-3 text-[11px]">
+                  <div
+                    onClick={() => setClearProducts(!clearProducts)}
+                    className="flex items-center gap-1.5 cursor-pointer select-none"
+                  >
+                    <Checkbox
+                      checked={clearProducts}
+                      onChange={(e) => setClearProducts(e.target.checked)}
+                      size="sm"
+                    />
+                    <span className="text-gray-600 dark:text-gray-300">Xóa cả Sản phẩm & SKU</span>
+                  </div>
+
+                  <div
+                    onClick={() => setClearSuppliers(!clearSuppliers)}
+                    className="flex items-center gap-1.5 cursor-pointer select-none"
+                  >
+                    <Checkbox
+                      checked={clearSuppliers}
+                      onChange={(e) => setClearSuppliers(e.target.checked)}
+                      size="sm"
+                    />
+                    <span className="text-gray-600 dark:text-gray-300">Xóa cả Nhà cung cấp</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Safety Type-to-Confirm: CONFIRM */}
+              <div className="space-y-1.5 pt-0.5">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                  Để xác nhận, vui lòng nhập chữ{' '}
+                  <span className="font-bold font-mono text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900/50 select-all">
+                    CONFIRM
+                  </span>{' '}
+                  vào ô dưới đây:
+                </label>
+                <input
+                  type="text"
+                  value={confirmClearText}
+                  onChange={(e) => setConfirmClearText(e.target.value)}
+                  placeholder="Nhập: CONFIRM"
+                  disabled={isClearingData}
+                  className="w-full h-8.5 px-3 text-xs bg-white dark:bg-[#181b22] border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-white font-mono focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 placeholder-gray-400"
+                />
+              </div>
+            </ModalBody>
+
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full p-3 sm:p-3.5 border-t border-gray-100 dark:border-gray-800">
+              <ModalButton
+                variant="secondary"
+                onClick={() => setIsClearDataModalOpen(false)}
+                disabled={isClearingData}
+                className="flex-1 sm:flex-initial"
+              >
+                Hủy bỏ
+              </ModalButton>
+              <ModalButton
+                variant="danger"
+                onClick={handleClearData}
+                disabled={
+                  confirmClearText.trim().toUpperCase() !== 'CONFIRM' ||
+                  isClearingData ||
+                  (!clearOrders && !clearPurchaseReceipts && !clearCashflow && !clearProducts && !clearSuppliers)
+                }
+                className="flex-1 sm:flex-initial gap-1.5 font-semibold"
+              >
+                <Trash2 size={13} />
+                <span>{isClearingData ? 'Đang xóa...' : 'Xác nhận xóa'}</span>
+              </ModalButton>
+            </ModalFooter>
+          </div>
         </Modal>
       )}
     </div>

@@ -1999,12 +1999,14 @@ export const OrdersPage: React.FC = () => {
               </div>
 
               <div className="p-3 rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-700 dark:text-gray-300">
-                  <input
-                    type="checkbox"
+                <div
+                  onClick={() => setForceBulkDelete(!forceBulkDelete)}
+                  className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-700 dark:text-gray-300 select-none"
+                >
+                  <Checkbox
                     checked={forceBulkDelete}
                     onChange={(e) => setForceBulkDelete(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500 mt-0.5"
+                    size="sm"
                   />
                   <div>
                     <span className="font-medium text-red-600 dark:text-red-400">Buộc xóa cả đơn đã xuất kho bàn giao</span>
@@ -2012,7 +2014,7 @@ export const OrdersPage: React.FC = () => {
                       Bật tùy chọn này nếu bạn muốn xóa dọn dẹp triệt để dữ liệu mà không bị chặn bởi trạng thái xuất kho.
                     </p>
                   </div>
-                </label>
+                </div>
               </div>
             </ModalBody>
             <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
@@ -2066,12 +2068,14 @@ export const OrdersPage: React.FC = () => {
               </div>
 
               <div className="p-3 rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 space-y-2.5">
-                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-700 dark:text-gray-300">
-                  <input
-                    type="checkbox"
+                <div
+                  onClick={() => setForceDeleteAll(!forceDeleteAll)}
+                  className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-700 dark:text-gray-300 select-none"
+                >
+                  <Checkbox
                     checked={forceDeleteAll}
                     onChange={(e) => setForceDeleteAll(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500 mt-0.5"
+                    size="sm"
                   />
                   <div>
                     <span className="font-medium text-red-600 dark:text-red-400">Buộc xóa cả đơn đã xuất kho bàn giao (Force delete)</span>
@@ -2079,18 +2083,20 @@ export const OrdersPage: React.FC = () => {
                       Bỏ qua kiểm tra trạng thái DISPATCHED và xóa sạch toàn bộ đơn.
                     </p>
                   </div>
-                </label>
+                </div>
 
                 <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-900 dark:text-white font-medium">
-                    <input
-                      type="checkbox"
+                  <div
+                    onClick={() => setConfirmDeleteAll(!confirmDeleteAll)}
+                    className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-900 dark:text-white font-medium select-none"
+                  >
+                    <Checkbox
                       checked={confirmDeleteAll}
                       onChange={(e) => setConfirmDeleteAll(e.target.checked)}
-                      className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500 mt-0.5"
+                      size="sm"
                     />
                     <span>Tôi hiểu và đồng ý xóa vĩnh viễn toàn bộ đơn hàng</span>
-                  </label>
+                  </div>
                 </div>
               </div>
             </ModalBody>

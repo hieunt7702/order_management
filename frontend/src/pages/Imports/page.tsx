@@ -8,6 +8,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { importsApi } from '../../services/importsApi';
+import { Checkbox } from '../../components/ui/Checkbox';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { Select } from '../../components/ui/Select';
 import {
@@ -368,17 +369,19 @@ export const ImportsPage: React.FC = () => {
             )}
 
             {/* Auto Reserve Checkbox */}
-            <div className="flex items-center gap-2 pt-2">
-              <input
-                type="checkbox"
+            <div
+              onClick={() => setAutoReserve(!autoReserve)}
+              className="flex items-center gap-2 pt-2 cursor-pointer select-none group"
+            >
+              <Checkbox
                 id="autoReserve"
                 checked={autoReserve}
                 onChange={(e) => setAutoReserve(e.target.checked)}
-                className="rounded text-[#5865f2] focus:ring-[#5865f2] border-gray-300 dark:border-gray-700"
+                size="sm"
               />
               <label
                 htmlFor="autoReserve"
-                className="text-xs text-gray-700 dark:text-gray-300 font-normal"
+                className="text-xs text-gray-700 dark:text-gray-300 font-normal cursor-pointer group-hover:text-gray-900 dark:group-hover:text-white transition-colors"
               >
                 Tự động giữ hàng (reserve) cho các đơn hàng có đủ mapping và đủ
                 số lượng khả dụng trong kho

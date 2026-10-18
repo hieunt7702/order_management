@@ -10,7 +10,11 @@ import {
 } from 'lucide-react';
 import { navigationGroups } from '../../config/navigation';
 
-export const MobileFeatureHub: React.FC = () => {
+export interface MobileFeatureHubProps {
+  onSelectDashboard?: () => void;
+}
+
+export const MobileFeatureHub: React.FC<MobileFeatureHubProps> = ({ onSelectDashboard }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Filter items in real time when searching
@@ -146,6 +150,26 @@ export const MobileFeatureHub: React.FC = () => {
                 <div className="bg-white dark:bg-[#161922] border border-gray-200/60 dark:border-white/[0.08] rounded grid grid-cols-2 divide-x divide-gray-100/80 dark:divide-white/[0.05] divide-y divide-gray-100/80 dark:divide-white/[0.05] overflow-hidden shadow-2xs">
                   {group.items.map((item) => {
                     const IconComp = item.icon || Home;
+                    const isDashboardItem = item.id === 'dashboard' || item.href === '/';
+
+                    if (isDashboardItem && onSelectDashboard) {
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={onSelectDashboard}
+                          className="flex items-center gap-3 px-3.5 py-3 hover:bg-gray-50 dark:hover:bg-white/[0.03] active:bg-gray-100 dark:active:bg-white/[0.06] transition-colors group cursor-pointer text-left w-full"
+                        >
+                          <div className="text-[#5865f2] dark:text-[#7b85f5] group-hover:scale-110 transition-transform shrink-0">
+                            <IconComp size={20} strokeWidth={1.8} />
+                          </div>
+                          <span className="text-xs sm:text-[13px] font-medium text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors truncate">
+                            {item.shortName || item.name}
+                          </span>
+                        </button>
+                      );
+                    }
+
                     return (
                       <Link
                         key={item.id}

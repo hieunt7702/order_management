@@ -417,11 +417,9 @@ export const AuditPage: React.FC = () => {
                     <span className="w-5 h-5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold text-gray-500 flex items-center justify-center shrink-0">
                       {stt}
                     </span>
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold truncate ${actionInfo.color}`}
-                    >
+                    <Badge variant={actionInfo.variant} className="text-[10px] font-semibold truncate">
                       {actionInfo.label}
-                    </span>
+                    </Badge>
                   </div>
                   <span className="text-[11px] text-gray-400 font-mono shrink-0">
                     {new Date(log.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}{' '}
