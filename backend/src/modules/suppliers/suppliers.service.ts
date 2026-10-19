@@ -467,6 +467,9 @@ export class SuppliersService {
       );
     }
 
+    // Đảo ngược danh sách để giao dịch mới nhất lên đầu
+    const transactionsDesc = [...filteredTransactions].reverse();
+
     return {
       supplier: {
         id: supplier.id,
@@ -476,7 +479,7 @@ export class SuppliersService {
         closingDebt: supplier.closingDebt,
         advanceAmountHeld: supplier.advanceAmountHeld,
       },
-      transactions: filteredTransactions,
+      transactions: transactionsDesc,
     };
   }
 

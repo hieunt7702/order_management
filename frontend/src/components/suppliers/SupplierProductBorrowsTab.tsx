@@ -329,7 +329,11 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
         })),
       });
 
-      toast.success('Đã xuất trả hàng mượn và cập nhật trừ kho thành công');
+      toast.success(
+        selectedBorrowForReturn?.type === 'BORROW_FROM_SUPPLIER'
+          ? 'Đã xuất trả hàng mượn và cập nhật trừ kho thành công'
+          : 'Đã nhận lại hàng mượn từ NCC và cập nhật cộng kho thành công',
+      );
       setIsReturnModalOpen(false);
       loadBorrows();
       onRefreshData?.();
@@ -456,9 +460,12 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
       {/* 2. KPI Summary Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-xs">
         <div className="p-2.5 sm:p-3 rounded bg-white dark:bg-[#161a22] border border-gray-200 dark:border-gray-800">
-          <div className="text-gray-500 flex items-center gap-1 text-[11px]">
-            <Boxes size={12} className="text-indigo-500" />
-            <span>SL sản phẩm đang mượn</span>
+          <div className="text-gray-500 flex items-center justify-between text-[11px]">
+            <div className="flex items-center gap-1">
+              <Boxes size={12} className="text-indigo-500" />
+              <span>Shop đang mượn NCC</span>
+            </div>
+            <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium">Chưa trả NCC</span>
           </div>
           <div className="text-sm sm:text-base font-bold font-mono text-indigo-600 dark:text-indigo-400 mt-0.5">
             {summary.totalBorrowedRemaining.toLocaleString('vi-VN')} cái
@@ -476,9 +483,12 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
         </div>
 
         <div className="p-2.5 sm:p-3 rounded bg-white dark:bg-[#161a22] border border-gray-200 dark:border-gray-800">
-          <div className="text-gray-500 flex items-center gap-1 text-[11px]">
-            <ArrowUpRight size={12} className="text-blue-500" />
-            <span>SL sản phẩm cho NCC mượn</span>
+          <div className="text-gray-500 flex items-center justify-between text-[11px]">
+            <div className="flex items-center gap-1">
+              <ArrowUpRight size={12} className="text-blue-500" />
+              <span>Shop cho NCC mượn</span>
+            </div>
+            <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">NCC chưa trả</span>
           </div>
           <div className="text-sm sm:text-base font-bold font-mono text-blue-600 dark:text-blue-400 mt-0.5">
             {summary.totalLentRemaining.toLocaleString('vi-VN')} cái
@@ -517,12 +527,12 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
             value={typeFilter}
             onChange={(val) => setTypeFilter(val as any)}
             options={[
-              { value: 'ALL', label: 'Tất cả loại mượn' },
-              { value: 'BORROW_FROM_SUPPLIER', label: 'Shop mượn NCC' },
-              { value: 'LEND_TO_SUPPLIER', label: 'Shop cho NCC mượn' },
+              { value: 'ALL', label: 'Tất cả loại phiếu' },
+              { value: 'BORROW_FROM_SUPPLIER', label: 'Shop mượn NCC (Nhập kho)' },
+              { value: 'LEND_TO_SUPPLIER', label: 'Shop cho NCC mượn (Xuất kho)' },
             ]}
             size="sm"
-            className="w-40"
+            className="w-48"
           />
 
           <Select
@@ -530,13 +540,13 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
             onChange={(val) => setStatusFilter(val)}
             options={[
               { value: 'ALL', label: 'Tất cả trạng thái' },
-              { value: 'BORROWED', label: 'Đang mượn' },
-              { value: 'PARTIALLY_RETURNED', label: 'Đã trả 1 phần' },
-              { value: 'RETURNED', label: 'Đã trả lại đủ' },
+              { value: 'BORROWED', label: 'Đang mượn / Cho mượn' },
+              { value: 'PARTIALLY_RETURNED', label: 'Đã hoàn trả 1 phần' },
+              { value: 'RETURNED', label: 'Đã hoàn tất trả đủ' },
               { value: 'CONVERTED_TO_PURCHASE', label: 'Đã mua đứt' },
             ]}
             size="sm"
-            className="w-40"
+            className="w-44"
           />
 
           <Select
@@ -606,12 +616,12 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
                     </SystemTd>
                     <SystemTd align="center">
                       {isBorrow ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
                           <ArrowDownLeft size={11} />
                           <span>Shop mượn NCC</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                           <ArrowUpRight size={11} />
                           <span>Cho NCC mượn</span>
                         </span>
@@ -621,12 +631,23 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
                       {b.totalQuantity.toLocaleString('vi-VN')}
                     </SystemTd>
                     <SystemTd align="center" className="font-mono text-emerald-600 dark:text-emerald-400">
-                      {(b.returnedQuantity + b.purchasedQuantity).toLocaleString('vi-VN')}
-                      {b.purchasedQuantity > 0 && (
-                        <span className="text-[10px] text-blue-500 ml-1">({b.purchasedQuantity} mua)</span>
+                      {isBorrow ? (
+                        <>
+                          {(b.returnedQuantity + b.purchasedQuantity).toLocaleString('vi-VN')}
+                          {b.purchasedQuantity > 0 && (
+                            <span className="text-[10px] text-blue-500 ml-1">({b.purchasedQuantity} mua)</span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {b.returnedQuantity.toLocaleString('vi-VN')}
+                          {b.returnedQuantity > 0 && (
+                            <span className="text-[10px] text-emerald-500 ml-1">(đã nhận)</span>
+                          )}
+                        </>
                       )}
                     </SystemTd>
-                    <SystemTd align="center" className="font-mono font-bold text-rose-600 dark:text-rose-400">
+                    <SystemTd align="center" className={`font-mono font-bold ${hasRemaining ? (isBorrow ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400') : 'text-gray-400'}`}>
                       {b.remainingQuantity.toLocaleString('vi-VN')}
                     </SystemTd>
                     <SystemTd align="center" className="text-xs text-gray-500">
@@ -639,22 +660,25 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
                     </SystemTd>
                     <SystemTd align="center">
                       <span
-                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${b.status === 'RETURNED'
+                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          b.status === 'RETURNED' || !hasRemaining
                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
                             : b.status === 'CONVERTED_TO_PURCHASE'
                               ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
                               : b.status === 'PARTIALLY_RETURNED'
                                 ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                                : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
-                          }`}
+                                : isBorrow
+                                  ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300'
+                                  : 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
+                        }`}
                       >
-                        {b.status === 'RETURNED'
-                          ? 'Đã trả đủ'
+                        {b.status === 'RETURNED' || !hasRemaining
+                          ? isBorrow ? 'Đã trả đủ' : 'Đã thu hồi đủ'
                           : b.status === 'CONVERTED_TO_PURCHASE'
                             ? 'Đã mua đứt'
                             : b.status === 'PARTIALLY_RETURNED'
-                              ? 'Đã trả 1 phần'
-                              : 'Đang mượn'}
+                              ? isBorrow ? 'Đã trả 1 phần' : 'NCC trả 1 phần'
+                              : isBorrow ? 'Đang mượn' : 'Đang cho mượn'}
                       </span>
                     </SystemTd>
                     <SystemTd align="center" onClick={(e) => e.stopPropagation()}>
@@ -677,8 +701,17 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
                             {hasRemaining && (
                               <>
                                 <DropdownMenuItem onClick={() => handleOpenReturnModal(b)}>
-                                  <RotateCcw size={14} className="text-orange-500 shrink-0" />
-                                  <span className="text-orange-600 dark:text-orange-400 font-medium">
+                                  <RotateCcw
+                                    size={14}
+                                    className={isBorrow ? 'text-orange-500 shrink-0' : 'text-emerald-500 shrink-0'}
+                                  />
+                                  <span
+                                    className={
+                                      isBorrow
+                                        ? 'text-orange-600 dark:text-orange-400 font-medium'
+                                        : 'text-emerald-600 dark:text-emerald-400 font-medium'
+                                    }
+                                  >
                                     {isBorrow ? 'Xuất trả lại hàng cho NCC' : 'Nhận lại hàng từ NCC'}
                                   </span>
                                 </DropdownMenuItem>
@@ -719,45 +752,117 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
               <div
                 key={b.id}
                 onClick={() => handleOpenDetail(b)}
-                className="p-3 bg-white dark:bg-[#161a22] rounded border border-gray-200 dark:border-gray-800 space-y-2 text-xs cursor-pointer shadow-2xs"
+                className={`p-3 bg-white dark:bg-[#161a22] rounded border space-y-2.5 text-xs cursor-pointer shadow-2xs transition-all hover:border-gray-300 dark:hover:border-gray-700 ${
+                  isBorrow
+                    ? 'border-gray-200 dark:border-gray-800 border-l-[3.5px] border-l-purple-500'
+                    : 'border-gray-200 dark:border-gray-800 border-l-[3.5px] border-l-blue-500'
+                }`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="font-mono font-bold text-xs text-[#5865f2]">{b.borrowCode}</div>
-                    <div className="font-semibold text-gray-900 dark:text-white mt-0.5">
-                      {b.supplier?.name}
-                    </div>
+                {/* Row 1: Type Tag + Borrow Code & Status Badge */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    {isBorrow ? (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
+                        <ArrowDownLeft size={10} />
+                        <span>Shop mượn NCC</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
+                        <ArrowUpRight size={10} />
+                        <span>Cho NCC mượn</span>
+                      </span>
+                    )}
+                    <span className="font-mono font-bold text-xs text-[#5865f2] truncate">{b.borrowCode}</span>
                   </div>
+
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${!hasRemaining
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                      b.status === 'RETURNED' || !hasRemaining
                         ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                        : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
-                      }`}
+                        : b.status === 'CONVERTED_TO_PURCHASE'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
+                          : b.status === 'PARTIALLY_RETURNED'
+                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                            : isBorrow
+                              ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300'
+                              : 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
+                    }`}
                   >
-                    {!hasRemaining ? 'Hoàn tất' : 'Đang mượn'}
+                    {b.status === 'RETURNED' || !hasRemaining
+                      ? isBorrow ? 'Đã trả đủ' : 'Đã thu hồi đủ'
+                      : b.status === 'CONVERTED_TO_PURCHASE'
+                        ? 'Đã mua đứt'
+                        : b.status === 'PARTIALLY_RETURNED'
+                          ? isBorrow ? 'Đã trả 1 phần' : 'NCC trả 1 phần'
+                          : isBorrow ? 'Đang mượn' : 'Đang cho mượn'}
                   </span>
                 </div>
 
+                {/* Row 2: Supplier & Warehouse */}
+                <div className="flex items-center justify-between text-[11px] gap-2">
+                  <span className="font-semibold text-gray-900 dark:text-white truncate">
+                    {b.supplier?.name}
+                  </span>
+                  {b.warehouse?.name && (
+                    <span className="text-gray-400 shrink-0 truncate max-w-[140px]">
+                      Kho: {b.warehouse.name}
+                    </span>
+                  )}
+                </div>
+
+                {/* Row 3: Quantities grid */}
                 <div className="grid grid-cols-2 gap-2 p-2 bg-gray-50 dark:bg-[#12151b] rounded text-[11px]">
                   <div>
-                    <span className="text-gray-400">Tổng mượn:</span>
+                    <span className="text-gray-400">{isBorrow ? 'Tổng mượn:' : 'Tổng cho mượn:'}</span>
                     <div className="font-mono font-medium text-gray-900 dark:text-white">
-                      {b.totalQuantity} cái
+                      {b.totalQuantity.toLocaleString('vi-VN')} cái
                     </div>
                   </div>
                   <div>
-                    <span className="text-gray-400">Còn đang mượn:</span>
-                    <div className="font-mono font-bold text-rose-600 dark:text-rose-400">
-                      {b.remainingQuantity} cái
+                    <span className="text-gray-400">{isBorrow ? 'Còn nợ trả NCC:' : 'NCC chưa trả lại:'}</span>
+                    <div
+                      className={`font-mono font-bold ${
+                        hasRemaining
+                          ? isBorrow
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : 'text-blue-600 dark:text-blue-400'
+                          : 'text-gray-400'
+                      }`}
+                    >
+                      {b.remainingQuantity.toLocaleString('vi-VN')} cái
                     </div>
                   </div>
                 </div>
 
+                {/* Row 4: Partial return or buy details if any */}
+                {(b.returnedQuantity > 0 || b.purchasedQuantity > 0) && (
+                  <div className="text-[10px] text-gray-500 dark:text-gray-400 px-0.5 flex items-center justify-between">
+                    {isBorrow ? (
+                      <>
+                        <span>Đã xuất trả: <strong className="text-emerald-600 dark:text-emerald-400">{b.returnedQuantity}</strong> cái</span>
+                        {b.purchasedQuantity > 0 && (
+                          <span>Đã mua đứt: <strong className="text-blue-600 dark:text-blue-400">{b.purchasedQuantity}</strong> cái</span>
+                        )}
+                      </>
+                    ) : (
+                      <span>NCC đã trả lại: <strong className="text-emerald-600 dark:text-emerald-400">{b.returnedQuantity}</strong> cái</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Row 5: Date + Actions */}
                 <div
                   className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-800 text-[11px] text-gray-500"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <span>{b.borrowDate ? new Date(b.borrowDate).toLocaleDateString('vi-VN') : ''}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span>{b.borrowDate ? new Date(b.borrowDate).toLocaleDateString('vi-VN') : ''}</span>
+                    {b.dueDate && (
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400">
+                        • Hạn: {new Date(b.dueDate).toLocaleDateString('vi-VN')}
+                      </span>
+                    )}
+                  </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
@@ -776,8 +881,17 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
                       {hasRemaining && (
                         <>
                           <DropdownMenuItem onClick={() => handleOpenReturnModal(b)}>
-                            <RotateCcw size={14} className="text-orange-500 shrink-0" />
-                            <span className="text-orange-600 dark:text-orange-400 font-medium">
+                            <RotateCcw
+                              size={14}
+                              className={isBorrow ? 'text-orange-500 shrink-0' : 'text-emerald-500 shrink-0'}
+                            />
+                            <span
+                              className={
+                                isBorrow
+                                  ? 'text-orange-600 dark:text-orange-400 font-medium'
+                                  : 'text-emerald-600 dark:text-emerald-400 font-medium'
+                              }
+                            >
                               {isBorrow ? 'Xuất trả lại hàng cho NCC' : 'Nhận lại hàng từ NCC'}
                             </span>
                           </DropdownMenuItem>
@@ -1001,12 +1115,24 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
         </form>
       </Modal>
 
-      {/* MODAL 2: TRẢ HÀNG MƯỢN */}
+      {/* MODAL 2: TRẢ HÀNG MƯỢN / NHẬN LẠI HÀNG */}
       <Modal
         isOpen={isReturnModalOpen}
         onClose={() => setIsReturnModalOpen(false)}
-        title="Xuất Trả Lại Hàng Mượn Cho Nhà Cung Cấp"
-        subtitle={selectedBorrowForReturn ? `Phiếu: ${selectedBorrowForReturn.borrowCode} - ${selectedBorrowForReturn.supplier?.name}` : ''}
+        title={
+          selectedBorrowForReturn?.type === 'BORROW_FROM_SUPPLIER'
+            ? 'Xuất Trả Lại Hàng Mượn Cho Nhà Cung Cấp'
+            : 'Nhận Lại Hàng Từ Nhà Cung Cấp Hoàn Trả'
+        }
+        subtitle={
+          selectedBorrowForReturn
+            ? `Phiếu: ${selectedBorrowForReturn.borrowCode} - ${selectedBorrowForReturn.supplier?.name} • ${
+                selectedBorrowForReturn.type === 'BORROW_FROM_SUPPLIER'
+                  ? 'Hệ thống tự động trừ kho và ghi nhận lịch sử xuất trả'
+                  : 'Hệ thống tự động cộng lại tồn kho thực tế và ghi nhận lịch sử hoàn trả'
+              }`
+            : ''
+        }
         icon={RotateCcw}
         size="lg"
       >
@@ -1014,17 +1140,23 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
           <ModalBody className="space-y-3 p-3 sm:p-5 text-xs">
             <div className="border border-gray-200 dark:border-gray-800 rounded overflow-hidden">
               <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 font-semibold text-gray-700 dark:text-gray-300">
-                Nhập số lượng xuất trả cho từng sản phẩm
+                {selectedBorrowForReturn?.type === 'BORROW_FROM_SUPPLIER'
+                  ? 'Nhập số lượng xuất trả cho từng sản phẩm'
+                  : 'Nhập số lượng nhận lại từ NCC cho từng sản phẩm'}
               </div>
               <div className="p-3 space-y-2">
                 {returnForm.items.map((it, idx) => (
                   <div key={it.itemId} className="flex items-center justify-between p-2 rounded bg-gray-50 dark:bg-[#12151b]">
                     <div className="min-w-0 flex-1 pr-2">
                       <div className="font-semibold text-gray-900 dark:text-white truncate">{it.productName}</div>
-                      <div className="text-[11px] font-mono text-gray-400">{it.sku} • Còn mượn: {it.remainingQuantity}</div>
+                      <div className="text-[11px] font-mono text-gray-400">
+                        {it.sku} • {selectedBorrowForReturn?.type === 'BORROW_FROM_SUPPLIER' ? 'Còn nợ:' : 'NCC còn giữ:'} {it.remainingQuantity}
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-[11px] text-gray-500">Trả:</span>
+                      <span className="text-[11px] text-gray-500">
+                        {selectedBorrowForReturn?.type === 'BORROW_FROM_SUPPLIER' ? 'Trả:' : 'Nhận:'}
+                      </span>
                       <input
                         type="number"
                         min="0"
@@ -1050,7 +1182,11 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
               <label className="block text-xs font-semibold mb-1">Ghi chú đợt trả</label>
               <input
                 type="text"
-                placeholder="VD: Trả hàng nguyên tem mác sau phiên live..."
+                placeholder={
+                  selectedBorrowForReturn?.type === 'BORROW_FROM_SUPPLIER'
+                    ? 'VD: Trả hàng nguyên tem mác sau phiên live...'
+                    : 'VD: Nhận lại hàng do NCC hoàn trả...'
+                }
                 value={returnForm.note}
                 onChange={(e) => setReturnForm({ ...returnForm, note: e.target.value })}
                 className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs"
@@ -1062,9 +1198,21 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
             <ModalButton type="button" variant="outline" onClick={() => setIsReturnModalOpen(false)}>
               Hủy
             </ModalButton>
-            <ModalButton type="submit" variant="primary" className="bg-orange-600 hover:bg-orange-700 text-white">
+            <ModalButton
+              type="submit"
+              variant="primary"
+              className={
+                selectedBorrowForReturn?.type === 'BORROW_FROM_SUPPLIER'
+                  ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }
+            >
               <RotateCcw size={14} />
-              <span>Xác nhận xuất trả hàng</span>
+              <span>
+                {selectedBorrowForReturn?.type === 'BORROW_FROM_SUPPLIER'
+                  ? 'Xác nhận xuất trả hàng'
+                  : 'Xác nhận nhận lại hàng'}
+              </span>
             </ModalButton>
           </ModalFooter>
         </form>
@@ -1181,28 +1329,83 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
       <Modal
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
-        title={`Chi tiết: ${selectedBorrowDetail?.borrowCode || ''}`}
+        title={
+          selectedBorrowDetail?.type === 'BORROW_FROM_SUPPLIER'
+            ? `Chi tiết Phiếu Mượn Hàng: ${selectedBorrowDetail?.borrowCode || ''}`
+            : `Chi tiết Phiếu Cho NCC Mượn: ${selectedBorrowDetail?.borrowCode || ''}`
+        }
         subtitle={`${selectedBorrowDetail?.supplier?.name} • Kho: ${selectedBorrowDetail?.warehouse?.name}`}
         icon={Boxes}
         size="lg"
       >
         <ModalBody className="space-y-4 p-4 text-xs">
+          {/* Header Type Indicator */}
+          <div className="flex items-center justify-between p-2.5 rounded bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-500">Hình thức:</span>
+              {selectedBorrowDetail?.type === 'BORROW_FROM_SUPPLIER' ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                  <ArrowDownLeft size={12} />
+                  <span>Shop mượn hàng từ NCC (Đã nhập kho)</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                  <ArrowUpRight size={12} />
+                  <span>Shop cho NCC mượn hàng (Đã xuất kho)</span>
+                </span>
+              )}
+            </div>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                selectedBorrowDetail?.status === 'RETURNED' || (selectedBorrowDetail && selectedBorrowDetail.remainingQuantity === 0)
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                  : selectedBorrowDetail?.status === 'CONVERTED_TO_PURCHASE'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
+                    : selectedBorrowDetail?.status === 'PARTIALLY_RETURNED'
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                      : selectedBorrowDetail?.type === 'BORROW_FROM_SUPPLIER'
+                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300'
+                        : 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
+              }`}
+            >
+              {selectedBorrowDetail?.status === 'RETURNED' || (selectedBorrowDetail && selectedBorrowDetail.remainingQuantity === 0)
+                ? selectedBorrowDetail?.type === 'BORROW_FROM_SUPPLIER' ? 'Đã trả đủ' : 'Đã thu hồi đủ'
+                : selectedBorrowDetail?.status === 'CONVERTED_TO_PURCHASE'
+                  ? 'Đã mua đứt'
+                  : selectedBorrowDetail?.status === 'PARTIALLY_RETURNED'
+                    ? selectedBorrowDetail?.type === 'BORROW_FROM_SUPPLIER' ? 'Đã trả 1 phần' : 'NCC trả 1 phần'
+                    : selectedBorrowDetail?.type === 'BORROW_FROM_SUPPLIER' ? 'Đang mượn' : 'Đang cho mượn'}
+            </span>
+          </div>
+
           <div className="grid grid-cols-3 gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded text-center">
             <div>
-              <span className="text-gray-400">Tổng mượn</span>
+              <span className="text-gray-400">
+                {selectedBorrowDetail?.type === 'BORROW_FROM_SUPPLIER' ? 'Tổng mượn' : 'Tổng cho mượn'}
+              </span>
               <div className="font-mono font-bold text-gray-900 dark:text-white text-sm mt-0.5">
                 {selectedBorrowDetail?.totalQuantity} cái
               </div>
             </div>
             <div>
-              <span className="text-gray-400">Đã trả / Đã mua</span>
+              <span className="text-gray-400">
+                {selectedBorrowDetail?.type === 'BORROW_FROM_SUPPLIER' ? 'Đã trả / Đã mua' : 'NCC đã trả lại'}
+              </span>
               <div className="font-mono font-bold text-emerald-600 text-sm mt-0.5">
-                {Number(selectedBorrowDetail?.returnedQuantity || 0) + Number(selectedBorrowDetail?.purchasedQuantity || 0)} cái
+                {selectedBorrowDetail?.type === 'BORROW_FROM_SUPPLIER'
+                  ? Number(selectedBorrowDetail?.returnedQuantity || 0) + Number(selectedBorrowDetail?.purchasedQuantity || 0)
+                  : Number(selectedBorrowDetail?.returnedQuantity || 0)} cái
               </div>
             </div>
             <div>
-              <span className="text-gray-400">Còn đang mượn</span>
-              <div className="font-mono font-bold text-rose-600 text-sm mt-0.5">
+              <span className="text-gray-400">
+                {selectedBorrowDetail?.type === 'BORROW_FROM_SUPPLIER' ? 'Còn nợ NCC' : 'NCC chưa hoàn trả'}
+              </span>
+              <div className={`font-mono font-bold text-sm mt-0.5 ${
+                selectedBorrowDetail?.remainingQuantity && selectedBorrowDetail.remainingQuantity > 0
+                  ? selectedBorrowDetail?.type === 'BORROW_FROM_SUPPLIER' ? 'text-rose-600' : 'text-blue-600'
+                  : 'text-gray-400'
+              }`}>
                 {selectedBorrowDetail?.remainingQuantity} cái
               </div>
             </div>
@@ -1220,7 +1423,7 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
               }`}
             >
               <Boxes size={13} />
-              <span>Sản phẩm mượn ({selectedBorrowDetail?.items?.length || 0})</span>
+              <span>Sản phẩm ({selectedBorrowDetail?.items?.length || 0})</span>
             </button>
             <button
               type="button"
@@ -1241,7 +1444,7 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
           {detailTab === 'ITEMS' ? (
             <div className="border border-gray-200 dark:border-gray-800 rounded overflow-hidden">
               <div className="bg-gray-100 dark:bg-gray-800/80 px-3 py-2 font-semibold text-gray-700 dark:text-gray-300">
-                Danh sách sản phẩm trong phiếu ({selectedBorrowDetail?.items?.length || 0})
+                {selectedBorrowDetail?.type === 'BORROW_FROM_SUPPLIER' ? 'Danh sách sản phẩm mượn' : 'Danh sách sản phẩm cho mượn'} ({selectedBorrowDetail?.items?.length || 0})
               </div>
               <div className="p-3">
                 {selectedBorrowDetail?.items && selectedBorrowDetail.items.length > 0 ? (
@@ -1256,10 +1459,14 @@ export const SupplierProductBorrowsTab: React.FC<SupplierProductBorrowsTabProps>
                         </div>
                         <div className="text-right">
                           <div className="font-mono font-bold text-gray-900 dark:text-white">
-                            Mượn: {it.borrowQuantity}
+                            {selectedBorrowDetail?.type === 'BORROW_FROM_SUPPLIER' ? 'Mượn:' : 'Cho mượn:'} {it.borrowQuantity}
                           </div>
                           <div className="text-[11px] text-gray-400 mt-0.5">
-                            Trả: {it.returnedQuantity} • Mua: {it.purchasedQuantity} • <span className="text-rose-500 font-bold">Còn: {it.remainingQuantity}</span>
+                            {selectedBorrowDetail?.type === 'BORROW_FROM_SUPPLIER' ? (
+                              <>Trả: {it.returnedQuantity} • Mua: {it.purchasedQuantity} • <span className="text-rose-500 font-bold">Còn nợ: {it.remainingQuantity}</span></>
+                            ) : (
+                              <>Đã nhận lại: {it.returnedQuantity} • <span className="text-blue-500 font-bold">NCC chưa trả: {it.remainingQuantity}</span></>
+                            )}
                           </div>
                         </div>
                       </div>

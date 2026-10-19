@@ -441,8 +441,8 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
                         {isSettled
                           ? 'Đã tất toán'
                           : loan.status === 'PARTIALLY_REPAID'
-                            ? 'Đã trả 1 phần'
-                            : 'Đang còn nợ'}
+                            ? isBorrow ? 'Đã trả 1 phần' : 'Đã thu 1 phần'
+                            : isBorrow ? 'Đang vay nợ' : 'Đang cho vay'}
                       </span>
                     </SystemTd>
                     <SystemTd align="center" onClick={(e) => e.stopPropagation()}>
@@ -510,35 +510,60 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
               <div
                 key={loan.id}
                 onClick={() => handleOpenDetail(loan)}
-                className="p-3 bg-white dark:bg-[#161a22] rounded border border-gray-200 dark:border-gray-800 space-y-2 text-xs cursor-pointer shadow-2xs"
+                className={`p-3 bg-white dark:bg-[#161a22] rounded border space-y-2.5 text-xs cursor-pointer shadow-2xs transition-all hover:border-gray-300 dark:hover:border-gray-700 ${
+                  isBorrow
+                    ? 'border-gray-200 dark:border-gray-800 border-l-[3.5px] border-l-purple-500'
+                    : 'border-gray-200 dark:border-gray-800 border-l-[3.5px] border-l-blue-500'
+                }`}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="font-mono font-bold text-xs text-[#5865f2]">{loan.loanCode}</div>
-                    <div className="font-semibold text-gray-900 dark:text-white mt-0.5">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      {isBorrow ? (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
+                          <ArrowDownLeft size={10} />
+                          <span>Shop vay</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
+                          <ArrowUpRight size={10} />
+                          <span>Cho vay</span>
+                        </span>
+                      )}
+                      <span className="font-mono font-bold text-xs text-[#5865f2] truncate">{loan.loanCode}</span>
+                    </div>
+                    <div className="font-semibold text-gray-900 dark:text-white mt-1 truncate">
                       {loan.supplier?.name}
                     </div>
                   </div>
                   <span
                     className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${isSettled
                       ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                      : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                      : loan.status === 'PARTIALLY_REPAID'
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
+                        : isBorrow
+                          ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300'
+                          : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
                       }`}
                   >
-                    {isSettled ? 'Đã tất toán' : 'Còn nợ'}
+                    {isSettled
+                      ? 'Đã tất toán'
+                      : loan.status === 'PARTIALLY_REPAID'
+                        ? isBorrow ? 'Đã trả 1 phần' : 'Đã thu 1 phần'
+                        : isBorrow ? 'Đang vay nợ' : 'Đang cho vay'}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 p-2 bg-gray-50 dark:bg-[#12151b] rounded text-[11px]">
                   <div>
-                    <span className="text-gray-400">Số tiền vay:</span>
+                    <span className="text-gray-400">{isBorrow ? 'Số tiền vay:' : 'Số tiền cho vay:'}</span>
                     <div className="font-mono font-medium text-gray-900 dark:text-white">
                       {formatCurrency(loan.amount)} đ
                     </div>
                   </div>
                   <div>
-                    <span className="text-gray-400">Dư nợ còn lại:</span>
-                    <div className="font-mono font-bold text-rose-600 dark:text-rose-400">
+                    <span className="text-gray-400">{isBorrow ? 'Dư nợ phải trả:' : 'Chưa thu hồi:'}</span>
+                    <div className={`font-mono font-bold ${!isSettled ? (isBorrow ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400') : 'text-gray-400'}`}>
                       {formatCurrency(loan.remainingAmount)} đ
                     </div>
                   </div>

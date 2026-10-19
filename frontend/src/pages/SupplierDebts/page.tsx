@@ -110,7 +110,6 @@ export const SupplierDebtsPage: React.FC = () => {
   // Statement Drawer/Modal
   const [statementData, setStatementData] = useState<SupplierStatement | null>(null);
   const [isStatementOpen, setIsStatementOpen] = useState<boolean>(false);
-  const [statementDateRange, setStatementDateRange] = useState({ startDate: '', endDate: '' });
   const [activeStatementSupplierId, setActiveStatementSupplierId] = useState<string>('');
 
   // Payment Voucher Modal
@@ -284,29 +283,19 @@ export const SupplierDebtsPage: React.FC = () => {
   const handleOpenStatement = async (supplierId: string) => {
     try {
       setActiveStatementSupplierId(supplierId);
-      const res = await suppliersApi.getStatement(supplierId, {
-        startDate: statementDateRange.startDate || undefined,
-        endDate: statementDateRange.endDate || undefined,
-      });
+      const res = await suppliersApi.getStatement(supplierId);
       const data = (res as any)?.data || res;
+      if (data?.transactions && Array.isArray(data.transactions) && data.transactions.length > 1) {
+        const firstTime = new Date(data.transactions[0].date).getTime();
+        const lastTime = new Date(data.transactions[data.transactions.length - 1].date).getTime();
+        if (firstTime < lastTime) {
+          data.transactions.reverse();
+        }
+      }
       setStatementData(data);
       setIsStatementOpen(true);
     } catch (err: any) {
       alert('Không thể tải sao kê công nợ: ' + (err?.message || 'Lỗi'));
-    }
-  };
-
-  const handleFilterStatement = async () => {
-    if (!activeStatementSupplierId) return;
-    try {
-      const res = await suppliersApi.getStatement(activeStatementSupplierId, {
-        startDate: statementDateRange.startDate || undefined,
-        endDate: statementDateRange.endDate || undefined,
-      });
-      const data = (res as any)?.data || res;
-      setStatementData(data);
-    } catch (err: any) {
-      alert('Lỗi lọc sao kê: ' + err?.message);
     }
   };
 
@@ -1745,103 +1734,7 @@ export const SupplierDebtsPage: React.FC = () => {
                   <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] text-xs font-semibold bg-gray-200/70 dark:bg-white/[0.08] text-gray-700 dark:text-gray-300">
                     {statementData.transactions.length} giao dịch
                   </span>
-                </div>
-              </div>
-
-              {/* Mobile Filter Bar */}
-              <div className="sm:hidden p-2.5 rounded-[4px] border border-gray-200/70 dark:border-white/[0.08] bg-white dark:bg-[#161922] space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      Từ ngày
-                    </label>
-                    <input
-                      type="date"
-                      value={statementDateRange.startDate}
-                      onChange={(e) => setStatementDateRange({ ...statementDateRange, startDate: e.target.value })}
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-[4px] px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      Đến ngày
-                    </label>
-                    <input
-                      type="date"
-                      value={statementDateRange.endDate}
-                      onChange={(e) => setStatementDateRange({ ...statementDateRange, endDate: e.target.value })}
-                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-[4px] px-2 py-1.5 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    onClick={handleFilterStatement}
-                    className="flex-1 text-xs py-1.5 rounded-[4px] flex items-center justify-center gap-1.5 font-medium"
-                  >
-                    <Filter size={12} />
-                    <span>Lọc sao kê</span>
-                  </Button>
-                  {(statementDateRange.startDate || statementDateRange.endDate) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStatementDateRange({ startDate: '', endDate: '' });
-                        if (activeStatementSupplierId) {
-                          suppliersApi.getStatement(activeStatementSupplierId, {}).then((res: any) => {
-                            setStatementData(res?.data || res);
-                          });
-                        }
-                      }}
-                      className="px-2.5 py-1.5 text-xs rounded-[4px] border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center"
-                      title="Xóa bộ lọc"
-                    >
-                      <RotateCcw size={12} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Desktop Filter Bar */}
-              <div className="hidden sm:flex items-center justify-between gap-3 p-2.5 bg-gray-50 dark:bg-gray-900 rounded-[4px] border border-gray-200/60 dark:border-white/[0.06] text-xs">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-gray-500 text-xs shrink-0">Khoảng ngày:</span>
-                  <input
-                    type="date"
-                    value={statementDateRange.startDate}
-                    onChange={(e) => setStatementDateRange({ ...statementDateRange, startDate: e.target.value })}
-                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-[4px] px-2 py-1 text-xs text-gray-900 dark:text-gray-100"
-                  />
-                  <span className="text-gray-400 text-xs shrink-0">→</span>
-                  <input
-                    type="date"
-                    value={statementDateRange.endDate}
-                    onChange={(e) => setStatementDateRange({ ...statementDateRange, endDate: e.target.value })}
-                    className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-[4px] px-2 py-1 text-xs text-gray-900 dark:text-gray-100"
-                  />
-                  <Button size="sm" onClick={handleFilterStatement} className="text-xs rounded-[4px] flex items-center gap-1">
-                    <Filter size={12} />
-                    <span>Lọc sao kê</span>
-                  </Button>
-                  {(statementDateRange.startDate || statementDateRange.endDate) && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => {
-                        setStatementDateRange({ startDate: '', endDate: '' });
-                        if (activeStatementSupplierId) {
-                          suppliersApi.getStatement(activeStatementSupplierId, {}).then((res: any) => {
-                            setStatementData(res?.data || res);
-                          });
-                        }
-                      }}
-                      className="text-xs rounded-[4px] flex items-center gap-1"
-                    >
-                      <RotateCcw size={12} />
-                      <span>Đặt lại</span>
-                    </Button>
-                  )}
+                  <div className="text-[10px] text-gray-400 mt-0.5 font-normal">Mới nhất trước</div>
                 </div>
               </div>
 
@@ -1850,8 +1743,8 @@ export const SupplierDebtsPage: React.FC = () => {
                 {statementData.transactions.length === 0 ? (
                   <div className="py-8 text-center flex flex-col items-center justify-center p-4 border border-dashed border-gray-200 dark:border-gray-800 rounded-[4px] bg-gray-50/50 dark:bg-white/[0.01]">
                     <FileText className="w-8 h-8 text-gray-300 dark:text-gray-600 mb-2" />
-                    <p className="text-xs text-gray-500 font-medium">Chưa có giao dịch nào trong khoảng thời gian này</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">Thử nới rộng bộ lọc ngày để xem lịch sử</p>
+                    <p className="text-xs text-gray-500 font-medium">Chưa có giao dịch nào với nhà cung cấp này</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">Các phiếu nhập hàng, thanh toán và hoàn trả sẽ hiển thị tại đây</p>
                   </div>
                 ) : (
                   statementData.transactions.map((tx, idx) => {
@@ -2000,7 +1893,7 @@ export const SupplierDebtsPage: React.FC = () => {
                     {statementData.transactions.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="p-8 text-center text-gray-400 font-sans">
-                          Chưa có giao dịch nào trong khoảng thời gian này
+                          Chưa có giao dịch nào với nhà cung cấp này
                         </td>
                       </tr>
                     ) : (
