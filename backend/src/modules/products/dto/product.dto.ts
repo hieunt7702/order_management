@@ -45,11 +45,23 @@ export class CreateVariantDto {
   @Min(0)
   sellingPrice?: number;
 
+  @ApiPropertyOptional({ example: 23100 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  sellPrice?: number;
+
   @ApiPropertyOptional({ example: 10 })
   @IsOptional()
   @IsNumber()
   @Min(0)
   lowStockThreshold?: number;
+
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minStockAlert?: number;
 }
 
 export class CreateProductDto {
@@ -170,6 +182,11 @@ export class UpdateVariantDto {
   @IsString()
   name?: string;
 
+  @ApiPropertyOptional({ example: 'SKU-HAO-HAO-120G' })
+  @IsOptional()
+  @IsString()
+  sku?: string;
+
   @ApiPropertyOptional({ example: '8934567890123' })
   @IsOptional()
   @IsString()
@@ -187,16 +204,89 @@ export class UpdateVariantDto {
   @Min(0)
   sellingPrice?: number;
 
+  @ApiPropertyOptional({ example: 25000 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  sellPrice?: number;
+
   @ApiPropertyOptional({ example: 15 })
   @IsOptional()
   @IsNumber()
   @Min(0)
   lowStockThreshold?: number;
 
+  @ApiPropertyOptional({ example: 15 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minStockAlert?: number;
+
   @ApiPropertyOptional({ enum: ProductStatus })
   @IsOptional()
   @IsEnum(ProductStatus)
   status?: ProductStatus;
+}
+
+export class UpdateProductVariantItemDto {
+  @ApiPropertyOptional({ example: 'variant-uuid' })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiPropertyOptional({ example: 'SKU-HAO-HAO-120G' })
+  @IsOptional()
+  @IsString()
+  sku?: string;
+
+  @ApiPropertyOptional({ example: 'Hũ 120gr' })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional({ example: '8934567890123' })
+  @IsOptional()
+  @IsString()
+  barcode?: string;
+
+  @ApiPropertyOptional({ example: 16000 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  costPrice?: number;
+
+  @ApiPropertyOptional({ example: 25000 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  sellingPrice?: number;
+
+  @ApiPropertyOptional({ example: 25000 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  sellPrice?: number;
+
+  @ApiPropertyOptional({ example: 15 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  lowStockThreshold?: number;
+
+  @ApiPropertyOptional({ example: 15 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minStockAlert?: number;
+
+  @ApiPropertyOptional({ enum: ProductStatus })
+  @IsOptional()
+  @IsEnum(ProductStatus)
+  status?: ProductStatus;
+
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  isDeleted?: boolean;
 }
 
 export class UpdateProductDto {
@@ -219,5 +309,12 @@ export class UpdateProductDto {
   @IsOptional()
   @IsEnum(ProductStatus)
   status?: ProductStatus;
+
+  @ApiPropertyOptional({ type: [UpdateProductVariantItemDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateProductVariantItemDto)
+  variants?: UpdateProductVariantItemDto[];
 }
 

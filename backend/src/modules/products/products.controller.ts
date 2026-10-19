@@ -13,6 +13,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { ProductsService } from './products.service';
 import {
   CreateProductDto,
+  CreateVariantDto,
   UpdateProductDto,
   CreateListingMappingDto,
   BulkListingMappingDto,
@@ -179,6 +180,17 @@ export class ProductsController {
     @Param('variantId') variantId: string,
   ) {
     return this.productsService.deleteVariant(tenantId, variantId);
+  }
+
+  @Post(':id/variants')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN)
+  @ApiOperation({ summary: 'Thêm biến thể mới vào sản phẩm đã có' })
+  async addVariant(
+    @CurrentTenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: CreateVariantDto,
+  ) {
+    return this.productsService.addVariant(tenantId, id, dto);
   }
 
   @Patch(':id')

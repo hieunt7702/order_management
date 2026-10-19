@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import {
   CreateProductDto,
+  CreateVariantDto,
   UpdateProductDto,
   CreateListingMappingDto,
   BulkListingMappingDto,
@@ -278,15 +279,78 @@ export class ProductsService {
       throw new NotFoundException('Không tìm thấy biến thể SKU này');
     }
 
+    if (dto.sku && dto.sku.trim().toUpperCase() !== variant.sku) {
+      const newSku = dto.sku.trim().toUpperCase();
+      const existing = await this.prisma.productVariant.findUnique({
+        where: { tenantId_sku: { tenantId, sku: newSku } },
+      });
+      if (existing && existing.id !== variantId) {
+        throw new ConflictException(`Mã SKU "${newSku}" đã tồn tại trong hệ thống`);
+      }
+    }
+
+    const sellingPrice = dto.sellingPrice ?? dto.sellPrice;
+    const lowStockThreshold = dto.lowStockThreshold ?? dto.minStockAlert;
+
     return this.prisma.productVariant.update({
       where: { id: variantId },
       data: {
-        name: dto.name,
-        barcode: dto.barcode,
-        costPrice: dto.costPrice,
-        sellingPrice: dto.sellingPrice,
-        lowStockThreshold: dto.lowStockThreshold,
-        status: dto.status,
+        ...(dto.sku ? { sku: dto.sku.trim().toUpperCase() } : {}),
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.barcode !== undefined ? { barcode: dto.barcode } : {}),
+        ...(dto.costPrice !== undefined ? { costPrice: dto.costPrice } : {}),
+        ...(sellingPrice !== undefined ? { sellingPrice } : {}),
+        ...(lowStockThreshold !== undefined ? { lowStockThreshold } : {}),
+        ...(dto.status !== undefined ? { status: dto.status } : {}),
+      },
+    });
+  }
+
+  async addVariant(tenantId: string, productId: string, dto: CreateVariantDto) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, tenantId },
+      include: { variants: true },
+    });
+    if (!product) {
+      throw new NotFoundException('Không tìm thấy sản phẩm');
+    }
+
+    const productCode = product.code.trim().toUpperCase();
+    let sku = dto.sku?.trim().toUpperCase();
+    let counter = product.variants.length + 1;
+    if (!sku || sku === 'SKU' || sku === 'SP' || sku.startsWith('SP-') || sku.startsWith('SP')) {
+      sku = `${productCode}-${counter}`;
+    }
+
+    let candidateSku = sku;
+    while (
+      await this.prisma.productVariant.findUnique({
+        where: {
+          tenantId_sku: {
+            tenantId,
+            sku: candidateSku,
+          },
+        },
+      })
+    ) {
+      counter++;
+      candidateSku = `${productCode}-${counter}`;
+    }
+
+    const sellingPrice = dto.sellingPrice ?? dto.sellPrice;
+    const lowStockThreshold = dto.lowStockThreshold ?? dto.minStockAlert;
+
+    return this.prisma.productVariant.create({
+      data: {
+        tenantId,
+        productId,
+        sku: candidateSku,
+        name: dto.name || 'Mặc định',
+        barcode: dto.barcode || null,
+        unit: dto.unit || 'cái',
+        costPrice: dto.costPrice ?? 0,
+        sellingPrice: sellingPrice ?? 0,
+        lowStockThreshold: lowStockThreshold ?? 5,
       },
     });
   }
@@ -294,6 +358,9 @@ export class ProductsService {
   async updateProduct(tenantId: string, id: string, dto: UpdateProductDto) {
     const product = await this.prisma.product.findFirst({
       where: { id, tenantId },
+      include: {
+        variants: true,
+      },
     });
     if (!product) {
       throw new NotFoundException('Không tìm thấy sản phẩm');
@@ -308,17 +375,121 @@ export class ProductsService {
       }
     }
 
-    return this.prisma.product.update({
-      where: { id },
-      data: {
-        ...(dto.code ? { code: dto.code } : {}),
-        ...(dto.name ? { name: dto.name } : {}),
-        ...(dto.description !== undefined ? { description: dto.description } : {}),
-        ...(dto.status ? { status: dto.status } : {}),
-      },
-      include: {
-        variants: true,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      await tx.product.update({
+        where: { id },
+        data: {
+          ...(dto.code ? { code: dto.code } : {}),
+          ...(dto.name ? { name: dto.name } : {}),
+          ...(dto.description !== undefined ? { description: dto.description } : {}),
+          ...(dto.status ? { status: dto.status } : {}),
+        },
+      });
+
+      if (dto.variants && Array.isArray(dto.variants)) {
+        const productCode = (dto.code || product.code).trim().toUpperCase();
+        let counter = product.variants.length + 1;
+
+        for (const v of dto.variants) {
+          const sellingPrice = v.sellingPrice ?? v.sellPrice;
+          const lowStockThreshold = v.lowStockThreshold ?? v.minStockAlert;
+
+          if (v.id) {
+            const existingVariant = product.variants.find((pv) => pv.id === v.id);
+            if (!existingVariant) continue;
+
+            if (v.isDeleted) {
+              const historyCount =
+                (await tx.orderItem.count({ where: { variantId: v.id } })) +
+                (await tx.inventoryLedger.count({ where: { variantId: v.id } }));
+
+              if (historyCount > 0) {
+                await tx.productVariant.update({
+                  where: { id: v.id },
+                  data: { status: ProductStatus.ARCHIVED },
+                });
+              } else {
+                await tx.inventoryBalance.deleteMany({ where: { variantId: v.id } });
+                await tx.listingMapping.deleteMany({ where: { variantId: v.id } });
+                await tx.productVariant.delete({ where: { id: v.id } });
+              }
+            } else {
+              let nextSku = existingVariant.sku;
+              if (v.sku && v.sku.trim().toUpperCase() !== existingVariant.sku) {
+                const candidate = v.sku.trim().toUpperCase();
+                const conflict = await tx.productVariant.findUnique({
+                  where: { tenantId_sku: { tenantId, sku: candidate } },
+                });
+                if (!conflict || conflict.id === existingVariant.id) {
+                  nextSku = candidate;
+                }
+              }
+
+              await tx.productVariant.update({
+                where: { id: v.id },
+                data: {
+                  sku: nextSku,
+                  ...(v.name !== undefined ? { name: v.name } : {}),
+                  ...(v.barcode !== undefined ? { barcode: v.barcode || null } : {}),
+                  ...(v.costPrice !== undefined ? { costPrice: v.costPrice } : {}),
+                  ...(sellingPrice !== undefined ? { sellingPrice } : {}),
+                  ...(lowStockThreshold !== undefined ? { lowStockThreshold } : {}),
+                  ...(v.status !== undefined ? { status: v.status } : {}),
+                },
+              });
+            }
+          } else if (!v.isDeleted) {
+            // New variant
+            let candidateSku = v.sku?.trim().toUpperCase();
+            if (
+              !candidateSku ||
+              candidateSku === 'SKU' ||
+              candidateSku === 'SP' ||
+              candidateSku.startsWith('SP-') ||
+              candidateSku.startsWith('SP')
+            ) {
+              candidateSku = `${productCode}-${counter}`;
+            }
+
+            while (
+              await tx.productVariant.findUnique({
+                where: { tenantId_sku: { tenantId, sku: candidateSku } },
+              })
+            ) {
+              counter++;
+              candidateSku = `${productCode}-${counter}`;
+            }
+            counter++;
+
+            await tx.productVariant.create({
+              data: {
+                tenantId,
+                productId: product.id,
+                sku: candidateSku,
+                name: v.name || 'Mặc định',
+                barcode: v.barcode || null,
+                unit: 'cái',
+                costPrice: v.costPrice ?? 0,
+                sellingPrice: sellingPrice ?? 0,
+                lowStockThreshold: lowStockThreshold ?? 5,
+                status: v.status || ProductStatus.ACTIVE,
+              },
+            });
+          }
+        }
+      }
+
+      return tx.product.findUnique({
+        where: { id },
+        include: {
+          variants: {
+            include: {
+              inventoryBalances: { include: { warehouse: true } },
+              listingMappings: { include: { shop: true } },
+            },
+          },
+        },
+      });
     });
   }
 

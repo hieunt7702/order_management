@@ -101,6 +101,19 @@ interface VariantItem {
   minStockAlert: number;
 }
 
+interface EditProductVariantItem {
+  id?: string;
+  sku: string;
+  name: string;
+  barcode: string;
+  costPrice: number;
+  sellPrice: number;
+  minStockAlert: number;
+  isNew?: boolean;
+  isDeleted?: boolean;
+  listingCount?: number;
+}
+
 export const ProductsPage: React.FC = () => {
   const { selectedShopId, shops } = useWorkspaceStore();
 
@@ -125,7 +138,21 @@ export const ProductsPage: React.FC = () => {
   const [isCreateProductModalOpen, setIsCreateProductModalOpen] = useState<boolean>(false);
   const [isEditProductModalOpen, setIsEditProductModalOpen] = useState<boolean>(false);
   const [selectedProductForEdit, setSelectedProductForEdit] = useState<any>(null);
-  const [editProductForm, setEditProductForm] = useState({ name: '', description: '' });
+  const [isUpdatingProduct, setIsUpdatingProduct] = useState<boolean>(false);
+  const [editProductForm, setEditProductForm] = useState<{
+    id: string;
+    name: string;
+    sku: string;
+    description: string;
+    variants: EditProductVariantItem[];
+  }>({
+    id: '',
+    name: '',
+    sku: '',
+    description: '',
+    variants: [],
+  });
+  const editVariantFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [isDeleteProductModalOpen, setIsDeleteProductModalOpen] = useState<boolean>(false);
   const [selectedProductForDelete, setSelectedProductForDelete] = useState<any>(null);
@@ -480,24 +507,42 @@ export const ProductsPage: React.FC = () => {
       }
 
       if (extractedVariants.length === 0) {
-        alert(
+        toast.warning(
           'Không tìm thấy cột phân loại (như "Tên phân loại hàng", "SKU phân loại"...) trong file Excel.'
         );
         return;
       }
 
-      setCreateProductForm((prev) => ({
-        ...prev,
-        variants: extractedVariants,
-      }));
-
-      alert(`Đã nạp thành công ${extractedVariants.length} biến thể từ file Excel!`);
+      if (isEditProductModalOpen) {
+        setEditProductForm((prev) => ({
+          ...prev,
+          variants: [
+            ...prev.variants,
+            ...extractedVariants.map((ev, i) => ({
+              ...ev,
+              sku: ev.sku || `${prev.sku || 'SP'}-${prev.variants.length + i + 1}`,
+              isNew: true,
+              isDeleted: false,
+            })),
+          ],
+        }));
+        toast.success(`Đã nạp thành công ${extractedVariants.length} biến thể vào sản phẩm!`);
+      } else {
+        setCreateProductForm((prev) => ({
+          ...prev,
+          variants: extractedVariants,
+        }));
+        toast.success(`Đã nạp thành công ${extractedVariants.length} biến thể từ file Excel!`);
+      }
     } catch (err: any) {
       console.error('Error importing variants from Excel:', err);
-      alert(`Lỗi khi đọc file Excel: ${err.message}`);
+      toast.error(`Lỗi khi đọc file Excel: ${err.message}`);
     } finally {
       if (variantFileInputRef.current) {
         variantFileInputRef.current.value = '';
+      }
+      if (editVariantFileInputRef.current) {
+        editVariantFileInputRef.current.value = '';
       }
     }
   };
@@ -567,9 +612,9 @@ export const ProductsPage: React.FC = () => {
     setEditVariantForm({
       name: variant.name || '',
       barcode: variant.barcode || '',
-      costPrice: variant.costPrice || 0,
-      sellPrice: variant.sellingPrice ?? variant.sellPrice ?? 0,
-      minStockAlert: variant.lowStockThreshold ?? variant.minStockAlert ?? 5,
+      costPrice: Number(variant.costPrice) || 0,
+      sellPrice: Number(variant.sellingPrice ?? variant.sellPrice ?? 0),
+      minStockAlert: Number(variant.lowStockThreshold ?? variant.minStockAlert ?? 5),
     });
     setIsEditVariantModalOpen(true);
   };
@@ -578,7 +623,15 @@ export const ProductsPage: React.FC = () => {
     e.preventDefault();
     if (!selectedVariantForEdit) return;
     try {
-      await productsApi.updateVariant(selectedVariantForEdit.id, editVariantForm);
+      await productsApi.updateVariant(selectedVariantForEdit.id, {
+        name: editVariantForm.name.trim(),
+        barcode: editVariantForm.barcode.trim() || undefined,
+        costPrice: Number(editVariantForm.costPrice) || 0,
+        sellingPrice: Number(editVariantForm.sellPrice) || 0,
+        sellPrice: Number(editVariantForm.sellPrice) || 0,
+        lowStockThreshold: Number(editVariantForm.minStockAlert) || 5,
+        minStockAlert: Number(editVariantForm.minStockAlert) || 5,
+      });
       setIsEditVariantModalOpen(false);
       loadProducts();
       await loadAllVariants();
@@ -591,27 +644,123 @@ export const ProductsPage: React.FC = () => {
   // Edit & Delete Product (Parent) Handlers
   const handleOpenEditProduct = (product: any) => {
     setSelectedProductForEdit(product);
+    const existingVariants: EditProductVariantItem[] = (product.variants || []).map((v: any) => ({
+      id: v.id,
+      sku: v.sku || '',
+      name: v.name || '',
+      barcode: v.barcode || '',
+      costPrice: Number(v.costPrice) || 0,
+      sellPrice: Number(v.sellingPrice ?? v.sellPrice ?? 0),
+      minStockAlert: Number(v.lowStockThreshold ?? v.minStockAlert ?? 5),
+      isNew: false,
+      isDeleted: false,
+      listingCount: v.listingMappings?.length || 0,
+    }));
+
     setEditProductForm({
+      id: product.id,
       name: product.name || '',
+      sku: product.code || product.sku || '',
       description: product.description || '',
+      variants:
+        existingVariants.length > 0
+          ? existingVariants
+          : [
+              {
+                sku: `${product.code || product.sku || 'SP'}-1`,
+                name: 'Mặc định',
+                barcode: '',
+                costPrice: 0,
+                sellPrice: 0,
+                minStockAlert: 5,
+                isNew: true,
+                isDeleted: false,
+              },
+            ],
     });
     setIsEditProductModalOpen(true);
+  };
+
+  const handleAddVariantToEditProduct = () => {
+    const parentCode = editProductForm.sku || 'SP';
+    const activeVariants = editProductForm.variants.filter((v) => !v.isDeleted);
+    const nextIdx = activeVariants.length + 1;
+
+    setEditProductForm((prev) => ({
+      ...prev,
+      variants: [
+        ...prev.variants,
+        {
+          sku: `${parentCode}-${nextIdx}`,
+          name: `Biến thể ${nextIdx}`,
+          barcode: '',
+          costPrice: 0,
+          sellPrice: 0,
+          minStockAlert: 5,
+          isNew: true,
+          isDeleted: false,
+        },
+      ],
+    }));
+  };
+
+  const handleRemoveVariantFromEditProduct = (idx: number) => {
+    const target = editProductForm.variants[idx];
+    if (target.id) {
+      confirmModal.danger({
+        title: 'Xóa biến thể',
+        message: `Bạn có chắc muốn xóa biến thể "${target.name || target.sku}"? (Nếu đã có phát sinh đơn hàng hoặc tồn kho, hệ thống sẽ tự động chuyển sang lưu trữ an toàn).`,
+        confirmText: 'Xác nhận xóa',
+        onConfirm: () => {
+          setEditProductForm((prev) => {
+            const next = [...prev.variants];
+            next[idx] = { ...next[idx], isDeleted: true };
+            return { ...prev, variants: next };
+          });
+        },
+      });
+    } else {
+      setEditProductForm((prev) => ({
+        ...prev,
+        variants: prev.variants.filter((_, i) => i !== idx),
+      }));
+    }
   };
 
   const handleUpdateProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProductForEdit) return;
+    if (!editProductForm.name.trim()) {
+      toast.warning('Tên sản phẩm không được để trống');
+      return;
+    }
+
+    setIsUpdatingProduct(true);
     try {
       await productsApi.update(selectedProductForEdit.id, {
         name: editProductForm.name.trim(),
         description: editProductForm.description.trim() || undefined,
+        variants: editProductForm.variants.map((v) => ({
+          id: v.id,
+          sku: v.sku?.trim().toUpperCase(),
+          name: v.name?.trim() || 'Mặc định',
+          barcode: v.barcode?.trim() || undefined,
+          costPrice: Number(v.costPrice) || 0,
+          sellingPrice: Number(v.sellPrice) || 0,
+          sellPrice: Number(v.sellPrice) || 0,
+          lowStockThreshold: Number(v.minStockAlert) || 5,
+          minStockAlert: Number(v.minStockAlert) || 5,
+          isDeleted: Boolean(v.isDeleted),
+        })),
       });
       setIsEditProductModalOpen(false);
       loadProducts();
       await loadAllVariants();
-      toast.success('Cập nhật sản phẩm thành công!');
+      toast.success('Cập nhật sản phẩm & biến thể thành công!');
     } catch (err: any) {
       toast.error('Lỗi cập nhật sản phẩm', err.message || 'Không thể cập nhật');
+    } finally {
+      setIsUpdatingProduct(false);
     }
   };
 
@@ -2331,7 +2480,7 @@ export const ProductsPage: React.FC = () => {
           maxWidth="w-[92vw] max-w-4xl"
         >
           <form onSubmit={handleCreateProductSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3 sm:space-y-4 p-3 sm:p-5">
+            <ModalBody className="space-y-3 sm:space-y-4 p-3.5 pb-8 sm:p-5 sm:pb-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
@@ -2429,7 +2578,7 @@ export const ProductsPage: React.FC = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-72 overflow-y-auto custom-scrollbar pr-1">
+                  <div className="space-y-3">
                     {createProductForm.variants.map((v, idx) => (
                       <div
                         key={idx}
@@ -2588,7 +2737,7 @@ export const ProductsPage: React.FC = () => {
           maxWidth="w-[92vw] max-w-xl"
         >
           <form onSubmit={handleUpdateVariantSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
+            <ModalBody className="space-y-3 sm:space-y-3.5 p-3.5 pb-8 sm:p-5 sm:pb-6">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                   Tên biến thể *
@@ -2691,31 +2840,66 @@ export const ProductsPage: React.FC = () => {
         </Modal>
       )}
 
-      {/* MODAL 2B: EDIT PRODUCT (PARENT) */}
+      {/* MODAL 2B: EDIT PRODUCT (PARENT & VARIANTS) */}
       {isEditProductModalOpen && selectedProductForEdit && (
         <Modal
           isOpen={isEditProductModalOpen}
           onClose={() => setIsEditProductModalOpen(false)}
-          title={<><span className="sm:hidden">Sửa sản phẩm</span><span className="hidden sm:inline">Chỉnh sửa sản phẩm cha</span></>}
-          subtitle={<span className="line-clamp-1 sm:line-clamp-none">{`Cập nhật thông tin chung [${selectedProductForEdit.code || selectedProductForEdit.sku}]`}</span>}
+          title={
+            <>
+              <span className="sm:hidden">Sửa sản phẩm</span>
+              <span className="hidden sm:inline">Chỉnh sửa sản phẩm & biến thể SKU</span>
+            </>
+          }
+          subtitle={
+            <span className="line-clamp-1 sm:line-clamp-none">{`Mã SKU cha: [${
+              editProductForm.sku || selectedProductForEdit.code || selectedProductForEdit.sku
+            }] • ${editProductForm.variants.filter((v) => !v.isDeleted).length} biến thể`}</span>
+          }
           icon={Package}
-          maxWidth="w-[92vw] max-w-2xl"
+          maxWidth="w-[94vw] max-w-4xl"
         >
           <form onSubmit={handleUpdateProductSubmit} className="flex flex-col flex-1 min-h-0">
-            <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  Tên sản phẩm *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editProductForm.name}
-                  onChange={(e) =>
-                    setEditProductForm({ ...editProductForm, name: e.target.value })
-                  }
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
-                />
+            <ModalBody className="space-y-3 sm:space-y-4 p-3.5 pb-8 sm:p-5 sm:pb-6">
+              {/* Product Info */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Tên sản phẩm *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="VD: Áo Thun Nam Cotton 100%"
+                    value={editProductForm.name}
+                    onChange={(e) =>
+                      setEditProductForm({ ...editProductForm, name: e.target.value })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                      Mã sản phẩm / SKU cha
+                    </label>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-400 font-medium">
+                      Mã gốc
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    readOnly
+                    disabled
+                    tabIndex={-1}
+                    value={
+                      editProductForm.sku ||
+                      selectedProductForEdit.code ||
+                      selectedProductForEdit.sku
+                    }
+                    className="w-full px-3 py-2 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none transition-colors pointer-events-none"
+                  />
+                </div>
               </div>
 
               <div>
@@ -2723,14 +2907,230 @@ export const ProductsPage: React.FC = () => {
                   Mô tả sản phẩm
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
+                  placeholder="Mô tả tóm tắt..."
                   value={editProductForm.description}
                   onChange={(e) =>
                     setEditProductForm({ ...editProductForm, description: e.target.value })
                   }
-                  placeholder="Mô tả tóm tắt sản phẩm..."
                   className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
                 />
+              </div>
+
+              {/* Variants Section */}
+              <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                  <div>
+                    <span className="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                      <Boxes size={14} className="text-[#5865f2]" />
+                      Các biến thể SKU nội bộ (
+                      {editProductForm.variants.filter((v) => !v.isDeleted).length})
+                    </span>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      Chủ động thêm mới biến thể, đổi giá vốn, giá bán, barcode và ngưỡng tồn kho
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      ref={editVariantFileInputRef}
+                      onChange={handleImportVariantsFromExcel}
+                      accept=".xlsx, .xls, .csv"
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => editVariantFileInputRef.current?.click()}
+                      className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 hover:underline cursor-pointer px-2.5 py-1 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 transition-colors"
+                      title="Nạp thêm biến thể từ file Excel Shopee hoặc bảng kê"
+                    >
+                      <FileSpreadsheet size={13} /> Nhập từ Excel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddVariantToEditProduct}
+                      className="text-xs text-[#5865f2] font-semibold flex items-center gap-1 hover:underline cursor-pointer px-2.5 py-1 rounded bg-[#5865f2]/10 border border-[#5865f2]/20 transition-colors"
+                    >
+                      <Plus size={13} /> Thêm biến thể
+                    </button>
+                  </div>
+                </div>
+
+                {editProductForm.variants.filter((v) => !v.isDeleted).length === 0 ? (
+                  <div className="p-4 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded text-xs text-gray-400 space-y-1">
+                    <p className="font-medium text-gray-600 dark:text-gray-300">
+                      Chưa có biến thể nào được gán cho sản phẩm.
+                    </p>
+                    <p className="text-[11px]">
+                      Nhấn nút "+ Thêm biến thể" ở trên để bổ sung phân loại cho sản phẩm.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {editProductForm.variants.map((v, idx) => {
+                      if (v.isDeleted) return null;
+                      const activeIndex =
+                        editProductForm.variants
+                          .slice(0, idx)
+                          .filter((x) => !x.isDeleted).length + 1;
+
+                      return (
+                        <div
+                          key={v.id || `new-var-${idx}`}
+                          className="p-3 bg-gray-50/80 dark:bg-[#131720]/80 rounded border border-gray-200/70 dark:border-gray-800 space-y-2.5"
+                        >
+                          <div className="flex items-center justify-between pb-1.5 border-b border-gray-200/50 dark:border-gray-800">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
+                                <Boxes size={12} className="text-[#5865f2]" />
+                                Biến thể #{activeIndex} {v.name ? `(${v.name})` : ''}
+                              </span>
+                              {v.isNew ? (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 font-medium">
+                                  Mới thêm
+                                </span>
+                              ) : (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 font-mono">
+                                  {v.sku}
+                                </span>
+                              )}
+                              {v.listingCount && v.listingCount > 0 ? (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 font-medium">
+                                  {v.listingCount} link sàn
+                                </span>
+                              ) : null}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveVariantFromEditProduct(idx)}
+                              className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors cursor-pointer flex items-center gap-1 text-[11px]"
+                              title="Xóa biến thể này"
+                            >
+                              <Trash2 size={13} />
+                              <span className="hidden sm:inline">Xóa</span>
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5">
+                            <div>
+                              <label className="text-[11px] font-medium text-gray-500">
+                                Tên biến thể *
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={v.name}
+                                onChange={(e) => {
+                                  const next = [...editProductForm.variants];
+                                  next[idx].name = e.target.value;
+                                  setEditProductForm({ ...editProductForm, variants: next });
+                                }}
+                                className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <label className="text-[11px] font-medium text-gray-500">
+                                  Mã SKU biến thể
+                                </label>
+                                {v.isNew ? (
+                                  <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-400 font-medium">
+                                    Tự cấp
+                                  </span>
+                                ) : null}
+                              </div>
+                              <input
+                                type="text"
+                                readOnly={!v.isNew}
+                                disabled={!v.isNew}
+                                value={v.sku}
+                                onChange={(e) => {
+                                  if (v.isNew) {
+                                    const next = [...editProductForm.variants];
+                                    next[idx].sku = e.target.value.toUpperCase();
+                                    setEditProductForm({ ...editProductForm, variants: next });
+                                  }
+                                }}
+                                className={`w-full px-2.5 py-1.5 text-xs font-mono uppercase font-bold border border-gray-200 dark:border-gray-700 rounded ${
+                                  v.isNew
+                                    ? 'bg-white dark:bg-[#161b26] text-gray-900 dark:text-white'
+                                    : 'bg-gray-100 dark:bg-[#131720] text-gray-500 dark:text-gray-400 cursor-not-allowed pointer-events-none'
+                                }`}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-medium text-gray-500">
+                                Barcode quét
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="EAN/UPC/Custom"
+                                value={v.barcode}
+                                onChange={(e) => {
+                                  const next = [...editProductForm.variants];
+                                  next[idx].barcode = e.target.value;
+                                  setEditProductForm({ ...editProductForm, variants: next });
+                                }}
+                                className="w-full px-2.5 py-1.5 text-xs font-mono bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5">
+                            <div>
+                              <label className="text-[11px] font-medium text-gray-500">
+                                Giá vốn COGS (VND)
+                              </label>
+                              <CurrencyInput
+                                value={v.costPrice}
+                                onChange={(val) => {
+                                  const next = [...editProductForm.variants];
+                                  next[idx].costPrice = val;
+                                  setEditProductForm({ ...editProductForm, variants: next });
+                                }}
+                                placeholder="0"
+                                suffix="đ"
+                                inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-medium text-gray-500">
+                                Giá bán (VND)
+                              </label>
+                              <CurrencyInput
+                                value={v.sellPrice}
+                                onChange={(val) => {
+                                  const next = [...editProductForm.variants];
+                                  next[idx].sellPrice = val;
+                                  setEditProductForm({ ...editProductForm, variants: next });
+                                }}
+                                placeholder="0"
+                                suffix="đ"
+                                inputClassName="px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[11px] font-medium text-gray-500">
+                                Ngưỡng cảnh báo tồn tối thiểu
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={v.minStockAlert}
+                                onChange={(e) => {
+                                  const next = [...editProductForm.variants];
+                                  next[idx].minStockAlert = parseInt(e.target.value, 10) || 5;
+                                  setEditProductForm({ ...editProductForm, variants: next });
+                                }}
+                                className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </ModalBody>
 
@@ -2742,7 +3142,13 @@ export const ProductsPage: React.FC = () => {
               >
                 Hủy
               </ModalButton>
-              <ModalButton variant="primary" type="submit" className="flex-1 sm:flex-initial">
+              <ModalButton
+                variant="primary"
+                type="submit"
+                loading={isUpdatingProduct}
+                disabled={isUpdatingProduct}
+                className="flex-1 sm:flex-initial"
+              >
                 Lưu thay đổi
               </ModalButton>
             </ModalFooter>

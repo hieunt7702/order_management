@@ -190,7 +190,7 @@ export const ModalBody: React.FC<{ children?: ReactNode; className?: string }> =
 }) => (
   <div
     className={cn(
-      'p-3 sm:p-5 overflow-y-auto space-y-3 sm:space-y-4 text-xs sm:text-sm text-gray-700 dark:text-gray-300 custom-scrollbar flex-1 min-h-0 overscroll-contain',
+      'p-3.5 pb-8 sm:p-5 sm:pb-6 overflow-y-auto space-y-3 sm:space-y-4 text-xs sm:text-sm text-gray-700 dark:text-gray-300 custom-scrollbar flex-1 min-h-0 overscroll-y-contain',
       className,
     )}
   >

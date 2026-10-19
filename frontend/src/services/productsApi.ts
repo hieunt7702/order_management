@@ -18,6 +18,8 @@ export const productsApi = {
   delete: (id: string) => api.delete(`/products/${id}`),
   updateVariant: (variantId: string, data: any) =>
     api.patch(`/products/variants/${variantId}`, data),
+  addVariant: (productId: string, data: any) =>
+    api.post(`/products/${productId}/variants`, data),
   deleteVariant: (variantId: string) =>
     api.delete(`/products/variants/${variantId}`),
   findMappings: (shopId?: string) => {
