@@ -444,12 +444,12 @@ export const PurchaseReceiptsPage: React.FC = () => {
           leftItem={{
             title: 'Hàng thực nhận',
             value: `${totalItemsVal.toLocaleString('vi-VN')}đ`,
-            subtitle: 'Tổng giá trị nhập',
+            subtitle: 'Tổng giá trị nhập kho',
             icon: PackagePlus,
             colorScheme: 'blue',
           }}
           rightItem={{
-            title: 'Công nợ phải trả',
+            title: 'Tổng tiền hàng',
             value: `${totalPayableVal.toLocaleString('vi-VN')}đ`,
             subtitle: 'Sau chiết khấu & cước',
             icon: Receipt,
@@ -458,18 +458,18 @@ export const PurchaseReceiptsPage: React.FC = () => {
         />
         <SystemMetricPairCard
           leftItem={{
-            title: 'Đã thanh toán',
+            title: 'Đã thanh toán / Cấn trừ',
             value: `${totalPaidVal.toLocaleString('vi-VN')}đ`,
-            subtitle: 'Tiền thực tế đã chi',
+            subtitle: 'Bù trừ nợ & thanh toán',
             icon: CreditCard,
             colorScheme: 'green',
           }}
           rightItem={{
             title: 'Còn nợ NCC',
             value: `${totalRemainingVal.toLocaleString('vi-VN')}đ`,
-            subtitle: 'Chưa thanh toán',
+            subtitle: 'Công nợ thực tế phải trả',
             icon: AlertCircle,
-            colorScheme: 'red',
+            colorScheme: totalRemainingVal > 0 ? 'red' : 'green',
           }}
         />
       </div>
@@ -551,7 +551,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
             />
           </div>
 
-          <div className="w-full sm:w-48">
+          <div className="w-full sm:w-56">
             <Select
               value={filterDueStatus}
               onChange={(val) => {
@@ -560,9 +560,9 @@ export const PurchaseReceiptsPage: React.FC = () => {
               }}
               options={[
                 { value: 'ALL', label: 'Tất cả hạn nợ', icon: Clock },
+                { value: 'NOT_DUE', label: 'Chưa đến hạn (hoặc không hẹn)', icon: CheckCircle2 },
+                { value: 'DUE_SOON', label: 'Sắp đến hạn (<=7 ngày)', icon: Clock },
                 { value: 'OVERDUE', label: 'Quá hạn nợ', icon: AlertCircle },
-                { value: 'DUE_SOON', label: 'Đến hạn (<=7 ngày)', icon: Clock },
-                { value: 'NOT_DUE', label: 'Chưa đến hạn', icon: CheckCircle2 },
               ]}
               icon={Clock}
               size="sm"
@@ -618,19 +618,19 @@ export const PurchaseReceiptsPage: React.FC = () => {
             <SystemTh className="w-36 text-right">
               <div className="flex items-center justify-end gap-1.5">
                 <Receipt size={12} className="text-gray-400 shrink-0" />
-                <span>Công Nợ Phải Trả</span>
+                <span>Tổng Tiền Hàng</span>
               </div>
             </SystemTh>
-            <SystemTh className="w-32 text-right">
+            <SystemTh className="w-36 text-right">
               <div className="flex items-center justify-end gap-1.5">
                 <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-                <span>Đã Trả</span>
+                <span>Đã Trả / Cấn Trừ</span>
               </div>
             </SystemTh>
             <SystemTh className="w-32 text-right">
               <div className="flex items-center justify-end gap-1.5">
                 <AlertCircle size={12} className="text-rose-500 shrink-0" />
-                <span>Còn Nợ</span>
+                <span>Còn Nợ NCC</span>
               </div>
             </SystemTh>
             <SystemTh className="w-28 text-center">
@@ -667,6 +667,16 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 const isDueSoon = r.dueStatus === 'DUE_SOON';
                 const hasRemaining = Number(r.remainingAmount) > 0;
                 const stt = (page - 1) * limit + index + 1;
+
+                const isOffsetFromAdvance = r.paymentAllocations?.some((a: any) =>
+                  a.note?.includes('cấn trừ') || a.note?.includes('ứng trước')
+                );
+                const offsetAmount = r.paymentAllocations?.reduce((sum: number, a: any) => {
+                  if (a.note?.includes('cấn trừ') || a.note?.includes('ứng trước')) {
+                    return sum + Number(a.allocatedAmount || 0);
+                  }
+                  return sum;
+                }, 0) || 0;
 
                 return (
                   <SystemTr
@@ -717,36 +727,52 @@ export const PurchaseReceiptsPage: React.FC = () => {
                       {Number(r.totalItemsAmount).toLocaleString('vi-VN')}đ
                     </SystemTd>
 
-                    {/* Công nợ phải trả */}
+                    {/* Tổng tiền hàng */}
                     <SystemTd className="text-right font-semibold text-gray-900 dark:text-white">
                       <div>{Number(r.payableAmount).toLocaleString('vi-VN')}đ</div>
-                      {Number(r.shippingFee) > 0 && (
+                      {isOffsetFromAdvance && offsetAmount > 0 ? (
+                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
+                          Trừ nợ NCC: -{offsetAmount.toLocaleString('vi-VN')}đ
+                        </div>
+                      ) : Number(r.shippingFee) > 0 ? (
                         <div className="text-[10px] text-gray-400 font-normal mt-0.5">
                           Cước: {Number(r.shippingFee).toLocaleString('vi-VN')}đ ({r.shippingFeePayerType === 'PAID_TO_SUPPLIER' ? 'NCC' : 'Bên VC'})
                         </div>
-                      )}
+                      ) : null}
                     </SystemTd>
 
-                    {/* Đã thanh toán */}
+                    {/* Đã thanh toán / Cấn trừ */}
                     <SystemTd className="text-right font-medium text-emerald-600 dark:text-emerald-400">
                       <div>{Number(r.paidAmount).toLocaleString('vi-VN')}đ</div>
-                      {Number(r.returnDeductionAmount) > 0 && (
+                      {isOffsetFromAdvance ? (
+                        <span className="inline-block px-1.5 py-0.2 rounded text-[10px] bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-medium mt-0.5">
+                          Đã cấn trừ nợ NCC
+                        </span>
+                      ) : Number(r.returnDeductionAmount) > 0 ? (
                         <div className="text-[10px] text-orange-500 mt-0.5">
                           - Trả: {Number(r.returnDeductionAmount).toLocaleString('vi-VN')}đ
                         </div>
-                      )}
+                      ) : null}
                     </SystemTd>
 
-                    {/* Còn nợ */}
-                    <SystemTd className="text-right font-bold text-rose-600 dark:text-rose-400">
-                      {Number(r.remainingAmount).toLocaleString('vi-VN')}đ
+                    {/* Còn nợ NCC */}
+                    <SystemTd className="text-right font-bold">
+                      {Number(r.remainingAmount) > 0 ? (
+                        <span className="text-rose-600 dark:text-rose-400">
+                          {Number(r.remainingAmount).toLocaleString('vi-VN')}đ
+                        </span>
+                      ) : (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                          0đ
+                        </span>
+                      )}
                     </SystemTd>
 
                     {/* Hạn nợ */}
                     <SystemTd className="text-center">
                       {r.paymentDueDate ? (
                         <div>
-                          <div className={`text-xs font-semibold ${isOverdue ? 'text-red-600 dark:text-red-400 animate-pulse' : isDueSoon ? 'text-orange-500' : 'text-gray-600 dark:text-gray-300'}`}>
+                          <div className={`text-xs font-semibold ${isOverdue && hasRemaining ? 'text-red-600 dark:text-red-400 animate-pulse' : isDueSoon && hasRemaining ? 'text-orange-500' : 'text-gray-600 dark:text-gray-300'}`}>
                             {new Date(r.paymentDueDate).toLocaleDateString('vi-VN')}
                           </div>
                           {isOverdue && hasRemaining && (
@@ -759,9 +785,17 @@ export const PurchaseReceiptsPage: React.FC = () => {
                               Sắp đến hạn
                             </span>
                           )}
+                          {!hasRemaining && (
+                            <span className="inline-block px-1.5 py-0.2 rounded text-[10px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
+                              Đã xong
+                            </span>
+                          )}
                         </div>
                       ) : (
-                        <span className="text-gray-400 text-xs">Không hẹn</span>
+                        <div>
+                          <span className="text-gray-400 text-xs">Không hẹn</span>
+                          <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 font-medium">Chưa đến hạn</div>
+                        </div>
                       )}
                     </SystemTd>
 
@@ -864,8 +898,18 @@ export const PurchaseReceiptsPage: React.FC = () => {
         ) : (
           receipts.map((r) => {
             const hasRemaining = Number(r.remainingAmount) > 0;
-            const isDueSoon = r.paymentDueDate && new Date(r.paymentDueDate).getTime() - Date.now() < 3 * 86400000 && new Date(r.paymentDueDate).getTime() > Date.now();
-            const isOverdue = r.paymentDueDate && new Date(r.paymentDueDate).getTime() < Date.now();
+            const isDueSoon = r.dueStatus === 'DUE_SOON';
+            const isOverdue = r.dueStatus === 'OVERDUE';
+
+            const isOffsetFromAdvance = r.paymentAllocations?.some((a: any) =>
+              a.note?.includes('cấn trừ') || a.note?.includes('ứng trước')
+            );
+            const offsetAmount = r.paymentAllocations?.reduce((sum: number, a: any) => {
+              if (a.note?.includes('cấn trừ') || a.note?.includes('ứng trước')) {
+                return sum + Number(a.allocatedAmount || 0);
+              }
+              return sum;
+            }, 0) || 0;
 
             return (
               <div
@@ -925,18 +969,26 @@ export const PurchaseReceiptsPage: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] text-gray-400">Phải trả NCC</div>
+                    <div className="text-[10px] text-gray-400">Tổng tiền hàng</div>
                     <div className="font-mono font-semibold text-xs text-gray-900 dark:text-white mt-0.5">
                       {Number(r.payableAmount || 0).toLocaleString('vi-VN')}đ
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] text-gray-400">Còn nợ</div>
+                    <div className="text-[10px] text-gray-400">Còn nợ NCC</div>
                     <div className={`font-mono font-bold text-xs mt-0.5 ${hasRemaining ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                       {Number(r.remainingAmount || 0).toLocaleString('vi-VN')}đ
                     </div>
                   </div>
                 </div>
+
+                {/* Offset notice on mobile if applicable */}
+                {isOffsetFromAdvance && offsetAmount > 0 && (
+                  <div className="flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-300 font-medium bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 rounded">
+                    <CheckCircle2 size={12} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    <span>Đã cấn trừ {offsetAmount.toLocaleString('vi-VN')}đ vào tiền NCC nợ</span>
+                  </div>
+                )}
 
                 {/* Overdue alert if applicable */}
                 {isOverdue && hasRemaining && (

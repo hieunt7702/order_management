@@ -374,6 +374,47 @@ export class PurchaseReceiptsService {
     const limit = Math.max(1, Math.min(100, Number(filter.limit) || 25));
     const skip = (page - 1) * limit;
 
+    const now = new Date();
+    const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const andConditions: Prisma.PurchaseReceiptWhereInput[] = [];
+
+    if (filter.search) {
+      andConditions.push({
+        OR: [
+          { receiptCode: { contains: filter.search, mode: 'insensitive' } },
+          { supplier: { name: { contains: filter.search, mode: 'insensitive' } } },
+          { supplier: { code: { contains: filter.search, mode: 'insensitive' } } },
+          { note: { contains: filter.search, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (filter.dueStatus) {
+      if (filter.dueStatus === 'OVERDUE') {
+        // Quá hạn nợ: Phải còn nợ và có hạn nợ đã quá ngày
+        andConditions.push({
+          remainingAmount: { gt: 0 },
+          paymentDueDate: { not: null, lt: now },
+        });
+      } else if (filter.dueStatus === 'DUE_SOON') {
+        // Sắp đến hạn: Phải còn nợ và hạn nợ trong vòng 7 ngày tới
+        andConditions.push({
+          remainingAmount: { gt: 0 },
+          paymentDueDate: { not: null, gte: now, lte: sevenDaysLater },
+        });
+      } else if (filter.dueStatus === 'NOT_DUE') {
+        // Chưa đến hạn: Nếu không có hạn nợ thì là chưa đến hạn, hoặc đã hết nợ, hoặc còn xa
+        andConditions.push({
+          OR: [
+            { remainingAmount: { lte: 0 } },
+            { paymentDueDate: null },
+            { paymentDueDate: { gt: sevenDaysLater } },
+          ],
+        });
+      }
+    }
+
     const where: Prisma.PurchaseReceiptWhereInput = {
       tenantId,
       ...(filter.supplierId && { supplierId: filter.supplierId }),
@@ -386,14 +427,7 @@ export class PurchaseReceiptsService {
             : filter.paymentStatus,
       }),
       ...(filter.receivingStatus && { receivingStatus: filter.receivingStatus }),
-      ...(filter.search && {
-        OR: [
-          { receiptCode: { contains: filter.search, mode: 'insensitive' } },
-          { supplier: { name: { contains: filter.search, mode: 'insensitive' } } },
-          { supplier: { code: { contains: filter.search, mode: 'insensitive' } } },
-          { note: { contains: filter.search, mode: 'insensitive' } },
-        ],
-      }),
+      ...(andConditions.length > 0 && { AND: andConditions }),
     };
 
     const [total, receipts] = await Promise.all([
@@ -429,6 +463,7 @@ export class PurchaseReceiptsService {
                   fundSource: true,
                   paymentMethod: true,
                   referenceCode: true,
+                  note: true,
                 },
               },
             },
@@ -441,18 +476,22 @@ export class PurchaseReceiptsService {
       }),
     ]);
 
-    const now = new Date();
-    const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
     const items = receipts.map((r) => {
       let calculatedDueStatus: 'NOT_DUE' | 'DUE_SOON' | 'OVERDUE' = 'NOT_DUE';
-      if (r.paymentDueDate && Number(r.remainingAmount) > 0) {
+      const rem = Number(r.remainingAmount || 0);
+
+      if (r.paymentDueDate && rem > 0) {
         const dueDate = new Date(r.paymentDueDate);
         if (dueDate < now) {
           calculatedDueStatus = 'OVERDUE';
         } else if (dueDate <= sevenDaysLater) {
           calculatedDueStatus = 'DUE_SOON';
+        } else {
+          calculatedDueStatus = 'NOT_DUE';
         }
+      } else {
+        // Nếu không có hạn nợ hoặc đã hết nợ -> Chưa đến hạn
+        calculatedDueStatus = 'NOT_DUE';
       }
 
       return {
