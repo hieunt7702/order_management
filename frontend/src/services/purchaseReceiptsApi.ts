@@ -152,4 +152,10 @@ export const purchaseReceiptsApi = {
 
   delete: (id: string) =>
     api.delete<{ success: boolean; message: string }>(`/purchase-receipts/${id}`),
+
+  autoOffset: (supplierId?: string) =>
+    api.post<{ success: boolean; message: string; totalAllocated: number }>(
+      `/purchase-receipts/auto-offset${supplierId ? `?supplierId=${supplierId}` : ''}`,
+      null,
+    ),
 };

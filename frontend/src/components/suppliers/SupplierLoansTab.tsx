@@ -661,38 +661,44 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5">
-                  <Calendar size={13} className="text-blue-500" />
-                  <span>Ngày vay vốn</span>
-                </label>
+                <div className="flex items-center justify-between h-5 mb-1.5">
+                  <label className="text-xs font-semibold flex items-center gap-1.5 leading-none">
+                    <Calendar size={13} className="text-blue-500 shrink-0" />
+                    <span>Ngày vay vốn</span>
+                  </label>
+                </div>
                 <input
                   type="date"
                   value={createForm.loanDate}
                   onChange={(e) => setCreateForm({ ...createForm, loanDate: e.target.value })}
-                  className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs"
+                  className="w-full h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-0 text-xs box-border"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5">
-                  <Clock size={13} className="text-amber-500" />
-                  <span>Hạn thanh toán nợ vay</span>
-                </label>
+                <div className="flex items-center justify-between h-5 mb-1.5">
+                  <label className="text-xs font-semibold flex items-center gap-1.5 leading-none">
+                    <Clock size={13} className="text-amber-500 shrink-0" />
+                    <span>Hạn thanh toán nợ vay</span>
+                  </label>
+                </div>
                 <input
                   type="date"
                   value={createForm.dueDate}
                   onChange={(e) => setCreateForm({ ...createForm, dueDate: e.target.value })}
-                  className="w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-1.5 text-xs"
+                  className="w-full h-8 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700 rounded px-2.5 py-0 text-xs box-border"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold mb-1 flex items-center gap-1.5">
-                  <Wallet size={13} className="text-[#5865f2]" />
-                  <span>Tài khoản tiền giải ngân</span>
-                </label>
+                <div className="flex items-center justify-between h-5 mb-1.5">
+                  <label className="text-xs font-semibold flex items-center gap-1.5 leading-none">
+                    <Wallet size={13} className="text-[#5865f2] shrink-0" />
+                    <span>Tài khoản tiền giải ngân</span>
+                  </label>
+                </div>
                 <Select
                   value={createForm.fundSource}
                   onChange={(val) => setCreateForm({ ...createForm, fundSource: val as any })}
@@ -706,12 +712,12 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                    <FileText size={13} className="text-[#5865f2]" />
+                <div className="flex items-center justify-between h-5 mb-1.5">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5 leading-none">
+                    <FileText size={13} className="text-[#5865f2] shrink-0" />
                     <span>Mã hợp đồng / GD</span>
                   </label>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-400 font-medium">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-400 font-medium leading-none shrink-0">
                     Hệ thống tự cấp
                   </span>
                 </div>
@@ -722,7 +728,7 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
                   tabIndex={-1}
                   value={createForm.referenceCode || 'Hệ thống tự động cấp'}
                   title="Mã hợp đồng được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
-                  className="w-full bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded px-2.5 py-1.5 text-xs font-mono uppercase font-bold text-gray-500 dark:text-gray-400 cursor-not-allowed select-none pointer-events-none"
+                  className="w-full h-8 bg-gray-100 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded px-2.5 text-xs font-mono uppercase font-bold text-gray-500 dark:text-gray-400 cursor-not-allowed select-none pointer-events-none box-border leading-none"
                 />
               </div>
             </div>

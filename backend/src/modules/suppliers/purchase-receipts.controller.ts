@@ -99,6 +99,16 @@ export class PurchaseReceiptsController {
     return this.receiptsService.update(tenantId, id, dto);
   }
 
+  @Post('auto-offset')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Tự động cấn trừ công nợ từ tiền ứng trước của NCC vào các phiếu nhập' })
+  async autoOffset(
+    @CurrentTenantId() tenantId: string,
+    @Query('supplierId') supplierId?: string,
+  ) {
+    return this.receiptsService.autoOffset(tenantId, supplierId);
+  }
+
   @Delete(':id')
   @Roles(MembershipRole.OWNER, MembershipRole.ADMIN)
   @ApiOperation({ summary: 'Hủy phiếu nhập kho và đảo ngược số lượng tồn kho' })

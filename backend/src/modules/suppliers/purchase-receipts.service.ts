@@ -18,6 +18,8 @@ import {
   CashCategoryType,
   CashTransactionType,
   CashTransactionStatus,
+  SupplierPaymentType,
+  PurchasePaymentStatus,
 } from '@prisma/client';
 
 @Injectable()
@@ -195,10 +197,23 @@ export class PurchaseReceiptsService {
         }
       }
 
-      // C. Xử lý thanh toán ngay (Immediate Payment) nếu có
+      // C. Tự động cấn trừ tiền NCC nợ shop / tiền ứng trước nếu có
+      await this.autoOffsetSupplierReceipts(tx, tenantId, dto.supplierId, receipt.id);
+
+      // Đọc lại trạng thái phiếu nhập sau khi đã cấn trừ tự động
+      const updatedReceipt = await tx.purchaseReceipt.findUniqueOrThrow({
+        where: { id: receipt.id },
+      });
+
+      let currentPaid = Number(updatedReceipt.paidAmount);
+      let currentRemaining = Number(updatedReceipt.remainingAmount);
+
+      // D. Xử lý thanh toán ngay (Immediate Payment) nếu có
       if (dto.immediatePayment && dto.immediatePaymentAmount && dto.immediatePaymentAmount > 0) {
-        const payAmount = Math.min(dto.immediatePaymentAmount, payableAmount);
-        const advancePortion = Math.max(0, dto.immediatePaymentAmount - payableAmount);
+        // Số tiền thực tế thanh toán thêm cho phiếu này (không vượt quá số tiền còn nợ sau cấn trừ)
+        const payAmount = Math.min(dto.immediatePaymentAmount, currentRemaining);
+        // Số tiền dôi dư (nếu người dùng chi nhiều hơn số còn thiếu) trở thành tiền ứng trước mới
+        const advancePortion = Math.max(0, dto.immediatePaymentAmount - payAmount);
 
         const paymentCode = `PC-${receiptCode.replace('PNK-', '')}`;
 
@@ -227,25 +242,28 @@ export class PurchaseReceiptsService {
           },
         });
 
-        // Tạo allocation
-        await tx.paymentAllocation.create({
-          data: {
-            tenantId,
-            paymentId: payment.id,
-            receiptId: receipt.id,
-            allocatedAmount: new Prisma.Decimal(payAmount),
-            note: 'Thanh toán ngay lúc nhận hàng',
-          },
-        });
+        // Tạo allocation cho phần chi thêm (nếu có thanh toán cho phiếu này)
+        if (payAmount > 0) {
+          await tx.paymentAllocation.create({
+            data: {
+              tenantId,
+              paymentId: payment.id,
+              receiptId: receipt.id,
+              allocatedAmount: new Prisma.Decimal(payAmount),
+              note: 'Thanh toán ngay lúc nhận hàng',
+            },
+          });
+        }
 
-        const newRemaining = Math.max(0, payableAmount - payAmount);
+        const newRemaining = Math.max(0, currentRemaining - payAmount);
+        const newPaid = currentPaid + payAmount;
         const newPaymentStatus =
-          newRemaining === 0 ? 'PAID' : payAmount > 0 ? 'PARTIALLY_PAID' : 'UNPAID';
+          newRemaining === 0 ? 'PAID' : newPaid > 0 ? 'PARTIALLY_PAID' : 'UNPAID';
 
         await tx.purchaseReceipt.update({
           where: { id: receipt.id },
           data: {
-            paidAmount: new Prisma.Decimal(payAmount),
+            paidAmount: new Prisma.Decimal(newPaid),
             remainingAmount: new Prisma.Decimal(newRemaining),
             paymentStatus: newPaymentStatus,
           },
@@ -345,6 +363,13 @@ export class PurchaseReceiptsService {
   }
 
   async findAll(tenantId: string, filter: PurchaseReceiptFilterDto = {}) {
+    // Tự động kiểm tra và cấn trừ các phiếu nhập chưa trả từ tiền NCC đang nợ shop
+    try {
+      await this.autoOffset(tenantId, filter.supplierId);
+    } catch (err) {
+      // Tránh để lỗi cấn trừ làm gián đoạn tải danh sách
+    }
+
     const page = Math.max(1, Number(filter.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(filter.limit) || 25));
     const skip = (page - 1) * limit;
@@ -562,6 +587,168 @@ export class PurchaseReceiptsService {
 
       await tx.purchaseReceipt.delete({ where: { id } });
       return { success: true, message: 'Đã xóa phiếu nhập và hoàn lại tồn kho thành công' };
+    });
+  }
+
+  /**
+   * Tự động cấn trừ tiền ứng trước / tiền cọc của NCC vào các phiếu nhập còn nợ
+   */
+  async autoOffsetSupplierReceipts(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    supplierId: string,
+    targetReceiptId?: string,
+  ) {
+    // 1. Lấy tất cả phiếu chi của NCC này có thể dùng để cấn trừ
+    const payments = await tx.supplierPayment.findMany({
+      where: {
+        tenantId,
+        supplierId,
+        paymentType: { in: [SupplierPaymentType.PAYMENT, SupplierPaymentType.ADVANCE_DEPOSIT] },
+      },
+      orderBy: { paymentDate: 'asc' },
+    });
+
+    const availablePayments = payments
+      .map((p) => {
+        const amt = Number(p.amount);
+        const alloc = Number(p.allocatedAmount);
+        const adv = Number(p.advanceAmount);
+        // Tiền chưa phân bổ = max(adv, amt - alloc)
+        const available = Math.max(0, adv > 0 ? adv : amt - alloc);
+        return {
+          id: p.id,
+          paymentCode: p.paymentCode,
+          amount: amt,
+          allocatedAmount: alloc,
+          advanceAmount: adv,
+          available,
+        };
+      })
+      .filter((p) => p.available > 0);
+
+    if (availablePayments.length === 0) {
+      return [];
+    }
+
+    // 2. Lấy các phiếu nhập còn nợ (remainingAmount > 0)
+    const receiptsWhere: Prisma.PurchaseReceiptWhereInput = {
+      tenantId,
+      supplierId,
+      remainingAmount: { gt: 0 },
+      ...(targetReceiptId ? { id: targetReceiptId } : {}),
+    };
+
+    const receipts = await tx.purchaseReceipt.findMany({
+      where: receiptsWhere,
+      orderBy: { receiptDate: 'asc' },
+    });
+
+    if (receipts.length === 0) {
+      return [];
+    }
+
+    const allocationsCreated: any[] = [];
+
+    // 3. Phân bổ tuần tự
+    for (const rc of receipts) {
+      let receiptRemaining = Number(rc.remainingAmount);
+      let receiptPaid = Number(rc.paidAmount);
+
+      for (const pm of availablePayments) {
+        if (receiptRemaining <= 0) break;
+        if (pm.available <= 0) continue;
+
+        const offset = Math.min(receiptRemaining, pm.available);
+        if (offset <= 0) continue;
+
+        // Tạo bản ghi phân bổ
+        const alloc = await tx.paymentAllocation.create({
+          data: {
+            tenantId,
+            paymentId: pm.id,
+            receiptId: rc.id,
+            allocatedAmount: new Prisma.Decimal(offset),
+            note: `Tự động cấn trừ từ tiền ứng trước của NCC (Phiếu chi ${pm.paymentCode})`,
+          },
+        });
+        allocationsCreated.push(alloc);
+
+        // Cập nhật payment
+        pm.available -= offset;
+        pm.allocatedAmount += offset;
+        pm.advanceAmount = Math.max(0, pm.amount - pm.allocatedAmount);
+
+        await tx.supplierPayment.update({
+          where: { id: pm.id },
+          data: {
+            allocatedAmount: new Prisma.Decimal(pm.allocatedAmount),
+            advanceAmount: new Prisma.Decimal(pm.advanceAmount),
+          },
+        });
+
+        // Cập nhật receipt
+        receiptRemaining -= offset;
+        receiptPaid += offset;
+      }
+
+      const newPaymentStatus =
+        receiptRemaining <= 0
+          ? PurchasePaymentStatus.PAID
+          : receiptPaid > 0
+          ? PurchasePaymentStatus.PARTIALLY_PAID
+          : PurchasePaymentStatus.UNPAID;
+
+      await tx.purchaseReceipt.update({
+        where: { id: rc.id },
+        data: {
+          paidAmount: new Prisma.Decimal(receiptPaid),
+          remainingAmount: new Prisma.Decimal(Math.max(0, receiptRemaining)),
+          paymentStatus: newPaymentStatus,
+        },
+      });
+    }
+
+    return allocationsCreated;
+  }
+
+  /**
+   * API/Phương thức công khai để kích hoạt cấn trừ tự động nợ giữa NCC và các phiếu nhập
+   */
+  async autoOffset(tenantId: string, supplierId?: string) {
+    const hasUnpaidReceipts = await this.prisma.purchaseReceipt.findFirst({
+      where: { tenantId, remainingAmount: { gt: 0 }, ...(supplierId ? { supplierId } : {}) },
+      select: { id: true },
+    });
+
+    if (!hasUnpaidReceipts) {
+      return { success: true, message: 'Không có phiếu nhập nào còn nợ', totalAllocated: 0 };
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      let supplierIds: string[] = [];
+      if (supplierId) {
+        supplierIds = [supplierId];
+      } else {
+        const receipts = await tx.purchaseReceipt.findMany({
+          where: { tenantId, remainingAmount: { gt: 0 } },
+          select: { supplierId: true },
+          distinct: ['supplierId'],
+        });
+        supplierIds = receipts.map((r) => r.supplierId);
+      }
+
+      let totalAllocated = 0;
+      for (const sId of supplierIds) {
+        const allocs = await this.autoOffsetSupplierReceipts(tx, tenantId, sId);
+        totalAllocated += allocs.length;
+      }
+
+      return {
+        success: true,
+        message: `Đã tự động cấn trừ công nợ thành công (${totalAllocated} khoản phân bổ)`,
+        totalAllocated,
+      };
     });
   }
 }

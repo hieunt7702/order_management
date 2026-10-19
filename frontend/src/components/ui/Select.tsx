@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, type ComponentType } from 
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Search, X, Plus } from 'lucide-react';
 import { useClickOutside } from '../../hooks/useClickOutside';
+import { cn } from '../../lib/utils';
 
 export interface SelectOption {
   value: string | number;
@@ -24,6 +25,7 @@ export interface SelectProps {
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   className?: string;
+  triggerClassName?: string;
   menuWidth?: string;
   placement?: 'top' | 'bottom';
   mobileSheet?: boolean;
@@ -73,6 +75,7 @@ export const Select: React.FC<SelectProps> = ({
   size = 'md',
   disabled = false,
   className = '',
+  triggerClassName = '',
   menuWidth = 'w-full',
   placement = 'bottom',
   mobileSheet = true,
@@ -214,9 +217,9 @@ export const Select: React.FC<SelectProps> = ({
 
   // Sizing tokens for the trigger button
   const sizeClasses = {
-    sm: 'h-[30px] px-2.5 text-xs',
-    md: 'h-[36px] px-3 text-xs sm:text-[13px]',
-    lg: 'h-[42px] px-3.5 text-sm',
+    sm: 'h-8 px-2.5 text-xs',
+    md: 'h-9 px-3 text-xs sm:text-[13px]',
+    lg: 'h-10 px-3.5 text-sm',
   };
 
   const handleSelect = (val: string | number, e?: React.SyntheticEvent) => {
@@ -380,12 +383,15 @@ export const Select: React.FC<SelectProps> = ({
           e.stopPropagation();
           if (!disabled) setIsOpen(!isOpen);
         }}
-        className={`w-full flex items-center justify-between gap-2 rounded bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 text-gray-800 dark:text-gray-100 font-normal transition-all cursor-pointer select-none
-          hover:border-[#5865f2]/50 hover:bg-gray-50/50 dark:hover:bg-[#1c2230]
-          focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]
-          disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800
-          ${sizeClasses[size] || sizeClasses.md}
-          ${isOpen ? 'border-[#5865f2] ring-2 ring-[#5865f2]/20' : ''}`}
+        className={cn(
+          'w-full flex items-center justify-between gap-2 rounded bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 text-gray-800 dark:text-gray-100 font-normal transition-all cursor-pointer select-none',
+          'hover:border-[#5865f2]/50 hover:bg-gray-50/50 dark:hover:bg-[#1c2230]',
+          'focus:outline-none focus:ring-2 focus:ring-[#5865f2]/20 focus:border-[#5865f2]',
+          'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800',
+          sizeClasses[size] || sizeClasses.md,
+          isOpen && 'border-[#5865f2] ring-2 ring-[#5865f2]/20',
+          triggerClassName,
+        )}
       >
         {/* Left icon & label */}
         <div className="flex items-center gap-2 truncate min-w-0 font-normal">

@@ -284,6 +284,16 @@ export const PurchaseReceiptsPage: React.FC = () => {
     Number(createForm.taxAmount || 0) +
     (createForm.shippingFeePayerType === 'PAID_TO_SUPPLIER' ? Number(createForm.shippingFee || 0) : 0);
 
+  // Số dư NCC đang nợ shop / tiền ứng trước khả dụng
+  const selectedCreateSupplier = suppliers.find((s) => s.id === createForm.supplierId);
+  const supplierAdvanceHeld =
+    selectedCreateSupplier && Number(selectedCreateSupplier.closingDebt) < 0
+      ? Math.abs(Number(selectedCreateSupplier.closingDebt))
+      : Number(selectedCreateSupplier?.advanceAmountHeld || 0);
+
+  const autoDeductAmount = Math.min(formPayable, supplierAdvanceHeld);
+  const actualPayable = Math.max(0, formPayable - autoDeductAmount);
+
   const generateNextReceiptCode = () => {
     const now = new Date();
     const y = String(now.getFullYear());
@@ -1022,9 +1032,9 @@ export const PurchaseReceiptsPage: React.FC = () => {
             {/* Header info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3 sm:p-3.5 bg-gray-50/70 dark:bg-gray-900/50 rounded border border-gray-200/80 dark:border-gray-800">
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                    <Building2 size={13} className="text-[#5865f2]" />
+                <div className="flex items-center justify-between h-5 mb-1.5">
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 leading-none">
+                    <Building2 size={13} className="text-[#5865f2] shrink-0" />
                     <span>Nhà cung cấp *</span>
                   </label>
                   <button
@@ -1033,7 +1043,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                       setQuickSupplierInitialName('');
                       setIsQuickSupplierModalOpen(true);
                     }}
-                    className="inline-flex items-center gap-0.5 text-[11px] font-medium text-[#5865f2] hover:text-[#4752c4] hover:underline cursor-pointer"
+                    className="inline-flex items-center gap-0.5 text-[11px] font-medium text-[#5865f2] hover:text-[#4752c4] hover:underline cursor-pointer shrink-0 leading-none"
                   >
                     <Plus size={12} />
                     <span>Thêm nhanh</span>
@@ -1069,13 +1079,28 @@ export const PurchaseReceiptsPage: React.FC = () => {
                     },
                   }}
                 />
+                {supplierAdvanceHeld > 0 && (
+                  <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded flex items-start gap-2 text-xs animate-in fade-in duration-200">
+                    <CheckCircle2 size={15} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-emerald-900 dark:text-emerald-200 font-medium">
+                        NCC đang nợ tiền shop: <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300">{supplierAdvanceHeld.toLocaleString('vi-VN')}đ</span>
+                      </div>
+                      <div className="text-[11px] text-emerald-700/90 dark:text-emerald-300/80 mt-0.5">
+                        Mặc định sẽ <strong>tự động trừ luôn</strong> vào tiền hàng của phiếu nhập này.
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                  <Warehouse size={13} className="text-[#5865f2]" />
-                  <span>Kho nhập hàng *</span>
-                </label>
+                <div className="flex items-center justify-between h-5 mb-1.5">
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 leading-none">
+                    <Warehouse size={13} className="text-[#5865f2] shrink-0" />
+                    <span>Kho nhập hàng *</span>
+                  </label>
+                </div>
                 <Select
                   value={createForm.warehouseId}
                   onChange={(val) => setCreateForm({ ...createForm, warehouseId: String(val) })}
@@ -1092,10 +1117,12 @@ export const PurchaseReceiptsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                  <Store size={13} className="text-gray-400" />
-                  <span>Shop sở hữu (Tùy chọn)</span>
-                </label>
+                <div className="flex items-center justify-between h-5 mb-1.5">
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 leading-none">
+                    <Store size={13} className="text-gray-400 shrink-0" />
+                    <span>Shop sở hữu (Tùy chọn)</span>
+                  </label>
+                </div>
                 <Select
                   value={createForm.shopId || ''}
                   onChange={(val) => setCreateForm({ ...createForm, shopId: val ? String(val) : undefined })}
@@ -1114,12 +1141,12 @@ export const PurchaseReceiptsPage: React.FC = () => {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                    <FileText size={13} className="text-[#5865f2]" />
+                <div className="flex items-center justify-between h-5 mb-1.5">
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 leading-none">
+                    <FileText size={13} className="text-[#5865f2] shrink-0" />
                     <span>Mã phiếu nhập</span>
                   </label>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-400 font-medium">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-400 font-medium leading-none shrink-0">
                     Hệ thống tự cấp
                   </span>
                 </div>
@@ -1130,33 +1157,37 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   tabIndex={-1}
                   value={createForm.receiptCode || 'Hệ thống tự động cấp'}
                   title="Mã phiếu được hệ thống tự động sinh ngầm khi lưu để đảm bảo tuyệt đối không bị trùng lặp"
-                  className="w-full h-8 px-2.5 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none transition-colors pointer-events-none"
+                  className="w-full h-8 px-2.5 text-xs font-mono uppercase font-bold bg-gray-100 dark:bg-[#131720] border border-gray-200 dark:border-gray-800 rounded text-gray-500 dark:text-gray-400 cursor-not-allowed select-none transition-colors pointer-events-none box-border leading-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                  <Calendar size={13} className="text-gray-400" />
-                  <span>Ngày nhập hàng</span>
-                </label>
+                <div className="flex items-center justify-between h-5 mb-1.5">
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 leading-none">
+                    <Calendar size={13} className="text-gray-400 shrink-0" />
+                    <span>Ngày nhập hàng</span>
+                  </label>
+                </div>
                 <input
                   type="date"
                   value={createForm.receiptDate || ''}
                   onChange={(e) => setCreateForm({ ...createForm, receiptDate: e.target.value })}
-                  className="w-full h-8 px-2.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2] transition-colors"
+                  className="w-full h-8 px-2.5 py-0 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2] transition-colors box-border"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                  <Clock size={13} className="text-gray-400" />
-                  <span>Hạn thanh toán nợ</span>
-                </label>
+                <div className="flex items-center justify-between h-5 mb-1.5">
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 leading-none">
+                    <Clock size={13} className="text-gray-400 shrink-0" />
+                    <span>Hạn thanh toán nợ</span>
+                  </label>
+                </div>
                 <input
                   type="date"
                   value={createForm.paymentDueDate || ''}
                   onChange={(e) => setCreateForm({ ...createForm, paymentDueDate: e.target.value })}
-                  className="w-full h-8 px-2.5 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2] transition-colors"
+                  className="w-full h-8 px-2.5 py-0 text-xs bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2] transition-colors box-border"
                 />
               </div>
             </div>
@@ -1560,85 +1591,132 @@ export const PurchaseReceiptsPage: React.FC = () => {
                     </span>
                     <span className="text-sm sm:text-base font-bold font-mono text-[#5865f2] dark:text-indigo-300">{formPayable.toLocaleString('vi-VN')}đ</span>
                   </div>
+
+                  {supplierAdvanceHeld > 0 && (
+                    <div className="p-2 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800/50 rounded flex justify-between items-center text-emerald-800 dark:text-emerald-300">
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <Wallet size={13} className="text-emerald-600 dark:text-emerald-400" />
+                        <span>5. Trừ tiền NCC đang nợ shop:</span>
+                      </span>
+                      <span className="font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                        -{autoDeductAmount.toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                  )}
+
+                  {supplierAdvanceHeld > 0 && (
+                    <div className="pt-2 border-t border-emerald-200/80 dark:border-emerald-800/60 flex justify-between items-center">
+                      <span className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                        <DollarSign size={14} />
+                        <span>CÒN PHẢI THANH TOÁN THÊM:</span>
+                      </span>
+                      <div className="text-right">
+                        <div className="text-sm sm:text-base font-bold font-mono text-emerald-600 dark:text-emerald-300">
+                          {actualPayable.toLocaleString('vi-VN')}đ
+                        </div>
+                        {actualPayable === 0 && (
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                            (Được cấn trừ hết 100%)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Immediate payment switch */}
                 <div className="mt-4 pt-3 border-t border-indigo-100 dark:border-indigo-900/30 space-y-2">
-                  <div
-                    onClick={() => {
-                      const nextChecked = !createForm.immediatePayment;
-                      setCreateForm({
-                        ...createForm,
-                        immediatePayment: nextChecked,
-                        immediatePaymentAmount: nextChecked ? formPayable : 0,
-                      });
-                    }}
-                    className="flex items-center gap-2 cursor-pointer select-none group"
-                  >
-                    <Checkbox
-                      checked={createForm.immediatePayment || false}
-                      onChange={() => {
-                        const nextChecked = !createForm.immediatePayment;
-                        setCreateForm({
-                          ...createForm,
-                          immediatePayment: nextChecked,
-                          immediatePaymentAmount: nextChecked ? formPayable : 0,
-                        });
-                      }}
-                      size="sm"
-                    />
-                    <span className="text-[11px] font-normal text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-                      Thanh toán ngay khi nhập hàng (Tạo phiếu chi đồng thời)
-                    </span>
-                  </div>
-
-                  {createForm.immediatePayment && (
-                    <div className="w-full space-y-2.5 pt-2 text-xs">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        <div>
-                          <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
-                            <DollarSign size={11} className="text-emerald-500" />
-                            <span>Số tiền chi ngay (đ)</span>
-                          </label>
-                          <CurrencyInput
-                            value={createForm.immediatePaymentAmount}
-                            onChange={(val) => setCreateForm({ ...createForm, immediatePaymentAmount: val })}
-                            suffix="đ"
-                            inputClassName="h-8 font-bold text-emerald-600 dark:text-emerald-400 text-xs font-mono"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
-                            <User size={11} className="text-gray-400" />
-                            <span>Người thanh toán</span>
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Ví dụ: HieuNT, Bạn..."
-                            value={createForm.immediatePayerName || ''}
-                            onChange={(e) => setCreateForm({ ...createForm, immediatePayerName: e.target.value })}
-                            className="w-full h-8 px-2.5 bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]"
-                          />
-                        </div>
-                      </div>
+                  {supplierAdvanceHeld > 0 && actualPayable === 0 ? (
+                    <div className="p-2.5 bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded flex items-start gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+                      <CheckCircle2 size={15} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                       <div>
-                        <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
-                          <CreditCard size={11} className="text-gray-400" />
-                          <span>Nguồn tiền chi</span>
-                        </label>
-                        <Select
-                          value={createForm.immediateFundSource || 'CASH_FUND'}
-                          onChange={(val) => setCreateForm({ ...createForm, immediateFundSource: val })}
-                          options={[
-                            { value: 'CASH_FUND', label: 'Quỹ tiền mặt của shop' },
-                            { value: 'BANK_ACCOUNT', label: 'Tài khoản ngân hàng công ty' },
-                            { value: 'PERSONAL_FUND', label: 'Tiền cá nhân (Chi hộ - Shop cần hoàn trả)' },
-                          ]}
-                          size="sm"
-                          className="w-full"
-                        />
+                        <div className="font-semibold text-emerald-900 dark:text-emerald-200">
+                          Tiền hàng được trừ 100% từ tiền NCC nợ shop!
+                        </div>
+                        <div className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+                          Phiếu nhập này sẽ được ghi nhận là <strong>Đã thanh toán (PAID)</strong> ngay khi tạo. Không cần chi thêm tiền.
+                        </div>
                       </div>
                     </div>
+                  ) : (
+                    <>
+                      <div
+                        onClick={() => {
+                          const nextChecked = !createForm.immediatePayment;
+                          setCreateForm({
+                            ...createForm,
+                            immediatePayment: nextChecked,
+                            immediatePaymentAmount: nextChecked ? actualPayable : 0,
+                          });
+                        }}
+                        className="flex items-center gap-2 cursor-pointer select-none group"
+                      >
+                        <Checkbox
+                          checked={createForm.immediatePayment || false}
+                          onChange={() => {
+                            const nextChecked = !createForm.immediatePayment;
+                            setCreateForm({
+                              ...createForm,
+                              immediatePayment: nextChecked,
+                              immediatePaymentAmount: nextChecked ? actualPayable : 0,
+                            });
+                          }}
+                          size="sm"
+                        />
+                        <span className="text-[11px] font-normal text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                          Thanh toán ngay khi nhập hàng (Tạo phiếu chi đồng thời)
+                        </span>
+                      </div>
+
+                      {createForm.immediatePayment && (
+                        <div className="w-full space-y-2.5 pt-2 text-xs">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div>
+                              <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
+                                <DollarSign size={11} className="text-emerald-500" />
+                                <span>Số tiền chi ngay (đ)</span>
+                              </label>
+                              <CurrencyInput
+                                value={createForm.immediatePaymentAmount}
+                                onChange={(val) => setCreateForm({ ...createForm, immediatePaymentAmount: val })}
+                                suffix="đ"
+                                inputClassName="h-8 font-bold text-emerald-600 dark:text-emerald-400 text-xs font-mono"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
+                                <User size={11} className="text-gray-400" />
+                                <span>Người thanh toán</span>
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Ví dụ: HieuNT, Bạn..."
+                                value={createForm.immediatePayerName || ''}
+                                onChange={(e) => setCreateForm({ ...createForm, immediatePayerName: e.target.value })}
+                                className="w-full h-8 px-2.5 bg-white dark:bg-[#161b26] border border-gray-200 dark:border-gray-700/80 rounded text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-[#5865f2] focus:ring-1 focus:ring-[#5865f2]"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
+                              <CreditCard size={11} className="text-gray-400" />
+                              <span>Nguồn tiền chi</span>
+                            </label>
+                            <Select
+                              value={createForm.immediateFundSource || 'CASH_FUND'}
+                              onChange={(val) => setCreateForm({ ...createForm, immediateFundSource: val })}
+                              options={[
+                                { value: 'CASH_FUND', label: 'Quỹ tiền mặt của shop' },
+                                { value: 'BANK_ACCOUNT', label: 'Tài khoản ngân hàng công ty' },
+                                { value: 'PERSONAL_FUND', label: 'Tiền cá nhân (Chi hộ - Shop cần hoàn trả)' },
+                              ]}
+                              size="sm"
+                              className="w-full"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
