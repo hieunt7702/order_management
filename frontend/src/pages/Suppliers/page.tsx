@@ -25,8 +25,10 @@ import {
   X,
   Check,
   QrCode,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { SupplierBankQr } from '../../components/suppliers/SupplierBankQr';
+import { SupplierTransferModal } from '../../components/suppliers/SupplierTransferModal';
 import { suppliersApi, SupplierItem } from '../../services/suppliersApi';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
@@ -72,6 +74,8 @@ export const SuppliersPage: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [selectedSupplierForDelete, setSelectedSupplierForDelete] = useState<SupplierItem | null>(null);
   const [viewingQrSupplier, setViewingQrSupplier] = useState<SupplierItem | null>(null);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState<boolean>(false);
+  const [transferSourceSupplierId, setTransferSourceSupplierId] = useState<string | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Create Form
@@ -664,6 +668,15 @@ export const SuppliersPage: React.FC = () => {
                               <span>Xem mã QR VietQR</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              onClick={() => {
+                                setTransferSourceSupplierId(s.id);
+                                setIsTransferModalOpen(true);
+                              }}
+                            >
+                              <ArrowRightLeft size={14} className="text-indigo-500" />
+                              <span>Chuyển tiền sang NCC khác</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={() => handleOpenEditModal(s)}
                             >
                               <Edit2 size={14} className="text-gray-400" />
@@ -773,6 +786,15 @@ export const SuppliersPage: React.FC = () => {
                         <DropdownMenuItem onClick={() => setViewingQrSupplier(s)}>
                           <QrCode size={14} className="text-indigo-500" />
                           <span>Xem mã QR VietQR</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setTransferSourceSupplierId(s.id);
+                            setIsTransferModalOpen(true);
+                          }}
+                        >
+                          <ArrowRightLeft size={14} className="text-indigo-500" />
+                          <span>Chuyển tiền sang NCC khác</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleOpenEditModal(s)}>
                           <Edit2 size={14} className="text-gray-400" />
@@ -1372,6 +1394,15 @@ export const SuppliersPage: React.FC = () => {
           )}
         </ModalFooter>
       </Modal>
+
+      {/* MODAL: CHUYỂN TIỀN SANG NCC KHÁC */}
+      <SupplierTransferModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        onSuccess={loadSuppliers}
+        suppliers={suppliers}
+        initialFromSupplierId={transferSourceSupplierId}
+      />
     </div>
   );
 };

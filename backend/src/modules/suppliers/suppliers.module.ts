@@ -11,6 +11,8 @@ import { SupplierLoansService } from './supplier-loans.service';
 import { SupplierLoansController } from './supplier-loans.controller';
 import { SupplierProductBorrowsService } from './supplier-product-borrows.service';
 import { SupplierProductBorrowsController } from './supplier-product-borrows.controller';
+import { SupplierTransfersService } from './supplier-transfers.service';
+import { SupplierTransfersController } from './supplier-transfers.controller';
 
 @Module({
   controllers: [
@@ -20,6 +22,7 @@ import { SupplierProductBorrowsController } from './supplier-product-borrows.con
     PurchaseReturnsController,
     SupplierLoansController,
     SupplierProductBorrowsController,
+    SupplierTransfersController,
   ],
   providers: [
     SuppliersService,
@@ -28,6 +31,7 @@ import { SupplierProductBorrowsController } from './supplier-product-borrows.con
     PurchaseReturnsService,
     SupplierLoansService,
     SupplierProductBorrowsService,
+    SupplierTransfersService,
   ],
   exports: [
     SuppliersService,
@@ -36,6 +40,7 @@ import { SupplierProductBorrowsController } from './supplier-product-borrows.con
     PurchaseReturnsService,
     SupplierLoansService,
     SupplierProductBorrowsService,
+    SupplierTransfersService,
   ],
 })
 export class SuppliersModule {}

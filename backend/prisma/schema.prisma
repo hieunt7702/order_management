@@ -97,6 +97,8 @@ model Tenant {
   supplierLoanRepayments   SupplierLoanRepayment[]
   supplierProductBorrows   SupplierProductBorrow[]
   supplierProductBorrowItems SupplierProductBorrowItem[]
+  supplierTransfers        SupplierTransfer[]
+  supplierTransferAllocations SupplierTransferAllocation[]
 
   @@map("tenants")
 }
@@ -809,6 +811,8 @@ model Supplier {
   purchaseReturns  PurchaseReturn[]
   loans            SupplierLoan[]
   productBorrows   SupplierProductBorrow[]
+  transfersFrom    SupplierTransfer[] @relation("TransfersFrom")
+  transfersTo      SupplierTransfer[] @relation("TransfersTo")
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -853,6 +857,7 @@ model PurchaseReceipt {
   items                 PurchaseReceiptItem[]
   paymentAllocations    PaymentAllocation[]
   purchaseReturns       PurchaseReturn[]
+  transferAllocations   SupplierTransferAllocation[]
 
   @@unique([tenantId, receiptCode])
   @@index([tenantId, supplierId])
@@ -1130,6 +1135,57 @@ model SupplierProductBorrowItem {
   @@index([tenantId, variantId])
   @@map("supplier_product_borrow_items")
 }
+
+// -------------------------------------------------------------
+// 6.3 INTER-SUPPLIER TRANSFERS (CHUYỂN TIỀN GIỮA CÁC NCC)
+// -------------------------------------------------------------
+
+model SupplierTransfer {
+  id              String                       @id @default(uuid())
+  tenantId        String
+  transferCode    String                       // VD: CKNCC-20261019-XXXX
+  fromSupplierId  String                       // NCC chuyển (A)
+  toSupplierId    String                       // NCC nhận (B)
+  amount          Decimal                      @db.Decimal(15, 2) // Số tiền chuyển
+  transferDate    DateTime                     @default(now())
+  payerName       String                       // Người thực hiện / xác nhận
+  referenceCode   String?                      // Mã tham chiếu / UNC nếu có
+  voucherImage    String?                      // Ảnh chứng từ
+  note            String?                      // Ghi chú chi tiết
+  createdById     String?
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+
+  tenant          Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fromSupplier    Supplier                     @relation("TransfersFrom", fields: [fromSupplierId], references: [id], onDelete: Cascade)
+  toSupplier      Supplier                     @relation("TransfersTo", fields: [toSupplierId], references: [id], onDelete: Cascade)
+  allocations     SupplierTransferAllocation[]
+
+  @@unique([tenantId, transferCode])
+  @@index([tenantId, fromSupplierId])
+  @@index([tenantId, toSupplierId])
+  @@index([tenantId, transferDate])
+  @@map("supplier_transfers")
+}
+
+model SupplierTransferAllocation {
+  id              String           @id @default(uuid())
+  tenantId        String
+  transferId      String
+  receiptId       String           // Phiếu nhập của NCC B được phân bổ
+  allocatedAmount Decimal          @db.Decimal(15, 2)
+  note            String?
+  createdAt       DateTime         @default(now())
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  transfer        SupplierTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  receipt         PurchaseReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, transferId])
+  @@index([tenantId, receiptId])
+  @@map("supplier_transfer_allocations")
+}
+
 
 // -------------------------------------------------------------
 // 7. ORDER RETURNS & PHYSICAL INSPECTION VERIFICATION

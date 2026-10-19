@@ -17,6 +17,8 @@ export interface SupplierItem {
   totalReturns: number;
   totalPaid: number;
   totalRefunded: number;
+  totalTransferredOut?: number;
+  totalTransferredIn?: number;
   advanceAmountHeld: number;
   totalReceiptsRemaining: number;
   closingDebt: number; // > 0: Shop nợ NCC; < 0: NCC giữ tiền ứng trước; = 0: Cân bằng
@@ -30,7 +32,7 @@ export interface SupplierItem {
 
 export interface StatementTransaction {
   date: string;
-  type: 'OPENING' | 'RECEIPT' | 'PAYMENT' | 'RETURN' | 'REFUND';
+  type: 'OPENING' | 'RECEIPT' | 'PAYMENT' | 'RETURN' | 'REFUND' | 'TRANSFER_OUT' | 'TRANSFER_IN';
   code: string;
   description: string;
   increaseDebt: number;

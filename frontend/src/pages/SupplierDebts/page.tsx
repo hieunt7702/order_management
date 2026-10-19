@@ -36,10 +36,13 @@ import {
   Wallet,
   Filter,
   QrCode,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { SupplierBankQr } from '../../components/suppliers/SupplierBankQr';
 import { SupplierLoansTab } from '../../components/suppliers/SupplierLoansTab';
 import { SupplierProductBorrowsTab } from '../../components/suppliers/SupplierProductBorrowsTab';
+import { SupplierTransfersTab } from '../../components/suppliers/SupplierTransfersTab';
+import { SupplierTransferModal } from '../../components/suppliers/SupplierTransferModal';
 import { cn } from '../../lib/utils';
 import { suppliersApi, SupplierItem, SupplierStatement, DebtReportsResponse } from '../../services/suppliersApi';
 import { supplierPaymentsApi, SupplierPaymentModel, CreateSupplierPaymentPayload } from '../../services/supplierPaymentsApi';
@@ -76,12 +79,12 @@ export const SupplierDebtsPage: React.FC = () => {
   const { warehouses, selectedWarehouseId } = useWorkspaceStore();
   const [searchParams] = useSearchParams();
   const initialTabParam = searchParams.get('tab');
-  const validTabs: Array<'DEBT_LIST' | 'LOANS' | 'PRODUCT_BORROWS' | 'PAYMENTS' | 'RETURNS' | 'REPORTS'> = [
-    'DEBT_LIST', 'LOANS', 'PRODUCT_BORROWS', 'PAYMENTS', 'RETURNS', 'REPORTS'
+  const validTabs: Array<'DEBT_LIST' | 'TRANSFERS' | 'LOANS' | 'PRODUCT_BORROWS' | 'PAYMENTS' | 'RETURNS' | 'REPORTS'> = [
+    'DEBT_LIST', 'TRANSFERS', 'LOANS', 'PRODUCT_BORROWS', 'PAYMENTS', 'RETURNS', 'REPORTS'
   ];
   const defaultTab = validTabs.includes(initialTabParam as any) ? (initialTabParam as any) : 'DEBT_LIST';
 
-  const [activeTab, setActiveTab] = useState<'DEBT_LIST' | 'LOANS' | 'PRODUCT_BORROWS' | 'PAYMENTS' | 'RETURNS' | 'REPORTS'>(defaultTab);
+  const [activeTab, setActiveTab] = useState<'DEBT_LIST' | 'TRANSFERS' | 'LOANS' | 'PRODUCT_BORROWS' | 'PAYMENTS' | 'RETURNS' | 'REPORTS'>(defaultTab);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -111,6 +114,17 @@ export const SupplierDebtsPage: React.FC = () => {
   const [statementData, setStatementData] = useState<SupplierStatement | null>(null);
   const [isStatementOpen, setIsStatementOpen] = useState<boolean>(false);
   const [activeStatementSupplierId, setActiveStatementSupplierId] = useState<string>('');
+
+  // Transfer Modal
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState<boolean>(false);
+  const [transferInitialFromId, setTransferInitialFromId] = useState<string | undefined>(undefined);
+  const [transferInitialToId, setTransferInitialToId] = useState<string | undefined>(undefined);
+
+  const handleOpenTransferModal = (fromId?: string, toId?: string) => {
+    setTransferInitialFromId(fromId);
+    setTransferInitialToId(toId);
+    setIsTransferModalOpen(true);
+  };
 
   // Payment Voucher Modal
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
@@ -169,7 +183,7 @@ export const SupplierDebtsPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'DEBT_LIST' || activeTab === 'LOANS' || activeTab === 'PRODUCT_BORROWS') loadSuppliers();
+    if (activeTab === 'DEBT_LIST' || activeTab === 'TRANSFERS' || activeTab === 'LOANS' || activeTab === 'PRODUCT_BORROWS') loadSuppliers();
     if (activeTab === 'PAYMENTS') loadPayments();
     if (activeTab === 'RETURNS') loadReturns();
     if (activeTab === 'REPORTS') loadDebtReports();
@@ -689,6 +703,11 @@ export const SupplierDebtsPage: React.FC = () => {
           <Button size="sm" variant="outline" onClick={handleOpenReturnModal} className="p-2 sm:px-3 text-orange-600 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-950/20" title="Trả hàng NCC">
             <RotateCcw size={14} /> <span className="hidden sm:inline">Trả hàng NCC</span>
           </Button>
+          <Button size="sm" onClick={() => handleOpenTransferModal()} className="gap-1 px-2.5 sm:px-3 bg-indigo-600 hover:bg-indigo-700 text-white" title="Chuyển tiền giữa 2 NCC">
+            <ArrowRightLeft size={14} />
+            <span className="hidden sm:inline">Chuyển tiền NCC</span>
+            <span className="sm:hidden">Chuyển tiền</span>
+          </Button>
           <Button size="sm" onClick={() => handleOpenPaymentModal()} className="gap-1 px-2.5 sm:px-3 bg-emerald-600 hover:bg-emerald-700 text-white" title="Lập phiếu chi trả">
             <CreditCard size={14} />
             <span className="hidden sm:inline">Lập phiếu chi trả</span>
@@ -767,6 +786,18 @@ export const SupplierDebtsPage: React.FC = () => {
         >
           <Building2 size={13} />
           <span>Sổ Công Nợ NCC ({suppliers.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('TRANSFERS')}
+          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 cursor-pointer border-0 shrink-0 ${
+            activeTab === 'TRANSFERS'
+              ? 'bg-[#5865f2] text-white font-medium shadow-xs'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
+          }`}
+        >
+          <ArrowRightLeft size={13} />
+          <span>Chuyển Tiền NCC</span>
         </button>
 
         <button
@@ -1005,6 +1036,10 @@ export const SupplierDebtsPage: React.FC = () => {
                                   <CreditCard className="w-4 h-4 text-emerald-500" />
                                   <span>Lập phiếu chi trả</span>
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleOpenTransferModal(s.id)}>
+                                  <ArrowRightLeft className="w-4 h-4 text-indigo-500" />
+                                  <span>Chuyển tiền sang NCC khác</span>
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setQrModalSupplier(s)}>
                                   <QrCode className="w-4 h-4 text-[#5865f2]" />
                                   <span>Mã QR Chuyển khoản VietQR</span>
@@ -1156,6 +1191,15 @@ export const SupplierDebtsPage: React.FC = () => {
                       >
                         <Eye size={12} className="text-indigo-500" />
                         <span>Xem sao kê</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenTransferModal(s.id)}
+                        className="px-2.5 py-1 text-xs rounded border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 flex items-center gap-1 font-medium cursor-pointer"
+                        title="Chuyển tiền sang NCC khác"
+                      >
+                        <ArrowRightLeft size={12} />
+                        <span>Chuyển tiền</span>
                       </button>
                       <button
                         type="button"
@@ -1655,6 +1699,15 @@ export const SupplierDebtsPage: React.FC = () => {
         </div>
       )}
 
+      {/* TAB: CHUYỂN TIỀN GIỮA CÁC NCC */}
+      {activeTab === 'TRANSFERS' && (
+        <SupplierTransfersTab
+          suppliers={suppliers}
+          onRefreshData={loadAllData}
+          onOpenTransferModal={handleOpenTransferModal}
+        />
+      )}
+
       {/* TAB: VAY VỐN & CHO VAY VỚI NHÀ CUNG CẤP */}
       {activeTab === 'LOANS' && (
         <SupplierLoansTab
@@ -1776,6 +1829,16 @@ export const SupplierDebtsPage: React.FC = () => {
                       typeBadgeClass = 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200/80 dark:border-purple-900/50';
                       borderLeftClass = 'border-l-purple-500';
                       TypeIcon = DollarSign;
+                    } else if (tx.type === 'TRANSFER_OUT') {
+                      typeLabel = 'Chuyển NCC';
+                      typeBadgeClass = 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border-indigo-200/80 dark:border-indigo-900/50';
+                      borderLeftClass = 'border-l-indigo-500';
+                      TypeIcon = ArrowRightLeft;
+                    } else if (tx.type === 'TRANSFER_IN') {
+                      typeLabel = 'Nhận từ NCC';
+                      typeBadgeClass = 'bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300 border-teal-200/80 dark:border-teal-900/50';
+                      borderLeftClass = 'border-l-teal-500';
+                      TypeIcon = ArrowRightLeft;
                     } else if (tx.type === 'OPENING') {
                       typeLabel = 'Nợ đầu kỳ';
                       typeBadgeClass = 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200/80 dark:border-blue-900/50';
@@ -3024,6 +3087,16 @@ export const SupplierDebtsPage: React.FC = () => {
           )}
         </ModalFooter>
       </Modal>
+
+      {/* MODAL: CHUYỂN TIỀN GIỮA 2 NHÀ CUNG CẤP */}
+      <SupplierTransferModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        onSuccess={loadAllData}
+        suppliers={suppliers}
+        initialFromSupplierId={transferInitialFromId}
+        initialToSupplierId={transferInitialToId}
+      />
     </div>
   );
 };

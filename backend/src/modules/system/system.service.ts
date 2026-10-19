@@ -53,6 +53,10 @@ export class SystemService {
 
       // 2. MUA HÀNG, PHIẾU NHẬP, CÔNG NỢ NCC & MƯỢN TRẢ HÀNG
       if (clearPurchaseReceipts || clearSuppliers) {
+        await tx.supplierTransferAllocation.deleteMany({ where: { tenantId } });
+        const delTransfers = await tx.supplierTransfer.deleteMany({ where: { tenantId } });
+        counts.supplierTransfers = delTransfers.count;
+
         await tx.supplierProductBorrowItem.deleteMany({ where: { tenantId } });
         await tx.supplierProductBorrow.deleteMany({ where: { tenantId } });
 

@@ -188,6 +188,18 @@ export class SuppliersService {
             status: true,
           },
         },
+        transfersFrom: {
+          select: {
+            id: true,
+            amount: true,
+          },
+        },
+        transfersTo: {
+          select: {
+            id: true,
+            amount: true,
+          },
+        },
       },
     });
 
@@ -217,10 +229,22 @@ export class SuppliersService {
         .filter((p) => p.paymentType === 'REFUND_RECEIVED')
         .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
+      const totalTransferredOut = (s.transfersFrom || []).reduce(
+        (sum, t) => sum + Number(t.amount || 0),
+        0,
+      );
+
+      const totalTransferredIn = (s.transfersTo || []).reduce(
+        (sum, t) => sum + Number(t.amount || 0),
+        0,
+      );
+
       // Công thức chuẩn kế toán:
       // Số dư cuối kỳ = Nợ đầu kỳ + Phát sinh phải trả - Giảm trừ công nợ - Tiền đã trả + Tiền NCC hoàn lại
+      //                 + Tiền chuyển sang NCC khác (giảm tiền cọc/đã trả của A) - Tiền nhận từ NCC khác (tăng tiền đã trả của B)
       const closingDebt =
-        openingDebt + totalPurchases - totalReturns - totalPaid + totalRefunded;
+        openingDebt + totalPurchases - totalReturns - totalPaid + totalRefunded
+        + totalTransferredOut - totalTransferredIn;
 
       // Tiền ứng trước / cọc do NCC giữ:
       // Chỉ khi số dư cuối kỳ âm (closingDebt < 0) thì NCC mới đang thực sự giữ tiền cọc/ứng của shop.
@@ -263,6 +287,8 @@ export class SuppliersService {
         totalReturns,
         totalPaid,
         totalRefunded,
+        totalTransferredOut,
+        totalTransferredIn,
         advanceAmountHeld,
         totalReceiptsRemaining,
         closingDebt, // > 0: Shop nợ NCC; < 0: NCC giữ tiền ứng trước/dư của shop; = 0: Cân bằng
@@ -300,6 +326,18 @@ export class SuppliersService {
         purchaseReturns: {
           orderBy: { returnDate: 'desc' },
         },
+        transfersFrom: {
+          orderBy: { transferDate: 'desc' },
+          include: {
+            toSupplier: { select: { id: true, code: true, name: true } },
+          },
+        },
+        transfersTo: {
+          orderBy: { transferDate: 'desc' },
+          include: {
+            fromSupplier: { select: { id: true, code: true, name: true } },
+          },
+        },
       },
     });
 
@@ -331,8 +369,19 @@ export class SuppliersService {
       .filter((p) => p.paymentType === 'REFUND_RECEIVED')
       .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
+    const totalTransferredOut = (s.transfersFrom || []).reduce(
+      (sum, t) => sum + Number(t.amount || 0),
+      0,
+    );
+
+    const totalTransferredIn = (s.transfersTo || []).reduce(
+      (sum, t) => sum + Number(t.amount || 0),
+      0,
+    );
+
     const closingDebt =
-      openingDebt + totalPurchases - totalReturns - totalPaid + totalRefunded;
+      openingDebt + totalPurchases - totalReturns - totalPaid + totalRefunded
+      + totalTransferredOut - totalTransferredIn;
 
     const advanceAmountHeld = closingDebt < 0 ? Math.abs(closingDebt) : 0;
 
@@ -343,6 +392,8 @@ export class SuppliersService {
       totalReturns,
       totalPaid,
       totalRefunded,
+      totalTransferredOut,
+      totalTransferredIn,
       advanceAmountHeld,
       totalReceiptsRemaining,
       closingDebt,
@@ -358,10 +409,10 @@ export class SuppliersService {
   ) {
     const supplier = await this.findOne(tenantId, supplierId);
 
-    // Gộp tất cả giao dịch: Phiếu nhập (+), Phiếu chi (-), Trả hàng (-), Hoàn tiền (+)
+    // Gộp tất cả giao dịch: Phiếu nhập (+), Phiếu chi (-), Trả hàng (-), Hoàn tiền (+), Chuyển NCC (+), Nhận từ NCC (-)
     const events: Array<{
       date: Date;
-      type: 'OPENING' | 'RECEIPT' | 'PAYMENT' | 'RETURN' | 'REFUND';
+      type: 'OPENING' | 'RECEIPT' | 'PAYMENT' | 'RETURN' | 'REFUND' | 'TRANSFER_OUT' | 'TRANSFER_IN';
       code: string;
       description: string;
       increaseDebt: number; // Phát sinh nợ (+)
@@ -439,6 +490,36 @@ export class SuppliersService {
           referenceId: ret.id,
         });
       }
+    });
+
+    // Chuyển tiền sang NCC khác (NCC A chuyển cho NCC B -> Giảm tiền đã trả/tăng nợ của A)
+    (supplier.transfersFrom || []).forEach((t: any) => {
+      events.push({
+        date: t.transferDate,
+        type: 'TRANSFER_OUT',
+        code: t.transferCode,
+        description: `Chuyển tiền sang NCC ${t.toSupplier?.name || 'khác'} (${t.toSupplier?.code || ''})${t.note ? ' - Ghi chú: ' + t.note : ''}`,
+        increaseDebt: Number(t.amount || 0),
+        decreaseDebt: 0,
+        payerOrCreator: t.payerName,
+        fundSource: 'CHUYỂN_NCC',
+        referenceId: t.id,
+      });
+    });
+
+    // Nhận tiền chuyển từ NCC khác (NCC B nhận từ NCC A -> Tăng tiền đã trả/giảm nợ của B)
+    (supplier.transfersTo || []).forEach((t: any) => {
+      events.push({
+        date: t.transferDate,
+        type: 'TRANSFER_IN',
+        code: t.transferCode,
+        description: `Nhận tiền chuyển từ NCC ${t.fromSupplier?.name || 'khác'} (${t.fromSupplier?.code || ''})${t.note ? ' - Ghi chú: ' + t.note : ''}`,
+        increaseDebt: 0,
+        decreaseDebt: Number(t.amount || 0),
+        payerOrCreator: t.payerName,
+        fundSource: 'NHẬN_TỪ_NCC',
+        referenceId: t.id,
+      });
     });
 
     // Sắp xếp theo ngày tăng dần và tính số dư luỹ kế
