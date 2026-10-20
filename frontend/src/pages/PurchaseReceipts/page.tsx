@@ -354,16 +354,24 @@ export const PurchaseReceiptsPage: React.FC = () => {
     const ok = await confirmModal({
       title: 'Hủy phiếu nhập kho',
       message: `Bạn có chắc chắn muốn hủy phiếu nhập "${code}"?`,
-      description: 'Tồn kho thực tế sẽ bị đảo ngược và các phân bổ thanh toán liên quan sẽ được tự động xóa.',
+      description:
+        'Tồn kho thực tế sẽ bị trừ lại. Nếu phiếu đã thanh toán từ quỹ tiền mặt/ngân hàng, tiền sẽ được cộng hoàn trả lại vào quỹ; các khoản cấn trừ công nợ sẽ được khôi phục.',
       confirmText: 'Xác nhận hủy phiếu',
       variant: 'danger',
     });
     if (!ok) return;
 
     try {
-      await purchaseReceiptsApi.delete(id);
+      const res: any = await purchaseReceiptsApi.delete(id);
       loadReceipts();
-      toast.success('Đã hủy phiếu nhập kho thành công!');
+      let successMsg = 'Đã hủy phiếu nhập kho thành công!';
+      if (res?.totalRefundedToCash > 0) {
+        successMsg += ` Đã hoàn lại ${new Intl.NumberFormat('vi-VN').format(res.totalRefundedToCash)}đ vào quỹ tài khoản.`;
+      }
+      if (res?.totalAdvanceRestored > 0) {
+        successMsg += ` Đã khôi phục ${new Intl.NumberFormat('vi-VN').format(res.totalAdvanceRestored)}đ tiền ứng trước NCC.`;
+      }
+      toast.success(successMsg);
     } catch (err: any) {
       toast.error('Không thể hủy phiếu nhập', err?.response?.data?.message || err?.message);
     }
@@ -1006,6 +1014,15 @@ export const PurchaseReceiptsPage: React.FC = () => {
 
                 {/* Card Action Buttons */}
                 <div className="flex items-center justify-end gap-2 pt-1 border-t border-gray-100 dark:border-gray-800/80" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteReceipt(r.id, r.receiptCode)}
+                    className="px-2 py-1 text-xs rounded border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-1 font-medium cursor-pointer"
+                    title="Hủy phiếu nhập kho"
+                  >
+                    <Trash2 size={12} />
+                    <span>Hủy</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -1908,7 +1925,20 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 </div>
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="flex items-center justify-between w-full">
+              <ModalButton
+                type="button"
+                variant="danger"
+                onClick={() => {
+                  const receipt = selectedReceiptDetail;
+                  setIsDetailModalOpen(false);
+                  handleDeleteReceipt(receipt.id, receipt.receiptCode);
+                }}
+                className="gap-1.5"
+              >
+                <Trash2 size={14} />
+                <span>Hủy phiếu nhập</span>
+              </ModalButton>
               <ModalButton type="button" variant="secondary" onClick={() => setIsDetailModalOpen(false)} className="gap-1.5">
                 <X size={14} />
                 <span>Đóng</span>

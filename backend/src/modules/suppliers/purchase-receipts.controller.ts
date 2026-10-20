@@ -111,8 +111,12 @@ export class PurchaseReceiptsController {
 
   @Delete(':id')
   @Roles(MembershipRole.OWNER, MembershipRole.ADMIN)
-  @ApiOperation({ summary: 'Hủy phiếu nhập kho và đảo ngược số lượng tồn kho' })
-  async delete(@CurrentTenantId() tenantId: string, @Param('id') id: string) {
-    return this.receiptsService.delete(tenantId, id);
+  @ApiOperation({ summary: 'Hủy phiếu nhập kho, hoàn tiền quỹ và đảo ngược tồn kho' })
+  async delete(
+    @CurrentTenantId() tenantId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.receiptsService.delete(tenantId, id, user.id);
   }
 }

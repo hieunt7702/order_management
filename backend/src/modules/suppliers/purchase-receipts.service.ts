@@ -576,26 +576,144 @@ export class PurchaseReceiptsService {
     });
   }
 
-  async delete(tenantId: string, id: string) {
+  async delete(tenantId: string, id: string, userId?: string) {
     const receipt = await this.findOne(tenantId, id);
 
-    if (Number(receipt.paidAmount) > 0) {
+    if (receipt.purchaseReturns && receipt.purchaseReturns.length > 0) {
       throw new BadRequestException(
-        'Không thể xóa phiếu nhập đã có giao dịch thanh toán. Vui lòng hủy các phiếu chi liên quan trước.'
+        'Không thể xóa phiếu nhập đã phát sinh phiếu trả hàng nhà cung cấp. Vui lòng hủy các phiếu trả hàng liên quan trước.'
       );
     }
 
-    if (receipt.purchaseReturns.length > 0) {
-      throw new BadRequestException(
-        'Không thể xóa phiếu nhập đã phát sinh phiếu trả hàng nhà cung cấp.'
-      );
-    }
+    const result = await this.prisma.$transaction(async (tx) => {
+      let totalRefundedToCash = 0;
+      let totalAdvanceRestored = 0;
 
-    // Hoàn trả lại tồn kho đã cộng khi nhập
-    return this.prisma.$transaction(async (tx) => {
+      // 1. Xử lý các phân bổ thanh toán (PaymentAllocation)
+      const allocations = await tx.paymentAllocation.findMany({
+        where: { receiptId: id, tenantId },
+        include: {
+          payment: {
+            include: {
+              allocations: true,
+            },
+          },
+        },
+      });
+
+      for (const alloc of allocations) {
+        const allocAmount = Number(alloc.allocatedAmount);
+        const payment = alloc.payment;
+
+        if (!payment) {
+          await tx.paymentAllocation.delete({ where: { id: alloc.id } });
+          continue;
+        }
+
+        // Kiểm tra xem payment này là thanh toán riêng cho phiếu nhập này (ví dụ tạo lúc thanh toán ngay hoặc chỉ thanh toán cho phiếu này)
+        // hay là thanh toán gộp / tiền ứng trước cọc trước đó của NCC (tự động cấn trừ)
+        const isSingleAllocForThisReceipt =
+          payment.allocations.length === 1 && payment.allocations[0].id === alloc.id;
+        const isImmediatePayment =
+          payment.referenceCode === receipt.receiptCode ||
+          payment.paymentCode === `PC-${receipt.receiptCode.replace('PNK-', '')}`;
+
+        // Tìm các giao dịch sổ quỹ (CashTransaction) liên quan tới payment này
+        const relatedCashTxs = await tx.cashTransaction.findMany({
+          where: {
+            tenantId,
+            OR: [
+              { relatedEntityType: 'SUPPLIER_PAYMENT', relatedEntityId: payment.id },
+              { referenceCode: payment.paymentCode },
+            ],
+          },
+        });
+
+        if ((isImmediatePayment || isSingleAllocForThisReceipt) && relatedCashTxs.length > 0) {
+          // Trường hợp 1: Phiếu chi tiền mặt / ngân hàng dành riêng cho việc thanh toán phiếu nhập này.
+          // Hoàn tiền lại vào tài khoản tiền và xóa giao dịch thu chi + phiếu chi
+          for (const cashTx of relatedCashTxs) {
+            if (cashTx.fromAccountId) {
+              await tx.cashAccount.update({
+                where: { id: cashTx.fromAccountId },
+                data: { currentBalance: { increment: cashTx.amount } },
+              });
+              totalRefundedToCash += Number(cashTx.amount);
+            }
+            if (cashTx.toAccountId) {
+              await tx.cashAccount.update({
+                where: { id: cashTx.toAccountId },
+                data: { currentBalance: { decrement: cashTx.amount } },
+              });
+            }
+            await tx.cashTransaction.delete({ where: { id: cashTx.id } });
+          }
+
+          // Xóa allocation và payment
+          await tx.paymentAllocation.delete({ where: { id: alloc.id } });
+          await tx.supplierPayment.delete({ where: { id: payment.id } });
+        } else if (isImmediatePayment || isSingleAllocForThisReceipt) {
+          // Thanh toán riêng cho phiếu nhập này nhưng không qua tài khoản tiền (ví dụ tiền cá nhân chi hộ PERSONAL_FUND)
+          await tx.paymentAllocation.delete({ where: { id: alloc.id } });
+          await tx.supplierPayment.delete({ where: { id: payment.id } });
+        } else {
+          // Trường hợp 2: Khoản tiền này là tiền cọc / tiền ứng trước NCC nợ shop (được auto-offset cấn trừ tự động)
+          // hoặc là phiếu thanh toán chung cho nhiều phiếu nhập khác.
+          // Hoàn trả lại số tiền này vào quỹ ứng trước (advanceAmount) của NCC, không làm mất tiền cọc của shop
+          await tx.paymentAllocation.delete({ where: { id: alloc.id } });
+
+          const newAllocated = Math.max(0, Number(payment.allocatedAmount) - allocAmount);
+          const newAdvance = Math.max(0, Number(payment.advanceAmount) + allocAmount);
+
+          await tx.supplierPayment.update({
+            where: { id: payment.id },
+            data: {
+              allocatedAmount: new Prisma.Decimal(newAllocated),
+              advanceAmount: new Prisma.Decimal(newAdvance),
+            },
+          });
+
+          totalAdvanceRestored += allocAmount;
+        }
+      }
+
+      // Kiểm tra thêm: Có CashTransaction nào gắn trực tiếp với mã phiếu nhập này chưa được xóa không
+      const directCashTxs = await tx.cashTransaction.findMany({
+        where: {
+          tenantId,
+          OR: [
+            { referenceCode: receipt.receiptCode },
+            { relatedEntityType: 'PURCHASE_RECEIPT', relatedEntityId: receipt.id },
+          ],
+        },
+      });
+
+      for (const dTx of directCashTxs) {
+        if (dTx.fromAccountId) {
+          await tx.cashAccount.update({
+            where: { id: dTx.fromAccountId },
+            data: { currentBalance: { increment: dTx.amount } },
+          });
+          totalRefundedToCash += Number(dTx.amount);
+        }
+        if (dTx.toAccountId) {
+          await tx.cashAccount.update({
+            where: { id: dTx.toAccountId },
+            data: { currentBalance: { decrement: dTx.amount } },
+          });
+        }
+        await tx.cashTransaction.delete({ where: { id: dTx.id } });
+      }
+
+      // Xóa các phân bổ chuyển tiền giữa các NCC nếu có
+      await tx.supplierTransferAllocation.deleteMany({
+        where: { receiptId: id },
+      });
+
+      // 2. Hoàn trả lại tồn kho đã cộng khi nhập
       for (const item of receipt.items) {
         if (item.receivedQuantity > 0) {
-          await tx.inventoryBalance.update({
+          await tx.inventoryBalance.upsert({
             where: {
               tenantId_warehouseId_variantId: {
                 tenantId,
@@ -603,7 +721,14 @@ export class PurchaseReceiptsService {
                 variantId: item.variantId,
               },
             },
-            data: {
+            create: {
+              tenantId,
+              warehouseId: receipt.warehouseId,
+              variantId: item.variantId,
+              onHand: -item.receivedQuantity,
+              reserved: 0,
+            },
+            update: {
               onHand: { decrement: item.receivedQuantity },
             },
           });
@@ -618,15 +743,47 @@ export class PurchaseReceiptsService {
               deltaReserved: 0,
               referenceType: 'CANCEL_PURCHASE_RECEIPT',
               referenceId: receipt.id,
+              performedByUserId: userId,
               note: `Hủy phiếu nhập ${receipt.receiptCode}`,
             },
           });
         }
       }
 
+      // 3. Xóa các mặt hàng và xóa phiếu nhập
+      await tx.purchaseReceiptItem.deleteMany({
+        where: { receiptId: id },
+      });
+
       await tx.purchaseReceipt.delete({ where: { id } });
-      return { success: true, message: 'Đã xóa phiếu nhập và hoàn lại tồn kho thành công' };
+
+      return {
+        success: true,
+        message: 'Đã hủy phiếu nhập kho và hoàn tiền / đảo ngược tồn kho thành công',
+        totalRefundedToCash,
+        totalAdvanceRestored,
+      };
     });
+
+    await this.auditService.log({
+      tenantId,
+      userId,
+      action: 'PURCHASE_RECEIPT_DELETED',
+      entityType: 'PurchaseReceipt',
+      entityId: receipt.id,
+      oldValues: {
+        receiptCode: receipt.receiptCode,
+        supplierId: receipt.supplierId,
+        supplierName: receipt.supplier?.name,
+        warehouseId: receipt.warehouseId,
+        payableAmount: receipt.payableAmount,
+        paidAmount: receipt.paidAmount,
+        totalRefundedToCash: result.totalRefundedToCash,
+        totalAdvanceRestored: result.totalAdvanceRestored,
+      },
+    });
+
+    return result;
   }
 
   /**
