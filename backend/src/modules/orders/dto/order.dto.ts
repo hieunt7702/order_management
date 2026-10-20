@@ -325,3 +325,39 @@ export class BulkDeleteOrdersDto {
   force?: boolean;
 }
 
+export class MarkDispatchedDto {
+  @ApiPropertyOptional({ description: 'ID kho xuất hàng (nếu không truyền sẽ lấy kho mặc định của shop hoặc kho đầu tiên khả dụng)' })
+  @IsOptional()
+  @IsString()
+  warehouseId?: string;
+
+  @ApiPropertyOptional({ description: 'Ghi chú xuất kho thủ công' })
+  @IsOptional()
+  @IsString()
+  note?: string;
+}
+
+export class BulkMarkDispatchedDto {
+  @ApiProperty({ description: 'Danh sách ID đơn hàng cần đánh dấu xuất kho/đã quét', type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  orderIds!: string[];
+
+  @ApiPropertyOptional({ description: 'ID kho xuất hàng' })
+  @IsOptional()
+  @IsString()
+  warehouseId?: string;
+
+  @ApiPropertyOptional({ description: 'Ghi chú xuất kho thủ công' })
+  @IsOptional()
+  @IsString()
+  note?: string;
+}
+
+export class ReverseDispatchedDto {
+  @ApiPropertyOptional({ description: 'Lý do hoàn tác xuất kho' })
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+

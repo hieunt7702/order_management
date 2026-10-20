@@ -21,6 +21,9 @@ import {
   BulkDeleteOrdersDto,
   MarkVirtualOrderDto,
   BulkMarkVirtualOrdersDto,
+  MarkDispatchedDto,
+  BulkMarkDispatchedDto,
+  ReverseDispatchedDto,
 } from './dto/order.dto';
 
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -190,5 +193,40 @@ export class OrdersController {
     @Body() dto: ReceiveReturnDto,
   ) {
     return this.ordersService.receiveReturn(tenantId, id, user.id, dto);
+  }
+
+  @Post(':id/dispatch')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Đánh dấu đơn hàng là đã xuất kho / đã quét' })
+  async markDispatched(
+    @CurrentTenantId() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: MarkDispatchedDto,
+  ) {
+    return this.ordersService.markDispatched(tenantId, id, user.id, dto);
+  }
+
+  @Post('bulk-dispatch')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Đánh dấu xuất kho / đã quét hàng loạt đơn hàng' })
+  async bulkMarkDispatched(
+    @CurrentTenantId() tenantId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: BulkMarkDispatchedDto,
+  ) {
+    return this.ordersService.bulkMarkDispatched(tenantId, user.id, dto);
+  }
+
+  @Post(':id/reverse-dispatch')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN)
+  @ApiOperation({ summary: 'Hoàn tác xuất kho đơn hàng (phục hồi tồn kho nếu là đơn thật)' })
+  async reverseDispatched(
+    @CurrentTenantId() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ReverseDispatchedDto,
+  ) {
+    return this.ordersService.reverseDispatched(tenantId, id, user.id, dto);
   }
 }

@@ -118,6 +118,35 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
     }
   };
 
+  const handleMarkDispatched = async () => {
+    setIsLoadingAction(true);
+    setActionError(null);
+    try {
+      await ordersApi.markDispatched(order.id);
+      onRefresh();
+    } catch (err: any) {
+      setActionError(err.message || 'Đánh dấu xuất kho thất bại');
+    } finally {
+      setIsLoadingAction(false);
+    }
+  };
+
+  const handleReverseDispatched = async () => {
+    if (!window.confirm('Bạn có chắc chắn muốn hoàn tác xuất kho cho đơn hàng này? Tồn kho thực tế sẽ được phục hồi nếu là đơn thật.')) {
+      return;
+    }
+    setIsLoadingAction(true);
+    setActionError(null);
+    try {
+      await ordersApi.reverseDispatched(order.id, { reason: 'Hoàn tác từ chi tiết đơn hàng' });
+      onRefresh();
+    } catch (err: any) {
+      setActionError(err.message || 'Hoàn tác xuất kho thất bại');
+    } finally {
+      setIsLoadingAction(false);
+    }
+  };
+
   const handleCancel = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoadingAction(true);
@@ -531,6 +560,29 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
               </button>
             )}
           </div>
+
+          {/* Dispatch / Scanned Action Button */}
+          {order.fulfillmentStatus === 'DISPATCHED' || order.verificationStatus === 'VERIFIED' ? (
+            <button
+              onClick={handleReverseDispatched}
+              disabled={isLoadingAction}
+              className="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#181b22] hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-semibold transition-all shadow-xs cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+              title="Hoàn tác trạng thái xuất kho và phục hồi tồn kho"
+            >
+              <RotateCcw size={13} className="text-amber-500" />
+              Hoàn tác xuất kho
+            </button>
+          ) : (
+            <button
+              onClick={handleMarkDispatched}
+              disabled={isLoadingAction || order.platformStatus === 'CANCELLED'}
+              className="w-full sm:w-auto px-4 py-2 sm:py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+              title="Đánh dấu đơn hàng là đã xuất kho / đã quét"
+            >
+              <CheckCircle2 size={14} />
+              Đánh dấu xuất kho / đã quét
+            </button>
+          )}
 
           {/* Reserve Button if pending */}
           {order.fulfillmentStatus === 'PENDING_PROCESSING' && (

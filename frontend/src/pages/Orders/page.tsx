@@ -138,6 +138,11 @@ export const OrdersPage: React.FC = () => {
   });
   const [isUpdatingVirtual, setIsUpdatingVirtual] = useState<boolean>(false);
 
+  // Manual Dispatch State
+  const [isBulkDispatchModalOpen, setIsBulkDispatchModalOpen] = useState<boolean>(false);
+  const [isDispatching, setIsDispatching] = useState<boolean>(false);
+  const [selectedWarehouseForDispatch, setSelectedWarehouseForDispatch] = useState<string>('');
+
   // Global Order Summary Metrics for KPI cards
   const [orderSummary, setOrderSummary] = useState({
     total: 0,
@@ -568,6 +573,67 @@ export const OrdersPage: React.FC = () => {
     }
   };
 
+  const handleMarkDispatched = async (order: any) => {
+    try {
+      const res: any = await ordersApi.markDispatched(order.id, {
+        warehouseId: selectedWarehouseId && selectedWarehouseId !== 'ALL' ? selectedWarehouseId : undefined,
+      });
+      toast.success(res?.message || 'Đã đánh dấu xuất kho / đã quét thành công');
+      loadOrders();
+      loadSummary();
+      if (selectedOrder?.id === order.id) {
+        handleOpenDetail(order.id);
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err.message || 'Lỗi khi đánh dấu xuất kho');
+    }
+  };
+
+  const handleReverseDispatched = async (order: any) => {
+    if (!window.confirm(`Xác nhận hoàn tác xuất kho cho đơn ${order.externalOrderId}? Tồn kho thực tế sẽ được phục hồi nếu là đơn thật.`)) {
+      return;
+    }
+    try {
+      const res: any = await ordersApi.reverseDispatched(order.id, {
+        reason: 'Hoàn tác từ trang danh sách đơn hàng',
+      });
+      toast.success(res?.message || 'Đã hoàn tác xuất kho thành công');
+      loadOrders();
+      loadSummary();
+      if (selectedOrder?.id === order.id) {
+        handleOpenDetail(order.id);
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err.message || 'Lỗi khi hoàn tác xuất kho');
+    }
+  };
+
+  const handleOpenBulkDispatchModal = () => {
+    if (selectedOrderIds.length === 0) return;
+    setIsBulkDispatchModalOpen(true);
+  };
+
+  const handleBulkDispatchSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedOrderIds.length === 0) return;
+    setIsDispatching(true);
+    try {
+      const res: any = await ordersApi.bulkMarkDispatched({
+        orderIds: selectedOrderIds,
+        warehouseId: selectedWarehouseForDispatch || (selectedWarehouseId && selectedWarehouseId !== 'ALL' ? selectedWarehouseId : undefined),
+      });
+      toast.success(res?.message || `Đã đánh dấu xuất kho thành công ${selectedOrderIds.length} đơn`);
+      setIsBulkDispatchModalOpen(false);
+      setSelectedOrderIds([]);
+      loadOrders();
+      loadSummary();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err.message || 'Lỗi xuất kho hàng loạt');
+    } finally {
+      setIsDispatching(false);
+    }
+  };
+
   const handleOpenDeleteOrder = (order: any) => {
     setSelectedOrderForDelete(order);
     setIsDeleteOrderModalOpen(true);
@@ -941,6 +1007,16 @@ export const OrdersPage: React.FC = () => {
 
           {selectedOrderIds.length > 0 ? (
             <div className="flex items-center gap-1.5 animate-in fade-in">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleOpenBulkDispatchModal()}
+                className="gap-1.5 px-2.5 sm:px-3 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 bg-emerald-50/50 dark:bg-emerald-950/20"
+                title="Đánh dấu các đơn đã chọn là đã xuất kho / đã quét"
+              >
+                <CheckCircle2 size={13} className="text-emerald-600 dark:text-emerald-400" />
+                <span>Xuất kho ({selectedOrderIds.length})</span>
+              </Button>
               <Button
                 size="sm"
                 variant="outline"
@@ -1330,6 +1406,23 @@ export const OrdersPage: React.FC = () => {
                               <Eye size={14} className="text-gray-400" />
                               <span>Xem chi tiết</span>
                             </DropdownMenuItem>
+                            {o.verificationStatus === 'VERIFIED' || o.fulfillmentStatus === 'DISPATCHED' ? (
+                              <DropdownMenuItem
+                                onClick={() => handleReverseDispatched(o)}
+                              >
+                                <RotateCcw size={14} className="text-amber-500" />
+                                <span>Hoàn tác xuất kho</span>
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => handleMarkDispatched(o)}
+                              >
+                                <CheckCircle2 size={14} className="text-emerald-600 dark:text-emerald-400" />
+                                <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                                  Đánh dấu xuất kho / đã quét
+                                </span>
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem
                               onClick={() => handleOpenVirtualModal(o)}
                             >
@@ -1439,6 +1532,19 @@ export const OrdersPage: React.FC = () => {
                           <Eye size={14} className="text-gray-400" />
                           <span>Xem chi tiết</span>
                         </DropdownMenuItem>
+                        {o.verificationStatus === 'VERIFIED' || o.fulfillmentStatus === 'DISPATCHED' ? (
+                          <DropdownMenuItem onClick={() => handleReverseDispatched(o)}>
+                            <RotateCcw size={14} className="text-amber-500" />
+                            <span>Hoàn tác xuất kho</span>
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => handleMarkDispatched(o)}>
+                            <CheckCircle2 size={14} className="text-emerald-600 dark:text-emerald-400" />
+                            <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                              Đánh dấu xuất kho / đã quét
+                            </span>
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => handleOpenVirtualModal(o)}>
                           <Sparkles size={14} className="text-purple-600 dark:text-purple-400" />
                           <span>Cấu hình đơn ảo</span>
@@ -3020,6 +3126,74 @@ export const OrdersPage: React.FC = () => {
                 className="flex-1 sm:flex-initial bg-purple-600 hover:bg-purple-700 text-white"
               >
                 {isUpdatingVirtual ? 'Đang lưu...' : 'Xác nhận lưu'}
+              </ModalButton>
+            </ModalFooter>
+          </form>
+        </Modal>
+      )}
+
+      {/* Bulk Dispatch Modal */}
+      {isBulkDispatchModalOpen && (
+        <Modal
+          isOpen={isBulkDispatchModalOpen}
+          onClose={() => setIsBulkDispatchModalOpen(false)}
+          title={`Đánh dấu Xuất kho / Đã quét (${selectedOrderIds.length} đơn hàng đã chọn)`}
+          size="md"
+        >
+          <form onSubmit={handleBulkDispatchSubmit}>
+            <ModalBody className="space-y-4">
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded border border-emerald-200 dark:border-emerald-900/50 text-xs text-emerald-900 dark:text-emerald-200 flex items-start gap-2.5">
+                <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="font-semibold">Xác nhận xuất kho hàng loạt</div>
+                  <div className="text-emerald-700 dark:text-emerald-300 text-[11px]">
+                    Hệ thống sẽ cập nhật trạng thái các đơn đã chọn thành <strong>ĐÃ QUÉT / XUẤT KHO (DISPATCHED)</strong>.
+                    Với đơn thường và đơn ảo có đi hàng thật sẽ tự động trừ tồn kho. Đơn ảo không đi hàng thật sẽ <strong>không trừ kho</strong>.
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Chọn kho xuất hàng
+                </label>
+                <Select
+                  value={selectedWarehouseForDispatch || selectedWarehouseId || ''}
+                  onChange={(val: any) => setSelectedWarehouseForDispatch(val)}
+                  options={[
+                    { value: '', label: 'Tự động (Theo kho mặc định của Shop)' },
+                    ...(warehouses || []).map((w: any) => ({
+                      value: w.id,
+                      label: `${w.name} (${w.code})`,
+                    })),
+                  ]}
+                  size="md"
+                  className="w-full"
+                  menuWidth="w-full"
+                />
+              </div>
+
+              <div className="p-3 rounded bg-gray-50 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 text-xs text-gray-600 dark:text-gray-400">
+                Tổng số đơn được xử lý: <strong className="text-gray-900 dark:text-white">{selectedOrderIds.length} đơn</strong>
+              </div>
+            </ModalBody>
+
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
+              <ModalButton
+                variant="secondary"
+                onClick={() => setIsBulkDispatchModalOpen(false)}
+                disabled={isDispatching}
+                className="flex-1 sm:flex-initial"
+              >
+                Hủy
+              </ModalButton>
+              <ModalButton
+                variant="primary"
+                type="submit"
+                disabled={isDispatching}
+                className="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {isDispatching ? 'Đang xuất kho...' : 'Xác nhận xuất kho'}
               </ModalButton>
             </ModalFooter>
           </form>

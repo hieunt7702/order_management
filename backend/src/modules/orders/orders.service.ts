@@ -16,6 +16,9 @@ import {
   BulkDeleteOrdersDto,
   MarkVirtualOrderDto,
   BulkMarkVirtualOrdersDto,
+  MarkDispatchedDto,
+  BulkMarkDispatchedDto,
+  ReverseDispatchedDto,
 } from './dto/order.dto';
 import {
   PlatformOrderStatus,
@@ -23,6 +26,10 @@ import {
   VerificationStatus,
   Platform,
   Prisma,
+  PackageStatus,
+  WarehouseStatus,
+  ScanResult,
+  InventoryMovementType,
 } from '@prisma/client';
 
 
@@ -1206,6 +1213,385 @@ export class OrdersService {
       };
     });
   }
+
+  async markDispatched(
+    tenantId: string,
+    orderId: string,
+    userId: string,
+    dto?: MarkDispatchedDto,
+  ) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, tenantId },
+      include: {
+        shop: true,
+        orderItems: { include: { variant: true } },
+        packages: {
+          include: {
+            packageItems: { include: { orderItem: true } },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy đơn hàng');
+    }
+
+    if (order.platformStatus === PlatformOrderStatus.CANCELLED) {
+      throw new BadRequestException('Đơn hàng đã bị hủy trên sàn, không thể xuất kho');
+    }
+
+    if (
+      order.verificationStatus === VerificationStatus.VERIFIED &&
+      order.fulfillmentStatus === FulfillmentStatus.DISPATCHED
+    ) {
+      return {
+        success: true,
+        alreadyDispatched: true,
+        message: 'Đơn hàng này đã được xác nhận xuất kho / đã quét trước đó',
+        order,
+      };
+    }
+
+    let warehouseId = dto?.warehouseId || order.shop?.defaultWarehouseId;
+    if (!warehouseId) {
+      const activeWarehouse = await this.prisma.warehouse.findFirst({
+        where: { tenantId, status: WarehouseStatus.ACTIVE },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (activeWarehouse) {
+        warehouseId = activeWarehouse.id;
+      }
+    }
+
+    if (!warehouseId) {
+      throw new BadRequestException(
+        'Hệ thống chưa có Kho hàng khả dụng. Vui lòng cấu hình Kho hàng trong Shop hoặc Workspace.',
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      let targetPackage: any = order.packages?.[0];
+
+      if (!targetPackage) {
+        const newPkgCode = order.trackingCode || `PKG-${order.externalOrderId}`;
+        targetPackage = await tx.package.create({
+          data: {
+            tenantId,
+            orderId: order.id,
+            packageCode: newPkgCode,
+            trackingCode: order.trackingCode || order.externalOrderId,
+            carrierName: order.shippingCarrier || 'SPX Express',
+            status: PackageStatus.READY,
+          },
+          include: {
+            packageItems: true,
+          },
+        });
+
+        if (order.orderItems && order.orderItems.length > 0) {
+          for (const oi of order.orderItems) {
+            try {
+              await tx.packageItem.create({
+                data: {
+                  tenantId,
+                  packageId: targetPackage.id,
+                  orderItemId: oi.id,
+                  quantity: oi.quantity,
+                },
+              });
+            } catch {
+              // Ignore duplicate
+            }
+          }
+        }
+      }
+
+      // Items to dispatch
+      const itemsToDispatch = (order.orderItems || [])
+        .filter((oi) => !!oi.variantId)
+        .map((oi) => ({
+          variantId: oi.variantId!,
+          quantity: oi.quantity,
+        }));
+
+      const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
+
+      if (isVirtualNoStock) {
+        // Đơn ảo không đi hàng thật: KHÔNG trừ kho
+        // Nếu trước đó RESERVED, giải phóng giữ kho
+        if (order.fulfillmentStatus === FulfillmentStatus.RESERVED && itemsToDispatch.length > 0) {
+          await this.inventoryService.releaseStockForOrder(
+            tx,
+            tenantId,
+            warehouseId,
+            itemsToDispatch,
+            order.id,
+            userId,
+            order.externalOrderId || order.internalOrderCode,
+          );
+        }
+      } else {
+        // Đơn thường hoặc đơn ảo có đi hàng thật: Trừ tồn kho và ghi sổ cái DISPATCH
+        if (itemsToDispatch.length > 0 && order.fulfillmentStatus !== FulfillmentStatus.DISPATCHED) {
+          await this.inventoryService.dispatchStockForPackage(
+            tx,
+            tenantId,
+            warehouseId,
+            itemsToDispatch,
+            order.id,
+            targetPackage.id,
+            userId,
+          );
+        }
+      }
+
+      // Cập nhật tất cả packages sang DISPATCHED
+      await tx.package.updateMany({
+        where: { orderId: order.id },
+        data: {
+          status: PackageStatus.DISPATCHED,
+          verifiedAt: new Date(),
+          verifiedByUserId: userId,
+        },
+      });
+
+      // Cập nhật Order
+      const updatedOrder = await tx.order.update({
+        where: { id: order.id },
+        data: {
+          verificationStatus: VerificationStatus.VERIFIED,
+          fulfillmentStatus: FulfillmentStatus.DISPATCHED,
+          shippedAt: order.shippedAt || new Date(),
+        },
+        include: {
+          shop: true,
+          orderItems: { include: { variant: true } },
+          packages: true,
+        },
+      });
+
+      // Tạo ScanEvent
+      const scanCode = order.trackingCode || order.externalOrderId;
+      await tx.scanEvent.create({
+        data: {
+          tenantId,
+          shopId: order.shopId,
+          warehouseId,
+          orderId: order.id,
+          packageId: targetPackage.id,
+          rawCode: scanCode,
+          normalizedCode: scanCode,
+          scanResult: ScanResult.VERIFIED,
+          deviceId: 'WEB_MANUAL_DISPATCH',
+          performedByUserId: userId,
+          errorMessage: dto?.note || 'Đánh dấu xuất kho thủ công từ Quản lý đơn hàng',
+        },
+      });
+
+      await this.auditService.log({
+        tenantId,
+        userId,
+        action: 'ORDER_MANUAL_DISPATCH',
+        entityType: 'Order',
+        entityId: order.id,
+        newValues: {
+          externalOrderId: order.externalOrderId,
+          warehouseId,
+          isVirtual: order.isVirtual,
+          isRealGoods: order.isRealGoods,
+          deductedStock: !isVirtualNoStock,
+        },
+      });
+
+      return {
+        success: true,
+        message: isVirtualNoStock
+          ? 'Đã đánh dấu xuất kho / đã quét (Đơn ảo - Không trừ tồn kho)'
+          : 'Đã đánh dấu xuất kho / đã quét và cập nhật tồn kho thành công',
+        order: updatedOrder,
+      };
+    });
+  }
+
+  async bulkMarkDispatched(
+    tenantId: string,
+    userId: string,
+    dto: BulkMarkDispatchedDto,
+  ) {
+    if (!dto.orderIds || dto.orderIds.length === 0) {
+      throw new BadRequestException('Danh sách ID đơn hàng không được để trống');
+    }
+
+    const results = {
+      total: dto.orderIds.length,
+      successCount: 0,
+      failedCount: 0,
+      errors: [] as Array<{ orderId: string; externalOrderId?: string; error: string }>,
+    };
+
+    for (const orderId of dto.orderIds) {
+      try {
+        await this.markDispatched(tenantId, orderId, userId, {
+          warehouseId: dto.warehouseId,
+          note: dto.note || 'Đánh dấu xuất kho hàng loạt từ Quản lý đơn hàng',
+        });
+        results.successCount++;
+      } catch (err: any) {
+        results.failedCount++;
+        results.errors.push({
+          orderId,
+          error: err.message || 'Lỗi không xác định khi xuất kho',
+        });
+      }
+    }
+
+    await this.auditService.log({
+      tenantId,
+      userId,
+      action: 'ORDER_BULK_MANUAL_DISPATCH',
+      entityType: 'Order',
+      entityId: 'bulk',
+      newValues: {
+        total: results.total,
+        successCount: results.successCount,
+        failedCount: results.failedCount,
+      },
+    });
+
+    return {
+      success: results.successCount > 0,
+      ...results,
+      message: `Đã xử lý ${results.successCount}/${results.total} đơn hàng xuất kho thành công${
+        results.failedCount > 0 ? ` (${results.failedCount} đơn thất bại)` : ''
+      }`,
+    };
+  }
+
+  async reverseDispatched(
+    tenantId: string,
+    orderId: string,
+    userId: string,
+    dto?: ReverseDispatchedDto,
+  ) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, tenantId },
+      include: {
+        shop: true,
+        packages: {
+          include: {
+            packageItems: { include: { orderItem: true } },
+          },
+        },
+        orderItems: { include: { variant: true } },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy đơn hàng');
+    }
+
+    if (
+      order.fulfillmentStatus !== FulfillmentStatus.DISPATCHED &&
+      order.verificationStatus !== VerificationStatus.VERIFIED
+    ) {
+      throw new BadRequestException('Đơn hàng chưa ở trạng thái xuất kho / đã quét');
+    }
+
+    const warehouseId = order.shop?.defaultWarehouseId;
+    const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
+
+    return this.prisma.$transaction(async (tx) => {
+      // Revert package status
+      await tx.package.updateMany({
+        where: { orderId: order.id },
+        data: {
+          status: PackageStatus.READY,
+          verifiedAt: null,
+          verifiedByUserId: null,
+        },
+      });
+
+      // Restore stock if real goods were dispatched
+      if (!isVirtualNoStock && warehouseId) {
+        const itemsToRestore = (order.orderItems || [])
+          .filter((oi) => !!oi.variantId)
+          .map((oi) => ({
+            variantId: oi.variantId!,
+            quantity: oi.quantity,
+          }));
+
+        for (const item of itemsToRestore) {
+          await tx.inventoryBalance.update({
+            where: {
+              tenantId_warehouseId_variantId: {
+                tenantId,
+                warehouseId,
+                variantId: item.variantId,
+              },
+            },
+            data: {
+              onHand: { increment: item.quantity },
+              reserved: { increment: item.quantity },
+            },
+          });
+
+          await tx.inventoryLedger.create({
+            data: {
+              tenantId,
+              warehouseId,
+              variantId: item.variantId,
+              movementType: InventoryMovementType.ADJUST,
+              deltaOnHand: item.quantity,
+              deltaReserved: item.quantity,
+              referenceType: 'MANUAL_DISPATCH_REVERSAL',
+              referenceId: order.id,
+              voucherCode: order.externalOrderId || order.internalOrderCode,
+              performerName: 'Staff',
+              performedByUserId: userId,
+              note: `Hoàn tác xuất kho đơn ${order.externalOrderId || order.internalOrderCode}${
+                dto?.reason ? `: ${dto.reason}` : ''
+              }`,
+            },
+          });
+        }
+      }
+
+      // Revert Order status
+      const updatedOrder = await tx.order.update({
+        where: { id: order.id },
+        data: {
+          verificationStatus: VerificationStatus.NOT_VERIFIED,
+          fulfillmentStatus: FulfillmentStatus.RESERVED,
+        },
+        include: {
+          shop: true,
+          orderItems: { include: { variant: true } },
+          packages: true,
+        },
+      });
+
+      await this.auditService.log({
+        tenantId,
+        userId,
+        action: 'ORDER_REVERSE_DISPATCH',
+        entityType: 'Order',
+        entityId: order.id,
+        newValues: {
+          externalOrderId: order.externalOrderId,
+          reason: dto?.reason,
+          restoredStock: !isVirtualNoStock,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Đã hoàn tác xuất kho đơn hàng thành công',
+        order: updatedOrder,
+      };
+    });
+  }
 }
+
 
 

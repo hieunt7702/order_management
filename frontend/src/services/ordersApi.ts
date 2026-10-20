@@ -38,5 +38,11 @@ export const ordersApi = {
     api.patch(`/orders/${id}/virtual`, data),
   bulkMarkVirtual: (data: { orderIds: string[]; isVirtual: boolean; isRealGoods?: boolean }) =>
     api.post('/orders/bulk-virtual', data),
+  markDispatched: (id: string, data?: { warehouseId?: string; note?: string }) =>
+    api.post(`/orders/${id}/dispatch`, data || {}),
+  bulkMarkDispatched: (data: { orderIds: string[]; warehouseId?: string; note?: string }) =>
+    api.post('/orders/bulk-dispatch', data),
+  reverseDispatched: (id: string, data?: { reason?: string }) =>
+    api.post(`/orders/${id}/reverse-dispatch`, data || {}),
 };
 
