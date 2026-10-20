@@ -390,7 +390,7 @@ export const CashflowPage: React.FC = () => {
       : [];
 
   return (
-    <div className="flex-1 flex flex-col min-h-fit space-y-4 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit space-y-4 animate-in fade-in duration-300 max-w-full overflow-x-hidden min-w-0">
       {/* 1. Top Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0 flex-1">
@@ -824,8 +824,8 @@ export const CashflowPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            <div className="overflow-x-auto max-w-full">
+              <table className="w-full min-w-[700px] text-left text-xs">
                 <thead className="bg-gray-50 dark:bg-[#10141f]/80 text-gray-500 dark:text-gray-400 font-medium border-b border-gray-200 dark:border-[#22283a]">
                   <tr>
                     <th className="py-3 px-4">Mã phiếu / Ngày</th>
@@ -1199,7 +1199,7 @@ export const CashflowPage: React.FC = () => {
           </div>
 
           {/* Mobile Transactions Card View */}
-          <div className="md:hidden flex-1 overflow-y-auto space-y-2 pb-16">
+          <div className="md:hidden flex-1 overflow-y-auto space-y-2 pb-16 max-w-full overflow-x-hidden">
             {txLoading ? (
               <div className="py-8 text-center text-xs text-gray-400">Đang tải phiếu thu chi...</div>
             ) : transactions.length === 0 ? (
@@ -1210,19 +1210,25 @@ export const CashflowPage: React.FC = () => {
                 return (
                   <div
                     key={tx.id}
-                    className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 space-y-2"
+                    className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 space-y-2 max-w-full overflow-hidden"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="w-5 h-5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold text-gray-500 flex items-center justify-center shrink-0">
-                          {stt}
-                        </span>
-                        <span className="font-mono font-bold text-xs text-[#5865f2] truncate">
-                          {tx.transactionCode}
-                        </span>
+                    <div className="flex items-start justify-between gap-2 min-w-0">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="w-5 h-5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold text-gray-500 flex items-center justify-center shrink-0">
+                            {stt}
+                          </span>
+                          <span className="font-mono font-bold text-xs text-[#5865f2] truncate">
+                            {tx.transactionCode}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] text-gray-400 font-mono mt-0.5 pl-6.5 shrink-0 whitespace-nowrap">
+                          <Clock size={10} className="shrink-0 text-gray-400" />
+                          <span>{formatDateTime(tx.transactionDate || tx.createdAt)}</span>
+                        </div>
                       </div>
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold shrink-0 ${
                           tx.status === 'CONFIRMED'
                             ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
                             : tx.status === 'DRAFT'
@@ -1262,23 +1268,25 @@ export const CashflowPage: React.FC = () => {
                       </div>
                     )}
 
-                    <div className="p-2 bg-gray-50 dark:bg-[#14151a] rounded text-[11px] space-y-1 border border-gray-100 dark:border-gray-800">
-                      <div className="flex items-center justify-between text-gray-600 dark:text-gray-300">
-                        <span className="text-gray-400">Tài khoản:</span>
-                        <span className="font-medium text-gray-800 dark:text-gray-200">
+                    <div className="p-2 bg-gray-50 dark:bg-[#14151a] rounded text-[11px] space-y-1 border border-gray-100 dark:border-gray-800 min-w-0">
+                      <div className="flex items-center justify-between text-gray-600 dark:text-gray-300 gap-2 min-w-0">
+                        <span className="text-gray-400 shrink-0">Tài khoản:</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200 truncate text-right">
                           {tx.fromAccount?.name || tx.toAccount?.name || 'Tiền cá nhân'}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-gray-600 dark:text-gray-300">
-                        <span className="text-gray-400">Đối tượng / Shop:</span>
+                      <div className="flex items-center justify-between text-gray-600 dark:text-gray-300 gap-2 min-w-0">
+                        <span className="text-gray-400 shrink-0">Đối tượng / Shop:</span>
                         <span className="truncate max-w-[160px] text-right">
                           {tx.counterpartyName || (tx.isCommonExpense ? 'Chi chung' : tx.shop?.name || '---')}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-gray-400 text-[10px]">
-                        <span className="flex items-center gap-1 font-mono"><Clock size={10} /> {formatDateTime(tx.transactionDate || tx.createdAt)}</span>
-                        {tx.performedByName && <span>Bởi: {tx.performedByName}</span>}
-                      </div>
+                      {tx.performedByName && (
+                        <div className="flex items-center justify-between text-gray-400 text-[10px] gap-2 min-w-0">
+                          <span className="shrink-0">Người tạo:</span>
+                          <span className="truncate text-right">{tx.performedByName}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-end gap-2 pt-1 border-t border-gray-100 dark:border-gray-800">

@@ -423,7 +423,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300 max-w-full overflow-x-hidden min-w-0">
       {/* Top Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0 flex-1">
@@ -901,7 +901,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
       </div>
 
       {/* Mobile Card View */}
-      <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5">
+      <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5 max-w-full overflow-x-hidden">
         {isLoading ? (
           <div className="py-8 text-center text-xs text-gray-400 font-normal">
             <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
@@ -936,15 +936,21 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   setSelectedReceiptDetail(r);
                   setIsDetailModalOpen(true);
                 }}
-                className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs cursor-pointer active:scale-[0.99] transition-all"
+                className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs cursor-pointer active:scale-[0.99] transition-all max-w-full overflow-hidden"
               >
-                {/* Header: Receipt code & status badge */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <FileText size={14} className="text-[#5865f2] shrink-0" />
-                    <span className="font-mono font-bold text-xs text-gray-900 dark:text-white truncate">
-                      {r.receiptCode}
-                    </span>
+                {/* Header: Receipt code, Datetime & status badge */}
+                <div className="flex items-start justify-between gap-2 min-w-0">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <FileText size={14} className="text-[#5865f2] shrink-0" />
+                      <span className="font-mono font-bold text-xs text-gray-900 dark:text-white truncate">
+                        {r.receiptCode}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 font-mono text-[10px] text-gray-400 mt-0.5 pl-5 shrink-0 whitespace-nowrap">
+                      <Clock size={10} className="shrink-0 text-gray-400" />
+                      <span>{formatDateTime(r.receiptDate || r.createdAt)}</span>
+                    </div>
                   </div>
                   {r.paymentStatus === 'PAID' ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 shrink-0">
@@ -962,19 +968,16 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 </div>
 
                 {/* Supplier & Warehouse */}
-                <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
-                  <div className="flex items-center gap-1.5 truncate">
+                <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <Building2 size={12} className="text-gray-400 shrink-0" />
                     <span className="font-medium text-gray-800 dark:text-gray-200 truncate">
                       {r.supplier?.name || 'Nhà cung cấp'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-gray-400">
-                    <div className="flex items-center gap-1 truncate">
-                      <Warehouse size={11} className="shrink-0" />
-                      <span className="truncate">{r.warehouse?.name || 'Kho chính'}</span>
-                    </div>
-                    <span className="flex items-center gap-1 font-mono text-[11px]"><Clock size={11} /> {formatDateTime(r.receiptDate || r.createdAt)}</span>
+                  <div className="flex items-center gap-1 text-[11px] text-gray-400 min-w-0">
+                    <Warehouse size={11} className="shrink-0" />
+                    <span className="truncate">{r.warehouse?.name || 'Kho chính'}</span>
                   </div>
                 </div>
 

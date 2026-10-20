@@ -25,6 +25,7 @@ import { toast } from '../ui/Toast';
 import { suppliersApi, SupplierItem } from '../../services/suppliersApi';
 import { cashflowApi, CashAccountModel } from '../../services/cashflowApi';
 import { purchaseReturnsApi } from '../../services/purchaseReturnsApi';
+import { productsApi } from '../../services/productsApi';
 
 interface TransferItemRow {
   variantId: string;
@@ -43,7 +44,7 @@ interface TransferToSupplierModalProps {
   initialWarehouseId?: string;
   initialVariantId?: string;
   warehouses: Array<{ id: string; name: string; code?: string }>;
-  allVariants: any[];
+  allVariants?: any[];
 }
 
 const COMMON_REASONS = [
@@ -65,8 +66,11 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
 }) => {
   const [suppliers, setSuppliers] = useState<SupplierItem[]>([]);
   const [accounts, setAccounts] = useState<CashAccountModel[]>([]);
+  const [internalVariants, setInternalVariants] = useState<any[]>([]);
   const [isLoadingInitial, setIsLoadingInitial] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const resolvedVariants = (allVariants && allVariants.length > 0) ? allVariants : internalVariants;
 
   // Form State
   const [warehouseId, setWarehouseId] = useState<string>(initialWarehouseId || warehouses[0]?.id || '');
@@ -101,28 +105,61 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
   const loadInitialData = async () => {
     setIsLoadingInitial(true);
     try {
-      const [suppRes, accRes] = await Promise.all([
+      // 1. Fetch suppliers & accounts independently using allSettled to prevent cross-failure
+      const [suppSettled, accSettled] = await Promise.allSettled([
         suppliersApi.findAll(),
         cashflowApi.getAccounts(),
       ]);
-      const suppList = suppRes?.data || (Array.isArray(suppRes) ? suppRes : []);
-      setSuppliers(suppList);
-      if (suppList.length > 0 && !supplierId) {
-        setSupplierId(suppList[0].id);
+
+      if (suppSettled.status === 'fulfilled') {
+        const suppRes: any = suppSettled.value;
+        const suppList = suppRes?.data || (Array.isArray(suppRes) ? suppRes : []);
+        setSuppliers(suppList);
+        if (suppList.length > 0 && !supplierId) {
+          setSupplierId(suppList[0].id);
+        }
       }
 
-      const accList = accRes?.data || (Array.isArray(accRes) ? accRes : []);
-      setAccounts(accList);
-      const defaultBank = accList.find((a: any) => a.type === 'BANK' && a.isActive);
-      if (defaultBank) {
-        setImmediateAccountId(defaultBank.id);
-      } else if (accList.length > 0) {
-        setImmediateAccountId(accList[0].id);
+      if (accSettled.status === 'fulfilled') {
+        const accRes: any = accSettled.value;
+        const accList = accRes?.data || (Array.isArray(accRes) ? accRes : []);
+        setAccounts(accList);
+        const defaultBank = accList.find((a: any) => a.type === 'BANK' && a.isActive);
+        if (defaultBank) {
+          setImmediateAccountId(defaultBank.id);
+        } else if (accList.length > 0) {
+          setImmediateAccountId(accList[0].id);
+        }
       }
 
-      // Initialize initial variant item if provided
-      if (initialVariantId) {
-        const found = allVariants.find((v) => v.id === initialVariantId);
+      // 2. Load variants list if not provided via props
+      let currentVariants = (allVariants && allVariants.length > 0) ? allVariants : [];
+      if (currentVariants.length === 0) {
+        try {
+          const prodRes: any = await productsApi.findAll({ limit: 200 });
+          const products = prodRes?.data || prodRes?.items || [];
+          const flat = products.flatMap((p: any) =>
+            (p.variants || []).map((v: any) => ({
+              id: v.id,
+              sku: v.sku,
+              name: v.name,
+              productName: p.name,
+              costPrice: Number(v.costPrice || 0),
+              sellingPrice: Number(v.sellingPrice || 0),
+              onHand: v.inventoryBalances?.reduce((sum: number, b: any) => sum + (b.onHand || 0), 0) ?? 0,
+              availableStock: v.inventoryBalances?.reduce((sum: number, b: any) => sum + ((b.onHand || 0) - (b.reserved || 0)), 0) ?? 0,
+            }))
+          );
+          currentVariants = flat;
+          setInternalVariants(flat);
+        } catch (e) {
+          console.warn('Could not auto-load product variants for transfer modal:', e);
+        }
+      }
+
+      // 3. Initialize initial variant item if provided
+      if (initialVariantId && currentVariants.length > 0) {
+        const found = currentVariants.find((v: any) => v.id === initialVariantId);
         if (found) {
           setItems([
             {
@@ -130,7 +167,7 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
               sku: found.sku || '',
               productName: found.productName || found.name || 'Sản phẩm',
               variationName: found.name && found.name !== found.productName ? found.name : undefined,
-              availableStock: Number(found.availableStock ?? found.onHand ?? found.available ?? 999),
+              availableStock: Number(found.availableStock ?? found.onHand ?? 999),
               quantity: 1,
               unitPrice: Number(found.costPrice || 0),
             },
@@ -139,9 +176,10 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
         }
       }
 
-      // Default 1 blank row
-      if (items.length === 0) {
-        setItems([
+      // 4. Default 1 blank row
+      setItems((prev) => {
+        if (prev.length > 0) return prev;
+        return [
           {
             variantId: '',
             sku: '',
@@ -150,11 +188,10 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
             quantity: 1,
             unitPrice: 0,
           },
-        ]);
-      }
+        ];
+      });
     } catch (err) {
       console.error('Error loading data for transfer modal:', err);
-      toast.error('Không thể tải danh sách nhà cung cấp hoặc tài khoản');
     } finally {
       setIsLoadingInitial(false);
     }
@@ -183,7 +220,8 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
   };
 
   const handleItemSelect = (idx: number, variantId: string) => {
-    const found = allVariants.find((v) => v.id === variantId);
+    const list = (resolvedVariants && resolvedVariants.length > 0) ? resolvedVariants : (allVariants || []);
+    const found = list.find((v: any) => v.id === variantId);
     if (!found) return;
 
     setItems((prev) => {
@@ -292,8 +330,8 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
       icon={Truck}
       size="3xl"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-        <ModalBody className="space-y-4 p-4 sm:p-5 max-h-[78vh] overflow-y-auto custom-scrollbar text-xs sm:text-sm">
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 w-full max-w-full overflow-hidden">
+        <ModalBody className="space-y-4 p-4 sm:p-5 max-h-[78vh] overflow-y-auto overflow-x-hidden custom-scrollbar text-xs sm:text-sm w-full max-w-full min-w-0">
           {/* Warehouse and Supplier Selection */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded bg-gray-50/70 dark:bg-gray-900/40 border border-gray-200/80 dark:border-gray-800">
             <div>
@@ -333,42 +371,74 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
 
             {/* Supplier Debt Status Card */}
             {selectedSupplier && (
-              <div className="sm:col-span-2 p-2.5 rounded bg-white dark:bg-[#161a22] border border-gray-200 dark:border-gray-800 flex flex-wrap items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Công nợ hiện tại với NCC:</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{selectedSupplier.name}</span>
+              <div className="sm:col-span-2 p-2.5 rounded bg-white dark:bg-[#161a22] border border-gray-200 dark:border-gray-800 space-y-2 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">Công nợ hiện tại với NCC:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">{selectedSupplier.name}</span>
+                  </div>
+                  <div>
+                    {selectedSupplier.closingDebt > 0 ? (
+                      <span className="font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded">
+                        Shop đang nợ NCC: {Number(selectedSupplier.closingDebt).toLocaleString('vi-VN')}đ
+                      </span>
+                    ) : selectedSupplier.closingDebt < 0 ? (
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded">
+                        NCC đang nợ shop / tiền cọc: {Math.abs(Number(selectedSupplier.closingDebt)).toLocaleString('vi-VN')}đ
+                      </span>
+                    ) : (
+                      <span className="font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                        Công nợ cân bằng (0đ)
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  {selectedSupplier.closingDebt > 0 ? (
-                    <span className="font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded">
-                      Shop đang nợ NCC: {Number(selectedSupplier.closingDebt).toLocaleString('vi-VN')}đ
+
+                {totalAmount > 0 && settlementType !== 'IMMEDIATE_PAYMENT' && (
+                  <div className="pt-2 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-2 bg-indigo-50/60 dark:bg-indigo-950/30 p-2 rounded">
+                    <span className="text-[#5865f2] dark:text-[#7b85f5] font-medium flex items-center gap-1">
+                      <CreditCard size={13} /> Sau khi chuyển ({totalAmount.toLocaleString('vi-VN')}đ):
                     </span>
-                  ) : selectedSupplier.closingDebt < 0 ? (
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded">
-                      NCC đang nợ shop / tiền cọc: {Math.abs(Number(selectedSupplier.closingDebt)).toLocaleString('vi-VN')}đ
-                    </span>
-                  ) : (
-                    <span className="font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                      Công nợ cân bằng (0đ)
-                    </span>
-                  )}
-                </div>
+                    {(() => {
+                      const projectedDebt = Number(selectedSupplier.closingDebt) - totalAmount;
+                      if (projectedDebt > 0) {
+                        return (
+                          <span className="font-bold text-rose-600 dark:text-rose-400">
+                            Shop còn nợ NCC: {projectedDebt.toLocaleString('vi-VN')}đ
+                          </span>
+                        );
+                      } else if (projectedDebt < 0) {
+                        return (
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                            NCC sẽ nợ lại shop: {Math.abs(projectedDebt).toLocaleString('vi-VN')}đ
+                          </span>
+                        );
+                      } else {
+                        return (
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                            Công nợ hết (Cân bằng 0đ)
+                          </span>
+                        );
+                      }
+                    })()}
+                  </div>
+                )}
               </div>
             )}
           </div>
 
           {/* Date & Reason */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
-                <Calendar size={13} className="text-gray-400" />
+                <Calendar size={13} className="text-gray-400 shrink-0" />
                 <span>Ngày giờ chuyển hàng *</span>
               </label>
               <input
                 type="datetime-local"
                 value={returnDate}
                 onChange={(e) => setReturnDate(e.target.value)}
-                className="w-full bg-white dark:bg-[#161a22] border border-gray-200 dark:border-gray-700 rounded p-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
+                className="w-full max-w-full min-w-0 box-border bg-white dark:bg-[#161a22] border border-gray-200 dark:border-gray-700 rounded p-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
                 required
               />
             </div>
@@ -427,13 +497,13 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
                     className="p-2.5 bg-white dark:bg-[#181b22] rounded border border-gray-200 dark:border-gray-800 flex flex-col md:flex-row md:items-center gap-2 text-xs"
                   >
                     {/* SKU Selection */}
-                    <div className="flex-1 min-w-[200px]">
+                    <div className="flex-1 min-w-0 w-full">
                       <Select
                         value={row.variantId}
                         onChange={(val) => handleItemSelect(idx, String(val))}
                         options={[
                           { value: '', label: '-- Chọn mặt hàng SKU --' },
-                          ...allVariants.map((v) => ({
+                          ...(resolvedVariants || allVariants || []).map((v: any) => ({
                             value: v.id,
                             label: `[${v.sku || 'SKU'}] ${v.productName || v.name || ''}`,
                             badge: `Tồn: ${v.onHand ?? v.availableStock ?? 0}`,
@@ -528,10 +598,10 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
               >
                 <div className="flex items-center gap-1.5 font-bold text-xs text-gray-900 dark:text-white mb-1">
                   <CreditCard size={14} className="text-[#5865f2]" />
-                  <span>1. Khấu trừ vào nợ</span>
+                  <span>1. Khấu trừ giảm nợ (Mặc định)</span>
                 </div>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Giảm trừ trực tiếp số tiền shop đang nợ NCC từ các phiếu nhập trước đó.
+                  Trừ trực tiếp vào nợ NCC: Đang nợ 100m, chuyển 30m → Còn nợ NCC 70m.
                 </p>
               </div>
 

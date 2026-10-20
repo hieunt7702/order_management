@@ -1835,6 +1835,7 @@ export const InventoryPage: React.FC = () => {
         initialWarehouseId={selectedWarehouseId || undefined}
         initialVariantId={transferInitialVariantId}
         warehouses={warehouses}
+        allVariants={allVariants}
       />
     </div>
   );
