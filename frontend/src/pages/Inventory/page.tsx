@@ -379,27 +379,13 @@ export const InventoryPage: React.FC = () => {
       {/* KPI Summary Metric Cards matching Orders page */}
       {(() => {
         const totalOnHand = balances.reduce((acc, b) => acc + (b.onHand ?? 0), 0);
-        const totalReserved = balances.reduce((acc, b) => acc + (b.reserved ?? 0), 0);
-        const totalAvailable = balances.reduce((acc, b) => acc + (b.available ?? ((b.onHand ?? 0) - (b.reserved ?? 0))), 0);
-        const negativeStockCount = balances.filter((b) => {
-          const onHand = b.onHand ?? 0;
-          const reserved = b.reserved ?? 0;
-          const available = b.available ?? (onHand - reserved);
-          return available < 0;
-        }).length;
+        const negativeStockCount = balances.filter((b) => (b.onHand ?? 0) < 0).length;
         const lowStockCount = balances.filter((b) => {
           const onHand = b.onHand ?? 0;
-          const reserved = b.reserved ?? 0;
-          const available = b.available ?? (onHand - reserved);
           const minAlert = b.lowStockThreshold ?? b.variant?.lowStockThreshold ?? b.variant?.minStockAlert ?? 5;
-          return available <= minAlert && available > 0;
+          return onHand <= minAlert && onHand > 0;
         }).length;
-        const outOfStockCount = balances.filter((b) => {
-          const onHand = b.onHand ?? 0;
-          const reserved = b.reserved ?? 0;
-          const available = b.available ?? (onHand - reserved);
-          return available <= 0;
-        }).length;
+        const outOfStockCount = balances.filter((b) => (b.onHand ?? 0) <= 0).length;
 
         return (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-2.5 shrink-0">
@@ -412,27 +398,11 @@ export const InventoryPage: React.FC = () => {
                 colorScheme: 'blue',
               }}
               rightItem={{
-                title: 'Tồn thực tế',
+                title: 'Tổng tồn kho',
                 value: totalOnHand.toLocaleString('vi-VN'),
-                subtitle: 'on-hand kho',
+                subtitle: 'sản phẩm thực tế',
                 icon: Warehouse,
                 colorScheme: 'green',
-              }}
-            />
-            <SystemMetricPairCard
-              leftItem={{
-                title: 'Khả dụng xuất',
-                value: totalAvailable.toLocaleString('vi-VN'),
-                subtitle: 'available bán',
-                icon: CheckCircle,
-                colorScheme: 'purple',
-              }}
-              rightItem={{
-                title: 'Đang giữ hàng',
-                value: totalReserved.toLocaleString('vi-VN'),
-                subtitle: 'reserved đơn',
-                icon: ArrowUpRight,
-                colorScheme: 'orange',
               }}
             />
             <SystemMetricPairCard
@@ -449,6 +419,22 @@ export const InventoryPage: React.FC = () => {
                 subtitle: negativeStockCount > 0 ? `${negativeStockCount} SKU âm tồn` : 'tồn kho ≤ 0',
                 icon: PackageX,
                 colorScheme: 'red',
+              }}
+            />
+            <SystemMetricPairCard
+              leftItem={{
+                title: 'Mặt hàng âm tồn',
+                value: negativeStockCount,
+                subtitle: 'xuất quá số lượng',
+                icon: TrendingDown,
+                colorScheme: 'red',
+              }}
+              rightItem={{
+                title: 'Kho hoạt động',
+                value: warehouses.length,
+                subtitle: 'kho lưu trữ',
+                icon: Building2,
+                colorScheme: 'purple',
               }}
             />
           </div>
@@ -584,26 +570,22 @@ export const InventoryPage: React.FC = () => {
                     <SystemTh className="w-44">SKU Biến thể</SystemTh>
                     <SystemTh className="w-64">Tên sản phẩm</SystemTh>
                     <SystemTh className="w-40">Kho</SystemTh>
-                    <SystemTh className="w-32 text-right">Thực có (onHand)</SystemTh>
-                    <SystemTh className="w-32 text-right">Đã giữ (reserved)</SystemTh>
-                    <SystemTh className="w-36 text-right">Có thể xuất (available)</SystemTh>
+                    <SystemTh className="w-36 text-right">Tồn kho</SystemTh>
                     <SystemTh className="w-32 text-center">Tình trạng</SystemTh>
                     <SystemTh className="w-24 text-center">Thao tác</SystemTh>
                   </SystemThead>
                   <SystemTbody>
                     {isLoadingBalances ? (
-                      <SystemTableSkeleton cols={9} rows={7} />
+                      <SystemTableSkeleton cols={7} rows={7} />
                     ) : filteredBalances.length === 0 ? (
                       <SystemTableEmpty
                         title="Không có dữ liệu tồn kho"
                         description="Không tìm thấy SKU nào phù hợp với bộ lọc hiện tại. Hãy thực hiện Nhập kho để khởi tạo số dư."
-                        colSpan={9}
+                        colSpan={7}
                       />
                     ) : (
                       paginatedBalances.map((b, index) => {
                         const onHand = b.onHand ?? 0;
-                        const reserved = b.reserved ?? 0;
-                        const available = b.available ?? (onHand - reserved);
                         const vObj = b.variant || allVariants.find((v) => v.id === b.variantId);
                         const wObj = b.warehouse || warehouses.find((w) => w.id === b.warehouseId);
                         const sku = b.sku || vObj?.sku || b.variantId;
@@ -611,8 +593,8 @@ export const InventoryPage: React.FC = () => {
                         const variantName = b.variantName || vObj?.name;
                         const warehouseName = b.warehouseName || wObj?.name || b.warehouseId;
                         const minAlert = b.lowStockThreshold ?? vObj?.lowStockThreshold ?? vObj?.minStockAlert ?? 5;
-                        const isLowStock = available <= minAlert && available > 0;
-                        const isNegative = available < 0;
+                        const isLowStock = onHand <= minAlert && onHand > 0;
+                        const isNegative = onHand < 0;
                         const stt = (balancePage - 1) * balanceLimit + index + 1;
 
                         return (
@@ -650,29 +632,23 @@ export const InventoryPage: React.FC = () => {
                             <SystemTd className="text-gray-700 dark:text-gray-300 font-medium">
                               {warehouseName}
                             </SystemTd>
-                            <SystemTd className={`text-right font-medium ${onHand < 0 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-gray-900 dark:text-white'}`}>
-                              {onHand.toLocaleString('vi-VN')}
-                            </SystemTd>
-                            <SystemTd className="text-right text-amber-600 dark:text-amber-400 font-medium">
-                              {reserved.toLocaleString('vi-VN')}
-                            </SystemTd>
                             <SystemTd
                               className={`text-right font-medium ${
                                 isNegative
                                   ? 'text-rose-600 dark:text-rose-400 font-bold'
-                                  : available === 0
+                                  : onHand === 0
                                     ? 'text-gray-400'
-                                    : 'text-emerald-600 dark:text-emerald-400'
+                                    : 'text-gray-900 dark:text-white font-semibold'
                               }`}
                             >
-                              {available.toLocaleString('vi-VN')}
+                              {onHand.toLocaleString('vi-VN')}
                             </SystemTd>
                             <SystemTd className="text-center">
                               {isNegative ? (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30">
-                                  Âm tồn ({available.toLocaleString('vi-VN')})
+                                  Âm tồn ({onHand.toLocaleString('vi-VN')})
                                 </span>
-                              ) : available === 0 ? (
+                              ) : onHand === 0 ? (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 border border-gray-200 dark:border-gray-700">
                                   Hết hàng (0)
                                 </span>
@@ -744,8 +720,6 @@ export const InventoryPage: React.FC = () => {
                 ) : (
                   paginatedBalances.map((b) => {
                     const onHand = b.onHand ?? 0;
-                    const reserved = b.reserved ?? 0;
-                    const available = b.available ?? (onHand - reserved);
                     const vObj = b.variant || allVariants.find((v) => v.id === b.variantId);
                     const wObj = b.warehouse || warehouses.find((w) => w.id === b.warehouseId);
                     const sku = b.sku || vObj?.sku || b.variantId;
@@ -753,8 +727,8 @@ export const InventoryPage: React.FC = () => {
                     const variantName = b.variantName || vObj?.name;
                     const warehouseName = b.warehouseName || wObj?.name || b.warehouseId;
                     const minAlert = b.lowStockThreshold ?? vObj?.lowStockThreshold ?? vObj?.minStockAlert ?? 5;
-                    const isLowStock = available <= minAlert && available > 0;
-                    const isNegative = available < 0;
+                    const isLowStock = onHand <= minAlert && onHand > 0;
+                    const isNegative = onHand < 0;
 
                     return (
                       <div
@@ -778,9 +752,9 @@ export const InventoryPage: React.FC = () => {
                           </div>
                           {isNegative ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 shrink-0">
-                              Tồn âm ({available.toLocaleString('vi-VN')})
+                              Tồn âm ({onHand.toLocaleString('vi-VN')})
                             </span>
-                          ) : available === 0 ? (
+                          ) : onHand === 0 ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 shrink-0">
                               Hết hàng (0)
                             </span>
@@ -807,26 +781,12 @@ export const InventoryPage: React.FC = () => {
                           )}
                         </div>
 
-                        {/* 3 Metrics: Thực có, Đang giữ, Khả dụng */}
-                        <div className="grid grid-cols-3 gap-2 p-2 rounded bg-gray-50 dark:bg-[#1a1e28] border border-gray-100 dark:border-gray-800/60 text-center">
-                          <div>
-                            <div className="text-[10px] text-gray-400">Thực có (onHand)</div>
-                            <div className={`font-mono font-medium text-xs mt-0.5 ${onHand < 0 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-gray-900 dark:text-white'}`}>
-                              {onHand.toLocaleString('vi-VN')}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-[10px] text-amber-500">Đang giữ (đơn)</div>
-                            <div className="font-mono font-medium text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                              {reserved.toLocaleString('vi-VN')}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-[10px] text-gray-400">Khả dụng bán</div>
-                            <div className={`font-mono font-bold text-xs mt-0.5 ${isNegative ? 'text-rose-600 dark:text-rose-400' : available === 0 ? 'text-gray-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                              {available.toLocaleString('vi-VN')}
-                            </div>
-                          </div>
+                        {/* Metric: Tồn kho thực tế */}
+                        <div className="flex items-center justify-between p-2 rounded bg-gray-50 dark:bg-[#1a1e28] border border-gray-100 dark:border-gray-800/60">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Tồn kho thực tế:</span>
+                          <span className={`font-mono font-bold text-sm ${onHand < 0 ? 'text-rose-600 dark:text-rose-400' : onHand === 0 ? 'text-gray-400' : 'text-gray-900 dark:text-white'}`}>
+                            {onHand.toLocaleString('vi-VN')}
+                          </span>
                         </div>
 
                         {/* Quick Actions */}

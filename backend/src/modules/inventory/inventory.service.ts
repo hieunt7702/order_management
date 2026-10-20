@@ -75,13 +75,21 @@ export class InventoryService {
       orderBy: { updatedAt: 'desc' },
     });
 
+    // Tự động làm sạch các giá trị reserved cũ trong database nếu còn tồn đọng
+    this.prisma.inventoryBalance
+      .updateMany({
+        where: { tenantId, reserved: { not: 0 } },
+        data: { reserved: 0 },
+      })
+      .catch(() => {});
+
     return balances.map((b) => {
       const onHand = b.onHand || 0;
-      const reserved = b.reserved || 0;
+      const reserved = 0;
       const damaged = b.damaged || 0;
       const pendingInspection = b.pendingInspection || 0;
       const inboundReturning = b.inboundReturning || 0;
-      const available = onHand - reserved;
+      const available = onHand;
       const actualWarehouseStock = onHand + damaged + pendingInspection;
 
       return {
@@ -98,14 +106,14 @@ export class InventoryService {
         unit: b.variant?.unit || 'cái',
         variant: b.variant,
         onHand,
-        reserved,
-        available,
+        reserved: 0,
+        available: onHand,
         damaged,
         pendingInspection,
         inboundReturning,
         actualWarehouseStock,
         lowStockThreshold: b.variant?.lowStockThreshold ?? 5,
-        isLowStock: available <= (b.variant?.lowStockThreshold ?? 5),
+        isLowStock: onHand <= (b.variant?.lowStockThreshold ?? 5),
         updatedAt: b.updatedAt,
       };
     });
@@ -137,22 +145,19 @@ export class InventoryService {
     });
 
     let totalOnHand = 0;
-    let totalReserved = 0;
     let totalDamaged = 0;
     let totalPendingInspection = 0;
     let totalInboundReturning = 0;
 
     const byWarehouse = balances.map((b) => {
       const onHand = b.onHand || 0;
-      const reserved = b.reserved || 0;
       const damaged = b.damaged || 0;
       const pendingInspection = b.pendingInspection || 0;
       const inboundReturning = b.inboundReturning || 0;
-      const availableToSell = onHand - reserved;
+      const availableToSell = onHand;
       const actualWarehouseStock = onHand + damaged + pendingInspection;
 
       totalOnHand += onHand;
-      totalReserved += reserved;
       totalDamaged += damaged;
       totalPendingInspection += pendingInspection;
       totalInboundReturning += inboundReturning;
@@ -163,8 +168,8 @@ export class InventoryService {
         warehouseName: b.warehouse.name,
         actualWarehouseStock,
         sellableStock: onHand,
-        reservedStock: reserved,
-        availableToSell,
+        reservedStock: 0,
+        availableToSell: onHand,
         damagedStock: damaged,
         pendingInspectionStock: pendingInspection,
         inboundReturningStock: inboundReturning,
@@ -187,8 +192,8 @@ export class InventoryService {
       summary: {
         actualWarehouseStock: totalOnHand + totalDamaged + totalPendingInspection,
         sellableStock: totalOnHand,
-        reservedStock: totalReserved,
-        availableToSell: totalOnHand - totalReserved,
+        reservedStock: 0,
+        availableToSell: totalOnHand,
         inboundReturningStock: totalInboundReturning,
         damagedStock: totalDamaged,
         pendingInspectionStock: totalPendingInspection,
@@ -513,16 +518,6 @@ export class InventoryService {
     }
 
     const newOnHand = balance.onHand + delta;
-    if (newOnHand < 0) {
-      throw new BadRequestException('Số lượng tồn thực tế (onHand) không được phép âm');
-    }
-
-    const newAvailable = newOnHand - balance.reserved;
-    if (newAvailable < 0) {
-      throw new BadRequestException(
-        `Không thể giảm tồn xuống dưới số lượng đã giữ hàng cho đơn (Reserved: ${balance.reserved})`,
-      );
-    }
 
     const reasonLabels: Record<string, string> = {
       INVENTORY_CHECK_DISCREPANCY: 'Kiểm kê định kỳ phát hiện chênh lệch',

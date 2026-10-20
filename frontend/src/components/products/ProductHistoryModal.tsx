@@ -338,9 +338,9 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
           </div>
         </div>
 
-        {/* 6 Top Metric Cards with Illustrative Icons */}
+        {/* 5 Top Metric Cards with Illustrative Icons */}
         {summaryData && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs shrink-0">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 text-xs shrink-0">
             {/* 1. Tồn thực tế tại kho */}
             <div className="p-3 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/70 dark:border-blue-900/40 rounded flex flex-col justify-between">
               <div className="flex items-center gap-1.5 text-[11px] text-blue-700 dark:text-blue-300 font-semibold">
@@ -355,45 +355,17 @@ export const ProductHistoryModal: React.FC<ProductHistoryModalProps> = ({
               </span>
             </div>
 
-            {/* 2. Đủ điều kiện bán */}
+            {/* 2. Hàng sẵn sàng bán */}
             <div className="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-900/40 rounded flex flex-col justify-between">
               <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold">
                 <CheckCircle size={13} className="text-emerald-500 shrink-0" />
-                <span>Đủ điều kiện bán</span>
+                <span>Sẵn sàng bán</span>
               </div>
               <div className="text-xl font-bold font-mono text-emerald-900 dark:text-emerald-100 my-1">
                 {(summaryData.summary?.sellableStock ?? 0).toLocaleString('vi-VN')}
               </div>
               <span className="text-[10px] text-gray-400 block leading-tight">
                 Hàng đạt chất lượng
-              </span>
-            </div>
-
-            {/* 3. Đang giữ cho đơn */}
-            <div className="p-3 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-900/40 rounded flex flex-col justify-between">
-              <div className="flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-300 font-semibold">
-                <Clock size={13} className="text-amber-500 shrink-0" />
-                <span>Đang giữ cho đơn</span>
-              </div>
-              <div className="text-xl font-bold font-mono text-amber-900 dark:text-amber-100 my-1">
-                {(summaryData.summary?.reservedStock ?? 0).toLocaleString('vi-VN')}
-              </div>
-              <span className="text-[10px] text-gray-400 block leading-tight">
-                Đã đặt chưa xuất kho
-              </span>
-            </div>
-
-            {/* 4. Có thể bán thêm */}
-            <div className="p-3 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/70 dark:border-indigo-900/40 rounded flex flex-col justify-between">
-              <div className="flex items-center gap-1.5 text-[11px] text-indigo-700 dark:text-indigo-300 font-semibold">
-                <Layers size={13} className="text-indigo-500 shrink-0" />
-                <span>Có thể bán thêm</span>
-              </div>
-              <div className="text-xl font-bold font-mono text-indigo-900 dark:text-indigo-100 my-1">
-                {(summaryData.summary?.availableToSell ?? 0).toLocaleString('vi-VN')}
-              </div>
-              <span className="text-[10px] text-gray-400 block leading-tight">
-                Đủ ĐK bán − Đang giữ
               </span>
             </div>
 

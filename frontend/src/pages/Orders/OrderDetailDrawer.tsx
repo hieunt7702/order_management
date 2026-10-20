@@ -604,14 +604,14 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
           isOpen={isCancelModalOpen}
           onClose={() => setIsCancelModalOpen(false)}
           title={<><span className="sm:hidden">Hủy đơn hàng</span><span className="hidden sm:inline">Xác nhận hủy đơn hàng</span></>}
-          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Giải phóng số lượng giữ hàng (reserved) và cập nhật trạng thái đơn</span>}
+          subtitle={<span className="line-clamp-1 sm:line-clamp-none">Cập nhật trạng thái hủy đơn hàng</span>}
           icon={Ban}
           maxWidth="max-w-md"
         >
           <form onSubmit={handleCancel} className="flex flex-col flex-1 min-h-0">
             <ModalBody className="space-y-3 sm:space-y-3.5 p-3 sm:p-5">
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Nếu đơn chưa xuất kho, số lượng đã giữ hàng (reserved) sẽ được giải phóng ngay lập tức về kho thực tế.
+                Đơn hàng sẽ được đánh dấu đã hủy trên hệ thống và không thể xuất kho.
               </p>
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">

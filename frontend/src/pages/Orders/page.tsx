@@ -3560,11 +3560,6 @@ export const OrdersPage: React.FC = () => {
                                         (Âm kho)
                                       </span>
                                     )}
-                                    {it.reserved > 0 && (
-                                      <span className="text-[10px] text-gray-400">
-                                        (Đang giữ: {it.reserved})
-                                      </span>
-                                    )}
                                   </div>
                                 </td>
                                 <td className="py-2 px-3 text-center">
