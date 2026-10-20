@@ -95,7 +95,7 @@ export const ScanOrdersPage: React.FC = () => {
     }
   };
 
-  // Camera state & Zoom (DEFAULT 2X)
+  // Camera state & Zoom (DEFAULT 1X)
   const [, setIsCameraActive] = useState<boolean>(false);
   const [isCameraPaused, setIsCameraPaused] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string>('');
@@ -103,7 +103,7 @@ export const ScanOrdersPage: React.FC = () => {
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [torchOn, setTorchOn] = useState<boolean>(false);
-  const [zoom, setZoom] = useState<number>(2);
+  const [zoom, setZoom] = useState<number>(1);
   const [scanFlash, setScanFlash] = useState<'success' | 'warning' | 'error' | null>(null);
 
   // Modals & Drawers
@@ -174,7 +174,7 @@ export const ScanOrdersPage: React.FC = () => {
     };
   }, [selectedCameraId, facingMode]);
 
-  // Apply Zoom
+  // Apply Zoom (Default 1x, no digital crop)
   const applyZoom = async (newZoom: number) => {
     setZoom(newZoom);
     try {
@@ -196,14 +196,18 @@ export const ScanOrdersPage: React.FC = () => {
 
     const videoEl = document.querySelector('#barcode-camera-reader video') as HTMLVideoElement;
     if (videoEl) {
-      videoEl.style.transform = `scale(${newZoom})`;
-      videoEl.style.transformOrigin = 'center center';
-      videoEl.style.transition = 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
+      if (newZoom <= 1) {
+        videoEl.style.transform = 'none';
+      } else {
+        videoEl.style.transform = `scale(${newZoom})`;
+        videoEl.style.transformOrigin = 'center center';
+        videoEl.style.transition = 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)';
+      }
     }
   };
 
   const handleToggleZoom = () => {
-    const zoomLevels = [1, 2, 3, 4];
+    const zoomLevels = [1, 1.5, 2];
     const currentIndex = zoomLevels.indexOf(zoom);
     const nextZoom = zoomLevels[(currentIndex + 1) % zoomLevels.length];
     applyZoom(nextZoom);
@@ -219,6 +223,7 @@ export const ScanOrdersPage: React.FC = () => {
       const container = document.getElementById('barcode-camera-reader');
       if (!container) return;
 
+      // Enable native BarcodeDetector API for instant recognition of Code 128 / SPX barcodes
       const html5QrCode = new Html5Qrcode('barcode-camera-reader', {
         formatsToSupport: [
           Html5QrcodeSupportedFormats.CODE_128,
@@ -233,15 +238,29 @@ export const ScanOrdersPage: React.FC = () => {
           Html5QrcodeSupportedFormats.UPC_E,
         ],
         verbose: false,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true,
+        },
       });
       scannerRef.current = html5QrCode;
 
+      // High FPS and native aspect ratio (no 4:3 squashing distortion for 1D barcodes)
       const config = {
         fps: 25,
-        aspectRatio: 1.33,
       };
 
-      const cameraParam = selectedCameraId ? { deviceId: { exact: selectedCameraId } } : { facingMode };
+      // Request HD resolution (ideal 1080p, min 720p) so Code 128 thin vertical stripes remain crisp
+      const cameraParam: any = selectedCameraId
+        ? {
+            deviceId: { exact: selectedCameraId },
+            width: { min: 640, ideal: 1920, max: 1920 },
+            height: { min: 480, ideal: 1080, max: 1080 },
+          }
+        : {
+            facingMode: { ideal: facingMode },
+            width: { min: 640, ideal: 1920, max: 1920 },
+            height: { min: 480, ideal: 1080, max: 1080 },
+          };
 
       await html5QrCode.start(
         cameraParam,
@@ -259,10 +278,31 @@ export const ScanOrdersPage: React.FC = () => {
       isPausedRef.current = false;
       isCameraRunningRef.current = true;
 
-      // Apply initial zoom 2x
+      // Apply initial 1x zoom (full field of view, no cropping)
       setTimeout(() => {
-        applyZoom(2);
-      }, 350);
+        applyZoom(1);
+      }, 150);
+
+      // Request continuous autofocus if supported by camera hardware
+      try {
+        const videoEl = document.querySelector('#barcode-camera-reader video') as HTMLVideoElement;
+        if (videoEl && videoEl.srcObject instanceof MediaStream) {
+          const track = videoEl.srcObject.getVideoTracks()[0];
+          const capabilities: any = track?.getCapabilities ? track.getCapabilities() : {};
+          const advanced: any[] = [];
+          if (capabilities.focusMode?.includes('continuous')) {
+            advanced.push({ focusMode: 'continuous' });
+          }
+          if (capabilities.exposureMode?.includes('continuous')) {
+            advanced.push({ exposureMode: 'continuous' });
+          }
+          if (advanced.length > 0) {
+            await track.applyConstraints({ advanced });
+          }
+        }
+      } catch {
+        // ignore
+      }
     } catch (err) {
       console.warn('Cannot start camera:', err);
       setCameraError('Không thể mở camera. Vui lòng cấp quyền camera trong cài đặt trình duyệt.');
@@ -339,12 +379,41 @@ export const ScanOrdersPage: React.FC = () => {
     if (isPausedRef.current) {
       return;
     }
-    const raw = (rawText || '').trim();
+    let raw = (rawText || '').trim();
     if (!raw) return;
 
-    // Debounce rapid double trigger (within 700ms)
+    // 1. Loại bỏ các tiền tố ký hiệu chuẩn của máy quét 1D/2D (AIM symbology prefix: ]C1, ]e0, v.v.)
+    raw = raw.replace(/^\][A-Za-z0-9]{2}/, '');
+
+    // 2. Tự động bóc tách mã vận đơn nếu quét trúng mã QR link Shopee / SPX
+    if (raw.includes('spx.vn') || raw.includes('shopee.') || raw.includes('http')) {
+      try {
+        const url = new URL(raw.startsWith('http') ? raw : `https://${raw}`);
+        const trackingParam =
+          url.searchParams.get('tracking_number') ||
+          url.searchParams.get('tracking') ||
+          url.searchParams.get('order_id') ||
+          url.searchParams.get('order_sn') ||
+          url.searchParams.get('c');
+        if (trackingParam) {
+          raw = trackingParam;
+        } else {
+          const segments = url.pathname.split('/').filter(Boolean);
+          if (segments.length > 0 && segments[segments.length - 1].length >= 8) {
+            raw = segments[segments.length - 1];
+          }
+        }
+      } catch {
+        // Continue with raw
+      }
+    }
+
+    raw = raw.replace(/[\r\n\t]/g, '').trim();
+    if (!raw) return;
+
+    // Debounce rapid double trigger (within 600ms)
     const now = Date.now();
-    if (now - lastScanTimeRef.current < 700) {
+    if (now - lastScanTimeRef.current < 600) {
       return;
     }
     lastScanTimeRef.current = now;
@@ -1016,9 +1085,9 @@ export const ScanOrdersPage: React.FC = () => {
             <div className="relative w-full h-[260px] sm:h-[300px] lg:h-[320px] bg-black overflow-hidden flex items-center justify-center">
               <div id="barcode-camera-reader" className="w-full h-full" />
 
-              {/* Center Target Box */}
+              {/* Center Target Box (Wider horizontal frame optimized for SPX/Shopee 1D Barcodes) */}
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
-                <div className="relative w-[82%] max-w-[320px] h-[130px] sm:h-[150px]">
+                <div className="relative w-[90%] max-w-[400px] h-[135px] sm:h-[155px]">
                   {/* Laser beam */}
                   {!isCameraPaused && (
                     <div className="laser-sweep-beam-active absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-[#3b82f6] to-transparent shadow-[0_0_12px_#3b82f6]" />
@@ -1033,7 +1102,7 @@ export const ScanOrdersPage: React.FC = () => {
                   {/* Centered Instruction Pill */}
                   <div className="absolute -bottom-7 inset-x-0 flex justify-center">
                     <span className="px-3 py-1 rounded-full bg-black/80 backdrop-blur-md text-[11px] font-medium text-white shadow-md border border-white/10">
-                      {isCameraPaused ? 'Quét đang tạm dừng' : 'Đưa mã vận đơn vào khung'}
+                      {isCameraPaused ? 'Quét đang tạm dừng' : 'Đưa mã vận đơn / mã SPX vào khung'}
                     </span>
                   </div>
                 </div>

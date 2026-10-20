@@ -30,7 +30,36 @@ export class FulfillmentService {
 
   normalizeCode(code: string): string {
     if (!code) return '';
-    return code.trim().replace(/[\r\n\t]/g, '').trim();
+    let raw = code.trim().replace(/[\r\n\t]/g, '').trim();
+    if (!raw) return '';
+
+    // Strip AIM symbology prefix (e.g. ]C1 for Code 128, ]e0, etc.)
+    raw = raw.replace(/^\][A-Za-z0-9]{2}/, '');
+
+    // Extract tracking / order number if URL
+    if (raw.includes('spx.vn') || raw.includes('shopee.') || raw.includes('http')) {
+      try {
+        const url = new URL(raw.startsWith('http') ? raw : `https://${raw}`);
+        const trackingParam =
+          url.searchParams.get('tracking_number') ||
+          url.searchParams.get('tracking') ||
+          url.searchParams.get('order_id') ||
+          url.searchParams.get('order_sn') ||
+          url.searchParams.get('c');
+        if (trackingParam) {
+          raw = trackingParam;
+        } else {
+          const segments = url.pathname.split('/').filter(Boolean);
+          if (segments.length > 0 && segments[segments.length - 1].length >= 8) {
+            raw = segments[segments.length - 1];
+          }
+        }
+      } catch {
+        // continue with raw
+      }
+    }
+
+    return raw.trim();
   }
 
   async verifyDispatch(
