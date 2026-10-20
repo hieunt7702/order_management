@@ -112,6 +112,34 @@ class SoundEffects {
       console.warn('Audio play error:', e);
     }
   }
+  // Tiếng báo động đơn hủy khẩn cấp (Urgent 3-tone repeating alarm)
+  playCancelledAlarm(): void {
+    if (this.isMuted) return;
+    try {
+      const ctx = this.getAudioContext();
+      if (!ctx) return;
+
+      const now = ctx.currentTime;
+      // 3 short sharp warning bursts: 440Hz -> 330Hz -> 220Hz
+      const freqs = [440, 330, 220];
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const startTime = now + idx * 0.12;
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0.45, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.1);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + 0.1);
+      });
+    } catch (e) {
+      console.warn('Audio play error:', e);
+    }
+  }
 }
 
 export const soundManager = new SoundEffects();
@@ -119,4 +147,6 @@ export const soundManager = new SoundEffects();
 export const playSuccessSound = (): void => soundManager.playSuccessBeep();
 export const playErrorSound = (): void => soundManager.playErrorBeep();
 export const playWarningSound = (): void => soundManager.playDuplicateBeep();
+export const playCancelledAlarm = (): void => soundManager.playCancelledAlarm();
+
 

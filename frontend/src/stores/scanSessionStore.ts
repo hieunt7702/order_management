@@ -16,6 +16,7 @@ export interface SessionItem {
   message?: string;
   isVirtual?: boolean;
   isRealGoods?: boolean;
+  isCancelled?: boolean;
 }
 
 export interface ScanSession {
@@ -33,6 +34,7 @@ export interface ScanSession {
     verified: number;
     alreadyVerified: number;
     notFound: number;
+    cancelled: number;
     failed: number;
   };
 }
@@ -47,6 +49,7 @@ interface ScanSessionState {
   createNewSession: (name?: string, warehouseId?: string) => ScanSession;
   setActiveSession: (sessionId: string) => void;
   addBarcodeToActiveSession: (code: string) => { isDuplicate: boolean; item?: SessionItem; session: ScanSession };
+  verifySingleBarcodeInActiveSession: (code: string, warehouseId?: string) => Promise<{ isDuplicate: boolean; item: SessionItem; result: any }>;
   removeItemFromActiveSession: (itemId: string) => void;
   clearActiveSessionItems: () => void;
   deleteSession: (sessionId: string) => void;
@@ -64,7 +67,8 @@ const calculateStats = (items: SessionItem[]) => {
     verified: items.filter((i) => i.status === 'VERIFIED').length,
     alreadyVerified: items.filter((i) => i.status === 'ALREADY_VERIFIED').length,
     notFound: items.filter((i) => i.status === 'NOT_FOUND').length,
-    failed: items.filter((i) => i.status === 'ERROR').length,
+    cancelled: items.filter((i) => i.isCancelled).length,
+    failed: items.filter((i) => i.status === 'ERROR' && !i.isCancelled).length,
   };
 };
 
@@ -100,6 +104,7 @@ const createDefaultSession = (index = 1, warehouseId?: string): ScanSession => {
       verified: 0,
       alreadyVerified: 0,
       notFound: 0,
+      cancelled: 0,
       failed: 0,
     },
   };
@@ -254,7 +259,7 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
       status: 'DRAFT',
       items: [],
       updatedAt: new Date().toISOString(),
-      stats: { total: 0, verified: 0, alreadyVerified: 0, notFound: 0, failed: 0 },
+      stats: { total: 0, verified: 0, alreadyVerified: 0, notFound: 0, cancelled: 0, failed: 0 },
     };
 
     const updatedSessions = sessions.map((s) => (s.id === updatedActive.id ? updatedActive : s));
@@ -329,6 +334,11 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           return item;
         }
 
+        const isCancelled =
+          !!backendResult.isCancelled ||
+          backendResult.result === 'INVALID_ORDER_STATUS' ||
+          backendResult.message?.toLowerCase().includes('hủy');
+
         let status: SessionItem['status'] = 'PENDING';
         if (backendResult.result === 'VERIFIED') status = 'VERIFIED';
         else if (backendResult.result === 'ALREADY_VERIFIED') status = 'ALREADY_VERIFIED';
@@ -338,13 +348,18 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
         return {
           ...item,
           status,
+          isCancelled,
           orderId: backendResult.orderId,
           internalOrderCode: backendResult.internalOrderCode,
           carrierName: backendResult.carrierName,
           shopName: backendResult.shopName,
           packageCode: backendResult.packageCode,
           packageId: backendResult.packageId,
-          message: backendResult.message,
+          message: isCancelled
+            ? (backendResult.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho')
+            : backendResult.result === 'NOT_FOUND'
+            ? 'Không có thông tin mã vận đơn trong hệ thống'
+            : backendResult.message,
           isVirtual: backendResult.isVirtual,
           isRealGoods: backendResult.isRealGoods,
         };
@@ -371,12 +386,163 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           verified: res?.verifiedCount || updatedSession.stats.verified,
           alreadyVerified: res?.alreadyVerifiedCount || updatedSession.stats.alreadyVerified,
           notFound: res?.notFoundCount || updatedSession.stats.notFound,
+          cancelled: res?.cancelledCount || updatedSession.stats.cancelled,
           failed: res?.failedCount || updatedSession.stats.failed,
         },
       };
     } catch (err) {
       console.error('Batch verify error:', err);
       set({ isVerifyingBatch: false });
+      throw err;
+    }
+  },
+
+  verifySingleBarcodeInActiveSession: async (code: string, warehouseId?: string) => {
+    const { sessions, activeSessionId } = get();
+    const cleanCode = (code || '').trim().toUpperCase();
+    if (!cleanCode) {
+      throw new Error('Mã quét không hợp lệ');
+    }
+
+    let active = sessions.find((s) => s.id === activeSessionId);
+    let updatedSessions = [...sessions];
+
+    if (!active) {
+      active = createDefaultSession(sessions.length + 1, warehouseId);
+      updatedSessions = [active, ...sessions];
+    }
+
+    // Check if item already exists in this session
+    const existingIndex = active.items.findIndex((it) => it.code.toUpperCase() === cleanCode);
+    let targetItem: SessionItem;
+    const now = new Date();
+    const timeFormatted = now.toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    if (existingIndex >= 0) {
+      targetItem = {
+        ...active.items[existingIndex],
+        scannedAt: timeFormatted,
+        rawDate: now.toISOString(),
+        message: 'Đang đối soát trực tiếp...',
+      };
+    } else {
+      targetItem = {
+        id: `item_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        code: cleanCode,
+        scannedAt: timeFormatted,
+        rawDate: now.toISOString(),
+        status: 'PENDING',
+        message: 'Đang đối soát trực tiếp...',
+      };
+    }
+
+    const newItems =
+      existingIndex >= 0
+        ? active.items.map((it, idx) => (idx === existingIndex ? targetItem : it))
+        : [targetItem, ...active.items];
+
+    active = {
+      ...active,
+      items: newItems,
+      updatedAt: now.toISOString(),
+      stats: calculateStats(newItems),
+    };
+    updatedSessions = updatedSessions.map((s) => (s.id === active!.id ? active! : s));
+    set({ sessions: updatedSessions, activeSessionId: active.id });
+    saveToLocalStorage(updatedSessions, active.id);
+
+    try {
+      const whId = warehouseId || active.warehouseId;
+      const res: any = await fulfillmentApi.batchVerify([cleanCode], whId, 'WEB_LIVE_SCAN', active.name);
+
+      const backendItem = res?.items?.[0] || null;
+      let finalStatus: SessionItem['status'] = 'ERROR';
+      let finalMessage = 'Lỗi đối soát';
+      let isCancelled = false;
+
+      if (backendItem) {
+        isCancelled =
+          !!backendItem.isCancelled ||
+          backendItem.result === 'INVALID_ORDER_STATUS' ||
+          backendItem.message?.toLowerCase().includes('hủy');
+
+        if (backendItem.result === 'VERIFIED') {
+          finalStatus = 'VERIFIED';
+          finalMessage = backendItem.message || 'Xác nhận xuất kho thành công';
+        } else if (backendItem.result === 'ALREADY_VERIFIED') {
+          finalStatus = 'ALREADY_VERIFIED';
+          finalMessage = backendItem.message || 'Kiện hàng đã xuất kho trước đó';
+        } else if (backendItem.result === 'NOT_FOUND') {
+          finalStatus = 'NOT_FOUND';
+          finalMessage = 'Không có thông tin mã vận đơn trong hệ thống';
+        } else if (isCancelled) {
+          finalStatus = 'ERROR';
+          finalMessage = backendItem.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho';
+        } else {
+          finalStatus = 'ERROR';
+          finalMessage = backendItem.message || 'Lỗi đối soát đơn hàng';
+        }
+
+        targetItem = {
+          ...targetItem,
+          status: finalStatus,
+          message: finalMessage,
+          isCancelled,
+          orderId: backendItem.orderId,
+          internalOrderCode: backendItem.internalOrderCode,
+          carrierName: backendItem.carrierName,
+          shopName: backendItem.shopName,
+          packageCode: backendItem.packageCode,
+          packageId: backendItem.packageId,
+          isVirtual: backendItem.isVirtual,
+          isRealGoods: backendItem.isRealGoods,
+        };
+      } else {
+        targetItem = {
+          ...targetItem,
+          status: 'ERROR',
+          message: 'Không nhận được phản hồi từ hệ thống',
+        };
+      }
+
+      // Update in active session
+      const currentActive = get().getActiveSession();
+      if (currentActive) {
+        const finalItems = currentActive.items.map((it) => (it.id === targetItem.id ? targetItem : it));
+        const finalActive: ScanSession = {
+          ...currentActive,
+          items: finalItems,
+          updatedAt: new Date().toISOString(),
+          stats: calculateStats(finalItems),
+        };
+        const finalSessionsList = get().sessions.map((s) => (s.id === finalActive.id ? finalActive : s));
+        set({ sessions: finalSessionsList });
+        saveToLocalStorage(finalSessionsList, finalActive.id);
+      }
+
+      return { isDuplicate: false, item: targetItem, result: backendItem };
+    } catch (err: any) {
+      targetItem = {
+        ...targetItem,
+        status: 'ERROR',
+        message: err.message || 'Lỗi kết nối khi đối soát',
+      };
+      const currentActive = get().getActiveSession();
+      if (currentActive) {
+        const finalItems = currentActive.items.map((it) => (it.id === targetItem.id ? targetItem : it));
+        const finalActive: ScanSession = {
+          ...currentActive,
+          items: finalItems,
+          stats: calculateStats(finalItems),
+        };
+        const finalSessionsList = get().sessions.map((s) => (s.id === finalActive.id ? finalActive : s));
+        set({ sessions: finalSessionsList });
+        saveToLocalStorage(finalSessionsList, finalActive.id);
+      }
       throw err;
     }
   },

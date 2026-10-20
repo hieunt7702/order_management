@@ -27,11 +27,13 @@ import {
   Warehouse,
   Copy,
   ExternalLink,
+  SearchCheck,
+  AlertCircle,
 } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useScanSessionStore, SessionItem } from '../../stores/scanSessionStore';
-import { playSuccessSound, playErrorSound, playWarningSound } from '../../utils/sound';
+import { playSuccessSound, playErrorSound, playWarningSound, playCancelledAlarm } from '../../utils/sound';
 import { SessionsHistoryModal } from './SessionsHistoryModal';
 import { OrderDetailDrawer } from '../Orders/OrderDetailDrawer';
 import { ordersApi } from '../../services/ordersApi';
@@ -52,6 +54,7 @@ export const ScanOrdersPage: React.FC = () => {
     getActiveSession,
     setActiveSession,
     addBarcodeToActiveSession,
+    verifySingleBarcodeInActiveSession,
     removeItemFromActiveSession,
     submitSession,
     isVerifyingBatch,
@@ -74,6 +77,23 @@ export const ScanOrdersPage: React.FC = () => {
   // Focus mode / Fullscreen
   const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+
+  // TOGGLE ĐỐI SOÁT TRỰC TIẾP: Mặc định là TẮT (FALSE) theo yêu cầu
+  const [isLiveVerify, setIsLiveVerify] = useState<boolean>(() => {
+    return localStorage.getItem('shopee_scan_live_verify') === 'true';
+  });
+
+  const handleToggleLiveVerify = (enabled: boolean) => {
+    setIsLiveVerify(enabled);
+    localStorage.setItem('shopee_scan_live_verify', enabled ? 'true' : 'false');
+    if (enabled) {
+      toast.success(
+        'Đã BẬT đối soát trực tiếp: Hệ thống sẽ kiểm tra ngay đơn hủy & mã vận đơn không tồn tại sau mỗi lần quét.',
+      );
+    } else {
+      toast.info('Đã TẮT đối soát trực tiếp: Chế độ gom mã vào phiên, đối soát sau khi bấm gửi.');
+    }
+  };
 
   // Camera state & Zoom (DEFAULT 2X)
   const [, setIsCameraActive] = useState<boolean>(false);
@@ -101,14 +121,28 @@ export const ScanOrdersPage: React.FC = () => {
     code: string;
     isDuplicate: boolean;
     timestamp: string;
+    status?: 'PENDING' | 'VERIFIED' | 'ALREADY_VERIFIED' | 'NOT_FOUND' | 'CANCELLED' | 'ERROR';
+    message?: string;
+    shopName?: string;
+    carrierName?: string;
   } | null>(null);
 
   // Refs
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isCameraRunningRef = useRef<boolean>(false);
   const isPausedRef = useRef<boolean>(false);
+  const isLiveVerifyRef = useRef<boolean>(isLiveVerify);
+  const selectedWarehouseIdRef = useRef<string>(selectedWarehouseId);
   const lastScanTimeRef = useRef<number>(0);
   const lastDuplicateScanRef = useRef<{ code: string; time: number }>({ code: '', time: 0 });
+
+  useEffect(() => {
+    isLiveVerifyRef.current = isLiveVerify;
+  }, [isLiveVerify]);
+
+  useEffect(() => {
+    selectedWarehouseIdRef.current = selectedWarehouseId;
+  }, [selectedWarehouseId]);
 
   // List cameras
   useEffect(() => {
@@ -299,8 +333,8 @@ export const ScanOrdersPage: React.FC = () => {
     setSelectedCameraId('');
   };
 
-  // CORE BATCH SCANNING HANDLER: Captures code into active session
-  const handleIncomingBarcode = (rawText: string) => {
+  // CORE SCANNING HANDLER: Supports both Offline Batch Scanning and Live Verification
+  const handleIncomingBarcode = async (rawText: string) => {
     if (isPausedRef.current) {
       return;
     }
@@ -314,37 +348,188 @@ export const ScanOrdersPage: React.FC = () => {
     }
     lastScanTimeRef.current = now;
 
-    const res = addBarcodeToActiveSession(raw);
+    const cleanCode = raw.toUpperCase();
     const timestamp = new Date().toLocaleTimeString('vi-VN');
 
-    if (res.isDuplicate) {
-      // Prevent repeated duplicate alerts for the same barcode within 3 seconds
+    // 1. CHẾ ĐỘ MẶC ĐỊNH (TẮT ĐỐI SOÁT TRỰC TIẾP): Gom mã vào phiên
+    if (!isLiveVerifyRef.current) {
+      const res = addBarcodeToActiveSession(cleanCode);
+
+      if (res.isDuplicate) {
+        // Prevent repeated duplicate alerts for the same barcode within 3 seconds
+        const isSameDuplicateRecent =
+          lastDuplicateScanRef.current.code === cleanCode &&
+          now - lastDuplicateScanRef.current.time < 3000;
+
+        if (!isSameDuplicateRecent) {
+          lastDuplicateScanRef.current = { code: cleanCode, time: now };
+          if (soundEnabled) playWarningSound();
+          setScanFlash('warning');
+          setTimeout(() => setScanFlash(null), 700);
+        }
+
+        setLastScannedFeedback({
+          code: cleanCode,
+          isDuplicate: true,
+          timestamp,
+          status: 'PENDING',
+        });
+      } else {
+        lastDuplicateScanRef.current = { code: '', time: 0 };
+        if (soundEnabled) playSuccessSound();
+        setScanFlash('success');
+        setTimeout(() => setScanFlash(null), 700);
+        setLastScannedFeedback({
+          code: cleanCode,
+          isDuplicate: false,
+          timestamp,
+          status: 'PENDING',
+        });
+      }
+      return;
+    }
+
+    // 2. CHẾ ĐỘ ĐỐI SOÁT TRỰC TIẾP: Kiểm tra ngay đơn hủy & mã vận đơn không tồn tại
+    const currentSession = getActiveSession();
+    const existing = currentSession?.items.find((i) => i.code === cleanCode);
+    if (existing && existing.status !== 'PENDING') {
       const isSameDuplicateRecent =
-        lastDuplicateScanRef.current.code === raw.toUpperCase() &&
+        lastDuplicateScanRef.current.code === cleanCode &&
         now - lastDuplicateScanRef.current.time < 3000;
 
       if (!isSameDuplicateRecent) {
-        lastDuplicateScanRef.current = { code: raw.toUpperCase(), time: now };
+        lastDuplicateScanRef.current = { code: cleanCode, time: now };
         if (soundEnabled) playWarningSound();
         setScanFlash('warning');
         setTimeout(() => setScanFlash(null), 700);
       }
 
       setLastScannedFeedback({
-        code: raw.toUpperCase(),
+        code: cleanCode,
         isDuplicate: true,
         timestamp,
+        status: existing.isCancelled ? 'CANCELLED' : existing.status,
+        message: existing.message,
+        shopName: existing.shopName,
+        carrierName: existing.carrierName,
       });
-    } else {
-      lastDuplicateScanRef.current = { code: '', time: 0 };
-      if (soundEnabled) playSuccessSound();
-      setScanFlash('success');
-      setTimeout(() => setScanFlash(null), 700);
+      return;
+    }
+
+    // Tiến hành đối soát trực tiếp với backend
+    setLastScannedFeedback({
+      code: cleanCode,
+      isDuplicate: false,
+      timestamp,
+      status: 'PENDING',
+      message: 'Đang đối soát trực tiếp...',
+    });
+
+    try {
+      const whId = selectedWarehouseIdRef.current || warehouses[0]?.id;
+      const res = await verifySingleBarcodeInActiveSession(cleanCode, whId);
+      const item = res.item;
+
+      if (item.isCancelled) {
+        // CẢNH BÁO ĐẶC BIỆT: ĐƠN HÀNG ĐÃ BỊ HỦY
+        if (soundEnabled) playCancelledAlarm();
+        setScanFlash('error');
+        setTimeout(() => setScanFlash(null), 1200);
+
+        setLastScannedFeedback({
+          code: cleanCode,
+          isDuplicate: false,
+          timestamp,
+          status: 'CANCELLED',
+          message: item.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho!',
+          shopName: item.shopName,
+          carrierName: item.carrierName,
+        });
+
+        toast.error(`🚨 CẢNH BÁO: Đơn hàng [${cleanCode}] ĐÃ BỊ HỦY! Tuyệt đối không xuất hàng!`, {
+          duration: 6000,
+        });
+      } else if (item.status === 'NOT_FOUND') {
+        // CẢNH BÁO: KHÔNG CÓ THÔNG TIN MÃ VẬN ĐƠN
+        if (soundEnabled) playErrorSound();
+        setScanFlash('error');
+        setTimeout(() => setScanFlash(null), 1000);
+
+        setLastScannedFeedback({
+          code: cleanCode,
+          isDuplicate: false,
+          timestamp,
+          status: 'NOT_FOUND',
+          message: 'Không tìm thấy thông tin mã vận đơn trong hệ thống!',
+        });
+
+        toast.warning(`⚠️ KHÔNG CÓ THÔNG TIN mã vận đơn [${cleanCode}] trong hệ thống!`, {
+          duration: 5000,
+        });
+      } else if (item.status === 'ALREADY_VERIFIED') {
+        // ĐƠN ĐÃ XUẤT TRƯỚC
+        if (soundEnabled) playWarningSound();
+        setScanFlash('warning');
+        setTimeout(() => setScanFlash(null), 800);
+
+        setLastScannedFeedback({
+          code: cleanCode,
+          isDuplicate: true,
+          timestamp,
+          status: 'ALREADY_VERIFIED',
+          message: item.message || 'Kiện hàng này đã được xác nhận xuất kho trước đó',
+          shopName: item.shopName,
+          carrierName: item.carrierName,
+        });
+
+        toast.warning(`Mã [${cleanCode}] đã được xác nhận xuất kho trước đó`);
+      } else if (item.status === 'VERIFIED') {
+        // ĐƠN HỢP LỆ VÀ XUẤT KHO THÀNH CÔNG
+        if (soundEnabled) playSuccessSound();
+        setScanFlash('success');
+        setTimeout(() => setScanFlash(null), 800);
+
+        setLastScannedFeedback({
+          code: cleanCode,
+          isDuplicate: false,
+          timestamp,
+          status: 'VERIFIED',
+          message: item.message || 'Xác nhận xuất kho thành công',
+          shopName: item.shopName,
+          carrierName: item.carrierName,
+        });
+
+        toast.success(`✅ Đã xuất kho đơn hàng [${cleanCode}] thành công!`);
+      } else {
+        // LỖI KHÁC
+        if (soundEnabled) playErrorSound();
+        setScanFlash('error');
+        setTimeout(() => setScanFlash(null), 900);
+
+        setLastScannedFeedback({
+          code: cleanCode,
+          isDuplicate: false,
+          timestamp,
+          status: 'ERROR',
+          message: item.message || 'Lỗi đối soát đơn hàng',
+        });
+
+        toast.error(`Lỗi đối soát mã [${cleanCode}]: ${item.message || 'Lỗi xử lý'}`);
+      }
+    } catch (err: any) {
+      if (soundEnabled) playErrorSound();
+      setScanFlash('error');
+      setTimeout(() => setScanFlash(null), 900);
+
       setLastScannedFeedback({
-        code: raw.toUpperCase(),
+        code: cleanCode,
         isDuplicate: false,
         timestamp,
+        status: 'ERROR',
+        message: err.message || 'Lỗi kết nối khi đối soát',
       });
+
+      toast.error(`Không thể đối soát mã [${cleanCode}]`, err.message || 'Lỗi kết nối');
     }
   };
 
@@ -526,6 +711,8 @@ export const ScanOrdersPage: React.FC = () => {
 
   const pendingItemsCount = (activeSession?.items || []).filter((i) => i.status === 'PENDING').length;
   const verifiedItemsCount = (activeSession?.items || []).filter((i) => i.status === 'VERIFIED').length;
+  const cancelledItemsCount = (activeSession?.items || []).filter((i) => i.isCancelled).length;
+  const notFoundItemsCount = (activeSession?.items || []).filter((i) => i.status === 'NOT_FOUND').length;
   const displayedItems = activeSession?.items || [];
 
   // Clean session title: "Phiên quét #1 (01:41 17-10)" -> "Phiên Quét 1"
@@ -740,6 +927,76 @@ export const ScanOrdersPage: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* Cảnh báo đơn bị hủy trong phiên */}
+            {cancelledItemsCount > 0 && (
+              <div className="p-2 sm:p-2.5 rounded bg-rose-50 dark:bg-rose-950/40 border border-rose-500/40 flex items-center justify-between gap-2 text-rose-700 dark:text-rose-300">
+                <div className="flex items-center gap-2 min-w-0">
+                  <AlertTriangle size={16} className="text-rose-500 shrink-0 animate-bounce" />
+                  <span className="text-xs font-bold truncate">
+                    Cảnh báo: Có {cancelledItemsCount} đơn bị hủy trong phiên quét này!
+                  </span>
+                </div>
+                <span className="px-1.5 py-0.5 rounded bg-rose-500 text-white text-[10px] font-bold shrink-0">
+                  GIỮ LẠI ĐƠN
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* 3.5 TOGGLE ĐỐI SOÁT TRỰC TIẾP: KIỂM TRA ĐƠN HỦY & MÃ VẬN ĐƠN NGAY KHI QUÉT */}
+          <div className="p-3 rounded bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs flex items-center justify-between gap-3 transition-colors">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div
+                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                  isLiveVerify
+                    ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 shadow-xs shadow-indigo-500/10'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200/60 dark:border-gray-700/60'
+                }`}
+              >
+                <SearchCheck size={18} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white leading-tight">
+                    Đối soát trực tiếp khi quét
+                  </span>
+                  {isLiveVerify ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                      ĐANG BẬT
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                      Mặc định: TẮT
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight truncate">
+                  {isLiveVerify
+                    ? 'Kiểm tra ngay đơn hủy & mã vận đơn không tồn tại sau mỗi lần quét'
+                    : 'Chỉ gom mã vào phiên, chưa đối soát ngay (bấm [Gửi đối soát] để kiểm tra hàng loạt)'}
+                </p>
+              </div>
+            </div>
+
+            {/* Switch Toggle */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isLiveVerify}
+              onClick={() => handleToggleLiveVerify(!isLiveVerify)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-[#161a23] ${
+                isLiveVerify ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-700'
+              }`}
+              title={isLiveVerify ? 'Bấm để tắt đối soát trực tiếp' : 'Bấm để bật đối soát trực tiếp'}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                  isLiveVerify ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
           </div>
 
           {/* 4. CAMERA VIEWFINDER & LIVE SCANNER */}
@@ -832,10 +1089,19 @@ export const ScanOrdersPage: React.FC = () => {
 
               {/* Top Floating Controls */}
               <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between z-20 pointer-events-auto">
-                {/* Camera Mode Badge */}
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-white text-[11px] font-medium shadow-xs">
-                  <span className={`w-1.5 h-1.5 rounded-full ${isCameraPaused ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
-                  <span>{isCameraPaused ? 'Đang tạm dừng' : (facingMode === 'environment' ? 'Camera sau' : 'Camera trước')}</span>
+                {/* Camera Mode & Live Verify Badges */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 text-white text-[11px] font-medium shadow-xs">
+                    <span className={`w-1.5 h-1.5 rounded-full ${isCameraPaused ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
+                    <span>{isCameraPaused ? 'Đang tạm dừng' : (facingMode === 'environment' ? 'Camera sau' : 'Camera trước')}</span>
+                  </div>
+
+                  {isLiveVerify && (
+                    <div className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-950/80 backdrop-blur-md border border-indigo-500/50 text-indigo-300 text-[10px] font-bold shadow-xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                      <span>Đối soát trực tiếp</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Zoom & Torch Buttons */}
@@ -920,15 +1186,25 @@ export const ScanOrdersPage: React.FC = () => {
           </div>
 
           {/* 5. LIVE STATUS BANNER */}
-          <div className="p-2.5 rounded bg-white dark:bg-[#161a23] border border-gray-200 dark:border-gray-800 shadow-xs flex items-center gap-2.5">
+          <div className={`p-2.5 rounded border shadow-xs flex items-center gap-2.5 transition-colors ${
+            lastScannedFeedback?.status === 'CANCELLED'
+              ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-200'
+              : lastScannedFeedback?.status === 'NOT_FOUND'
+              ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-500/50 text-amber-800 dark:text-amber-200'
+              : 'bg-white dark:bg-[#161a23] border-gray-200 dark:border-gray-800'
+          }`}>
             <div
-              className={`w-2 h-2 rounded-full shrink-0 ${
+              className={`w-2.5 h-2.5 rounded-full shrink-0 ${
                 isCameraPaused
                   ? 'bg-amber-400'
-                  : lastScannedFeedback
-                  ? lastScannedFeedback.isDuplicate
-                    ? 'bg-amber-400'
-                    : 'bg-emerald-400 animate-ping'
+                  : lastScannedFeedback?.status === 'CANCELLED'
+                  ? 'bg-rose-500 animate-ping'
+                  : lastScannedFeedback?.status === 'NOT_FOUND'
+                  ? 'bg-amber-500'
+                  : lastScannedFeedback?.status === 'VERIFIED'
+                  ? 'bg-emerald-500 animate-pulse'
+                  : lastScannedFeedback?.isDuplicate
+                  ? 'bg-amber-400'
                   : 'bg-emerald-400 animate-pulse'
               }`}
             />
@@ -938,6 +1214,25 @@ export const ScanOrdersPage: React.FC = () => {
                   <span className="text-amber-500 dark:text-amber-400">
                     Đang tạm dừng quét barcode (Bấm &apos;Tiếp tục&apos; để nhận mã)
                   </span>
+                ) : lastScannedFeedback?.status === 'CANCELLED' ? (
+                  <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1.5">
+                    <AlertTriangle size={14} className="shrink-0" />
+                    <span>🚨 CẢNH BÁO ĐƠN HỦY: Mã {lastScannedFeedback.code}</span>
+                  </span>
+                ) : lastScannedFeedback?.status === 'NOT_FOUND' ? (
+                  <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1.5">
+                    <AlertTriangle size={14} className="shrink-0" />
+                    <span>⚠️ KHÔNG CÓ TT MÃ VẬN ĐƠN: Mã {lastScannedFeedback.code}</span>
+                  </span>
+                ) : lastScannedFeedback?.status === 'VERIFIED' ? (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+                    <CheckCircle2 size={14} className="shrink-0" />
+                    <span>✅ ĐỐI SOÁT THÀNH CÔNG (ĐÃ XUẤT KHO) • {lastScannedFeedback.code}</span>
+                  </span>
+                ) : lastScannedFeedback?.status === 'ALREADY_VERIFIED' ? (
+                  <span className="text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1.5">
+                    <span>ĐÃ XUẤT KHO TRƯỚC ĐÓ • {lastScannedFeedback.code}</span>
+                  </span>
                 ) : lastScannedFeedback ? (
                   lastScannedFeedback.isDuplicate ? (
                     <span className="text-amber-500 dark:text-amber-400">
@@ -945,7 +1240,7 @@ export const ScanOrdersPage: React.FC = () => {
                     </span>
                   ) : (
                     <span className="text-emerald-600 dark:text-emerald-400">
-                      Đã thêm mã vào phiên • {lastScannedFeedback.code}
+                      Đã thêm mã vào phiên (Chờ đối soát) • {lastScannedFeedback.code}
                     </span>
                   )
                 ) : (
@@ -955,9 +1250,17 @@ export const ScanOrdersPage: React.FC = () => {
               <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">
                 {isCameraPaused
                   ? 'Máy quét phần cứng và camera đang tạm khóa. Không có mã nào được thêm vào phiên.'
+                  : lastScannedFeedback?.status === 'CANCELLED'
+                  ? (lastScannedFeedback.message || 'Đơn hàng đã bị hủy trên sàn Shopee! Không xuất hàng cho shipper!')
+                  : lastScannedFeedback?.status === 'NOT_FOUND'
+                  ? 'Mã vận đơn này chưa có trong hệ thống hoặc chưa được đồng bộ từ sàn.'
+                  : lastScannedFeedback?.status === 'VERIFIED'
+                  ? `Đã cập nhật xuất kho thành công${lastScannedFeedback.shopName ? ` • Shop: ${lastScannedFeedback.shopName}` : ''}${lastScannedFeedback.carrierName ? ` • ĐVVC: ${lastScannedFeedback.carrierName}` : ''}`
                   : lastScannedFeedback
                   ? `Quét lúc ${lastScannedFeedback.timestamp} • Sẵn sàng quét mã tiếp theo.`
-                  : 'Hỗ trợ máy quét mã vạch USB/2D & Camera. Kết quả hiển thị tức thì.'}
+                  : isLiveVerify
+                  ? 'Đang bật đối soát trực tiếp. Mỗi mã quét sẽ được kiểm tra và xuất kho ngay lập tức.'
+                  : 'Chế độ gom mã (Mặc định). Bấm [Gửi đối soát] sau khi hoàn thành phiên quét.'}
               </div>
             </div>
           </div>
@@ -1077,27 +1380,36 @@ export const ScanOrdersPage: React.FC = () => {
                                   Đơn ảo {!item.isRealGoods ? '(K.trừ kho)' : '(Hàng thật)'}
                                 </span>
                               )}
-                              <span
-                                className={`px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap border shrink-0 ${
-                                  isVerified
-                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                              {item.isCancelled ? (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap border shrink-0 bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 flex items-center gap-1 animate-pulse">
+                                  <AlertTriangle size={11} className="shrink-0" />
+                                  <span>ĐƠN ĐÃ HỦY</span>
+                                </span>
+                              ) : (
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap border shrink-0 ${
+                                    isVerified
+                                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                      : isAlreadyVerified
+                                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                      : isNotFound
+                                      ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                                      : item.status === 'ERROR'
+                                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                                      : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                                  }`}
+                                >
+                                  {isVerified
+                                    ? 'Thành công'
                                     : isAlreadyVerified
-                                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                                    : isNotFound || item.status === 'ERROR'
-                                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                                    : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                                }`}
-                              >
-                                {isVerified
-                                  ? 'Thành công'
-                                  : isAlreadyVerified
-                                  ? 'Đã xuất trước'
-                                  : isNotFound
-                                  ? 'Không tìm thấy'
-                                  : item.status === 'ERROR'
-                                  ? 'Lỗi đối soát'
-                                  : 'Chờ đối soát'}
-                              </span>
+                                    ? 'Đã xuất trước'
+                                    : isNotFound
+                                    ? 'Không có TT vận đơn'
+                                    : item.status === 'ERROR'
+                                    ? 'Lỗi đối soát'
+                                    : 'Chờ đối soát'}
+                                </span>
+                              )}
 
                               {(isVerified || isAlreadyVerified) && item.packageId && (
                                 <button
@@ -1277,31 +1589,50 @@ export const ScanOrdersPage: React.FC = () => {
                               {item.scannedAt}
                             </td>
                             <td className="py-2.5 px-3 whitespace-nowrap">
-                              <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${
-                                  isVerified
-                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                              {item.isCancelled ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 animate-pulse">
+                                  <AlertTriangle size={11} className="shrink-0" />
+                                  <span>ĐƠN ĐÃ HỦY</span>
+                                </span>
+                              ) : (
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${
+                                    isVerified
+                                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                      : isAlreadyVerified
+                                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                      : isNotFound
+                                      ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                                      : item.status === 'ERROR'
+                                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                                      : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                                  }`}
+                                >
+                                  {isVerified
+                                    ? 'Thành công'
                                     : isAlreadyVerified
-                                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                                    : isNotFound || item.status === 'ERROR'
-                                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                                    : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                                }`}
-                              >
-                                {isVerified
-                                  ? 'Thành công'
-                                  : isAlreadyVerified
-                                  ? 'Đã xuất trước'
-                                  : isNotFound
-                                  ? 'Không tìm thấy'
-                                  : item.status === 'ERROR'
-                                  ? 'Lỗi đối soát'
-                                  : 'Chờ đối soát'}
-                              </span>
+                                    ? 'Đã xuất trước'
+                                    : isNotFound
+                                    ? 'Không có TT vận đơn'
+                                    : item.status === 'ERROR'
+                                    ? 'Lỗi đối soát'
+                                    : 'Chờ đối soát'}
+                                </span>
+                              )}
                             </td>
                             <td className="py-2.5 px-3 text-gray-600 dark:text-gray-300">
                               <div className="truncate max-w-md">
-                                {item.message || (item.status === 'PENDING' ? 'Chờ gửi đối soát hệ thống' : 'Đã xử lý')}
+                                {item.isCancelled ? (
+                                  <span className="text-rose-600 dark:text-rose-400 font-semibold">
+                                    {item.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho!'}
+                                  </span>
+                                ) : item.status === 'NOT_FOUND' ? (
+                                  <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                    Không tìm thấy thông tin mã vận đơn trong hệ thống
+                                  </span>
+                                ) : (
+                                  item.message || (item.status === 'PENDING' ? 'Chờ gửi đối soát hệ thống' : 'Đã xử lý')
+                                )}
                               </div>
                             </td>
                             <td className="py-2.5 px-3 text-right whitespace-nowrap">

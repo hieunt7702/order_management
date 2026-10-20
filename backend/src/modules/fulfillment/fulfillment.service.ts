@@ -390,6 +390,7 @@ export class FulfillmentService {
     // Check order conditions
     if (
       order.platformStatus === PlatformOrderStatus.CANCELLED ||
+      order.platformStatus === PlatformOrderStatus.IN_CANCEL ||
       order.fulfillmentStatus === FulfillmentStatus.CANCELLED_RESTOCKED
     ) {
       await this.prisma.scanEvent.create({
@@ -412,6 +413,31 @@ export class FulfillmentService {
       return {
         result: ScanResult.INVALID_ORDER_STATUS,
         message: 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho',
+        isCancelled: true,
+        orderId: order.externalOrderId || order.id,
+        internalOrderCode: order.internalOrderCode,
+        shopName: order.shop?.name,
+        carrierName: targetPackage.carrierName || order.shippingCarrier,
+        packageCode: targetPackage.packageCode,
+        packageId: targetPackage.id,
+        order: {
+          id: order.id,
+          externalOrderId: order.externalOrderId,
+          internalOrderCode: order.internalOrderCode,
+          trackingCode: order.trackingCode || targetPackage.trackingCode,
+          platformStatus: order.platformStatus,
+          fulfillmentStatus: order.fulfillmentStatus,
+          shop: order.shop,
+          isVirtual: order.isVirtual,
+          isRealGoods: order.isRealGoods,
+        },
+        package: {
+          id: targetPackage.id,
+          packageCode: targetPackage.packageCode,
+          trackingCode: targetPackage.trackingCode || order.trackingCode,
+          carrierName: targetPackage.carrierName || order.shippingCarrier,
+          status: targetPackage.status,
+        },
       };
     }
 
@@ -869,6 +895,7 @@ export class FulfillmentService {
     let verifiedCount = 0;
     let alreadyVerifiedCount = 0;
     let notFoundCount = 0;
+    let cancelledCount = 0;
     let failedCount = 0;
 
     for (const code of rawCodes) {
@@ -882,12 +909,20 @@ export class FulfillmentService {
           deviceId: dto.deviceId || 'BATCH_SESSION',
         });
 
+        const isCancelled =
+          !!res.isCancelled ||
+          res.order?.platformStatus === PlatformOrderStatus.CANCELLED ||
+          res.order?.platformStatus === PlatformOrderStatus.IN_CANCEL ||
+          res.order?.fulfillmentStatus === FulfillmentStatus.CANCELLED_RESTOCKED;
+
         if (res.result === ScanResult.VERIFIED) {
           verifiedCount++;
         } else if (res.result === ScanResult.ALREADY_VERIFIED) {
           alreadyVerifiedCount++;
         } else if (res.result === ScanResult.NOT_FOUND) {
           notFoundCount++;
+        } else if (isCancelled) {
+          cancelledCount++;
         } else {
           failedCount++;
         }
@@ -896,10 +931,11 @@ export class FulfillmentService {
           code: cleanCode,
           result: res.result,
           message: res.message,
-          orderId: res.order?.externalOrderId || res.externalOrderId,
-          internalOrderCode: res.order?.internalOrderCode,
-          carrierName: res.package?.carrierName,
-          shopName: res.package?.order?.shop?.name || res.order?.shop?.name,
+          isCancelled,
+          orderId: res.order?.externalOrderId || res.orderId || res.externalOrderId,
+          internalOrderCode: res.order?.internalOrderCode || res.internalOrderCode,
+          carrierName: res.package?.carrierName || res.carrierName,
+          shopName: res.package?.order?.shop?.name || res.order?.shop?.name || res.shopName,
           packageCode: res.package?.packageCode || res.packageCode,
           packageId: res.package?.id || res.packageId,
           isVirtual: res.order?.isVirtual,
@@ -920,6 +956,7 @@ export class FulfillmentService {
       verifiedCount,
       alreadyVerifiedCount,
       notFoundCount,
+      cancelledCount,
       failedCount,
       items: results,
     };
