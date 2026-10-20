@@ -43,12 +43,30 @@ class ToastManager {
 
   show(options: ToastOptions): string {
     const id = options.id || Math.random().toString(36).substring(2, 9);
+
+    let descStr: string | undefined = undefined;
+    let finalDuration = options.duration !== undefined ? options.duration : 4000;
+
+    if (typeof options.description === 'string') {
+      descStr = options.description;
+    } else if (typeof options.description === 'object' && options.description !== null) {
+      const anyDesc: any = options.description;
+      if (typeof anyDesc.duration === 'number') {
+        finalDuration = anyDesc.duration;
+      }
+      if (typeof anyDesc.description === 'string') {
+        descStr = anyDesc.description;
+      } else if (typeof anyDesc.message === 'string') {
+        descStr = anyDesc.message;
+      }
+    }
+
     const newToast: ToastItem = {
       id,
       type: options.type || 'info',
-      title: options.title,
-      description: options.description,
-      duration: options.duration !== undefined ? options.duration : 4000,
+      title: typeof options.title === 'string' ? options.title : String(options.title ?? ''),
+      description: descStr,
+      duration: finalDuration,
       createdAt: Date.now(),
     };
 
@@ -68,20 +86,49 @@ class ToastManager {
     this.notify();
   }
 
-  success(title: string, description?: string, duration?: number) {
-    return this.show({ type: 'success', title, description, duration });
+  private parseArgs(
+    type: ToastType,
+    title: string,
+    descriptionOrOptions?: string | { description?: string; duration?: number } | any,
+    duration?: number,
+  ): ToastOptions {
+    if (typeof descriptionOrOptions === 'object' && descriptionOrOptions !== null) {
+      const anyObj: any = descriptionOrOptions;
+      return {
+        type,
+        title,
+        description: typeof anyObj.description === 'string'
+          ? anyObj.description
+          : typeof anyObj.message === 'string'
+          ? anyObj.message
+          : undefined,
+        duration: typeof anyObj.duration === 'number'
+          ? anyObj.duration
+          : duration,
+      };
+    }
+    return {
+      type,
+      title,
+      description: typeof descriptionOrOptions === 'string' ? descriptionOrOptions : undefined,
+      duration,
+    };
   }
 
-  error(title: string, description?: string, duration?: number) {
-    return this.show({ type: 'error', title, description, duration });
+  success(title: string, descriptionOrOptions?: string | { description?: string; duration?: number } | any, duration?: number) {
+    return this.show(this.parseArgs('success', title, descriptionOrOptions, duration));
   }
 
-  warning(title: string, description?: string, duration?: number) {
-    return this.show({ type: 'warning', title, description, duration });
+  error(title: string, descriptionOrOptions?: string | { description?: string; duration?: number } | any, duration?: number) {
+    return this.show(this.parseArgs('error', title, descriptionOrOptions, duration));
   }
 
-  info(title: string, description?: string, duration?: number) {
-    return this.show({ type: 'info', title, description, duration });
+  warning(title: string, descriptionOrOptions?: string | { description?: string; duration?: number } | any, duration?: number) {
+    return this.show(this.parseArgs('warning', title, descriptionOrOptions, duration));
+  }
+
+  info(title: string, descriptionOrOptions?: string | { description?: string; duration?: number } | any, duration?: number) {
+    return this.show(this.parseArgs('info', title, descriptionOrOptions, duration));
   }
 }
 
@@ -157,7 +204,7 @@ const ToastCard: React.FC<ToastCardProps> = ({ toast: item, onDismiss }) => {
         <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white leading-tight">
           {item.title}
         </p>
-        {item.description && (
+        {typeof item.description === 'string' && item.description.trim() !== '' && (
           <p className="mt-1 text-[11px] sm:text-xs text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap break-words">
             {item.description}
           </p>

@@ -446,9 +446,11 @@ export const ScanOrdersPage: React.FC = () => {
           carrierName: item.carrierName,
         });
 
-        toast.error(`🚨 CẢNH BÁO: Đơn hàng [${cleanCode}] ĐÃ BỊ HỦY! Tuyệt đối không xuất hàng!`, {
-          duration: 6000,
-        });
+        toast.error(
+          `🚨 CẢNH BÁO: Đơn hàng [${cleanCode}] ĐÃ BỊ HỦY! Tuyệt đối không xuất hàng!`,
+          item.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho!',
+          6000,
+        );
       } else if (item.status === 'NOT_FOUND') {
         // CẢNH BÁO: KHÔNG CÓ THÔNG TIN MÃ VẬN ĐƠN
         if (soundEnabled) playErrorSound();
@@ -463,9 +465,11 @@ export const ScanOrdersPage: React.FC = () => {
           message: 'Không tìm thấy thông tin mã vận đơn trong hệ thống!',
         });
 
-        toast.warning(`⚠️ KHÔNG CÓ THÔNG TIN mã vận đơn [${cleanCode}] trong hệ thống!`, {
-          duration: 5000,
-        });
+        toast.warning(
+          `⚠️ KHÔNG CÓ THÔNG TIN mã vận đơn [${cleanCode}] trong hệ thống!`,
+          'Vui lòng kiểm tra lại mã hoặc đồng bộ đơn mới nhất từ Shopee.',
+          5000,
+        );
       } else if (item.status === 'ALREADY_VERIFIED') {
         // ĐƠN ĐÃ XUẤT TRƯỚC
         if (soundEnabled) playWarningSound();
