@@ -3281,15 +3281,16 @@ export const OrdersPage: React.FC = () => {
       )}
 
       {/* Procurement Demand Modal (Dự toán hàng cần nhập cho đơn READY_TO_SHIP) */}
+      {/* Procurement Demand Modal (Dự toán hàng cần nhập cho đơn READY_TO_SHIP) */}
       {isDemandModalOpen && (
         <Modal
           isOpen={isDemandModalOpen}
           onClose={() => setIsDemandModalOpen(false)}
           title="Dự toán nhu cầu nhập hàng (Đơn Chờ giao hàng - READY_TO_SHIP)"
-          size="xl"
+          size="3xl"
         >
           <div className="flex flex-col flex-1 min-h-0 space-y-4">
-            <ModalBody className="space-y-4 p-4 sm:p-5 max-h-[75vh] overflow-y-auto custom-scrollbar">
+            <ModalBody className="space-y-4 p-4 sm:p-5 max-h-[78vh] overflow-y-auto custom-scrollbar">
               {/* Header Description & Controls */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-200/70 dark:border-indigo-900/40 rounded">
                 <div className="flex items-start gap-2.5">
@@ -3377,9 +3378,9 @@ export const OrdersPage: React.FC = () => {
               )}
 
               {/* Filter Controls Bar */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
+              <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 pt-1">
                 {/* Tabs */}
-                <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5">
+                <div className="flex items-center gap-1.5 flex-wrap shrink-0">
                   {[
                     { id: 'ALL', label: `Tất cả (${demandData?.summary?.totalItems || 0})` },
                     { id: 'SHORTAGE', label: `Cần nhập (${demandData?.summary?.shortageItemsCount || 0})` },
@@ -3390,9 +3391,9 @@ export const OrdersPage: React.FC = () => {
                       key={tab.id}
                       type="button"
                       onClick={() => setDemandFilterTab(tab.id as any)}
-                      className={`px-2.5 py-1 rounded text-xs whitespace-nowrap transition-colors cursor-pointer border-0 shrink-0 ${
+                      className={`px-3 py-1.5 rounded text-xs whitespace-nowrap transition-colors cursor-pointer border-0 shrink-0 font-medium ${
                         demandFilterTab === tab.id
-                          ? 'bg-[#5865f2] text-white font-medium shadow-xs'
+                          ? 'bg-[#5865f2] text-white shadow-xs'
                           : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1a1b23]'
                       }`}
                     >
@@ -3402,7 +3403,7 @@ export const OrdersPage: React.FC = () => {
                 </div>
 
                 {/* Warehouse, Shop and Search Selectors */}
-                <div className="flex flex-col sm:flex-row items-center gap-2">
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
                   <div className="w-full sm:w-44 shrink-0">
                     <Select
                       value={demandWarehouseId}
@@ -3443,7 +3444,7 @@ export const OrdersPage: React.FC = () => {
                     />
                   </div>
 
-                  <div className="w-full sm:w-52 relative">
+                  <div className="w-full sm:w-56 relative">
                     <Search size={13} className="absolute left-2.5 top-2.5 text-gray-400" />
                     <input
                       type="text"
