@@ -361,3 +361,21 @@ export class ReverseDispatchedDto {
   reason?: string;
 }
 
+export class ProcurementDemandQueryDto {
+  @ApiPropertyOptional({ description: 'Lọc theo shopId' })
+  @IsOptional()
+  @IsString()
+  shopId?: string;
+
+  @ApiPropertyOptional({ description: 'Lọc theo kho hàng cụ thể' })
+  @IsOptional()
+  @IsString()
+  warehouseId?: string;
+
+  @ApiPropertyOptional({ description: 'Chỉ lấy danh sách mặt hàng bị thiếu (cần nhập thêm)' })
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  onlyShortage?: boolean;
+}
+

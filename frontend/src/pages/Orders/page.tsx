@@ -22,6 +22,9 @@ import {
   ShieldCheck,
   Building2,
   Sparkles,
+  Calculator,
+  Copy,
+  Search,
 } from 'lucide-react';
 import { ordersApi } from '../../services/ordersApi';
 import { productsApi } from '../../services/productsApi';
@@ -142,6 +145,15 @@ export const OrdersPage: React.FC = () => {
   const [isBulkDispatchModalOpen, setIsBulkDispatchModalOpen] = useState<boolean>(false);
   const [isDispatching, setIsDispatching] = useState<boolean>(false);
   const [selectedWarehouseForDispatch, setSelectedWarehouseForDispatch] = useState<string>('');
+
+  // Procurement Demand State (Hàng cần nhập cho đơn READY_TO_SHIP)
+  const [isDemandModalOpen, setIsDemandModalOpen] = useState<boolean>(false);
+  const [demandData, setDemandData] = useState<{ summary: any; items: any[] } | null>(null);
+  const [isLoadingDemand, setIsLoadingDemand] = useState<boolean>(false);
+  const [demandFilterTab, setDemandFilterTab] = useState<'ALL' | 'SHORTAGE' | 'SUFFICIENT' | 'UNMAPPED'>('ALL');
+  const [demandSearchQuery, setDemandSearchQuery] = useState<string>('');
+  const [demandWarehouseId, setDemandWarehouseId] = useState<string>('');
+  const [demandShopId, setDemandShopId] = useState<string>('');
 
   // Global Order Summary Metrics for KPI cards
   const [orderSummary, setOrderSummary] = useState({
@@ -634,6 +646,57 @@ export const OrdersPage: React.FC = () => {
     }
   };
 
+  const handleOpenProcurementDemand = async (overrideParams?: { shopId?: string; warehouseId?: string }) => {
+    setIsDemandModalOpen(true);
+    setIsLoadingDemand(true);
+    const shopId = overrideParams?.shopId !== undefined
+      ? overrideParams.shopId
+      : (selectedShopId && selectedShopId !== 'ALL' ? selectedShopId : undefined);
+    const warehouseId = overrideParams?.warehouseId !== undefined
+      ? overrideParams.warehouseId
+      : (selectedWarehouseId && selectedWarehouseId !== 'ALL' ? selectedWarehouseId : undefined);
+
+    setDemandShopId(shopId || '');
+    setDemandWarehouseId(warehouseId || '');
+
+    try {
+      const data = await ordersApi.getProcurementDemand({
+        shopId: shopId || undefined,
+        warehouseId: warehouseId || undefined,
+      });
+      setDemandData(data);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err.message || 'Lỗi tính toán nhu cầu nhập hàng');
+    } finally {
+      setIsLoadingDemand(false);
+    }
+  };
+
+  const handleRefreshDemand = () => {
+    handleOpenProcurementDemand({
+      shopId: demandShopId || undefined,
+      warehouseId: demandWarehouseId || undefined,
+    });
+  };
+
+  const handleCopyShortageList = () => {
+    if (!demandData || !demandData.items) return;
+    const shortageItems = demandData.items.filter((it: any) => it.status === 'SHORTAGE');
+    if (shortageItems.length === 0) {
+      toast.info('Hiện tại không có mặt hàng nào bị thiếu!');
+      return;
+    }
+    const lines = [
+      `DANH SÁCH MẶT HÀNG CẦN NHẬP (ĐƠN CHỜ GIAO - ${new Date().toLocaleDateString('vi-VN')}):`,
+      ...shortageItems.map((it: any, idx: number) => 
+        `${idx + 1}. [${it.sku}] ${it.productName}${it.variationName ? ` - ${it.variationName}` : ''} | Cần giao: ${it.requiredQuantity} | Tồn kho: ${it.onHand} | THIẾU CẦN NHẬP: ${it.shortageQuantity} ${it.unit}`
+      ),
+      `Tổng số mặt hàng thiếu: ${shortageItems.length} | Tổng số lượng cần nhập thêm: ${shortageItems.reduce((acc: number, it: any) => acc + it.shortageQuantity, 0)} sản phẩm`
+    ];
+    navigator.clipboard.writeText(lines.join('\n'));
+    toast.success(`Đã sao chép danh sách ${shortageItems.length} mặt hàng cần nhập vào clipboard!`);
+  };
+
   const handleOpenDeleteOrder = (order: any) => {
     setSelectedOrderForDelete(order);
     setIsDeleteOrderModalOpen(true);
@@ -994,6 +1057,23 @@ export const OrdersPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => handleOpenProcurementDemand()}
+            className="gap-1.5 px-2.5 sm:px-3 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
+            title="Tính toán số lượng từng mặt hàng cần nhập thêm hoặc thừa cho các đơn Chờ giao hàng (READY_TO_SHIP)"
+          >
+            <Calculator size={14} className="text-indigo-600 dark:text-indigo-400" />
+            <span className="hidden sm:inline">Dự toán nhập hàng</span>
+            <span className="sm:hidden">Cần nhập</span>
+            {orderSummary.readyToShip > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-200 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200 font-bold">
+                {orderSummary.readyToShip}
+              </span>
+            )}
+          </Button>
+
           <Button
             size="sm"
             onClick={handleOpenCreateOrder}
@@ -3197,6 +3277,362 @@ export const OrdersPage: React.FC = () => {
               </ModalButton>
             </ModalFooter>
           </form>
+        </Modal>
+      )}
+
+      {/* Procurement Demand Modal (Dự toán hàng cần nhập cho đơn READY_TO_SHIP) */}
+      {isDemandModalOpen && (
+        <Modal
+          isOpen={isDemandModalOpen}
+          onClose={() => setIsDemandModalOpen(false)}
+          title="Dự toán nhu cầu nhập hàng (Đơn Chờ giao hàng - READY_TO_SHIP)"
+          size="xl"
+        >
+          <div className="flex flex-col flex-1 min-h-0 space-y-4">
+            <ModalBody className="space-y-4 p-4 sm:p-5 max-h-[75vh] overflow-y-auto custom-scrollbar">
+              {/* Header Description & Controls */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-200/70 dark:border-indigo-900/40 rounded">
+                <div className="flex items-start gap-2.5">
+                  <Calculator size={18} className="text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold text-xs text-indigo-950 dark:text-indigo-200 block">
+                      Tự động tính toán mặt hàng cần nhập hoặc thừa/dư tồn kho
+                    </span>
+                    <span className="text-[11px] text-indigo-700 dark:text-indigo-300">
+                      Chỉ xét các đơn hàng Shopee ở trạng thái <strong>Chờ giao hàng (READY_TO_SHIP)</strong> chưa xuất kho (bỏ qua đơn ảo không đi hàng thật).
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleRefreshDemand}
+                    disabled={isLoadingDemand}
+                    className="h-8 px-2.5 rounded border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-[#181b22] text-xs text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    title="Tính toán lại dữ liệu mới nhất"
+                  >
+                    <RefreshCw size={13} className={isLoadingDemand ? 'animate-spin' : ''} />
+                    <span>Làm mới</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyShortageList}
+                    disabled={isLoadingDemand || !demandData || demandData.summary?.shortageItemsCount === 0}
+                    className="h-8 px-2.5 rounded border border-rose-200 dark:border-rose-800 bg-rose-50/70 dark:bg-rose-950/30 text-xs text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    title="Sao chép danh sách các mặt hàng thiếu vào clipboard"
+                  >
+                    <Copy size={13} />
+                    <span>Copy DS Thiếu</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* KPI Summary Cards */}
+              {demandData?.summary && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800">
+                    <span className="text-[11px] font-medium text-gray-500 block">Đơn chờ giao (READY_TO_SHIP)</span>
+                    <span className="text-lg font-bold text-gray-900 dark:text-white mt-0.5 block">
+                      {demandData.summary.totalOrders} <span className="text-xs font-normal text-gray-500">đơn</span>
+                    </span>
+                    <span className="text-[10px] text-gray-400 mt-0.5 block">
+                      Tổng cần giao: {demandData.summary.totalRequiredQuantity} sp
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800">
+                    <span className="text-[11px] font-medium text-gray-500 block">Mặt hàng cần giao</span>
+                    <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400 mt-0.5 block">
+                      {demandData.summary.totalItems} <span className="text-xs font-normal text-gray-500">loại SKU</span>
+                    </span>
+                    <span className="text-[10px] text-gray-400 mt-0.5 block">
+                      Tồn hiện có: {demandData.summary.totalOnHand} sp
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded bg-rose-50/40 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/50">
+                    <span className="text-[11px] font-semibold text-rose-700 dark:text-rose-300 block">
+                      THIẾU HÀNG (Cần nhập)
+                    </span>
+                    <span className="text-lg font-bold text-rose-600 dark:text-rose-400 mt-0.5 block">
+                      {demandData.summary.shortageItemsCount} <span className="text-xs font-normal text-rose-500">loại</span>
+                    </span>
+                    <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 mt-0.5 block">
+                      Thiếu: {demandData.summary.totalShortageQuantity} sản phẩm
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/50">
+                    <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 block">
+                      ĐỦ HÀNG (Thừa/Dư tồn)
+                    </span>
+                    <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+                      {demandData.summary.sufficientItemsCount} <span className="text-xs font-normal text-emerald-500">loại</span>
+                    </span>
+                    <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 mt-0.5 block">
+                      Chi phí thiếu: {formatCurrency(demandData.summary.totalEstimatedCost)} đ
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Filter Controls Bar */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-1">
+                {/* Tabs */}
+                <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5">
+                  {[
+                    { id: 'ALL', label: `Tất cả (${demandData?.summary?.totalItems || 0})` },
+                    { id: 'SHORTAGE', label: `Cần nhập (${demandData?.summary?.shortageItemsCount || 0})` },
+                    { id: 'SUFFICIENT', label: `Đủ hàng (${demandData?.summary?.sufficientItemsCount || 0})` },
+                    { id: 'UNMAPPED', label: `Chưa mapping (${demandData?.summary?.unmappedItemsCount || 0})` },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setDemandFilterTab(tab.id as any)}
+                      className={`px-2.5 py-1 rounded text-xs whitespace-nowrap transition-colors cursor-pointer border-0 shrink-0 ${
+                        demandFilterTab === tab.id
+                          ? 'bg-[#5865f2] text-white font-medium shadow-xs'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1a1b23]'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Warehouse, Shop and Search Selectors */}
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <div className="w-full sm:w-44 shrink-0">
+                    <Select
+                      value={demandWarehouseId}
+                      onChange={(val: any) => {
+                        setDemandWarehouseId(val);
+                        handleOpenProcurementDemand({ warehouseId: val, shopId: demandShopId });
+                      }}
+                      options={[
+                        { value: '', label: 'Tất cả kho hàng' },
+                        ...(warehouses || []).map((w: any) => ({
+                          value: w.id,
+                          label: `${w.name} (${w.code})`,
+                        })),
+                      ]}
+                      size="sm"
+                      className="w-full"
+                      menuWidth="w-full"
+                    />
+                  </div>
+
+                  <div className="w-full sm:w-44 shrink-0">
+                    <Select
+                      value={demandShopId}
+                      onChange={(val: any) => {
+                        setDemandShopId(val);
+                        handleOpenProcurementDemand({ shopId: val, warehouseId: demandWarehouseId });
+                      }}
+                      options={[
+                        { value: '', label: 'Tất cả Shop' },
+                        ...(shops || []).map((s: any) => ({
+                          value: s.id,
+                          label: s.name,
+                        })),
+                      ]}
+                      size="sm"
+                      className="w-full"
+                      menuWidth="w-full"
+                    />
+                  </div>
+
+                  <div className="w-full sm:w-52 relative">
+                    <Search size={13} className="absolute left-2.5 top-2.5 text-gray-400" />
+                    <input
+                      type="text"
+                      value={demandSearchQuery}
+                      onChange={(e) => setDemandSearchQuery(e.target.value)}
+                      placeholder="Tìm SKU, tên sản phẩm..."
+                      className="w-full pl-7 pr-3 py-1.5 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#14151a] text-gray-900 dark:text-white focus:outline-none focus:border-[#5865f2]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Data Table */}
+              <div className="border border-gray-200 dark:border-gray-800 rounded overflow-hidden">
+                <div className="overflow-x-auto max-h-[45vh] custom-scrollbar">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-gray-50 dark:bg-[#14151a] sticky top-0 z-10 text-gray-500 font-semibold border-b border-gray-200 dark:border-gray-800">
+                      <tr>
+                        <th className="py-2 px-3 w-10 text-center">#</th>
+                        <th className="py-2 px-3 min-w-[220px]">Sản phẩm / Biến thể</th>
+                        <th className="py-2 px-3 text-center min-w-[90px]">Nhu cầu giao</th>
+                        <th className="py-2 px-3 text-center min-w-[110px]">Tồn kho hiện có</th>
+                        <th className="py-2 px-3 text-center min-w-[160px]">Chênh lệch Thừa / Thiếu</th>
+                        <th className="py-2 px-3 text-right min-w-[110px]">Giá vốn dự tính</th>
+                        <th className="py-2 px-3 text-center min-w-[80px]">Số đơn</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60 bg-white dark:bg-[#181b22]">
+                      {isLoadingDemand ? (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-xs text-gray-400">
+                            Đang phân tích số lượng cần nhập từ các đơn Chờ giao hàng...
+                          </td>
+                        </tr>
+                      ) : !demandData || demandData.items.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-xs text-gray-400">
+                            Không có đơn hàng nào ở trạng thái Chờ giao hàng (READY_TO_SHIP) phù hợp.
+                          </td>
+                        </tr>
+                      ) : (
+                        (() => {
+                          const filtered = demandData.items.filter((it: any) => {
+                            if (demandFilterTab === 'SHORTAGE' && it.status !== 'SHORTAGE') return false;
+                            if (demandFilterTab === 'SUFFICIENT' && it.status !== 'SUFFICIENT') return false;
+                            if (demandFilterTab === 'UNMAPPED' && it.isMapped) return false;
+                            if (demandSearchQuery.trim()) {
+                              const q = demandSearchQuery.toLowerCase().trim();
+                              const matchSku = it.sku?.toLowerCase().includes(q);
+                              const matchProd = it.productName?.toLowerCase().includes(q);
+                              const matchVar = it.variationName?.toLowerCase().includes(q);
+                              if (!matchSku && !matchProd && !matchVar) return false;
+                            }
+                            return true;
+                          });
+
+                          if (filtered.length === 0) {
+                            return (
+                              <tr>
+                                <td colSpan={7} className="py-8 text-center text-xs text-gray-400">
+                                  Không tìm thấy mặt hàng nào phù hợp với bộ lọc hiện tại.
+                                </td>
+                              </tr>
+                            );
+                          }
+
+                          return filtered.map((it: any, idx: number) => {
+                            const isShort = it.status === 'SHORTAGE';
+                            return (
+                              <tr
+                                key={it.groupKey || idx}
+                                className={`hover:bg-gray-50/70 dark:hover:bg-gray-800/30 transition-colors ${
+                                  isShort ? 'bg-rose-50/20 dark:bg-rose-950/10' : ''
+                                }`}
+                              >
+                                <td className="py-2 px-3 text-center text-gray-400 text-xs">
+                                  {idx + 1}
+                                </td>
+                                <td className="py-2 px-3">
+                                  <div className="flex flex-col">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="font-mono font-bold text-xs text-gray-900 dark:text-white">
+                                        {it.sku}
+                                      </span>
+                                      {!it.isMapped && (
+                                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-medium">
+                                          Chưa mapping SKU
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-xs text-gray-700 dark:text-gray-300 font-medium line-clamp-1 mt-0.5">
+                                      {it.productName}
+                                    </span>
+                                    {it.variationName && (
+                                      <span className="text-[11px] text-gray-400 line-clamp-1">
+                                        Phân loại: {it.variationName}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-2 px-3 text-center">
+                                  <span className="font-bold text-xs text-indigo-600 dark:text-indigo-400">
+                                    {it.requiredQuantity} {it.unit}
+                                  </span>
+                                </td>
+                                <td className="py-2 px-3 text-center">
+                                  <div className="flex flex-col items-center">
+                                    <span className="font-semibold text-xs text-gray-800 dark:text-gray-200">
+                                      {it.onHand} {it.unit}
+                                    </span>
+                                    {it.reserved > 0 && (
+                                      <span className="text-[10px] text-gray-400">
+                                        (Đang giữ: {it.reserved})
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-2 px-3 text-center">
+                                  {isShort ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60">
+                                      <span>Thiếu -{it.shortageQuantity} {it.unit} (Cần nhập)</span>
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
+                                      <span>Đủ hàng (Dư +{it.surplusQuantity} {it.unit})</span>
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-2 px-3 text-right">
+                                  <div className="flex flex-col items-end">
+                                    {isShort && it.estimatedShortageCost > 0 ? (
+                                      <>
+                                        <span className="font-bold text-xs text-rose-600 dark:text-rose-400">
+                                          {formatCurrency(it.estimatedShortageCost)} đ
+                                        </span>
+                                        <span className="text-[10px] text-gray-400">
+                                          ({formatCurrency(it.costPrice)} đ/sp)
+                                        </span>
+                                      </>
+                                    ) : it.costPrice > 0 ? (
+                                      <span className="text-gray-500 text-xs">
+                                        {formatCurrency(it.costPrice)} đ
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400 text-xs">-</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-2 px-3 text-center">
+                                  <span
+                                    className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                                    title={`Nằm trong ${it.ordersCount} đơn hàng Chờ giao`}
+                                  >
+                                    {it.ordersCount} đơn
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          });
+                        })()
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </ModalBody>
+
+            <ModalFooter className="flex items-center justify-between gap-2.5 w-full">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopyShortageList}
+                  disabled={!demandData || demandData.summary?.shortageItemsCount === 0}
+                  className="px-3 py-1.5 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#181b22] hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <Copy size={13} />
+                  <span>Sao chép danh sách cần nhập</span>
+                </button>
+              </div>
+
+              <ModalButton
+                variant="secondary"
+                onClick={() => setIsDemandModalOpen(false)}
+                className="px-4"
+              >
+                Đóng
+              </ModalButton>
+            </ModalFooter>
+          </div>
         </Modal>
       )}
     </div>

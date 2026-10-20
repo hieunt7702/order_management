@@ -24,6 +24,7 @@ import {
   MarkDispatchedDto,
   BulkMarkDispatchedDto,
   ReverseDispatchedDto,
+  ProcurementDemandQueryDto,
 } from './dto/order.dto';
 
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -77,6 +78,24 @@ export class OrdersController {
   ) {
     const allowedShopIds = (req as any).allowedShopIds;
     return this.ordersService.getSummary(tenantId, allowedShopIds, { shopId, fromDate, toDate });
+  }
+
+  @Get('procurement-demand')
+  @Roles(
+    MembershipRole.OWNER,
+    MembershipRole.ADMIN,
+    MembershipRole.WAREHOUSE,
+    MembershipRole.ACCOUNTANT,
+    MembershipRole.VIEWER,
+  )
+  @ApiOperation({ summary: 'Dự toán nhu cầu nhập hàng / tính thừa thiếu tồn kho cho các đơn Chờ giao hàng (READY_TO_SHIP)' })
+  async getProcurementDemand(
+    @CurrentTenantId() tenantId: string,
+    @Req() req: Request,
+    @Query() query: ProcurementDemandQueryDto,
+  ) {
+    const allowedShopIds = (req as any).allowedShopIds;
+    return this.ordersService.getProcurementDemand(tenantId, allowedShopIds, query);
   }
 
   @Get(':id')

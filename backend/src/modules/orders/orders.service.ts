@@ -19,6 +19,7 @@ import {
   MarkDispatchedDto,
   BulkMarkDispatchedDto,
   ReverseDispatchedDto,
+  ProcurementDemandQueryDto,
 } from './dto/order.dto';
 import {
   PlatformOrderStatus,
@@ -1590,6 +1591,206 @@ export class OrdersService {
         order: updatedOrder,
       };
     });
+  }
+
+  async getProcurementDemand(
+    tenantId: string,
+    allowedShopIds: string[] | null,
+    query: ProcurementDemandQueryDto,
+  ) {
+    const orderWhere: Prisma.OrderWhereInput = {
+      tenantId,
+      platformStatus: PlatformOrderStatus.READY_TO_SHIP,
+      fulfillmentStatus: { not: FulfillmentStatus.DISPATCHED },
+      // Đơn ảo không đi hàng thật không cần nhập kho thật để xuất
+      NOT: {
+        AND: [{ isVirtual: true }, { isRealGoods: false }],
+      },
+    };
+
+    if (query.shopId && query.shopId !== 'ALL') {
+      orderWhere.shopId = query.shopId;
+    } else if (allowedShopIds && allowedShopIds.length > 0) {
+      orderWhere.shopId = { in: allowedShopIds };
+    }
+
+    const orders = await this.prisma.order.findMany({
+      where: orderWhere,
+      select: {
+        id: true,
+        externalOrderId: true,
+        internalOrderCode: true,
+        trackingCode: true,
+        orderDate: true,
+        recipientName: true,
+        shopId: true,
+        orderItems: {
+          select: {
+            id: true,
+            variantId: true,
+            productName: true,
+            variationName: true,
+            externalSku: true,
+            quantity: true,
+            variant: {
+              select: {
+                id: true,
+                sku: true,
+                barcode: true,
+                name: true,
+                unit: true,
+                costPrice: true,
+                sellingPrice: true,
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    code: true,
+                  },
+                },
+                inventoryBalances: {
+                  where: {
+                    tenantId,
+                    ...(query.warehouseId ? { warehouseId: query.warehouseId } : {}),
+                  },
+                  select: {
+                    warehouseId: true,
+                    onHand: true,
+                    reserved: true,
+                    warehouse: {
+                      select: {
+                        id: true,
+                        name: true,
+                        code: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const itemMap = new Map<string, any>();
+
+    for (const order of orders) {
+      for (const oi of order.orderItems) {
+        // Group key: variantId if mapped, or externalSku/productName if unmapped
+        const groupKey = oi.variantId
+          ? `variant-${oi.variantId}`
+          : `unmapped-${oi.externalSku || oi.productName}-${oi.variationName || ''}`;
+
+        if (!itemMap.has(groupKey)) {
+          const variant = oi.variant;
+          let onHand = 0;
+          let reserved = 0;
+          const warehouseBreakdown: any[] = [];
+
+          if (variant && variant.inventoryBalances) {
+            for (const bal of variant.inventoryBalances) {
+              onHand += bal.onHand;
+              reserved += bal.reserved;
+              warehouseBreakdown.push({
+                warehouseId: bal.warehouseId,
+                warehouseName: bal.warehouse?.name || '',
+                warehouseCode: bal.warehouse?.code || '',
+                onHand: bal.onHand,
+                reserved: bal.reserved,
+                available: Math.max(0, bal.onHand - bal.reserved),
+              });
+            }
+          }
+
+          itemMap.set(groupKey, {
+            groupKey,
+            variantId: oi.variantId || null,
+            isMapped: !!oi.variantId,
+            sku: variant?.sku || oi.externalSku || 'Chưa mapping SKU',
+            barcode: variant?.barcode || null,
+            productName: variant?.product?.name || oi.productName,
+            variationName: variant?.name || oi.variationName || '',
+            productCode: variant?.product?.code || null,
+            unit: variant?.unit || 'cái',
+            costPrice: parseFloat(String(variant?.costPrice || 0)),
+            sellingPrice: parseFloat(String(variant?.sellingPrice || 0)),
+            onHand,
+            reserved,
+            available: Math.max(0, onHand - reserved),
+            warehouseBreakdown,
+            requiredQuantity: 0,
+            ordersCount: 0,
+            relatedOrders: [],
+          });
+        }
+
+        const entry = itemMap.get(groupKey);
+        entry.requiredQuantity += oi.quantity;
+        entry.ordersCount += 1;
+        if (entry.relatedOrders.length < 20) {
+          entry.relatedOrders.push({
+            orderId: order.id,
+            externalOrderId: order.externalOrderId,
+            trackingCode: order.trackingCode,
+            quantity: oi.quantity,
+          });
+        }
+      }
+    }
+
+    const items = Array.from(itemMap.values()).map((item) => {
+      // difference = onHand - requiredQuantity
+      // If difference < 0 => thiếu hàng cần nhập thêm
+      // If difference >= 0 => đủ hàng, thừa/dư tồn
+      const difference = item.onHand - item.requiredQuantity;
+      const isShortage = difference < 0;
+      const shortageQuantity = isShortage ? Math.abs(difference) : 0;
+      const surplusQuantity = !isShortage ? difference : 0;
+      const estimatedShortageCost = shortageQuantity * item.costPrice;
+
+      return {
+        ...item,
+        difference,
+        status: isShortage ? 'SHORTAGE' : 'SUFFICIENT',
+        shortageQuantity,
+        surplusQuantity,
+        estimatedShortageCost,
+      };
+    });
+
+    // Sắp xếp: Thiếu hàng lên trước (độ thiếu giảm dần), sau đó đến chưa mapping, rồi đến đủ hàng
+    items.sort((a, b) => {
+      if (a.status === 'SHORTAGE' && b.status !== 'SHORTAGE') return -1;
+      if (a.status !== 'SHORTAGE' && b.status === 'SHORTAGE') return 1;
+      if (a.status === 'SHORTAGE' && b.status === 'SHORTAGE') {
+        return b.shortageQuantity - a.shortageQuantity;
+      }
+      if (!a.isMapped && b.isMapped) return -1;
+      if (a.isMapped && !b.isMapped) return 1;
+      return a.surplusQuantity - b.surplusQuantity;
+    });
+
+    const summary = {
+      totalOrders: orders.length,
+      totalItems: items.length,
+      shortageItemsCount: items.filter((it) => it.status === 'SHORTAGE').length,
+      sufficientItemsCount: items.filter((it) => it.status === 'SUFFICIENT').length,
+      unmappedItemsCount: items.filter((it) => !it.isMapped).length,
+      totalRequiredQuantity: items.reduce((sum, it) => sum + it.requiredQuantity, 0),
+      totalOnHand: items.reduce((sum, it) => sum + it.onHand, 0),
+      totalShortageQuantity: items.reduce((sum, it) => sum + it.shortageQuantity, 0),
+      totalEstimatedCost: items.reduce((sum, it) => sum + it.estimatedShortageCost, 0),
+    };
+
+    const filteredItems = query.onlyShortage
+      ? items.filter((it) => it.status === 'SHORTAGE')
+      : items;
+
+    return {
+      summary,
+      items: filteredItems,
+    };
   }
 }
 

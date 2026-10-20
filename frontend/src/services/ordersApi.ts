@@ -44,5 +44,7 @@ export const ordersApi = {
     api.post('/orders/bulk-dispatch', data),
   reverseDispatched: (id: string, data?: { reason?: string }) =>
     api.post(`/orders/${id}/reverse-dispatch`, data || {}),
+  getProcurementDemand: (params: { shopId?: string; warehouseId?: string; onlyShortage?: boolean } = {}) =>
+    api.get(`/orders/procurement-demand${buildQuery(params)}`).then((r) => r.data),
 };
 
