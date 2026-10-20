@@ -432,20 +432,6 @@ export const ScanOrdersPage: React.FC = () => {
           shopName: item.shopName,
           carrierName: item.carrierName,
         });
-
-        if (item.wasDispatched) {
-          toast.error(
-            `🚨 CẢNH BÁO: Đơn [${cleanCode}] ĐÃ XUẤT TRƯỚC NHƯNG ĐÃ BỊ HỦY!`,
-            item.message || 'Kiện hàng này đã xác nhận xuất kho trước đó nhưng đã bị hủy trên Shopee! Giữ lại ngay!',
-            7000,
-          );
-        } else {
-          toast.error(
-            `🚨 CẢNH BÁO: Đơn hàng [${cleanCode}] ĐÃ BỊ HỦY! Tuyệt đối không xuất hàng!`,
-            item.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho!',
-            6000,
-          );
-        }
       } else if (item.status === 'NOT_FOUND') {
         // CẢNH BÁO: KHÔNG CÓ THÔNG TIN MÃ VẬN ĐƠN
         if (soundEnabled) playErrorSound();
@@ -459,12 +445,6 @@ export const ScanOrdersPage: React.FC = () => {
           status: 'NOT_FOUND',
           message: 'Không tìm thấy thông tin mã vận đơn trong hệ thống!',
         });
-
-        toast.warning(
-          `⚠️ KHÔNG CÓ THÔNG TIN mã vận đơn [${cleanCode}] trong hệ thống!`,
-          'Vui lòng kiểm tra lại mã hoặc đồng bộ đơn mới nhất từ Shopee.',
-          5000,
-        );
       } else if (item.status === 'ALREADY_VERIFIED') {
         // ĐƠN ĐÃ XUẤT TRƯỚC
         if (soundEnabled) playWarningSound();
@@ -480,8 +460,6 @@ export const ScanOrdersPage: React.FC = () => {
           shopName: item.shopName,
           carrierName: item.carrierName,
         });
-
-        toast.warning(`Mã [${cleanCode}] đã được xác nhận xuất kho trước đó`);
       } else if (item.status === 'VERIFIED') {
         // ĐƠN HỢP LỆ VÀ XUẤT KHO THÀNH CÔNG
         if (soundEnabled) playSuccessSound();
@@ -497,8 +475,6 @@ export const ScanOrdersPage: React.FC = () => {
           shopName: item.shopName,
           carrierName: item.carrierName,
         });
-
-        toast.success(`✅ Đã xuất kho đơn hàng [${cleanCode}] thành công!`);
       } else {
         // LỖI KHÁC
         if (soundEnabled) playErrorSound();
@@ -512,8 +488,6 @@ export const ScanOrdersPage: React.FC = () => {
           status: 'ERROR',
           message: item.message || 'Lỗi đối soát đơn hàng',
         });
-
-        toast.error(`Lỗi đối soát mã [${cleanCode}]: ${item.message || 'Lỗi xử lý'}`);
       }
     } catch (err: any) {
       if (soundEnabled) playErrorSound();
@@ -527,8 +501,6 @@ export const ScanOrdersPage: React.FC = () => {
         status: 'ERROR',
         message: err.message || 'Lỗi kết nối khi đối soát',
       });
-
-      toast.error(`Không thể đối soát mã [${cleanCode}]`, err.message || 'Lỗi kết nối');
     }
   };
 
