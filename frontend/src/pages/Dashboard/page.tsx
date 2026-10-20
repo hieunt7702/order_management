@@ -30,6 +30,7 @@ import { formatCurrency } from '../../utils';
 import { Button } from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
 import { Select } from '../../components/ui/Select';
+import { SystemDatePicker } from '../../components/ui/SystemDatePicker';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import {
@@ -663,25 +664,18 @@ export const DashboardPage: React.FC = () => {
           {/* Row 2 on mobile: Date Range + Refresh Button inline */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {/* Date Range */}
-            <div className="flex-1 sm:flex-initial flex items-center justify-between sm:justify-start gap-1.5 bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 rounded px-2.5 h-8 text-xs min-w-0">
-              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                <Calendar size={13} className="text-gray-400 shrink-0" />
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none w-full min-w-0 font-sans"
-                />
-              </div>
-              <span className="text-gray-400 shrink-0 px-0.5">-</span>
-              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="bg-transparent text-gray-800 dark:text-gray-200 text-xs focus:outline-none w-full min-w-0 font-sans"
-                />
-              </div>
+            <div className="flex-1 sm:flex-initial w-full sm:w-[230px]">
+              <SystemDatePicker
+                startDate={fromDate}
+                endDate={toDate}
+                onChange={(start, end) => {
+                  setFromDate(start || '');
+                  setToDate(end || '');
+                }}
+                size="sm"
+                className="w-full"
+                placeholder="Chọn khoảng ngày..."
+              />
             </div>
 
             {/* Refresh Button */}

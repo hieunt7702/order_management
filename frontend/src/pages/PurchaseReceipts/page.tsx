@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   PackagePlus,
   Search,
@@ -32,6 +33,7 @@ import {
   X,
   SlidersHorizontal,
   QrCode,
+  TrendingUp,
 } from 'lucide-react';
 import { purchaseReceiptsApi, PurchaseReceiptModel, CreatePurchaseReceiptPayload, PurchaseReceiptsSummary } from '../../services/purchaseReceiptsApi';
 import { suppliersApi, SupplierItem } from '../../services/suppliersApi';
@@ -60,6 +62,7 @@ import {
 import { Button } from '../../components/ui/Button';
 import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import { Select } from '../../components/ui/Select';
+import { SystemDatePicker } from '../../components/ui/SystemDatePicker';
 import { Checkbox } from '../../components/ui/Checkbox';
 import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import { toast } from '../../components/ui/Toast';
@@ -519,6 +522,17 @@ export const PurchaseReceiptsPage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <Link to="/purchase-reports">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 px-2.5 sm:px-3 text-[#5865f2] border-[#5865f2]/30 hover:bg-[#5865f2]/10"
+              title="Báo cáo phân tích nhập hàng"
+            >
+              <TrendingUp size={14} />
+              <span className="hidden sm:inline">Báo cáo nhập hàng</span>
+            </Button>
+          </Link>
           <Button size="sm" onClick={handleOpenCreateModal} className="gap-1.5 px-2.5 sm:px-3">
             <Plus size={14} />
             <span className="hidden sm:inline">Tạo phiếu nhập mới</span>
@@ -618,68 +632,21 @@ export const PurchaseReceiptsPage: React.FC = () => {
 
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
           {/* Bộ lọc ngày / khoảng thời gian */}
-          <div className="w-full sm:w-48">
-            <Select
-              value={datePreset}
-              onChange={(val) => handleDatePresetChange(String(val))}
-              options={[
-                { value: 'ALL', label: 'Tất cả thời gian', icon: Calendar },
-                { value: 'TODAY', label: 'Hôm nay', icon: Calendar },
-                { value: 'YESTERDAY', label: 'Hôm qua', icon: Calendar },
-                { value: 'LAST_7_DAYS', label: '7 ngày qua', icon: Calendar },
-                { value: 'LAST_30_DAYS', label: '30 ngày qua', icon: Calendar },
-                { value: 'THIS_MONTH', label: 'Tháng này', icon: Calendar },
-                { value: 'LAST_MONTH', label: 'Tháng trước', icon: Calendar },
-                { value: 'CUSTOM', label: 'Tùy chọn ngày...', icon: Calendar },
-              ]}
-              icon={Calendar}
+          <div className="w-full sm:w-[240px]">
+            <SystemDatePicker
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(start, end) => {
+                setStartDate(start || '');
+                setEndDate(end || '');
+                setDatePreset(start || end ? 'CUSTOM' : 'ALL');
+                setPage(1);
+              }}
               size="sm"
+              className="w-full"
+              placeholder="Khoảng ngày nhập..."
             />
           </div>
-
-          {/* Ô chọn khoảng ngày tùy chỉnh nếu chọn Tùy chọn ngày hoặc đã có ngày */}
-          {(datePreset === 'CUSTOM' || startDate || endDate) && (
-            <div className="col-span-2 sm:col-span-1 flex items-center gap-1.5 bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/80 px-2 py-1 rounded text-xs">
-              <span className="text-gray-400 text-[11px] shrink-0">Từ:</span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  setDatePreset('CUSTOM');
-                  setPage(1);
-                }}
-                className="bg-transparent border-none text-xs text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
-              />
-              <span className="text-gray-400 text-[11px] shrink-0">-</span>
-              <span className="text-gray-400 text-[11px] shrink-0">Đến:</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  setDatePreset('CUSTOM');
-                  setPage(1);
-                }}
-                className="bg-transparent border-none text-xs text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
-              />
-              {(startDate || endDate) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStartDate('');
-                    setEndDate('');
-                    setDatePreset('ALL');
-                    setPage(1);
-                  }}
-                  className="text-gray-400 hover:text-red-500 cursor-pointer shrink-0 ml-1"
-                  title="Xóa lọc ngày"
-                >
-                  <X size={12} />
-                </button>
-              )}
-            </div>
-          )}
 
           <div className="w-full sm:w-52">
             <Select

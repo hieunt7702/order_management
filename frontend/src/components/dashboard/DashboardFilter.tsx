@@ -3,9 +3,7 @@ import { useAppStore } from '../../stores/appStore';
 import { getImportedFiles } from '../../utils/storage';
 import { RefreshCw } from 'lucide-react';
 import { Select } from '../ui/Select';
-import Datepicker from 'react-tailwindcss-datepicker';
-
-const DatepickerComponent = Datepicker as any;
+import { SystemDatePicker } from '../ui/SystemDatePicker';
 
 export const DashboardFilter: React.FC = () => {
   const {
@@ -62,28 +60,14 @@ export const DashboardFilter: React.FC = () => {
       </div>
 
       {/* Date Range Selector */}
-      <div className="w-[260px] relative z-[100] datepicker-theme">
-        <DatepickerComponent
-          value={dateRange}
-          onChange={(newValue: any) =>
-            setDateRange(newValue?.startDate || null, newValue?.endDate || null)
-          }
-          displayFormat="DD/MM/YYYY"
-          separator="-"
-          showShortcuts={true}
-          configs={{
-            shortcuts: {
-              today: 'Hôm nay',
-              yesterday: 'Hôm qua',
-              past: (period: any) => `${period} ngày trước`,
-              currentMonth: 'Tháng này',
-              pastMonth: 'Tháng trước',
-            },
-          }}
-          inputClassName="w-full bg-white dark:bg-[#1c212a] border-transparent rounded h-[36px] text-[12px] text-gray-700 dark:text-gray-300 font-medium px-3 pr-10 focus:ring-0 focus:border-transparent outline-none transition-all placeholder-gray-500"
-          toggleClassName="absolute right-0 h-full px-3 text-gray-500 focus:outline-none"
-        />
-      </div>
+      <SystemDatePicker
+        startDate={dateRange.startDate}
+        endDate={dateRange.endDate}
+        onChange={(start, end) => setDateRange(start, end)}
+        size="sm"
+        className="w-[240px]"
+        placeholder="Khoảng thời gian..."
+      />
 
       {/* Last Updated */}
       <div className="bg-white dark:bg-[#1c212a] border border-gray-200 dark:border-gray-800 rounded px-3 h-[36px] flex items-center gap-3 z-10">

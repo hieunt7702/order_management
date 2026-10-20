@@ -15,6 +15,7 @@ import {
   Store,
   Users,
   Settings,
+  TrendingUp,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -113,6 +114,17 @@ export const navigationGroups: NavGroup[] = [
         icon: PackagePlus,
         description: 'Khởi tạo phiếu nhập hàng từ NCC, theo dõi lô date và công nợ mua',
         colorScheme: 'cyan',
+      },
+      {
+        id: 'purchase-reports',
+        name: 'Báo cáo nhập hàng',
+        shortName: 'Báo cáo nhập',
+        href: '/purchase-reports',
+        icon: TrendingUp,
+        description: 'Báo cáo tổng hợp số liệu nhập hàng theo cửa hàng, thời gian và NCC',
+        badge: 'MỚI',
+        highlight: true,
+        colorScheme: 'indigo',
       },
       {
         id: 'suppliers',

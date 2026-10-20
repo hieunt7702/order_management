@@ -359,31 +359,50 @@ textarea:focus-visible {
 .badge-warning { background: #fef3c7; color: #92400e; }
 .badge-danger { background: #fee2e2; color: #991b1b; }
 
-/* Datepicker Dark Mode Overrides */
-.dark .datepicker-theme .bg-slate-800 {
-  background-color: #1c212a !important; /* Matches our header bg */
+/* Datepicker Global & Dark Mode Overrides */
+.datepicker-wrapper,
+.datepicker-theme {
+  position: relative;
 }
+.datepicker-wrapper [id^="headlessui-popover-panel"],
+.datepicker-theme [id^="headlessui-popover-panel"],
+div[id^="headlessui-popover-panel"] {
+  z-index: 9999 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.15) !important;
+}
+.dark .datepicker-wrapper .bg-slate-800,
+.dark .datepicker-theme .bg-slate-800 {
+  background-color: #181b22 !important; /* Matches our card bg */
+}
+.dark .datepicker-wrapper .border-slate-800,
+.dark .datepicker-wrapper .border-gray-700,
 .dark .datepicker-theme .border-slate-800,
 .dark .datepicker-theme .border-gray-700 {
-  border-color: rgba(255,255,255,0.05) !important;
+  border-color: rgba(255,255,255,0.08) !important;
 }
+.dark .datepicker-wrapper .bg-slate-700,
 .dark .datepicker-theme .bg-slate-700 {
-  background-color: #272f3d !important;
+  background-color: #262930 !important;
 }
+.dark .datepicker-wrapper .hover\:bg-slate-700:hover,
 .dark .datepicker-theme .hover\:bg-slate-700:hover {
-  background-color: #2a3142 !important;
+  background-color: #2f3440 !important;
 }
+.dark .datepicker-wrapper .text-slate-300,
 .dark .datepicker-theme .text-slate-300 {
-  color: #d1d5db !important; /* text-gray-300 */
+  color: #dcddde !important;
 }
+.dark .datepicker-wrapper .text-slate-400,
 .dark .datepicker-theme .text-slate-400 {
-  color: #9ca3af !important; /* text-gray-400 */
+  color: #8e9297 !important;
 }
 /* For the active selected date background */
+.dark .datepicker-wrapper .bg-blue-600,
 .dark .datepicker-theme .bg-blue-600 {
-  background-color: var(--primary-brand) !important;
+  background-color: #5865f2 !important;
 }
 /* Light Mode Tweaks to match our border radius / colors */
+.datepicker-wrapper .border-gray-200,
 .datepicker-theme .border-gray-200 {
   border-color: rgba(203, 213, 225, 0.6) !important;
 }

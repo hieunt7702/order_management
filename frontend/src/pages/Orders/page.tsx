@@ -64,6 +64,7 @@ import {
 import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
+import { SystemDatePicker } from '../../components/ui/SystemDatePicker';
 import { Checkbox } from '../../components/ui/Checkbox';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
 import { OrderDetailDrawer } from './OrderDetailDrawer';
@@ -1251,6 +1252,21 @@ export const OrdersPage: React.FC = () => {
         </SystemFilterItem>
 
         <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto sm:ml-auto">
+          <div className="w-full sm:w-[220px] shrink-0">
+            <SystemDatePicker
+              startDate={fromDate}
+              endDate={toDate}
+              onChange={(start, end) => {
+                setFromDate(start || '');
+                setToDate(end || '');
+                setPage(1);
+              }}
+              size="sm"
+              className="w-full"
+              placeholder="Khoảng ngày đặt..."
+            />
+          </div>
+
           <div className="w-full sm:w-44 shrink-0">
             <Select
               value={virtualFilter}

@@ -1,7 +1,7 @@
 import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
-import { DashboardFilterDto } from './dto/report.dto';
+import { DashboardFilterDto, PurchaseReportFilterDto } from './dto/report.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TenantGuard } from '../../common/guards/tenant.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -36,4 +36,25 @@ export class ReportsController {
     const allowedShopIds = (req as any).allowedShopIds;
     return this.reportsService.getDashboardSummary(tenantId, allowedShopIds, filter);
   }
+
+  @Get('purchases')
+  @Roles(
+    MembershipRole.OWNER,
+    MembershipRole.ADMIN,
+    MembershipRole.ACCOUNTANT,
+    MembershipRole.WAREHOUSE,
+    MembershipRole.VIEWER,
+  )
+  @ApiOperation({
+    summary: 'Báo cáo tổng hợp nhập hàng: phân tích theo cửa hàng, thời gian, nhà cung cấp, cơ cấu SKU',
+  })
+  async getPurchaseReport(
+    @CurrentTenantId() tenantId: string,
+    @Req() req: Request,
+    @Query() filter: PurchaseReportFilterDto,
+  ) {
+    const allowedShopIds = (req as any).allowedShopIds;
+    return this.reportsService.getPurchaseReport(tenantId, allowedShopIds, filter);
+  }
 }
+
