@@ -122,6 +122,7 @@ export const ScanOrdersPage: React.FC = () => {
     isDuplicate: boolean;
     timestamp: string;
     status?: 'PENDING' | 'VERIFIED' | 'ALREADY_VERIFIED' | 'NOT_FOUND' | 'CANCELLED' | 'ERROR';
+    wasDispatched?: boolean;
     message?: string;
     shopName?: string;
     carrierName?: string;
@@ -390,31 +391,14 @@ export const ScanOrdersPage: React.FC = () => {
     }
 
     // 2. CHẾ ĐỘ ĐỐI SOÁT TRỰC TIẾP: Kiểm tra ngay đơn hủy & mã vận đơn không tồn tại
-    const currentSession = getActiveSession();
-    const existing = currentSession?.items.find((i) => i.code === cleanCode);
-    if (existing && existing.status !== 'PENDING') {
-      const isSameDuplicateRecent =
-        lastDuplicateScanRef.current.code === cleanCode &&
-        now - lastDuplicateScanRef.current.time < 3000;
+    const isRapidDuplicate =
+      lastDuplicateScanRef.current.code === cleanCode &&
+      now - lastDuplicateScanRef.current.time < 1200;
 
-      if (!isSameDuplicateRecent) {
-        lastDuplicateScanRef.current = { code: cleanCode, time: now };
-        if (soundEnabled) playWarningSound();
-        setScanFlash('warning');
-        setTimeout(() => setScanFlash(null), 700);
-      }
-
-      setLastScannedFeedback({
-        code: cleanCode,
-        isDuplicate: true,
-        timestamp,
-        status: existing.isCancelled ? 'CANCELLED' : existing.status,
-        message: existing.message,
-        shopName: existing.shopName,
-        carrierName: existing.carrierName,
-      });
+    if (isRapidDuplicate) {
       return;
     }
+    lastDuplicateScanRef.current = { code: cleanCode, time: now };
 
     // Tiến hành đối soát trực tiếp với backend
     setLastScannedFeedback({
@@ -431,7 +415,7 @@ export const ScanOrdersPage: React.FC = () => {
       const item = res.item;
 
       if (item.isCancelled) {
-        // CẢNH BÁO ĐẶC BIỆT: ĐƠN HÀNG ĐÃ BỊ HỦY
+        // CẢNH BÁO ĐẶC BIỆT: ĐƠN HÀNG ĐÃ BỊ HỦY (KỂ CẢ ĐƠN ĐÃ XUẤT TRƯỚC)
         if (soundEnabled) playCancelledAlarm();
         setScanFlash('error');
         setTimeout(() => setScanFlash(null), 1200);
@@ -441,16 +425,27 @@ export const ScanOrdersPage: React.FC = () => {
           isDuplicate: false,
           timestamp,
           status: 'CANCELLED',
-          message: item.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho!',
+          wasDispatched: item.wasDispatched,
+          message: item.wasDispatched
+            ? (item.message || 'Đơn hàng ĐÃ XUẤT TRƯỚC NHƯNG ĐÃ BỊ HỦY trên sàn Shopee! Tuyệt đối giữ lại kiện hàng!')
+            : (item.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho!'),
           shopName: item.shopName,
           carrierName: item.carrierName,
         });
 
-        toast.error(
-          `🚨 CẢNH BÁO: Đơn hàng [${cleanCode}] ĐÃ BỊ HỦY! Tuyệt đối không xuất hàng!`,
-          item.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho!',
-          6000,
-        );
+        if (item.wasDispatched) {
+          toast.error(
+            `🚨 CẢNH BÁO: Đơn [${cleanCode}] ĐÃ XUẤT TRƯỚC NHƯNG ĐÃ BỊ HỦY!`,
+            item.message || 'Kiện hàng này đã xác nhận xuất kho trước đó nhưng đã bị hủy trên Shopee! Giữ lại ngay!',
+            7000,
+          );
+        } else {
+          toast.error(
+            `🚨 CẢNH BÁO: Đơn hàng [${cleanCode}] ĐÃ BỊ HỦY! Tuyệt đối không xuất hàng!`,
+            item.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho!',
+            6000,
+          );
+        }
       } else if (item.status === 'NOT_FOUND') {
         // CẢNH BÁO: KHÔNG CÓ THÔNG TIN MÃ VẬN ĐƠN
         if (soundEnabled) playErrorSound();
@@ -685,7 +680,11 @@ export const ScanOrdersPage: React.FC = () => {
       s.packageCode || '',
       s.shopName || '',
       s.carrierName || '',
-      s.status === 'VERIFIED'
+      s.isCancelled
+        ? s.wasDispatched
+          ? 'Đã xuất trước (ĐÃ HỦY)'
+          : 'Đơn đã hủy'
+        : s.status === 'VERIFIED'
         ? 'Thành công'
         : s.status === 'ALREADY_VERIFIED'
         ? 'Đã xuất trước'
@@ -1221,7 +1220,11 @@ export const ScanOrdersPage: React.FC = () => {
                 ) : lastScannedFeedback?.status === 'CANCELLED' ? (
                   <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1.5">
                     <AlertTriangle size={14} className="shrink-0" />
-                    <span>🚨 CẢNH BÁO ĐƠN HỦY: Mã {lastScannedFeedback.code}</span>
+                    <span>
+                      {lastScannedFeedback.wasDispatched
+                        ? `🚨 CẢNH BÁO: ĐÃ XUẤT TRƯỚC NHƯNG ĐÃ BỊ HỦY • ${lastScannedFeedback.code}`
+                        : `🚨 CẢNH BÁO ĐƠN HỦY: Mã ${lastScannedFeedback.code}`}
+                    </span>
                   </span>
                 ) : lastScannedFeedback?.status === 'NOT_FOUND' ? (
                   <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1.5">
@@ -1385,9 +1388,16 @@ export const ScanOrdersPage: React.FC = () => {
                                 </span>
                               )}
                               {item.isCancelled ? (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap border shrink-0 bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 flex items-center gap-1 animate-pulse">
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap border shrink-0 flex items-center gap-1 animate-pulse ${
+                                    item.wasDispatched
+                                      ? 'bg-rose-600 text-white border-rose-700 shadow-xs'
+                                      : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                                  }`}
+                                  title={item.wasDispatched ? 'Đơn hàng đã xác nhận xuất trước đó nhưng đã bị hủy trên sàn' : 'Đơn hàng đã bị hủy trên sàn'}
+                                >
                                   <AlertTriangle size={11} className="shrink-0" />
-                                  <span>ĐƠN ĐÃ HỦY</span>
+                                  <span>{item.wasDispatched ? 'ĐÃ XUẤT (ĐÃ HỦY)' : 'ĐƠN ĐÃ HỦY'}</span>
                                 </span>
                               ) : (
                                 <span
@@ -1594,9 +1604,16 @@ export const ScanOrdersPage: React.FC = () => {
                             </td>
                             <td className="py-2.5 px-3 whitespace-nowrap">
                               {item.isCancelled ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 animate-pulse">
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border animate-pulse ${
+                                    item.wasDispatched
+                                      ? 'bg-rose-600 text-white border-rose-700 shadow-xs'
+                                      : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                                  }`}
+                                  title={item.wasDispatched ? 'Đơn hàng đã xác nhận xuất trước đó nhưng đã bị hủy trên sàn' : 'Đơn hàng đã bị hủy trên sàn'}
+                                >
                                   <AlertTriangle size={11} className="shrink-0" />
-                                  <span>ĐƠN ĐÃ HỦY</span>
+                                  <span>{item.wasDispatched ? 'ĐÃ XUẤT (ĐÃ HỦY)' : 'ĐƠN ĐÃ HỦY'}</span>
                                 </span>
                               ) : (
                                 <span

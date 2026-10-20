@@ -134,6 +134,36 @@ describe('Scenarios 9, 10, 11, 12, 13: Fulfillment Scanning & Dispatch Verificat
       expect(res.result).toBe(ScanResult.INVALID_ORDER_STATUS);
       expect(mockInventoryService.dispatchStockForPackage).not.toHaveBeenCalled();
     });
+
+    it('kể cả khi kiện hàng đã xuất trước (DISPATCHED) nhưng sau đó đơn bị CANCELLED, vẫn phải trả về INVALID_ORDER_STATUS, isCancelled = true, wasDispatched = true', async () => {
+      mockPrisma.package.findMany.mockResolvedValue([
+        {
+          id: 'pkg-1',
+          packageCode: 'PKG-001',
+          trackingCode: 'TRACK-CANCELLED-DISPATCHED',
+          status: PackageStatus.DISPATCHED,
+          order: {
+            id: 'ord-1',
+            externalOrderId: 'ORD-CANCELLED-DISPATCHED',
+            platformStatus: PlatformOrderStatus.CANCELLED,
+            fulfillmentStatus: FulfillmentStatus.CANCELLED_RESTOCKED,
+            shopId: 'shop-1',
+            shop: { defaultWarehouseId: 'wh-1' },
+          },
+          packageItems: [],
+        },
+      ]);
+
+      const res = await fulfillmentService.verifyDispatch('tenant-1', 'user-1', {
+        code: 'TRACK-CANCELLED-DISPATCHED',
+      });
+
+      expect(res.result).toBe(ScanResult.INVALID_ORDER_STATUS);
+      expect((res as any).isCancelled).toBe(true);
+      expect((res as any).wasDispatched).toBe(true);
+      expect(res.message).toContain('ĐÃ XUẤT TRƯỚC NHƯNG ĐÃ BỊ HỦY');
+      expect(mockInventoryService.dispatchStockForPackage).not.toHaveBeenCalled();
+    });
   });
 
   describe('Scenario 9 & 13: Scan đúng tạo xác minh và kiểm tra multi-package verification', () => {

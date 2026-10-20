@@ -339,60 +339,18 @@ export class FulfillmentService {
       };
     }
 
-    // Check if already dispatched (Double-layer protection: layer 2 check)
-    if (targetPackage.status === PackageStatus.DISPATCHED) {
-      await this.prisma.scanEvent.create({
-        data: {
-          tenantId,
-          shopId: order.shopId,
-          warehouseId,
-          orderId: order.id,
-          packageId: targetPackage.id,
-          rawCode,
-          normalizedCode,
-          scanResult: ScanResult.ALREADY_VERIFIED,
-          deviceId: dto.deviceId,
-          performedByUserId: userId,
-          idempotencyKey,
-        },
-      });
-
-      return {
-        result: ScanResult.ALREADY_VERIFIED,
-        message: 'Kiện hàng này đã được xác nhận xuất kho trước đó',
-        packageId: targetPackage.id,
-        packageCode: targetPackage.packageCode,
-        trackingCode: targetPackage.trackingCode || order.trackingCode,
-        verifiedAt: targetPackage.verifiedAt,
-        verifiedByUserId: targetPackage.verifiedByUserId,
-        orderId: order.id,
-        externalOrderId: order.externalOrderId,
-        package: {
-          id: targetPackage.id,
-          packageCode: targetPackage.packageCode,
-          trackingCode: targetPackage.trackingCode || order.trackingCode,
-          carrierName: targetPackage.carrierName,
-          status: targetPackage.status,
-          verifiedAt: targetPackage.verifiedAt,
-        },
-        order: {
-          id: order.id,
-          externalOrderId: order.externalOrderId,
-          internalOrderCode: order.internalOrderCode,
-          trackingCode: order.trackingCode || targetPackage.trackingCode,
-          totalPackages: order.packages?.length || 1,
-          verifiedPackages: order.packages?.filter((p: any) => p.status === PackageStatus.DISPATCHED)?.length || 1,
-          verificationStatus: order.verificationStatus,
-        },
-      };
-    }
-
-    // Check order conditions
-    if (
+    // Check order conditions: ƯU TIÊN 1 - ĐƠN HÀNG ĐÃ BỊ HỦY TRÊN SÀN (Kể cả các đơn đã xuất trước)
+    const isOrderCancelled =
       order.platformStatus === PlatformOrderStatus.CANCELLED ||
       order.platformStatus === PlatformOrderStatus.IN_CANCEL ||
-      order.fulfillmentStatus === FulfillmentStatus.CANCELLED_RESTOCKED
-    ) {
+      order.fulfillmentStatus === FulfillmentStatus.CANCELLED_RESTOCKED;
+
+    if (isOrderCancelled) {
+      const wasDispatched = targetPackage.status === PackageStatus.DISPATCHED;
+      const cancelMessage = wasDispatched
+        ? 'Đơn hàng ĐÃ XUẤT TRƯỚC NHƯNG ĐÃ BỊ HỦY trên sàn Shopee! Tuyệt đối giữ lại kiện hàng!'
+        : 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho';
+
       await this.prisma.scanEvent.create({
         data: {
           tenantId,
@@ -406,14 +364,15 @@ export class FulfillmentService {
           deviceId: dto.deviceId,
           performedByUserId: userId,
           idempotencyKey,
-          errorMessage: 'Đơn hàng đã bị hủy trên sàn',
+          errorMessage: cancelMessage,
         },
       });
 
       return {
         result: ScanResult.INVALID_ORDER_STATUS,
-        message: 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho',
+        message: cancelMessage,
         isCancelled: true,
+        wasDispatched,
         orderId: order.externalOrderId || order.id,
         internalOrderCode: order.internalOrderCode,
         shopName: order.shop?.name,
@@ -437,6 +396,62 @@ export class FulfillmentService {
           trackingCode: targetPackage.trackingCode || order.trackingCode,
           carrierName: targetPackage.carrierName || order.shippingCarrier,
           status: targetPackage.status,
+          verifiedAt: targetPackage.verifiedAt,
+        },
+      };
+    }
+
+    // Check if already dispatched (Double-layer protection: layer 2 check - Cho các đơn chưa bị hủy)
+    if (targetPackage.status === PackageStatus.DISPATCHED) {
+      await this.prisma.scanEvent.create({
+        data: {
+          tenantId,
+          shopId: order.shopId,
+          warehouseId,
+          orderId: order.id,
+          packageId: targetPackage.id,
+          rawCode,
+          normalizedCode,
+          scanResult: ScanResult.ALREADY_VERIFIED,
+          deviceId: dto.deviceId,
+          performedByUserId: userId,
+          idempotencyKey,
+        },
+      });
+
+      return {
+        result: ScanResult.ALREADY_VERIFIED,
+        message: 'Kiện hàng này đã được xác nhận xuất kho trước đó',
+        isCancelled: false,
+        wasDispatched: true,
+        packageId: targetPackage.id,
+        packageCode: targetPackage.packageCode,
+        trackingCode: targetPackage.trackingCode || order.trackingCode,
+        verifiedAt: targetPackage.verifiedAt,
+        verifiedByUserId: targetPackage.verifiedByUserId,
+        orderId: order.id,
+        externalOrderId: order.externalOrderId,
+        internalOrderCode: order.internalOrderCode,
+        shopName: order.shop?.name,
+        carrierName: targetPackage.carrierName || order.shippingCarrier,
+        package: {
+          id: targetPackage.id,
+          packageCode: targetPackage.packageCode,
+          trackingCode: targetPackage.trackingCode || order.trackingCode,
+          carrierName: targetPackage.carrierName || order.shippingCarrier,
+          status: targetPackage.status,
+          verifiedAt: targetPackage.verifiedAt,
+        },
+        order: {
+          id: order.id,
+          externalOrderId: order.externalOrderId,
+          internalOrderCode: order.internalOrderCode,
+          trackingCode: order.trackingCode || targetPackage.trackingCode,
+          totalPackages: order.packages?.length || 1,
+          verifiedPackages: order.packages?.filter((p: any) => p.status === PackageStatus.DISPATCHED)?.length || 1,
+          verificationStatus: order.verificationStatus,
+          isVirtual: order.isVirtual,
+          isRealGoods: order.isRealGoods,
         },
       };
     }
@@ -915,23 +930,24 @@ export class FulfillmentService {
           res.order?.platformStatus === PlatformOrderStatus.IN_CANCEL ||
           res.order?.fulfillmentStatus === FulfillmentStatus.CANCELLED_RESTOCKED;
 
-        if (res.result === ScanResult.VERIFIED) {
+        if (isCancelled) {
+          cancelledCount++;
+        } else if (res.result === ScanResult.VERIFIED) {
           verifiedCount++;
         } else if (res.result === ScanResult.ALREADY_VERIFIED) {
           alreadyVerifiedCount++;
         } else if (res.result === ScanResult.NOT_FOUND) {
           notFoundCount++;
-        } else if (isCancelled) {
-          cancelledCount++;
         } else {
           failedCount++;
         }
 
         results.push({
           code: cleanCode,
-          result: res.result,
+          result: isCancelled ? ScanResult.INVALID_ORDER_STATUS : res.result,
           message: res.message,
           isCancelled,
+          wasDispatched: !!res.wasDispatched,
           orderId: res.order?.externalOrderId || res.orderId || res.externalOrderId,
           internalOrderCode: res.order?.internalOrderCode || res.internalOrderCode,
           carrierName: res.package?.carrierName || res.carrierName,

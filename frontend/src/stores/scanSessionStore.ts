@@ -17,6 +17,7 @@ export interface SessionItem {
   isVirtual?: boolean;
   isRealGoods?: boolean;
   isCancelled?: boolean;
+  wasDispatched?: boolean;
 }
 
 export interface ScanSession {
@@ -65,8 +66,8 @@ const calculateStats = (items: SessionItem[]) => {
   return {
     total: items.length,
     verified: items.filter((i) => i.status === 'VERIFIED').length,
-    alreadyVerified: items.filter((i) => i.status === 'ALREADY_VERIFIED').length,
-    notFound: items.filter((i) => i.status === 'NOT_FOUND').length,
+    alreadyVerified: items.filter((i) => i.status === 'ALREADY_VERIFIED' && !i.isCancelled).length,
+    notFound: items.filter((i) => i.status === 'NOT_FOUND' && !i.isCancelled).length,
     cancelled: items.filter((i) => i.isCancelled).length,
     failed: items.filter((i) => i.status === 'ERROR' && !i.isCancelled).length,
   };
@@ -339,8 +340,11 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           backendResult.result === 'INVALID_ORDER_STATUS' ||
           backendResult.message?.toLowerCase().includes('hủy');
 
+        const wasDispatched = !!backendResult.wasDispatched;
+
         let status: SessionItem['status'] = 'PENDING';
-        if (backendResult.result === 'VERIFIED') status = 'VERIFIED';
+        if (isCancelled) status = 'ERROR';
+        else if (backendResult.result === 'VERIFIED') status = 'VERIFIED';
         else if (backendResult.result === 'ALREADY_VERIFIED') status = 'ALREADY_VERIFIED';
         else if (backendResult.result === 'NOT_FOUND') status = 'NOT_FOUND';
         else status = 'ERROR';
@@ -349,6 +353,7 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           ...item,
           status,
           isCancelled,
+          wasDispatched,
           orderId: backendResult.orderId,
           internalOrderCode: backendResult.internalOrderCode,
           carrierName: backendResult.carrierName,
@@ -470,7 +475,12 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           backendItem.result === 'INVALID_ORDER_STATUS' ||
           backendItem.message?.toLowerCase().includes('hủy');
 
-        if (backendItem.result === 'VERIFIED') {
+        const wasDispatched = !!backendItem.wasDispatched;
+
+        if (isCancelled) {
+          finalStatus = 'ERROR';
+          finalMessage = backendItem.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho';
+        } else if (backendItem.result === 'VERIFIED') {
           finalStatus = 'VERIFIED';
           finalMessage = backendItem.message || 'Xác nhận xuất kho thành công';
         } else if (backendItem.result === 'ALREADY_VERIFIED') {
@@ -479,9 +489,6 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
         } else if (backendItem.result === 'NOT_FOUND') {
           finalStatus = 'NOT_FOUND';
           finalMessage = 'Không có thông tin mã vận đơn trong hệ thống';
-        } else if (isCancelled) {
-          finalStatus = 'ERROR';
-          finalMessage = backendItem.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho';
         } else {
           finalStatus = 'ERROR';
           finalMessage = backendItem.message || 'Lỗi đối soát đơn hàng';
@@ -492,6 +499,7 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           status: finalStatus,
           message: finalMessage,
           isCancelled,
+          wasDispatched,
           orderId: backendItem.orderId,
           internalOrderCode: backendItem.internalOrderCode,
           carrierName: backendItem.carrierName,

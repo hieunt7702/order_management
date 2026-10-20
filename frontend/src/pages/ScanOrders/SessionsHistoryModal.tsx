@@ -166,7 +166,11 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
       item.packageCode || '',
       item.shopName || '',
       item.carrierName || '',
-      item.status === 'VERIFIED'
+      item.isCancelled
+        ? item.wasDispatched
+          ? 'Đã xuất trước (ĐÃ HỦY)'
+          : 'Đơn đã hủy'
+        : item.status === 'VERIFIED'
         ? 'Thành công'
         : item.status === 'ALREADY_VERIFIED'
         ? 'Đã xuất trước'
@@ -568,7 +572,11 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
                       <div className="flex items-center gap-1.5 shrink-0">
                         <span
                           className={`px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap border shrink-0 ${
-                            item.status === 'VERIFIED'
+                            item.isCancelled
+                              ? item.wasDispatched
+                                ? 'bg-rose-600 text-white border-rose-700 font-bold shadow-xs'
+                                : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 font-bold'
+                              : item.status === 'VERIFIED'
                               ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
                               : item.status === 'ALREADY_VERIFIED'
                               ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
@@ -577,7 +585,11 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
                               : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
                           }`}
                         >
-                          {item.status === 'VERIFIED'
+                          {item.isCancelled
+                            ? item.wasDispatched
+                              ? 'Đã xuất (Đã hủy)'
+                              : 'Đơn đã hủy'
+                            : item.status === 'VERIFIED'
                             ? 'Thành công'
                             : item.status === 'ALREADY_VERIFIED'
                             ? 'Đã xuất trước'
