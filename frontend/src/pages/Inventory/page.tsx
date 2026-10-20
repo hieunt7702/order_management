@@ -18,6 +18,8 @@ import {
   PackagePlus,
   PackageX,
   Truck,
+  TrendingDown,
+  Building2,
 } from 'lucide-react';
 import { TransferToSupplierModal } from '../../components/inventory/TransferToSupplierModal';
 import { inventoryApi } from '../../services/inventoryApi';

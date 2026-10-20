@@ -870,7 +870,7 @@ export const CashflowPage: React.FC = () => {
                           </span>
                         </td>
                         <td className="py-3 px-4 text-gray-600 dark:text-gray-300">
-                          {tx.fromAccount?.name || tx.toAccount?.name || '---'}
+                          {tx.fromAccount?.name || tx.toAccount?.name || (tx.paymentMethod === 'DEBT_OFFSET' ? 'Cấn trừ nợ NCC' : '---')}
                         </td>
                         <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
                           {tx.counterpartyName || tx.note || '—'}
@@ -1105,7 +1105,7 @@ export const CashflowPage: React.FC = () => {
                         </span>
                       </SystemTd>
                       <SystemTd className="text-xs text-gray-600 dark:text-gray-300">
-                        {tx.fromAccount?.name || tx.toAccount?.name || 'Tiền cá nhân chi hộ'}
+                        {tx.fromAccount?.name || tx.toAccount?.name || (tx.paymentMethod === 'DEBT_OFFSET' ? 'Cấn trừ nợ NCC' : 'Tiền cá nhân chi hộ')}
                       </SystemTd>
                       <SystemTd className="text-xs text-gray-700 dark:text-gray-300">
                         {tx.counterpartyName || '---'}
@@ -1272,7 +1272,7 @@ export const CashflowPage: React.FC = () => {
                       <div className="flex items-center justify-between text-gray-600 dark:text-gray-300 gap-2 min-w-0">
                         <span className="text-gray-400 shrink-0">Tài khoản:</span>
                         <span className="font-medium text-gray-800 dark:text-gray-200 truncate text-right">
-                          {tx.fromAccount?.name || tx.toAccount?.name || 'Tiền cá nhân'}
+                          {tx.fromAccount?.name || tx.toAccount?.name || (tx.paymentMethod === 'DEBT_OFFSET' ? 'Cấn trừ nợ NCC' : 'Tiền cá nhân')}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-gray-600 dark:text-gray-300 gap-2 min-w-0">

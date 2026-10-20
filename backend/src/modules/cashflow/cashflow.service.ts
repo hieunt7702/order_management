@@ -688,6 +688,64 @@ export class CashflowService {
   }
 
   async getTransactions(tenantId: string, filter: CashflowFilterDto) {
+    // Tự động kiểm tra và đồng bộ các phiếu xuất chuyển hàng NCC chưa có bản ghi Sổ quỹ
+    try {
+      const pendingReturns = await this.prisma.purchaseReturn.findMany({
+        where: { tenantId, status: 'CONFIRMED' },
+        include: { supplier: true },
+      });
+      for (const ret of pendingReturns) {
+        const exists = await this.prisma.cashTransaction.findFirst({
+          where: { tenantId, relatedEntityType: 'PURCHASE_RETURN', relatedEntityId: ret.id },
+        });
+        if (!exists) {
+          let category = await this.prisma.cashCategory.findFirst({
+            where: { tenantId, code: 'THU_NCC_HOAN_TIEN' },
+          });
+          if (!category) {
+            category = await this.prisma.cashCategory.findFirst({
+              where: { tenantId, type: CashCategoryType.INCOME },
+            });
+          }
+          if (!category) {
+            category = await this.prisma.cashCategory.create({
+              data: {
+                tenantId,
+                code: 'THU_NCC_HOAN_TIEN',
+                name: 'Nhà cung cấp thanh toán / hoàn tiền / cấn trừ nợ',
+                type: CashCategoryType.INCOME,
+                isSystemDefault: true,
+              },
+            });
+          }
+
+          if (category) {
+            await this.prisma.cashTransaction.create({
+              data: {
+                tenantId,
+                transactionCode: `CT-${ret.returnCode}`,
+                type: CashTransactionType.INCOME,
+                categoryId: category.id,
+                amount: ret.totalReturnAmount,
+                transactionDate: ret.returnDate,
+                paymentMethod: 'DEBT_OFFSET',
+                status: CashTransactionStatus.CONFIRMED,
+                counterpartyName: ret.supplier?.name || 'Nhà cung cấp',
+                performedByName: ret.supplier?.name || 'Nhà cung cấp',
+                referenceCode: ret.returnCode,
+                note: `Cấn trừ nợ NCC do xuất chuyển hàng theo phiếu ${ret.returnCode}`,
+                relatedEntityType: 'PURCHASE_RETURN',
+                relatedEntityId: ret.id,
+                confirmedAt: new Date(),
+              },
+            });
+          }
+        }
+      }
+    } catch {
+      // Bỏ qua lỗi nền
+    }
+
     const page = Number(filter.page) || 1;
     const limit = Number(filter.limit) || 50;
     const skip = (page - 1) * limit;

@@ -223,6 +223,71 @@ export class PurchaseReturnsService {
             remainOffset -= deduct;
           }
         }
+
+        // Tạo bản ghi giao dịch cấn trừ nợ trong Sổ quỹ CashTransaction và Sổ công nợ SupplierPayment
+        let category = await tx.cashCategory.findFirst({
+          where: { tenantId, code: 'THU_NCC_HOAN_TIEN' },
+        });
+        if (!category) {
+          category = await tx.cashCategory.findFirst({
+            where: { tenantId, type: CashCategoryType.INCOME },
+          });
+        }
+        if (!category) {
+          category = await tx.cashCategory.create({
+            data: {
+              tenantId,
+              code: 'THU_NCC_HOAN_TIEN',
+              name: 'Nhà cung cấp thanh toán / hoàn tiền / cấn trừ nợ',
+              type: CashCategoryType.INCOME,
+              isSystemDefault: true,
+            },
+          });
+        }
+
+        const paymentCode = `CT-${returnCode}`;
+        await tx.supplierPayment.create({
+          data: {
+            tenantId,
+            supplierId: dto.supplierId,
+            paymentCode,
+            amount: new Prisma.Decimal(totalReturnAmount),
+            paymentDate: returnDate,
+            payerName: supplier.name,
+            payerUserId: userId,
+            fundSource: 'CASH_FUND',
+            paymentMethod: 'DEBT_OFFSET',
+            referenceCode: returnCode,
+            paymentType: SupplierPaymentType.REFUND_RECEIVED,
+            allocatedAmount: new Prisma.Decimal(totalReturnAmount),
+            advanceAmount: new Prisma.Decimal(0),
+            note: `Khấu trừ nợ khi xuất chuyển hàng cho NCC ${supplier.name} theo phiếu ${returnCode}`,
+            createdById: userId,
+          },
+        });
+
+        await tx.cashTransaction.create({
+          data: {
+            tenantId,
+            transactionCode: paymentCode,
+            type: CashTransactionType.INCOME,
+            categoryId: category.id,
+            toAccountId: null, // Cấn trừ công nợ phi tiền mặt
+            amount: new Prisma.Decimal(totalReturnAmount),
+            transactionDate: returnDate,
+            paymentMethod: 'DEBT_OFFSET',
+            status: CashTransactionStatus.CONFIRMED,
+            counterpartyName: supplier.name,
+            performedByName: supplier.name,
+            referenceCode: returnCode,
+            note: `Khấu trừ nợ NCC khi xuất chuyển hàng theo phiếu ${returnCode}`,
+            relatedEntityType: 'PURCHASE_RETURN',
+            relatedEntityId: purchaseReturn.id,
+            createdById: userId,
+            confirmedById: userId,
+            confirmedAt: new Date(),
+          },
+        });
       } else if (settlementType === 'IMMEDIATE_PAYMENT') {
         // Phương án 3: NCC thanh toán tiền luôn cho shop (tiền mặt / chuyển khoản)
         let toAccountId = dto.immediateAccountId || null;
@@ -306,14 +371,168 @@ export class PurchaseReturnsService {
             data: { currentBalance: { increment: new Prisma.Decimal(totalReturnAmount) } },
           });
         }
+      } else {
+        // Phương án 2: ACCUMULATE_DEBT (Cộng dồn vào nợ): debtOffsetAmount được lưu trên purchaseReturn
+        let category = await tx.cashCategory.findFirst({
+          where: { tenantId, code: 'THU_NCC_HOAN_TIEN' },
+        });
+        if (!category) {
+          category = await tx.cashCategory.findFirst({
+            where: { tenantId, type: CashCategoryType.INCOME },
+          });
+        }
+        if (!category) {
+          category = await tx.cashCategory.create({
+            data: {
+              tenantId,
+              code: 'THU_NCC_HOAN_TIEN',
+              name: 'Nhà cung cấp thanh toán / hoàn tiền / cấn trừ nợ',
+              type: CashCategoryType.INCOME,
+              isSystemDefault: true,
+            },
+          });
+        }
+
+        const paymentCode = `CD-${returnCode}`;
+        await tx.supplierPayment.create({
+          data: {
+            tenantId,
+            supplierId: dto.supplierId,
+            paymentCode,
+            amount: new Prisma.Decimal(totalReturnAmount),
+            paymentDate: returnDate,
+            payerName: supplier.name,
+            payerUserId: userId,
+            fundSource: 'CASH_FUND',
+            paymentMethod: 'DEBT_OFFSET',
+            referenceCode: returnCode,
+            paymentType: SupplierPaymentType.REFUND_RECEIVED,
+            allocatedAmount: new Prisma.Decimal(0),
+            advanceAmount: new Prisma.Decimal(totalReturnAmount),
+            note: `Cộng dồn nợ khi xuất chuyển hàng cho NCC ${supplier.name} theo phiếu ${returnCode}`,
+            createdById: userId,
+          },
+        });
+
+        await tx.cashTransaction.create({
+          data: {
+            tenantId,
+            transactionCode: paymentCode,
+            type: CashTransactionType.INCOME,
+            categoryId: category.id,
+            toAccountId: null,
+            amount: new Prisma.Decimal(totalReturnAmount),
+            transactionDate: returnDate,
+            paymentMethod: 'DEBT_OFFSET',
+            status: CashTransactionStatus.CONFIRMED,
+            counterpartyName: supplier.name,
+            performedByName: supplier.name,
+            referenceCode: returnCode,
+            note: `Cộng dồn nợ NCC khi xuất chuyển hàng theo phiếu ${returnCode}`,
+            relatedEntityType: 'PURCHASE_RETURN',
+            relatedEntityId: purchaseReturn.id,
+            createdById: userId,
+            confirmedById: userId,
+            confirmedAt: new Date(),
+          },
+        });
       }
-      // Phương án 2: ACCUMULATE_DEBT (Cộng dồn vào nợ): debtOffsetAmount được lưu trên purchaseReturn, giúp giảm nợ NCC hoặc biến thành nợ NCC phải trả shop.
 
       return purchaseReturn;
     });
   }
 
+  async syncMissingReturnCashTransactions(tenantId: string) {
+    try {
+      const returnsWithoutTx = await this.prisma.purchaseReturn.findMany({
+        where: {
+          tenantId,
+          status: 'CONFIRMED',
+        },
+        include: { supplier: true },
+      });
+
+      for (const ret of returnsWithoutTx) {
+        const existingTx = await this.prisma.cashTransaction.findFirst({
+          where: {
+            tenantId,
+            relatedEntityType: 'PURCHASE_RETURN',
+            relatedEntityId: ret.id,
+          },
+        });
+        if (!existingTx) {
+          let category = await this.prisma.cashCategory.findFirst({
+            where: { tenantId, code: 'THU_NCC_HOAN_TIEN' },
+          });
+          if (!category) {
+            category = await this.prisma.cashCategory.findFirst({
+              where: { tenantId, type: CashCategoryType.INCOME },
+            });
+          }
+          if (!category) {
+            category = await this.prisma.cashCategory.create({
+              data: {
+                tenantId,
+                code: 'THU_NCC_HOAN_TIEN',
+                name: 'Nhà cung cấp thanh toán / hoàn tiền / cấn trừ nợ',
+                type: CashCategoryType.INCOME,
+                isSystemDefault: true,
+              },
+            });
+          }
+
+          const paymentCode = `CT-${ret.returnCode}`;
+          const existingPayment = await this.prisma.supplierPayment.findFirst({
+            where: { tenantId, referenceCode: ret.returnCode },
+          });
+          if (!existingPayment) {
+            await this.prisma.supplierPayment.create({
+              data: {
+                tenantId,
+                supplierId: ret.supplierId,
+                paymentCode,
+                amount: ret.totalReturnAmount,
+                paymentDate: ret.returnDate,
+                payerName: ret.supplier.name,
+                fundSource: 'CASH_FUND',
+                paymentMethod: 'DEBT_OFFSET',
+                referenceCode: ret.returnCode,
+                paymentType: SupplierPaymentType.REFUND_RECEIVED,
+                allocatedAmount: ret.debtOffsetAmount,
+                advanceAmount: new Prisma.Decimal(0),
+                note: `Cấn trừ nợ khi xuất chuyển hàng cho NCC ${ret.supplier.name} theo phiếu ${ret.returnCode}`,
+              },
+            });
+          }
+
+          await this.prisma.cashTransaction.create({
+            data: {
+              tenantId,
+              transactionCode: paymentCode,
+              type: CashTransactionType.INCOME,
+              categoryId: category.id,
+              amount: ret.totalReturnAmount,
+              transactionDate: ret.returnDate,
+              paymentMethod: 'DEBT_OFFSET',
+              status: CashTransactionStatus.CONFIRMED,
+              counterpartyName: ret.supplier.name,
+              performedByName: ret.supplier.name,
+              referenceCode: ret.returnCode,
+              note: `Cấn trừ nợ NCC do xuất chuyển hàng theo phiếu ${ret.returnCode}`,
+              relatedEntityType: 'PURCHASE_RETURN',
+              relatedEntityId: ret.id,
+              confirmedAt: new Date(),
+            },
+          });
+        }
+      }
+    } catch {
+      // Bỏ qua lỗi đồng bộ nền
+    }
+  }
+
   async findAll(tenantId: string, filter: PurchaseReturnFilterDto = {}) {
+    await this.syncMissingReturnCashTransactions(tenantId);
     const where: Prisma.PurchaseReturnWhereInput = {
       tenantId,
       ...(filter.supplierId && { supplierId: filter.supplierId }),

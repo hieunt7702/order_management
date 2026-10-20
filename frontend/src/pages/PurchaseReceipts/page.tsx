@@ -542,27 +542,33 @@ export const PurchaseReceiptsPage: React.FC = () => {
         <SystemMetricPairCard
           leftItem={{
             title: 'Hàng thực nhận',
-            value: `${totalItemsVal.toLocaleString('vi-VN')}đ`,
-            subtitle: 'Tổng giá trị nhập kho',
+            value: `${Math.max(0, totalItemsVal - totalReturnDeductionVal).toLocaleString('vi-VN')}đ`,
+            subtitle:
+              totalReturnDeductionVal > 0
+                ? `Đã trừ hàng trả: -${totalReturnDeductionVal.toLocaleString('vi-VN')}đ (Gốc: ${totalItemsVal.toLocaleString('vi-VN')}đ)`
+                : 'Tổng giá trị nhập kho',
             icon: PackagePlus,
             colorScheme: 'blue',
           }}
           rightItem={{
             title: 'Tổng tiền hàng',
-            value: `${totalPayableVal.toLocaleString('vi-VN')}đ`,
-            subtitle: 'Sau chiết khấu & cước',
+            value: `${Math.max(0, totalPayableVal - totalReturnDeductionVal).toLocaleString('vi-VN')}đ`,
+            subtitle:
+              totalReturnDeductionVal > 0
+                ? `Đã trừ hàng trả: -${totalReturnDeductionVal.toLocaleString('vi-VN')}đ (Gốc: ${totalPayableVal.toLocaleString('vi-VN')}đ)`
+                : 'Sau chiết khấu & cước',
             icon: Receipt,
             colorScheme: 'orange',
           }}
         />
         <SystemMetricPairCard
           leftItem={{
-            title: 'Đã thanh toán / Cấn trừ',
-            value: `${totalPaidAndOffsetVal.toLocaleString('vi-VN')}đ`,
+            title: 'Đã thanh toán',
+            value: `${totalPaidOnlyVal.toLocaleString('vi-VN')}đ`,
             subtitle:
               totalReturnDeductionVal > 0
-                ? `Đã chi: ${totalPaidOnlyVal.toLocaleString('vi-VN')}đ • Trả hàng trừ nợ: ${totalReturnDeductionVal.toLocaleString('vi-VN')}đ`
-                : 'Bù trừ nợ & thanh toán',
+                ? `Thực chi: ${totalPaidOnlyVal.toLocaleString('vi-VN')}đ • Hàng trả trừ nợ: ${totalReturnDeductionVal.toLocaleString('vi-VN')}đ`
+                : 'Thực tế đã chi trả cho NCC',
             icon: CreditCard,
             colorScheme: 'green',
           }}
@@ -901,12 +907,34 @@ export const PurchaseReceiptsPage: React.FC = () => {
 
                     {/* Hàng thực nhận */}
                     <SystemTd className="text-right font-medium text-gray-800 dark:text-gray-200">
-                      {Number(r.totalItemsAmount).toLocaleString('vi-VN')}đ
+                      {Number(r.returnDeductionAmount) > 0 ? (
+                        <div>
+                          <div className="font-semibold text-gray-900 dark:text-white">
+                            {Math.max(0, Number(r.totalItemsAmount) - Number(r.returnDeductionAmount)).toLocaleString('vi-VN')}đ
+                          </div>
+                          <div className="text-[10px] text-orange-500 font-normal mt-0.5">
+                            Đã trừ trả: -{Number(r.returnDeductionAmount).toLocaleString('vi-VN')}đ
+                          </div>
+                        </div>
+                      ) : (
+                        <div>{Number(r.totalItemsAmount).toLocaleString('vi-VN')}đ</div>
+                      )}
                     </SystemTd>
 
                     {/* Tổng tiền hàng */}
                     <SystemTd className="text-right font-semibold text-gray-900 dark:text-white">
-                      <div>{Number(r.payableAmount).toLocaleString('vi-VN')}đ</div>
+                      {Number(r.returnDeductionAmount) > 0 ? (
+                        <div>
+                          <div>
+                            {Math.max(0, Number(r.payableAmount) - Number(r.returnDeductionAmount)).toLocaleString('vi-VN')}đ
+                          </div>
+                          <div className="text-[10px] text-orange-500 font-normal mt-0.5">
+                            Đã trừ trả: -{Number(r.returnDeductionAmount).toLocaleString('vi-VN')}đ (Gốc: {Number(r.payableAmount).toLocaleString('vi-VN')}đ)
+                          </div>
+                        </div>
+                      ) : (
+                        <div>{Number(r.payableAmount).toLocaleString('vi-VN')}đ</div>
+                      )}
                       {isOffsetFromAdvance && offsetAmount > 0 ? (
                         <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
                           Trừ nợ NCC: -{offsetAmount.toLocaleString('vi-VN')}đ
@@ -1145,14 +1173,24 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   <div>
                     <div className="text-[10px] text-gray-400">Hàng thực nhận</div>
                     <div className="font-mono font-medium text-xs text-gray-900 dark:text-white mt-0.5">
-                      {Number(r.totalItemsAmount || 0).toLocaleString('vi-VN')}đ
+                      {Math.max(0, Number(r.totalItemsAmount || 0) - Number(r.returnDeductionAmount || 0)).toLocaleString('vi-VN')}đ
                     </div>
+                    {Number(r.returnDeductionAmount || 0) > 0 && (
+                      <div className="text-[9px] text-orange-500 mt-0.5">
+                        - Trả: {Number(r.returnDeductionAmount).toLocaleString('vi-VN')}đ
+                      </div>
+                    )}
                   </div>
                   <div>
                     <div className="text-[10px] text-gray-400">Tổng tiền hàng</div>
                     <div className="font-mono font-semibold text-xs text-gray-900 dark:text-white mt-0.5">
-                      {Number(r.payableAmount || 0).toLocaleString('vi-VN')}đ
+                      {Math.max(0, Number(r.payableAmount || 0) - Number(r.returnDeductionAmount || 0)).toLocaleString('vi-VN')}đ
                     </div>
+                    {Number(r.returnDeductionAmount || 0) > 0 && (
+                      <div className="text-[9px] text-orange-500 mt-0.5">
+                        - Trả: {Number(r.returnDeductionAmount).toLocaleString('vi-VN')}đ
+                      </div>
+                    )}
                   </div>
                   <div>
                     <div className="text-[10px] text-gray-400">Còn nợ NCC</div>
