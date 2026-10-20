@@ -326,7 +326,7 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
       isOpen={isOpen}
       onClose={onClose}
       title="Chuyển hàng cho Nhà cung cấp"
-      subtitle="Xuất kho chuyển hàng • Khấu trừ nợ / Cộng dồn / Thanh toán luôn"
+      subtitle="Xuất kho chuyển hàng • Trừ công nợ NCC / Thanh toán ngay"
       icon={Truck}
       size="3xl"
     >
@@ -581,13 +581,13 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
             </div>
           </div>
 
-          {/* 3 Settlement Options: OFFSET, ACCUMULATE, IMMEDIATE */}
+          {/* 2 Settlement Options: OFFSET_DEBT & IMMEDIATE_PAYMENT */}
           <div className="space-y-2">
             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
               Phương thức xử lý tài chính & công nợ *
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              {/* Option 1: Khấu trừ nợ */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {/* Option 1: Trừ vào công nợ */}
               <div
                 onClick={() => setSettlementType('OFFSET_DEBT')}
                 className={`p-3 rounded border cursor-pointer transition-all ${
@@ -598,46 +598,28 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
               >
                 <div className="flex items-center gap-1.5 font-bold text-xs text-gray-900 dark:text-white mb-1">
                   <CreditCard size={14} className="text-[#5865f2]" />
-                  <span>1. Khấu trừ giảm nợ (Mặc định)</span>
+                  <span>1. Trừ vào công nợ NCC (Mặc định)</span>
                 </div>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Trừ trực tiếp vào nợ NCC: Đang nợ 100m, chuyển 30m → Còn nợ NCC 70m.
+                  Trừ trực tiếp vào nợ NCC: Đang nợ 100m, chuyển 30m → Còn nợ NCC 70m (nếu chuyển vượt nợ sẽ tính vào tiền cọc / NCC nợ shop).
                 </p>
               </div>
 
-              {/* Option 2: Cộng dồn vào nợ */}
+              {/* Option 2: Thanh toán luôn */}
               <div
-                onClick={() => setSettlementType('ACCUMULATE_DEBT')}
+                onClick={() => setSettlementType('IMMEDIATE_PAYMENT')}
                 className={`p-3 rounded border cursor-pointer transition-all ${
-                  settlementType === 'ACCUMULATE_DEBT'
+                  settlementType === 'IMMEDIATE_PAYMENT'
                     ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30 ring-1 ring-emerald-500'
                     : 'border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40'
                 }`}
               >
                 <div className="flex items-center gap-1.5 font-bold text-xs text-gray-900 dark:text-white mb-1">
-                  <Receipt size={14} className="text-emerald-500" />
-                  <span>2. Cộng dồn vào nợ</span>
+                  <DollarSign size={14} className="text-emerald-500" />
+                  <span>2. NCC thanh toán tiền luôn</span>
                 </div>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Ghi nhận NCC nhận nợ với shop (tăng khoản nợ NCC phải trả / tiền ứng trước).
-                </p>
-              </div>
-
-              {/* Option 3: Thanh toán luôn */}
-              <div
-                onClick={() => setSettlementType('IMMEDIATE_PAYMENT')}
-                className={`p-3 rounded border cursor-pointer transition-all ${
-                  settlementType === 'IMMEDIATE_PAYMENT'
-                    ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30 ring-1 ring-amber-500'
-                    : 'border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40'
-                }`}
-              >
-                <div className="flex items-center gap-1.5 font-bold text-xs text-gray-900 dark:text-white mb-1">
-                  <DollarSign size={14} className="text-amber-500" />
-                  <span>3. Thanh toán luôn</span>
-                </div>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                  NCC trả tiền mặt/chuyển khoản ngay, tự động sinh phiếu thu tiền vào quỹ.
+                  NCC trả tiền mặt hoặc chuyển khoản ngay: Tự động cộng tiền vào tài khoản quỹ/ngân hàng của shop.
                 </p>
               </div>
             </div>
