@@ -1698,7 +1698,7 @@ export class OrdersService {
                 warehouseCode: bal.warehouse?.code || '',
                 onHand: bal.onHand,
                 reserved: bal.reserved,
-                available: Math.max(0, bal.onHand - bal.reserved),
+                available: bal.onHand - bal.reserved,
               });
             }
           }
@@ -1717,7 +1717,7 @@ export class OrdersService {
             sellingPrice: parseFloat(String(variant?.sellingPrice || 0)),
             onHand,
             reserved,
-            available: Math.max(0, onHand - reserved),
+            available: onHand - reserved,
             warehouseBreakdown,
             requiredQuantity: 0,
             ordersCount: 0,

@@ -130,7 +130,7 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
               sku: found.sku || '',
               productName: found.productName || found.name || 'Sản phẩm',
               variationName: found.name && found.name !== found.productName ? found.name : undefined,
-              availableStock: Number(found.onHand || found.availableStock || 999),
+              availableStock: Number(found.availableStock ?? found.onHand ?? found.available ?? 999),
               quantity: 1,
               unitPrice: Number(found.costPrice || 0),
             },
@@ -194,7 +194,7 @@ export const TransferToSupplierModal: React.FC<TransferToSupplierModalProps> = (
         sku: found.sku || '',
         productName: found.productName || found.name || '',
         variationName: found.name && found.name !== found.productName ? found.name : undefined,
-        availableStock: Number(found.onHand ?? found.availableStock ?? 999),
+        availableStock: Number(found.availableStock ?? found.onHand ?? found.available ?? 999),
         unitPrice: Number(found.costPrice || 0),
       };
       return next;

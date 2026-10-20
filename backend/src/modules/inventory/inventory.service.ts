@@ -81,7 +81,7 @@ export class InventoryService {
       const damaged = b.damaged || 0;
       const pendingInspection = b.pendingInspection || 0;
       const inboundReturning = b.inboundReturning || 0;
-      const available = Math.max(0, onHand - reserved);
+      const available = onHand - reserved;
       const actualWarehouseStock = onHand + damaged + pendingInspection;
 
       return {
@@ -148,7 +148,7 @@ export class InventoryService {
       const damaged = b.damaged || 0;
       const pendingInspection = b.pendingInspection || 0;
       const inboundReturning = b.inboundReturning || 0;
-      const availableToSell = Math.max(0, onHand - reserved);
+      const availableToSell = onHand - reserved;
       const actualWarehouseStock = onHand + damaged + pendingInspection;
 
       totalOnHand += onHand;
@@ -188,7 +188,7 @@ export class InventoryService {
         actualWarehouseStock: totalOnHand + totalDamaged + totalPendingInspection,
         sellableStock: totalOnHand,
         reservedStock: totalReserved,
-        availableToSell: Math.max(0, totalOnHand - totalReserved),
+        availableToSell: totalOnHand - totalReserved,
         inboundReturningStock: totalInboundReturning,
         damagedStock: totalDamaged,
         pendingInspectionStock: totalPendingInspection,
@@ -814,7 +814,8 @@ export class InventoryService {
         });
       }
 
-      const newOnHand = Math.max(0, balance.onHand - item.quantity);
+      // Allow onHand to go negative if physical stock is insufficient (tracks negative stock/shortage deficit)
+      const newOnHand = balance.onHand - item.quantity;
       const newReserved = Math.max(0, balance.reserved - item.quantity);
 
       await tx.inventoryBalance.update({

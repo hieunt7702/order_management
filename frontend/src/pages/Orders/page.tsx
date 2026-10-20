@@ -3552,9 +3552,14 @@ export const OrdersPage: React.FC = () => {
                                 </td>
                                 <td className="py-2 px-3 text-center">
                                   <div className="flex flex-col items-center">
-                                    <span className="font-semibold text-xs text-gray-800 dark:text-gray-200">
+                                    <span className={`font-semibold text-xs ${it.onHand < 0 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-gray-800 dark:text-gray-200'}`}>
                                       {it.onHand} {it.unit}
                                     </span>
+                                    {it.onHand < 0 && (
+                                      <span className="text-[10px] text-rose-500 font-medium">
+                                        (Âm kho)
+                                      </span>
+                                    )}
                                     {it.reserved > 0 && (
                                       <span className="text-[10px] text-gray-400">
                                         (Đang giữ: {it.reserved})
