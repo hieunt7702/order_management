@@ -75,6 +75,14 @@ export class OrderFilterDto {
   @IsInt()
   @Min(1)
   limit?: number = 50;
+
+  @ApiPropertyOptional({ description: 'Lọc theo đơn ảo: "true", "false", hoặc "ALL"' })
+  @IsOptional()
+  isVirtual?: boolean | string;
+
+  @ApiPropertyOptional({ description: 'Lọc theo đi hàng thật: "true", "false", hoặc "ALL"' })
+  @IsOptional()
+  isRealGoods?: boolean | string;
 }
 
 export class CancelOrderDto {
@@ -186,6 +194,16 @@ export class CreateOrderDto {
   @IsString()
   note?: string;
 
+  @ApiPropertyOptional({ description: 'Đánh dấu đơn ảo (seeding/buff đơn)', default: false })
+  @IsOptional()
+  @IsBoolean()
+  isVirtual?: boolean;
+
+  @ApiPropertyOptional({ description: 'Có đi hàng thật hay không (mặc định false với đơn ảo)', default: false })
+  @IsOptional()
+  @IsBoolean()
+  isRealGoods?: boolean;
+
   @ApiProperty({ type: [CreateOrderItemDto] })
   @IsArray()
   @ValidateNested({ each: true })
@@ -245,6 +263,43 @@ export class UpdateOrderDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @ApiPropertyOptional({ description: 'Đánh dấu đơn ảo (seeding/buff đơn)' })
+  @IsOptional()
+  @IsBoolean()
+  isVirtual?: boolean;
+
+  @ApiPropertyOptional({ description: 'Có đi hàng thật hay không' })
+  @IsOptional()
+  @IsBoolean()
+  isRealGoods?: boolean;
+}
+
+export class MarkVirtualOrderDto {
+  @ApiProperty({ description: 'Đánh dấu là đơn ảo (true) hoặc đơn thường (false)', example: true })
+  @IsBoolean()
+  isVirtual!: boolean;
+
+  @ApiPropertyOptional({ description: 'Có đi hàng thật hay không (nếu false thì không trừ kho khi xuất)', example: false, default: false })
+  @IsOptional()
+  @IsBoolean()
+  isRealGoods?: boolean;
+}
+
+export class BulkMarkVirtualOrdersDto {
+  @ApiProperty({ description: 'Danh sách ID đơn hàng cần đánh dấu', type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  orderIds!: string[];
+
+  @ApiProperty({ description: 'Đánh dấu là đơn ảo (true) hoặc đơn thường (false)', example: true })
+  @IsBoolean()
+  isVirtual!: boolean;
+
+  @ApiPropertyOptional({ description: 'Có đi hàng thật hay không (nếu false thì không trừ kho khi xuất)', example: false, default: false })
+  @IsOptional()
+  @IsBoolean()
+  isRealGoods?: boolean;
 }
 
 export class BulkDeleteOrdersDto {

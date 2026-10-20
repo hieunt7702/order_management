@@ -499,16 +499,35 @@ export class FulfillmentService {
       }
 
       // Deduct stock and write immutable ledger
-      if (itemsToDispatch.length > 0) {
-        await this.inventoryService.dispatchStockForPackage(
-          tx,
-          tenantId,
-          warehouseId,
-          itemsToDispatch,
-          order.id,
-          targetPackage.id,
-          userId,
-        );
+      const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
+
+      if (isVirtualNoStock) {
+        // Đơn ảo không đi hàng thật: KHÔNG TRỪ TỒN KHO SẢN PHẨM (tránh trừ kho)
+        // Nếu trước đó đơn có trạng thái RESERVED, giải phóng reservation để không giam tồn kho
+        if (order.fulfillmentStatus === FulfillmentStatus.RESERVED && itemsToDispatch.length > 0) {
+          await this.inventoryService.releaseStockForOrder(
+            tx,
+            tenantId,
+            warehouseId,
+            itemsToDispatch,
+            order.id,
+            userId,
+            order.externalOrderId || order.internalOrderCode,
+          );
+        }
+      } else {
+        // Đơn thường hoặc đơn ảo có đi hàng thật: Trừ tồn kho và ghi sổ cái DISPATCH
+        if (itemsToDispatch.length > 0) {
+          await this.inventoryService.dispatchStockForPackage(
+            tx,
+            tenantId,
+            warehouseId,
+            itemsToDispatch,
+            order.id,
+            targetPackage.id,
+            userId,
+          );
+        }
       }
 
       // Check if all packages in the order are now DISPATCHED
@@ -565,14 +584,28 @@ export class FulfillmentService {
           allVerified,
           verifiedPackages,
           totalPackages,
+          isVirtual: order.isVirtual,
+          isRealGoods: order.isRealGoods,
         },
       });
 
+      let successMessage = allVerified
+        ? 'Xác nhận xuất kho hoàn tất thành công cho toàn bộ đơn hàng!'
+        : `Xác nhận kiện hàng thành công (${verifiedPackages}/${totalPackages} kiện đã quét)`;
+
+      if (isVirtualNoStock) {
+        successMessage = allVerified
+          ? 'Xác nhận xuất kho thành công (Đơn ảo - Không trừ tồn kho)!'
+          : `Xác nhận kiện hàng đơn ảo (không trừ kho) (${verifiedPackages}/${totalPackages})`;
+      } else if (order.isVirtual && order.isRealGoods) {
+        successMessage = allVerified
+          ? 'Xác nhận xuất kho thành công (Đơn ảo - Có đi hàng thật)!'
+          : `Xác nhận kiện hàng đơn ảo (có đi hàng thật) (${verifiedPackages}/${totalPackages})`;
+      }
+
       return {
         result: ScanResult.VERIFIED,
-        message: allVerified
-          ? 'Xác nhận xuất kho hoàn tất thành công cho toàn bộ đơn hàng!'
-          : `Xác nhận kiện hàng thành công (${verifiedPackages}/${totalPackages} kiện đã quét)`,
+        message: successMessage,
         package: {
           id: targetPackage.id,
           packageCode: targetPackage.packageCode,
@@ -591,6 +624,8 @@ export class FulfillmentService {
           verificationStatus: allVerified
             ? VerificationStatus.VERIFIED
             : VerificationStatus.PARTIALLY_VERIFIED,
+          isVirtual: order.isVirtual,
+          isRealGoods: order.isRealGoods,
         },
       };
     });
@@ -645,41 +680,44 @@ export class FulfillmentService {
         },
       });
 
-      // Restore stock: increment onHand and reserved, write compensatory ledger
-      for (const item of itemsToRestore) {
-        await tx.inventoryBalance.update({
-          where: {
-            tenantId_warehouseId_variantId: {
+      // Restore stock: increment onHand and reserved, write compensatory ledger (Chỉ hoàn tác kho nếu hàng thật đã xuất)
+      const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
+      if (!isVirtualNoStock) {
+        for (const item of itemsToRestore) {
+          await tx.inventoryBalance.update({
+            where: {
+              tenantId_warehouseId_variantId: {
+                tenantId,
+                warehouseId,
+                variantId: item.variantId,
+              },
+            },
+            data: {
+              onHand: { increment: item.quantity },
+              reserved: { increment: item.quantity },
+            },
+          });
+
+          const orderCode = order?.externalOrderId || order?.internalOrderCode;
+          const packageCode = pkg.packageCode || pkg.trackingCode;
+
+          await tx.inventoryLedger.create({
+            data: {
               tenantId,
               warehouseId,
               variantId: item.variantId,
+              movementType: InventoryMovementType.ADJUST,
+              deltaOnHand: item.quantity,
+              deltaReserved: item.quantity,
+              referenceType: 'SCAN_REVERSAL',
+              referenceId: pkg.id,
+              voucherCode: orderCode || packageCode,
+              performerName: 'HieuNT',
+              performedByUserId: userId,
+              note: `Hoàn tác quét xuất kiện ${packageCode}${orderCode ? ` cho đơn ${orderCode}` : ''}: ${dto.reason}`,
             },
-          },
-          data: {
-            onHand: { increment: item.quantity },
-            reserved: { increment: item.quantity },
-          },
-        });
-
-        const orderCode = order?.externalOrderId || order?.internalOrderCode;
-        const packageCode = pkg.packageCode || pkg.trackingCode;
-
-        await tx.inventoryLedger.create({
-          data: {
-            tenantId,
-            warehouseId,
-            variantId: item.variantId,
-            movementType: InventoryMovementType.ADJUST,
-            deltaOnHand: item.quantity,
-            deltaReserved: item.quantity,
-            referenceType: 'SCAN_REVERSAL',
-            referenceId: pkg.id,
-            voucherCode: orderCode || packageCode,
-            performerName: 'HieuNT',
-            performedByUserId: userId,
-            note: `Hoàn tác quét xuất kiện ${packageCode}${orderCode ? ` cho đơn ${orderCode}` : ''}: ${dto.reason}`,
-          },
-        });
+          });
+        }
       }
 
       // Re-evaluate order verification status
@@ -864,6 +902,8 @@ export class FulfillmentService {
           shopName: res.package?.order?.shop?.name || res.order?.shop?.name,
           packageCode: res.package?.packageCode || res.packageCode,
           packageId: res.package?.id || res.packageId,
+          isVirtual: res.order?.isVirtual,
+          isRealGoods: res.order?.isRealGoods,
         });
       } catch (err: any) {
         failedCount++;

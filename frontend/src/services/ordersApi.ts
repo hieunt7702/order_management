@@ -34,5 +34,9 @@ export const ordersApi = {
     api.post(`/orders/${id}/cancel`, { reason }),
   receiveReturn: (id: string, data: any) =>
     api.post(`/orders/${id}/receive-return`, data),
+  markVirtual: (id: string, data: { isVirtual: boolean; isRealGoods?: boolean }) =>
+    api.patch(`/orders/${id}/virtual`, data),
+  bulkMarkVirtual: (data: { orderIds: string[]; isVirtual: boolean; isRealGoods?: boolean }) =>
+    api.post('/orders/bulk-virtual', data),
 };
 

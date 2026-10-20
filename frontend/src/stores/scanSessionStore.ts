@@ -14,6 +14,8 @@ export interface SessionItem {
   packageCode?: string;
   packageId?: string;
   message?: string;
+  isVirtual?: boolean;
+  isRealGoods?: boolean;
 }
 
 export interface ScanSession {
@@ -343,6 +345,8 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           packageCode: backendResult.packageCode,
           packageId: backendResult.packageId,
           message: backendResult.message,
+          isVirtual: backendResult.isVirtual,
+          isRealGoods: backendResult.isRealGoods,
         };
       });
 

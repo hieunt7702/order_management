@@ -398,7 +398,8 @@ export class ImportsService {
               ) {
                 // If autoReserve enabled and all items mapped, attempt reservation
                 const allItemsMapped = existingOrder.orderItems.every((oi) => oi.variantId);
-                if (allItemsMapped) {
+                const isVirtualNoStock = existingOrder.isVirtual && !existingOrder.isRealGoods;
+                if (allItemsMapped && !isVirtualNoStock) {
                   if (dto.autoReserve !== false && warehouseId) {
                     const itemsToReserve = existingOrder.orderItems.map((oi) => ({
                       variantId: oi.variantId!,
@@ -418,6 +419,8 @@ export class ImportsService {
                   } else {
                     newFulfillmentStatus = FulfillmentStatus.PENDING_PROCESSING;
                   }
+                } else if (isVirtualNoStock) {
+                  newFulfillmentStatus = FulfillmentStatus.PENDING_PROCESSING;
                 } else {
                   newFulfillmentStatus = FulfillmentStatus.UNMAPPED;
                 }
@@ -581,12 +584,14 @@ export class ImportsService {
               });
             }
 
-            // AUTO-RESERVE IF ELIGIBLE (all mapped + READY_TO_SHIP + warehouse configured)
+            // AUTO-RESERVE IF ELIGIBLE (all mapped + READY_TO_SHIP + warehouse configured + not virtual with no stock)
+            const isCreatedVirtualNoStock = (createdOrder as any).isVirtual && !(createdOrder as any).isRealGoods;
             if (
               dto.autoReserve !== false &&
               allMapped &&
               warehouseId &&
-              parsed.platformStatus === PlatformOrderStatus.READY_TO_SHIP
+              parsed.platformStatus === PlatformOrderStatus.READY_TO_SHIP &&
+              !isCreatedVirtualNoStock
             ) {
               const itemsToReserve = createdOrder.orderItems.map((oi) => ({
                 variantId: oi.variantId!,

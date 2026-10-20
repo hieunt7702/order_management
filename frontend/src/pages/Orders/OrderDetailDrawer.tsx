@@ -16,6 +16,7 @@ import {
   Trash2,
   ArrowUpRight,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
 import { formatCurrency } from '../../utils';
 import { ordersApi } from '../../services/ordersApi';
@@ -55,6 +56,34 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
 
   const [isReturnModalOpen, setIsReturnModalOpen] = useState<boolean>(false);
   const [returnNote, setReturnNote] = useState<string>('Hàng hoàn nguyên vẹn, bao bì đầy đủ');
+
+  const [isVirtualModalOpen, setIsVirtualModalOpen] = useState<boolean>(false);
+  const [virtualIsVirtual, setVirtualIsVirtual] = useState<boolean>(false);
+  const [virtualIsRealGoods, setVirtualIsRealGoods] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (order) {
+      setVirtualIsVirtual(!!order.isVirtual);
+      setVirtualIsRealGoods(!!order.isRealGoods);
+    }
+  }, [order]);
+
+  const handleSaveVirtual = async () => {
+    setIsLoadingAction(true);
+    setActionError(null);
+    try {
+      await ordersApi.markVirtual(order.id, {
+        isVirtual: virtualIsVirtual,
+        isRealGoods: virtualIsRealGoods,
+      });
+      setIsVirtualModalOpen(false);
+      onRefresh();
+    } catch (err: any) {
+      setActionError(err.message || 'Cập nhật cấu hình đơn ảo thất bại');
+    } finally {
+      setIsLoadingAction(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -199,6 +228,56 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
               <span className="text-[11px] text-gray-400 mt-1 block font-normal">
                 Bàn giao vận chuyển
               </span>
+            </div>
+          </div>
+
+          {/* Virtual Order Status Card */}
+          <div className={`p-3.5 rounded border transition-colors ${
+            order.isVirtual
+              ? 'bg-purple-50/70 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800/60'
+              : 'bg-gray-50/50 dark:bg-[#14151a] border-gray-200 dark:border-gray-800'
+          }`}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-start gap-2.5">
+                <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 mt-0.5 ${
+                  order.isVirtual
+                    ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                }`}>
+                  <Sparkles size={16} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">
+                      {order.isVirtual ? 'Đơn hàng ảo (Seeding / Buff đơn)' : 'Đơn hàng thông thường'}
+                    </span>
+                    {order.isVirtual && (
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${
+                        !order.isRealGoods
+                          ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800'
+                          : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
+                      }`}>
+                        {!order.isRealGoods ? 'Không đi hàng thật (Không trừ kho)' : 'Có đi hàng thật (Trừ kho)'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                    {order.isVirtual
+                      ? (!order.isRealGoods
+                          ? 'Khi quét xuất kho hoặc lưu kho, hệ thống sẽ KHÔNG trừ số lượng sản phẩm trong kho.'
+                          : 'Đơn ảo này được cấu hình đi hàng thật nên hệ thống VẪN trừ tồn kho khi xuất hàng.')
+                      : 'Đơn mua thật từ khách hàng, xuất kho trừ tồn kho tiêu chuẩn.'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsVirtualModalOpen(true)}
+                className="px-2.5 py-1 text-xs font-semibold rounded bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer shrink-0 transition-colors shadow-2xs"
+              >
+                {order.isVirtual ? 'Đổi cấu hình' : 'Đánh dấu đơn ảo'}
+              </button>
             </div>
           </div>
 
@@ -561,6 +640,97 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                 className="flex-1 sm:flex-initial"
               >
                 Nhập kho hoàn
+              </ModalButton>
+            </ModalFooter>
+          </form>
+        </Modal>
+      )}
+
+      {/* Modal Cấu hình Đơn Ảo */}
+      {isVirtualModalOpen && (
+        <Modal
+          isOpen={isVirtualModalOpen}
+          onClose={() => setIsVirtualModalOpen(false)}
+          title="Thiết lập Đơn hàng ảo (Seeding / Buff đơn)"
+          size="md"
+        >
+          <form onSubmit={(e) => { e.preventDefault(); handleSaveVirtual(); }}>
+            <ModalBody>
+              <div className="space-y-4 text-xs">
+                <div className="p-3 bg-purple-50/70 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40 rounded flex items-start gap-2.5">
+                  <Sparkles size={16} className="text-purple-600 dark:text-purple-400 mt-0.5 shrink-0" />
+                  <div className="text-gray-700 dark:text-gray-300">
+                    <p className="font-semibold text-purple-900 dark:text-purple-300 mb-0.5">Quy tắc đơn ảo trong hệ thống</p>
+                    <p className="text-[11px] leading-relaxed text-gray-600 dark:text-gray-400">
+                      Đơn ảo (seeding) là đơn shop tự đặt để buff số bán hoặc đánh giá. Nếu <strong>không đi hàng thật</strong>, hệ thống sẽ bỏ qua việc trừ tồn kho khi quét xuất hàng, giúp số lượng tồn kho sản phẩm luôn chính xác.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-1">
+                  <label className="flex items-start gap-3 p-3 rounded border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/40 cursor-pointer transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={virtualIsVirtual}
+                      onChange={(e) => {
+                        setVirtualIsVirtual(e.target.checked);
+                        if (!e.target.checked) {
+                          setVirtualIsRealGoods(false);
+                        }
+                      }}
+                      className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 mt-0.5 cursor-pointer"
+                    />
+                    <div>
+                      <span className="font-semibold text-gray-900 dark:text-white block">
+                        Đánh dấu là đơn hàng ảo (Seeding / Buff đơn)
+                      </span>
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                        Bật cơ chế xử lý riêng biệt cho đơn ảo
+                      </span>
+                    </div>
+                  </label>
+
+                  {virtualIsVirtual && (
+                    <div className="ml-6 pl-3 border-l-2 border-purple-300 dark:border-purple-700/60 space-y-2 animate-fade-in">
+                      <label className="flex items-start gap-3 p-3 rounded border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/20 hover:bg-gray-50 dark:hover:bg-gray-800/40 cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={virtualIsRealGoods}
+                          onChange={(e) => setVirtualIsRealGoods(e.target.checked)}
+                          className="w-4 h-4 rounded text-[#5865f2] focus:ring-[#5865f2] mt-0.5 cursor-pointer"
+                        />
+                        <div>
+                          <span className="font-semibold text-gray-900 dark:text-white block">
+                            Có đi hàng thật (Vẫn trừ tồn kho)
+                          </span>
+                          <span className="text-[11px] text-gray-500 dark:text-gray-400 leading-normal">
+                            {virtualIsRealGoods
+                              ? 'Đơn ảo này VẪN gửi sản phẩm thật đi -> Hệ thống SẼ trừ tồn kho khi xuất kho.'
+                              : 'Đơn ảo này KHÔNG gửi sản phẩm thật (hộp rỗng/thư cảm ơn) -> Hệ thống KHÔNG trừ tồn kho.'}
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </ModalBody>
+            <ModalFooter className="flex items-center justify-between sm:justify-end gap-2.5 w-full">
+              <ModalButton
+                variant="secondary"
+                onClick={() => setIsVirtualModalOpen(false)}
+                disabled={isLoadingAction}
+                className="flex-1 sm:flex-initial"
+              >
+                Hủy
+              </ModalButton>
+              <ModalButton
+                variant="primary"
+                type="submit"
+                disabled={isLoadingAction}
+                className="flex-1 sm:flex-initial"
+              >
+                {isLoadingAction ? 'Đang lưu...' : 'Lưu thiết lập'}
               </ModalButton>
             </ModalFooter>
           </form>

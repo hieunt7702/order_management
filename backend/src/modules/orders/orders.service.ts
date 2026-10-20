@@ -14,6 +14,8 @@ import {
   CreateOrderDto,
   UpdateOrderDto,
   BulkDeleteOrdersDto,
+  MarkVirtualOrderDto,
+  BulkMarkVirtualOrdersDto,
 } from './dto/order.dto';
 import {
   PlatformOrderStatus,
@@ -99,6 +101,14 @@ export class OrdersService {
         return { items: [], total: 0, page, limit };
       }
       where.shopId = { in: allowedShopIds };
+    }
+
+    if (filter.isVirtual !== undefined && filter.isVirtual !== '' && filter.isVirtual !== 'ALL') {
+      where.isVirtual = filter.isVirtual === true || filter.isVirtual === 'true';
+    }
+
+    if (filter.isRealGoods !== undefined && filter.isRealGoods !== '' && filter.isRealGoods !== 'ALL') {
+      where.isRealGoods = filter.isRealGoods === true || filter.isRealGoods === 'true';
     }
 
     if (filter.search) {
@@ -191,6 +201,7 @@ export class OrdersService {
       unmapped,
       cancelledOnly,
       returnedOnly,
+      virtualOrders,
     ] = await Promise.all([
       this.prisma.order.count({ where }),
       this.prisma.order.count({
@@ -238,6 +249,9 @@ export class OrdersService {
           ],
         },
       }),
+      this.prisma.order.count({
+        where: { ...where, isVirtual: true },
+      }),
     ]);
 
     return {
@@ -251,6 +265,7 @@ export class OrdersService {
       cancelledOnly,
       returnedOnly,
       unmapped,
+      virtualOrders,
     };
   }
 
@@ -308,6 +323,25 @@ export class OrdersService {
       throw new BadRequestException(
         `Không thể giữ hàng cho đơn ở trạng thái "${order.fulfillmentStatus}"`,
       );
+    }
+
+    // Đơn ảo không đi hàng thật: trực tiếp chuyển sang RESERVED mà không giam giữ tồn kho thực tế
+    if (order.isVirtual && !order.isRealGoods) {
+      const updated = await this.prisma.order.update({
+        where: { id: order.id },
+        data: { fulfillmentStatus: FulfillmentStatus.RESERVED },
+      });
+
+      await this.auditService.log({
+        tenantId,
+        userId,
+        action: 'ORDER_RESERVED_VIRTUAL',
+        entityType: 'Order',
+        entityId: order.id,
+        newValues: { fulfillmentStatus: FulfillmentStatus.RESERVED, isVirtual: true, isRealGoods: false },
+      });
+
+      return updated;
     }
 
     // Check if any item is unmapped
@@ -494,6 +528,31 @@ export class OrdersService {
         quantity: item.quantity,
       }));
 
+    // Đơn ảo không đi hàng thật: không cộng hàng vào kho
+    if (order.isVirtual && !order.isRealGoods) {
+      return this.prisma.$transaction(async (tx) => {
+        const updated = await tx.order.update({
+          where: { id: order.id },
+          data: {
+            platformStatus: PlatformOrderStatus.RETURN_REFUND,
+            fulfillmentStatus: FulfillmentStatus.RETURN_RECEIVED,
+            note: dto.note ? `${order.note || ''} [Nhập hoàn đơn ảo: ${dto.note}]` : order.note,
+          },
+        });
+
+        await this.auditService.log({
+          tenantId,
+          userId,
+          action: 'ORDER_RETURN_RECEIVED_VIRTUAL',
+          entityType: 'Order',
+          entityId: order.id,
+          newValues: { fulfillmentStatus: FulfillmentStatus.RETURN_RECEIVED, isVirtual: true },
+        });
+
+        return updated;
+      });
+    }
+
     return this.prisma.$transaction(async (tx) => {
       await this.inventoryService.receiveReturnedStock(
         tx,
@@ -564,6 +623,8 @@ export class OrdersService {
           totalAmount,
           shippingFee: dto.shippingFee || 0,
           note: dto.note,
+          isVirtual: dto.isVirtual ?? false,
+          isRealGoods: dto.isVirtual ? (dto.isRealGoods ?? false) : false,
           orderDate: new Date(),
           platformStatus: PlatformOrderStatus.READY_TO_SHIP,
           fulfillmentStatus: FulfillmentStatus.PENDING_PROCESSING,
@@ -616,7 +677,7 @@ export class OrdersService {
         action: 'ORDER_CREATED_MANUAL',
         entityType: 'Order',
         entityId: order.id,
-        newValues: { externalOrderId, totalAmount },
+        newValues: { externalOrderId, totalAmount, isVirtual: dto.isVirtual },
       });
 
       return order;
@@ -626,13 +687,41 @@ export class OrdersService {
   async updateOrder(tenantId: string, id: string, userId: string, dto: UpdateOrderDto) {
     const order = await this.prisma.order.findFirst({
       where: { id, tenantId },
-      include: { packages: true },
+      include: { packages: true, orderItems: true, shop: true },
     });
     if (!order) {
       throw new NotFoundException('Không tìm thấy đơn hàng');
     }
 
+    const isMarkingVirtualNoStock =
+      dto.isVirtual === true && (dto.isRealGoods === false || (!dto.isRealGoods && !order.isRealGoods));
+    const wasReserved = order.fulfillmentStatus === FulfillmentStatus.RESERVED;
+
     return this.prisma.$transaction(async (tx) => {
+      // Nếu đang RESERVED mà chuyển sang đơn ảo không đi hàng thật -> giải phóng tồn giữ
+      if (wasReserved && isMarkingVirtualNoStock) {
+        const warehouseId = order.shop?.defaultWarehouseId;
+        if (warehouseId) {
+          const itemsToRelease = order.orderItems
+            .filter((item) => !!item.variantId)
+            .map((item) => ({
+              variantId: item.variantId!,
+              quantity: item.quantity,
+            }));
+          if (itemsToRelease.length > 0) {
+            await this.inventoryService.releaseStockForOrder(
+              tx,
+              tenantId,
+              warehouseId,
+              itemsToRelease,
+              id,
+              userId,
+              order.externalOrderId || order.internalOrderCode,
+            );
+          }
+        }
+      }
+
       const updated = await tx.order.update({
         where: { id },
         data: {
@@ -646,6 +735,8 @@ export class OrdersService {
           ...(dto.totalAmount !== undefined ? { totalAmount: dto.totalAmount } : {}),
           ...(dto.shippingFee !== undefined ? { shippingFee: dto.shippingFee } : {}),
           ...(dto.note !== undefined ? { note: dto.note } : {}),
+          ...(dto.isVirtual !== undefined ? { isVirtual: dto.isVirtual } : {}),
+          ...(dto.isRealGoods !== undefined ? { isRealGoods: dto.isRealGoods } : {}),
         },
         include: {
           shop: { select: { id: true, code: true, name: true } },
@@ -955,6 +1046,165 @@ export class OrdersService {
         skippedCount > 0 ? ` (bỏ qua ${skippedCount} đơn đã xuất kho)` : ''
       }`,
     };
+  }
+
+  async markVirtualOrder(
+    tenantId: string,
+    id: string,
+    userId: string,
+    dto: MarkVirtualOrderDto,
+  ) {
+    const order = await this.prisma.order.findFirst({
+      where: { id, tenantId },
+      include: { orderItems: true, shop: true, packages: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy đơn hàng trong Workspace');
+    }
+
+    const isVirtual = !!dto.isVirtual;
+    const isRealGoods = isVirtual ? !!dto.isRealGoods : false;
+
+    return this.prisma.$transaction(async (tx) => {
+      // Nếu đang giữ hàng (RESERVED) mà chuyển sang đơn ảo không đi hàng thật -> giải phóng giữ hàng để khôi phục tồn
+      if (order.fulfillmentStatus === FulfillmentStatus.RESERVED && isVirtual && !isRealGoods) {
+        const warehouseId = order.shop?.defaultWarehouseId;
+        if (warehouseId) {
+          const itemsToRelease = order.orderItems
+            .filter((item) => !!item.variantId)
+            .map((item) => ({
+              variantId: item.variantId!,
+              quantity: item.quantity,
+            }));
+          if (itemsToRelease.length > 0) {
+            await this.inventoryService.releaseStockForOrder(
+              tx,
+              tenantId,
+              warehouseId,
+              itemsToRelease,
+              order.id,
+              userId,
+              order.externalOrderId || order.internalOrderCode,
+            );
+          }
+        }
+      }
+
+      const updated = await tx.order.update({
+        where: { id: order.id },
+        data: {
+          isVirtual,
+          isRealGoods,
+        },
+        include: {
+          shop: { select: { id: true, code: true, name: true } },
+          orderItems: true,
+          packages: true,
+        },
+      });
+
+      await this.auditService.log({
+        tenantId,
+        userId,
+        action: 'ORDER_MARK_VIRTUAL',
+        entityType: 'Order',
+        entityId: order.id,
+        newValues: { isVirtual, isRealGoods },
+      });
+
+      return updated;
+    });
+  }
+
+  async bulkMarkVirtualOrders(
+    tenantId: string,
+    userId: string,
+    dto: BulkMarkVirtualOrdersDto,
+  ) {
+    if (!dto.orderIds || dto.orderIds.length === 0) {
+      throw new BadRequestException('Vui lòng chọn ít nhất một đơn hàng');
+    }
+
+    const isVirtual = !!dto.isVirtual;
+    const isRealGoods = isVirtual ? !!dto.isRealGoods : false;
+
+    const orders = await this.prisma.order.findMany({
+      where: {
+        id: { in: dto.orderIds },
+        tenantId,
+      },
+      include: {
+        orderItems: true,
+        shop: true,
+      },
+    });
+
+    if (orders.length === 0) {
+      throw new NotFoundException('Không tìm thấy đơn hàng nào phù hợp trong Workspace');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // Nếu chuyển sang đơn ảo không đi hàng thật, giải phóng tồn giữ hàng cho các đơn đang RESERVED
+      if (isVirtual && !isRealGoods) {
+        for (const order of orders) {
+          if (order.fulfillmentStatus === FulfillmentStatus.RESERVED) {
+            const warehouseId = order.shop?.defaultWarehouseId;
+            if (warehouseId) {
+              const itemsToRelease = order.orderItems
+                .filter((item) => !!item.variantId)
+                .map((item) => ({
+                  variantId: item.variantId!,
+                  quantity: item.quantity,
+                }));
+              if (itemsToRelease.length > 0) {
+                await this.inventoryService.releaseStockForOrder(
+                  tx,
+                  tenantId,
+                  warehouseId,
+                  itemsToRelease,
+                  order.id,
+                  userId,
+                  order.externalOrderId || order.internalOrderCode,
+                );
+              }
+            }
+          }
+        }
+      }
+
+      await tx.order.updateMany({
+        where: {
+          id: { in: dto.orderIds },
+          tenantId,
+        },
+        data: {
+          isVirtual,
+          isRealGoods,
+        },
+      });
+
+      await this.auditService.log({
+        tenantId,
+        userId,
+        action: 'ORDER_BULK_MARK_VIRTUAL',
+        entityType: 'Order',
+        entityId: 'bulk',
+        newValues: {
+          orderIdsCount: dto.orderIds.length,
+          isVirtual,
+          isRealGoods,
+        },
+      });
+
+      return {
+        success: true,
+        count: orders.length,
+        message: `Đã cập nhật ${orders.length} đơn hàng thành ${isVirtual ? 'đơn ảo' : 'đơn thường'}${
+          isVirtual ? (isRealGoods ? ' (có đi hàng thật)' : ' (không trừ kho)') : ''
+        }`,
+      };
+    });
   }
 }
 

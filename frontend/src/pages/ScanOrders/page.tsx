@@ -1065,6 +1065,18 @@ export const ScanOrdersPage: React.FC = () => {
                             </span>
 
                             <div className="flex items-center gap-1.5 shrink-0">
+                              {item.isVirtual && (
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap border shrink-0 ${
+                                    !item.isRealGoods
+                                      ? 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30'
+                                      : 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30'
+                                  }`}
+                                  title={!item.isRealGoods ? 'Đơn ảo không đi hàng thật: không trừ kho sản phẩm' : 'Đơn ảo có đi hàng thật: đã trừ kho sản phẩm'}
+                                >
+                                  Đơn ảo {!item.isRealGoods ? '(K.trừ kho)' : '(Hàng thật)'}
+                                </span>
+                              )}
                               <span
                                 className={`px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap border shrink-0 ${
                                   isVerified

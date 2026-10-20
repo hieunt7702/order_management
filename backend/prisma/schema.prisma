@@ -460,6 +460,9 @@ model Order {
   note           String?
   rawPlatformData Json?
 
+  isVirtual   Boolean  @default(false)
+  isRealGoods Boolean  @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -480,6 +483,7 @@ model Order {
   @@index([tenantId, verificationStatus])
   @@index([tenantId, trackingCode])
   @@index([tenantId, orderDate])
+  @@index([tenantId, isVirtual])
   @@map("orders")
 }
 

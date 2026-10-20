@@ -19,6 +19,8 @@ import {
   CreateOrderDto,
   UpdateOrderDto,
   BulkDeleteOrdersDto,
+  MarkVirtualOrderDto,
+  BulkMarkVirtualOrdersDto,
 } from './dto/order.dto';
 
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -132,6 +134,28 @@ export class OrdersController {
     return this.ordersService.bulkDeleteOrders(tenantId, user.id, dto);
   }
 
+  @Patch(':id/virtual')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Đánh dấu đơn hàng là đơn ảo và thiết lập có đi hàng thật hay không' })
+  async markVirtual(
+    @CurrentTenantId() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: MarkVirtualOrderDto,
+  ) {
+    return this.ordersService.markVirtualOrder(tenantId, id, user.id, dto);
+  }
+
+  @Post('bulk-virtual')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Đánh dấu hàng loạt đơn hàng là đơn ảo hoặc khôi phục đơn thường' })
+  async bulkMarkVirtual(
+    @CurrentTenantId() tenantId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: BulkMarkVirtualOrdersDto,
+  ) {
+    return this.ordersService.bulkMarkVirtualOrders(tenantId, user.id, dto);
+  }
 
   @Post(':id/reserve')
   @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.WAREHOUSE)
