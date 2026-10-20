@@ -33,7 +33,7 @@ import {
   SlidersHorizontal,
   QrCode,
 } from 'lucide-react';
-import { purchaseReceiptsApi, PurchaseReceiptModel, CreatePurchaseReceiptPayload } from '../../services/purchaseReceiptsApi';
+import { purchaseReceiptsApi, PurchaseReceiptModel, CreatePurchaseReceiptPayload, PurchaseReceiptsSummary } from '../../services/purchaseReceiptsApi';
 import { suppliersApi, SupplierItem } from '../../services/suppliersApi';
 import { supplierPaymentsApi } from '../../services/supplierPaymentsApi';
 import { productsApi } from '../../services/productsApi';
@@ -96,6 +96,10 @@ export const PurchaseReceiptsPage: React.FC = () => {
   const [filterPaymentStatus, setFilterPaymentStatus] = useState<string>('ALL');
   const [filterReceivingStatus, setFilterReceivingStatus] = useState<string>('ALL');
   const [filterDueStatus, setFilterDueStatus] = useState<string>('ALL');
+  const [datePreset, setDatePreset] = useState<string>('ALL');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [apiSummary, setApiSummary] = useState<PurchaseReceiptsSummary | null>(null);
 
   // Pagination
   const [page, setPage] = useState<number>(1);
@@ -163,6 +167,52 @@ export const PurchaseReceiptsPage: React.FC = () => {
     loadVariants();
   }, []);
 
+  const handleDatePresetChange = (preset: string) => {
+    setDatePreset(preset);
+    setPage(1);
+    const now = new Date();
+    const formatYMD = (d: Date) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    if (preset === 'ALL') {
+      setStartDate('');
+      setEndDate('');
+    } else if (preset === 'TODAY') {
+      const todayStr = formatYMD(now);
+      setStartDate(todayStr);
+      setEndDate(todayStr);
+    } else if (preset === 'YESTERDAY') {
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const yesterdayStr = formatYMD(yesterday);
+      setStartDate(yesterdayStr);
+      setEndDate(yesterdayStr);
+    } else if (preset === 'LAST_7_DAYS') {
+      const past = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      setStartDate(formatYMD(past));
+      setEndDate(formatYMD(now));
+    } else if (preset === 'LAST_30_DAYS') {
+      const past = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      setStartDate(formatYMD(past));
+      setEndDate(formatYMD(now));
+    } else if (preset === 'THIS_MONTH') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      setStartDate(formatYMD(firstDay));
+      setEndDate(formatYMD(lastDay));
+    } else if (preset === 'LAST_MONTH') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+      setStartDate(formatYMD(firstDay));
+      setEndDate(formatYMD(lastDay));
+    } else if (preset === 'CUSTOM') {
+      // Giữ nguyên khoảng ngày tùy chọn
+    }
+  };
+
   useEffect(() => {
     loadReceipts();
   }, [
@@ -173,6 +223,8 @@ export const PurchaseReceiptsPage: React.FC = () => {
     filterPaymentStatus,
     filterReceivingStatus,
     filterDueStatus,
+    startDate,
+    endDate,
   ]);
 
   const loadSuppliers = async () => {
@@ -206,6 +258,8 @@ export const PurchaseReceiptsPage: React.FC = () => {
         paymentStatus: filterPaymentStatus === 'ALL' ? undefined : filterPaymentStatus,
         receivingStatus: filterReceivingStatus === 'ALL' ? undefined : filterReceivingStatus,
         dueStatus: filterDueStatus === 'ALL' ? undefined : filterDueStatus,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
         search: searchTerm.trim() || undefined,
       });
 
@@ -214,6 +268,11 @@ export const PurchaseReceiptsPage: React.FC = () => {
       setReceipts(Array.isArray(list) ? list : []);
       setTotal(resp?.total || resp?.meta?.total || (Array.isArray(list) ? list.length : 0));
       setTotalPages(resp?.totalPages || resp?.meta?.totalPages || 1);
+      if (resp?.summary) {
+        setApiSummary(resp.summary);
+      } else {
+        setApiSummary(null);
+      }
     } catch (err) {
       console.error('Lỗi tải danh sách phiếu nhập:', err);
     } finally {
@@ -221,11 +280,34 @@ export const PurchaseReceiptsPage: React.FC = () => {
     }
   };
 
-  // KPI calculations
-  const totalItemsVal = receipts.reduce((sum, r) => sum + Number(r.totalItemsAmount || 0), 0);
-  const totalPayableVal = receipts.reduce((sum, r) => sum + Number(r.payableAmount || 0), 0);
-  const totalPaidVal = receipts.reduce((sum, r) => sum + Number(r.paidAmount || 0), 0);
-  const totalRemainingVal = receipts.reduce((sum, r) => sum + Number(r.remainingAmount || 0), 0);
+  // KPI calculations (Ưu tiên summary tổng hợp toàn bộ từ backend, fallback theo list hiển thị)
+  const totalItemsVal = apiSummary
+    ? apiSummary.totalItemsAmount
+    : receipts.reduce((sum, r) => sum + Number(r.totalItemsAmount || 0), 0);
+
+  const totalPayableVal = apiSummary
+    ? apiSummary.payableAmount
+    : receipts.reduce((sum, r) => sum + Number(r.payableAmount || 0), 0);
+
+  const totalPaidOnlyVal = apiSummary
+    ? apiSummary.paidAmount
+    : receipts.reduce((sum, r) => sum + Number(r.paidAmount || 0), 0);
+
+  const totalReturnDeductionVal = apiSummary
+    ? apiSummary.returnDeductionAmount
+    : receipts.reduce((sum, r) => sum + Number(r.returnDeductionAmount || 0), 0);
+
+  // Đã thanh toán / Cấn trừ = Tiền mặt/CK đã trả + Tiền trả hàng cấn trừ nợ NCC
+  const totalPaidAndOffsetVal = apiSummary
+    ? apiSummary.totalPaidAndOffsetAmount
+    : receipts.reduce(
+        (sum, r) => sum + Number(r.paidAmount || 0) + Number(r.returnDeductionAmount || 0),
+        0,
+      );
+
+  const totalRemainingVal = apiSummary
+    ? apiSummary.remainingAmount
+    : receipts.reduce((sum, r) => sum + Number(r.remainingAmount || 0), 0);
 
   // Form Item Handlers
   const handleItemChange = (index: number, field: string, value: any) => {
@@ -476,8 +558,11 @@ export const PurchaseReceiptsPage: React.FC = () => {
         <SystemMetricPairCard
           leftItem={{
             title: 'Đã thanh toán / Cấn trừ',
-            value: `${totalPaidVal.toLocaleString('vi-VN')}đ`,
-            subtitle: 'Bù trừ nợ & thanh toán',
+            value: `${totalPaidAndOffsetVal.toLocaleString('vi-VN')}đ`,
+            subtitle:
+              totalReturnDeductionVal > 0
+                ? `Đã chi: ${totalPaidOnlyVal.toLocaleString('vi-VN')}đ • Trả hàng trừ nợ: ${totalReturnDeductionVal.toLocaleString('vi-VN')}đ`
+                : 'Bù trừ nợ & thanh toán',
             icon: CreditCard,
             colorScheme: 'green',
           }}
@@ -500,7 +585,14 @@ export const PurchaseReceiptsPage: React.FC = () => {
             placeholder="Tìm mã phiếu, SKU, ghi chú..."
             className="flex-1 sm:w-64"
           />
-          {(searchTerm || selectedSupplierId !== 'ALL' || filterPaymentStatus !== 'ALL' || filterReceivingStatus !== 'ALL' || filterDueStatus !== 'ALL') && (
+          {(searchTerm ||
+            selectedSupplierId !== 'ALL' ||
+            filterPaymentStatus !== 'ALL' ||
+            filterReceivingStatus !== 'ALL' ||
+            filterDueStatus !== 'ALL' ||
+            datePreset !== 'ALL' ||
+            startDate ||
+            endDate) && (
             <SystemFilterReset
               onClick={() => {
                 setSearchTerm('');
@@ -508,6 +600,9 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 setFilterPaymentStatus('ALL');
                 setFilterReceivingStatus('ALL');
                 setFilterDueStatus('ALL');
+                setDatePreset('ALL');
+                setStartDate('');
+                setEndDate('');
                 setPage(1);
               }}
               className="shrink-0"
@@ -516,6 +611,70 @@ export const PurchaseReceiptsPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* Bộ lọc ngày / khoảng thời gian */}
+          <div className="w-full sm:w-48">
+            <Select
+              value={datePreset}
+              onChange={(val) => handleDatePresetChange(String(val))}
+              options={[
+                { value: 'ALL', label: 'Tất cả thời gian', icon: Calendar },
+                { value: 'TODAY', label: 'Hôm nay', icon: Calendar },
+                { value: 'YESTERDAY', label: 'Hôm qua', icon: Calendar },
+                { value: 'LAST_7_DAYS', label: '7 ngày qua', icon: Calendar },
+                { value: 'LAST_30_DAYS', label: '30 ngày qua', icon: Calendar },
+                { value: 'THIS_MONTH', label: 'Tháng này', icon: Calendar },
+                { value: 'LAST_MONTH', label: 'Tháng trước', icon: Calendar },
+                { value: 'CUSTOM', label: 'Tùy chọn ngày...', icon: Calendar },
+              ]}
+              icon={Calendar}
+              size="sm"
+            />
+          </div>
+
+          {/* Ô chọn khoảng ngày tùy chỉnh nếu chọn Tùy chọn ngày hoặc đã có ngày */}
+          {(datePreset === 'CUSTOM' || startDate || endDate) && (
+            <div className="col-span-2 sm:col-span-1 flex items-center gap-1.5 bg-gray-50 dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/80 px-2 py-1 rounded text-xs">
+              <span className="text-gray-400 text-[11px] shrink-0">Từ:</span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  setDatePreset('CUSTOM');
+                  setPage(1);
+                }}
+                className="bg-transparent border-none text-xs text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
+              />
+              <span className="text-gray-400 text-[11px] shrink-0">-</span>
+              <span className="text-gray-400 text-[11px] shrink-0">Đến:</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setDatePreset('CUSTOM');
+                  setPage(1);
+                }}
+                className="bg-transparent border-none text-xs text-gray-800 dark:text-gray-200 focus:outline-none cursor-pointer"
+              />
+              {(startDate || endDate) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStartDate('');
+                    setEndDate('');
+                    setDatePreset('ALL');
+                    setPage(1);
+                  }}
+                  className="text-gray-400 hover:text-red-500 cursor-pointer shrink-0 ml-1"
+                  title="Xóa lọc ngày"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="w-full sm:w-52">
             <Select
               value={selectedSupplierId}

@@ -415,6 +415,19 @@ export class PurchaseReceiptsService {
           ],
         });
       }
+    if (filter.startDate || filter.endDate) {
+      const dateFilter: Prisma.DateTimeFilter = {};
+      if (filter.startDate) {
+        const start = new Date(filter.startDate);
+        start.setHours(0, 0, 0, 0);
+        dateFilter.gte = start;
+      }
+      if (filter.endDate) {
+        const end = new Date(filter.endDate);
+        end.setHours(23, 59, 59, 999);
+        dateFilter.lte = end;
+      }
+      andConditions.push({ receiptDate: dateFilter });
     }
 
     const where: Prisma.PurchaseReceiptWhereInput = {
@@ -432,7 +445,7 @@ export class PurchaseReceiptsService {
       ...(andConditions.length > 0 && { AND: andConditions }),
     };
 
-    const [total, receipts] = await Promise.all([
+    const [total, receipts, aggregate] = await Promise.all([
       this.prisma.purchaseReceipt.count({ where }),
       this.prisma.purchaseReceipt.findMany({
         where,
@@ -476,6 +489,16 @@ export class PurchaseReceiptsService {
           },
         },
       }),
+      this.prisma.purchaseReceipt.aggregate({
+        where,
+        _sum: {
+          totalItemsAmount: true,
+          payableAmount: true,
+          paidAmount: true,
+          returnDeductionAmount: true,
+          remainingAmount: true,
+        },
+      }),
     ]);
 
     const items = receipts.map((r) => {
@@ -502,6 +525,16 @@ export class PurchaseReceiptsService {
       };
     });
 
+    const summary = {
+      totalItemsAmount: Number(aggregate._sum.totalItemsAmount || 0),
+      payableAmount: Number(aggregate._sum.payableAmount || 0),
+      paidAmount: Number(aggregate._sum.paidAmount || 0),
+      returnDeductionAmount: Number(aggregate._sum.returnDeductionAmount || 0),
+      totalPaidAndOffsetAmount:
+        Number(aggregate._sum.paidAmount || 0) + Number(aggregate._sum.returnDeductionAmount || 0),
+      remainingAmount: Number(aggregate._sum.remainingAmount || 0),
+    };
+
     return {
       items,
       data: items,
@@ -509,6 +542,7 @@ export class PurchaseReceiptsService {
       page,
       limit,
       totalPages: Math.ceil(total / limit) || 1,
+      summary,
     };
   }
 

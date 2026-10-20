@@ -108,6 +108,15 @@ export interface CreatePurchaseReceiptPayload {
   immediatePaymentMethod?: string;
 }
 
+export interface PurchaseReceiptsSummary {
+  totalItemsAmount: number;
+  payableAmount: number;
+  paidAmount: number;
+  returnDeductionAmount: number;
+  totalPaidAndOffsetAmount: number;
+  remainingAmount: number;
+}
+
 export interface PurchaseReceiptsResponse {
   data: PurchaseReceiptModel[];
   meta: {
@@ -116,6 +125,7 @@ export interface PurchaseReceiptsResponse {
     total: number;
     totalPages: number;
   };
+  summary?: PurchaseReceiptsSummary;
 }
 
 export const purchaseReceiptsApi = {
@@ -126,6 +136,8 @@ export const purchaseReceiptsApi = {
     paymentStatus?: string;
     receivingStatus?: string;
     dueStatus?: string;
+    startDate?: string;
+    endDate?: string;
     search?: string;
     page?: number;
     limit?: number;

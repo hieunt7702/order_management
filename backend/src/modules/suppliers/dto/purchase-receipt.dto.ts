@@ -211,6 +211,16 @@ export class PurchaseReceiptFilterDto {
   @IsString()
   search?: string;
 
+  @ApiPropertyOptional({ example: '2026-10-01' })
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @ApiPropertyOptional({ example: '2026-10-31' })
+  @IsOptional()
+  @IsString()
+  endDate?: string;
+
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
   page?: number;
