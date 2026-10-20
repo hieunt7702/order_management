@@ -76,6 +76,35 @@ export class CreatePurchaseReturnDto {
   @IsString()
   reason?: string;
 
+  @ApiPropertyOptional({
+    enum: ['OFFSET_DEBT', 'ACCUMULATE_DEBT', 'IMMEDIATE_PAYMENT'],
+    description: 'Phương thức tài chính: Khấu trừ nợ, Cộng dồn vào nợ, hoặc Thanh toán luôn',
+    default: 'OFFSET_DEBT',
+  })
+  @IsOptional()
+  @IsString()
+  settlementType?: 'OFFSET_DEBT' | 'ACCUMULATE_DEBT' | 'IMMEDIATE_PAYMENT';
+
+  @ApiPropertyOptional({ example: 'BANK_TRANSFER' })
+  @IsOptional()
+  @IsString()
+  immediatePaymentMethod?: string;
+
+  @ApiPropertyOptional({ example: 'CASH_FUND' })
+  @IsOptional()
+  @IsString()
+  immediateFundSource?: string;
+
+  @ApiPropertyOptional({ example: 'account-uuid' })
+  @IsOptional()
+  @IsString()
+  immediateAccountId?: string;
+
+  @ApiPropertyOptional({ example: 'Nguyen Van A' })
+  @IsOptional()
+  @IsString()
+  immediatePayerName?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

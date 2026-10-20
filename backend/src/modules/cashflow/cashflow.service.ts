@@ -516,7 +516,9 @@ export class CashflowService {
 
     const txStatus = dto.status || CashTransactionStatus.CONFIRMED;
     const txCode = await this.generateUniqueTransactionCode(tenantId, dto.type);
-    const txDate = dto.transactionDate ? new Date(dto.transactionDate) : new Date();
+    const txDate = dto.transactionDate
+      ? (dto.transactionDate.includes('T') ? new Date(dto.transactionDate) : new Date(`${dto.transactionDate}T${new Date().toTimeString().split(' ')[0]}`))
+      : new Date();
     const amountDec = new Prisma.Decimal(dto.amount);
 
     return this.prisma.$transaction(async (tx) => {
@@ -730,7 +732,7 @@ export class CashflowService {
           toAccount: true,
           shop: { select: { id: true, name: true } },
         },
-        orderBy: { transactionDate: 'desc' },
+        orderBy: [{ transactionDate: 'desc' }, { createdAt: 'desc' }],
         skip,
         take: limit,
       }),
@@ -1061,7 +1063,7 @@ export class CashflowService {
         toAccount: true,
         shop: { select: { id: true, name: true } },
       },
-      orderBy: { transactionDate: 'desc' },
+      orderBy: [{ transactionDate: 'desc' }, { createdAt: 'desc' }],
       take: 8,
     });
 

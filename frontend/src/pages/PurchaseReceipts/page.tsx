@@ -72,6 +72,15 @@ import {
   DropdownMenuSeparator,
 } from '../../components/ui/DropdownMenu';
 
+const formatDateTime = (dateStr?: string | Date | null) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  const time = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const date = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return `${time} ${date}`;
+};
+
 export const PurchaseReceiptsPage: React.FC = () => {
   const { warehouses, shops, selectedWarehouseId } = useWorkspaceStore();
 
@@ -703,8 +712,9 @@ export const PurchaseReceiptsPage: React.FC = () => {
                       <div className="font-semibold font-mono text-indigo-600 dark:text-indigo-400 hover:underline">
                         {r.receiptCode}
                       </div>
-                      <div className="text-[11px] text-gray-400 mt-0.5">
-                        {new Date(r.receiptDate).toLocaleDateString('vi-VN')}
+                      <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1 font-mono">
+                        <Clock size={11} className="shrink-0 text-gray-400" />
+                        <span>{formatDateTime(r.receiptDate || r.createdAt)}</span>
                       </div>
                     </SystemTd>
 
@@ -964,7 +974,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                       <Warehouse size={11} className="shrink-0" />
                       <span className="truncate">{r.warehouse?.name || 'Kho chính'}</span>
                     </div>
-                    <span>{r.receiptDate ? new Date(r.receiptDate).toLocaleDateString('vi-VN') : ''}</span>
+                    <span className="flex items-center gap-1 font-mono text-[11px]"><Clock size={11} /> {formatDateTime(r.receiptDate || r.createdAt)}</span>
                   </div>
                 </div>
 
@@ -1820,7 +1830,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         title={`Chi tiết: ${selectedReceiptDetail?.receiptCode || ''}`}
-        subtitle="Hàng thực nhận • Công nợ • Thanh toán"
+        subtitle={`Nhập lúc: ${formatDateTime(selectedReceiptDetail?.receiptDate || selectedReceiptDetail?.createdAt)} • Hàng thực nhận • Công nợ`}
         icon={FileText}
         size="2xl"
       >

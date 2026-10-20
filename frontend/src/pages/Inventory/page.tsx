@@ -17,7 +17,9 @@ import {
   Package,
   PackagePlus,
   PackageX,
+  Truck,
 } from 'lucide-react';
+import { TransferToSupplierModal } from '../../components/inventory/TransferToSupplierModal';
 import { inventoryApi } from '../../services/inventoryApi';
 import { productsApi } from '../../services/productsApi';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
@@ -92,6 +94,8 @@ export const InventoryPage: React.FC = () => {
   // Modals
   const [isReceiveModalOpen, setIsReceiveModalOpen] = useState<boolean>(false);
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState<boolean>(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState<boolean>(false);
+  const [transferInitialVariantId, setTransferInitialVariantId] = useState<string | undefined>(undefined);
 
   // Products & Variants list for dropdown selection
   const [allVariants, setAllVariants] = useState<any[]>([]);
@@ -322,6 +326,19 @@ export const InventoryPage: React.FC = () => {
               <span className="hidden sm:inline md:hidden">Phiếu nhập</span>
             </Button>
           </Link>
+          <Button
+            size="sm"
+            onClick={() => {
+              setTransferInitialVariantId(undefined);
+              setIsTransferModalOpen(true);
+            }}
+            className="h-8 px-2 sm:px-3 gap-1 sm:gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium"
+            title="Chuyển hàng cho Nhà cung cấp (Khấu trừ nợ, cộng dồn vào nợ hoặc nhận thanh toán)"
+          >
+            <Truck size={14} />
+            <span className="hidden md:inline">Chuyển hàng NCC</span>
+            <span className="hidden sm:inline md:hidden">Chuyển NCC</span>
+          </Button>
           <Button
             size="sm"
             onClick={() => handleOpenReceiveModal()}
@@ -676,6 +693,15 @@ export const InventoryPage: React.FC = () => {
                                       <ArrowDownLeft className="w-4 h-4 text-emerald-500" />
                                       <span>Nhập thêm hàng</span>
                                     </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setTransferInitialVariantId(b.variantId);
+                                        setIsTransferModalOpen(true);
+                                      }}
+                                    >
+                                      <Truck className="w-4 h-4 text-indigo-500" />
+                                      <span>Chuyển hàng NCC</span>
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => openAdjustForVariant(b.variantId)}>
                                       <Sliders className="w-4 h-4 text-amber-500" />
                                       <span>Điều chỉnh kiểm kê</span>
@@ -802,6 +828,17 @@ export const InventoryPage: React.FC = () => {
                           >
                             <ArrowDownLeft size={12} className="text-emerald-500" />
                             <span>Nhập thêm</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTransferInitialVariantId(b.variantId);
+                              setIsTransferModalOpen(true);
+                            }}
+                            className="px-2.5 py-1 text-xs rounded border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 flex items-center gap-1 font-medium cursor-pointer"
+                          >
+                            <Truck size={12} className="text-indigo-500" />
+                            <span>Chuyển NCC</span>
                           </button>
                           <button
                             type="button"
@@ -1771,6 +1808,24 @@ export const InventoryPage: React.FC = () => {
           </form>
         </Modal>
       )}
+
+      {/* Transfer to Supplier Modal */}
+      <TransferToSupplierModal
+        isOpen={isTransferModalOpen}
+        onClose={() => {
+          setIsTransferModalOpen(false);
+          setTransferInitialVariantId(undefined);
+        }}
+        onSuccess={() => {
+          loadBalances();
+          if (activeTab === 'LEDGER') {
+            loadLedger();
+          }
+        }}
+        initialWarehouseId={selectedWarehouseId || undefined}
+        initialVariantId={transferInitialVariantId}
+        warehouses={warehouses}
+      />
     </div>
   );
 };

@@ -127,7 +127,9 @@ export class PurchaseReceiptsService {
           shopId: dto.shopId || null,
           warehouseId: dto.warehouseId,
           receiptCode,
-          receiptDate: dto.receiptDate ? new Date(dto.receiptDate) : new Date(),
+          receiptDate: dto.receiptDate
+            ? (dto.receiptDate.includes('T') ? new Date(dto.receiptDate) : new Date(`${dto.receiptDate}T${new Date().toTimeString().split(' ')[0]}`))
+            : new Date(),
           paymentDueDate: dto.paymentDueDate ? new Date(dto.paymentDueDate) : null,
           totalItemsAmount: new Prisma.Decimal(totalItemsAmount),
           discountAmount: new Prisma.Decimal(discountAmount),
@@ -436,7 +438,7 @@ export class PurchaseReceiptsService {
         where,
         skip,
         take: limit,
-        orderBy: { receiptDate: 'desc' },
+        orderBy: [{ receiptDate: 'desc' }, { createdAt: 'desc' }],
         include: {
           supplier: {
             select: {

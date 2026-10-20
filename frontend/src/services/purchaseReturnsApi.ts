@@ -53,6 +53,11 @@ export interface CreatePurchaseReturnPayload {
   returnCode?: string;
   returnDate?: string;
   debtOffsetAmount?: number;
+  settlementType?: 'OFFSET_DEBT' | 'ACCUMULATE_DEBT' | 'IMMEDIATE_PAYMENT';
+  immediatePaymentMethod?: 'CASH' | 'BANK_TRANSFER' | 'OTHER';
+  immediateFundSource?: 'CASH_FUND' | 'BANK_ACCOUNT';
+  immediateAccountId?: string;
+  immediatePayerName?: string;
   reason?: string;
   note?: string;
   items: Array<{

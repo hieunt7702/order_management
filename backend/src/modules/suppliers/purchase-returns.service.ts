@@ -13,6 +13,11 @@ import {
   Prisma,
   InventoryMovementType,
   PurchasePaymentStatus,
+  CashAccountType,
+  CashCategoryType,
+  CashTransactionType,
+  CashTransactionStatus,
+  SupplierPaymentType,
 } from '@prisma/client';
 
 @Injectable()
@@ -78,19 +83,30 @@ export class PurchaseReturnsService {
     const debtOffsetAmount =
       dto.debtOffsetAmount !== undefined ? dto.debtOffsetAmount : totalReturnAmount;
 
+    const settlementType = dto.settlementType || (dto.receiptId ? 'OFFSET_DEBT' : 'ACCUMULATE_DEBT');
+    const returnDate = dto.returnDate
+      ? (dto.returnDate.includes('T') ? new Date(dto.returnDate) : new Date(`${dto.returnDate}T${new Date().toTimeString().split(' ')[0]}`))
+      : new Date();
+
     return this.prisma.$transaction(async (tx) => {
-      // 1. Tạo phiếu trả hàng
+      // 1. Tạo phiếu trả / chuyển hàng
       const purchaseReturn = await tx.purchaseReturn.create({
         data: {
           tenantId,
           supplierId: dto.supplierId,
           receiptId: dto.receiptId || null,
           returnCode,
-          returnDate: dto.returnDate ? new Date(dto.returnDate) : new Date(),
+          returnDate,
           totalReturnAmount: new Prisma.Decimal(totalReturnAmount),
           debtOffsetAmount: new Prisma.Decimal(debtOffsetAmount),
           status: 'CONFIRMED',
-          reason: dto.reason?.trim() || null,
+          reason:
+            dto.reason?.trim() ||
+            (settlementType === 'IMMEDIATE_PAYMENT'
+              ? 'Xuất chuyển hàng NCC (Thanh toán luôn)'
+              : settlementType === 'ACCUMULATE_DEBT'
+              ? 'Xuất chuyển hàng NCC (Cộng dồn vào nợ)'
+              : 'Xuất chuyển hàng NCC (Khấu trừ nợ)'),
           note: dto.note?.trim() || null,
           createdById: userId,
           items: {
@@ -137,42 +153,161 @@ export class PurchaseReturnsService {
             referenceType: 'PURCHASE_RETURN',
             referenceId: purchaseReturn.id,
             performedByUserId: userId,
-            note: `Xuất trả hàng NCC ${supplier.name} theo phiếu ${returnCode}`,
+            note: `Xuất chuyển hàng cho NCC ${supplier.name} theo phiếu ${returnCode}`,
           },
         });
       }
 
-      // 3. Nếu liên kết với phiếu nhập gốc, giảm trừ công nợ trên phiếu đó
-      if (dto.receiptId && debtOffsetAmount > 0) {
-        const receipt = await tx.purchaseReceipt.findFirst({
-          where: { id: dto.receiptId, tenantId, supplierId: dto.supplierId },
-        });
+      // 3. Xử lý tài chính theo 3 phương án
+      if (settlementType === 'OFFSET_DEBT') {
+        // Phương án 1: Khấu trừ nợ
+        if (dto.receiptId && debtOffsetAmount > 0) {
+          const receipt = await tx.purchaseReceipt.findFirst({
+            where: { id: dto.receiptId, tenantId, supplierId: dto.supplierId },
+          });
 
-        if (receipt) {
-          const currentPayable = Number(receipt.payableAmount);
-          const currentPaid = Number(receipt.paidAmount);
-          const currentReturnDeduction = Number(receipt.returnDeductionAmount);
+          if (receipt) {
+            const currentPayable = Number(receipt.payableAmount);
+            const currentPaid = Number(receipt.paidAmount);
+            const currentReturnDeduction = Number(receipt.returnDeductionAmount);
 
-          const newReturnDeduction = currentReturnDeduction + debtOffsetAmount;
-          const newRemaining = Math.max(0, currentPayable - currentPaid - newReturnDeduction);
+            const newReturnDeduction = currentReturnDeduction + debtOffsetAmount;
+            const newRemaining = Math.max(0, currentPayable - currentPaid - newReturnDeduction);
 
-          let newStatus: PurchasePaymentStatus = PurchasePaymentStatus.PARTIALLY_PAID;
-          if (newRemaining <= 0) {
-            newStatus = PurchasePaymentStatus.PAID;
-          } else if (currentPaid <= 0 && newReturnDeduction === 0) {
-            newStatus = PurchasePaymentStatus.UNPAID;
+            let newStatus: PurchasePaymentStatus = PurchasePaymentStatus.PARTIALLY_PAID;
+            if (newRemaining <= 0) {
+              newStatus = PurchasePaymentStatus.PAID;
+            } else if (currentPaid <= 0 && newReturnDeduction === 0) {
+              newStatus = PurchasePaymentStatus.UNPAID;
+            }
+
+            await tx.purchaseReceipt.update({
+              where: { id: dto.receiptId },
+              data: {
+                returnDeductionAmount: new Prisma.Decimal(newReturnDeduction),
+                remainingAmount: new Prisma.Decimal(newRemaining),
+                paymentStatus: newStatus,
+              },
+            });
           }
+        } else if (debtOffsetAmount > 0) {
+          // Tự động cấn trừ các phiếu nhập còn nợ của NCC
+          const unpaidReceipts = await tx.purchaseReceipt.findMany({
+            where: { tenantId, supplierId: dto.supplierId, remainingAmount: { gt: 0 } },
+            orderBy: [{ receiptDate: 'asc' }, { createdAt: 'asc' }],
+          });
 
-          await tx.purchaseReceipt.update({
-            where: { id: dto.receiptId },
+          let remainOffset = debtOffsetAmount;
+          for (const rc of unpaidReceipts) {
+            if (remainOffset <= 0) break;
+            const rcRemaining = Number(rc.remainingAmount);
+            const rcReturnDeduction = Number(rc.returnDeductionAmount);
+            const rcPayable = Number(rc.payableAmount);
+            const rcPaid = Number(rc.paidAmount);
+
+            const deduct = Math.min(remainOffset, rcRemaining);
+            const newReturnDeduction = rcReturnDeduction + deduct;
+            const newRemaining = Math.max(0, rcPayable - rcPaid - newReturnDeduction);
+            const newStatus =
+              newRemaining <= 0 ? PurchasePaymentStatus.PAID : PurchasePaymentStatus.PARTIALLY_PAID;
+
+            await tx.purchaseReceipt.update({
+              where: { id: rc.id },
+              data: {
+                returnDeductionAmount: new Prisma.Decimal(newReturnDeduction),
+                remainingAmount: new Prisma.Decimal(newRemaining),
+                paymentStatus: newStatus,
+              },
+            });
+
+            remainOffset -= deduct;
+          }
+        }
+      } else if (settlementType === 'IMMEDIATE_PAYMENT') {
+        // Phương án 3: NCC thanh toán tiền luôn cho shop (tiền mặt / chuyển khoản)
+        let toAccountId = dto.immediateAccountId || null;
+        if (!toAccountId) {
+          const accType =
+            dto.immediateFundSource === 'BANK_ACCOUNT' ? CashAccountType.BANK : CashAccountType.CASH;
+          const acc = await tx.cashAccount.findFirst({
+            where: { tenantId, type: accType, isActive: true },
+            orderBy: { createdAt: 'asc' },
+          });
+          if (acc) toAccountId = acc.id;
+        }
+
+        let category = await tx.cashCategory.findFirst({
+          where: { tenantId, code: 'THU_NCC_HOAN_TIEN' },
+        });
+        if (!category) {
+          category = await tx.cashCategory.findFirst({
+            where: { tenantId, type: CashCategoryType.INCOME },
+          });
+        }
+        if (!category) {
+          category = await tx.cashCategory.create({
             data: {
-              returnDeductionAmount: new Prisma.Decimal(newReturnDeduction),
-              remainingAmount: new Prisma.Decimal(newRemaining),
-              paymentStatus: newStatus,
+              tenantId,
+              code: 'THU_NCC_HOAN_TIEN',
+              name: 'Nhà cung cấp thanh toán / hoàn tiền',
+              type: CashCategoryType.INCOME,
+              isSystemDefault: true,
             },
           });
         }
+
+        const paymentCode = `THU-${returnCode}`;
+        await tx.supplierPayment.create({
+          data: {
+            tenantId,
+            supplierId: dto.supplierId,
+            paymentCode,
+            amount: new Prisma.Decimal(totalReturnAmount),
+            paymentDate: returnDate,
+            payerName: dto.immediatePayerName?.trim() || supplier.name,
+            payerUserId: userId,
+            fundSource: (dto.immediateFundSource as any) || 'CASH_FUND',
+            paymentMethod: dto.immediatePaymentMethod || 'BANK_TRANSFER',
+            referenceCode: returnCode,
+            paymentType: SupplierPaymentType.REFUND_RECEIVED,
+            allocatedAmount: new Prisma.Decimal(0),
+            advanceAmount: new Prisma.Decimal(0),
+            note: `Thu tiền ngay khi xuất chuyển hàng cho NCC ${supplier.name} theo phiếu ${returnCode}`,
+            createdById: userId,
+          },
+        });
+
+        await tx.cashTransaction.create({
+          data: {
+            tenantId,
+            transactionCode: paymentCode,
+            type: CashTransactionType.INCOME,
+            categoryId: category.id,
+            toAccountId,
+            amount: new Prisma.Decimal(totalReturnAmount),
+            transactionDate: returnDate,
+            paymentMethod: dto.immediatePaymentMethod || 'BANK_TRANSFER',
+            status: CashTransactionStatus.CONFIRMED,
+            counterpartyName: supplier.name,
+            performedByName: dto.immediatePayerName?.trim() || null,
+            referenceCode: returnCode,
+            note: `Thu tiền khi xuất chuyển hàng cho NCC ${supplier.name} theo phiếu ${returnCode}`,
+            relatedEntityType: 'PURCHASE_RETURN',
+            relatedEntityId: purchaseReturn.id,
+            createdById: userId,
+            confirmedById: userId,
+            confirmedAt: new Date(),
+          },
+        });
+
+        if (toAccountId) {
+          await tx.cashAccount.update({
+            where: { id: toAccountId },
+            data: { currentBalance: { increment: new Prisma.Decimal(totalReturnAmount) } },
+          });
+        }
       }
+      // Phương án 2: ACCUMULATE_DEBT (Cộng dồn vào nợ): debtOffsetAmount được lưu trên purchaseReturn, giúp giảm nợ NCC hoặc biến thành nợ NCC phải trả shop.
 
       return purchaseReturn;
     });
@@ -345,7 +480,33 @@ export class PurchaseReturnsService {
         }
       }
 
-      // 3. Xóa items và phiếu trả
+      // 3. Khôi phục tiền nếu từng thu tiền mặt / ngân hàng khi chuyển hàng
+      const relatedCashTx = await tx.cashTransaction.findFirst({
+        where: {
+          tenantId,
+          relatedEntityType: 'PURCHASE_RETURN',
+          relatedEntityId: id,
+        },
+      });
+      if (relatedCashTx) {
+        if (relatedCashTx.toAccountId) {
+          await tx.cashAccount.update({
+            where: { id: relatedCashTx.toAccountId },
+            data: { currentBalance: { decrement: relatedCashTx.amount } },
+          });
+        }
+        await tx.cashTransaction.delete({ where: { id: relatedCashTx.id } });
+      }
+
+      await tx.supplierPayment.deleteMany({
+        where: {
+          tenantId,
+          referenceCode: purchaseReturn.returnCode,
+          paymentType: SupplierPaymentType.REFUND_RECEIVED,
+        },
+      });
+
+      // 4. Xóa items và phiếu trả
       await tx.purchaseReturnItem.deleteMany({ where: { returnId: id } });
       await tx.purchaseReturn.delete({ where: { id } });
 

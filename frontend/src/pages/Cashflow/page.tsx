@@ -103,6 +103,15 @@ const CASHFLOW_TABS = [
   { id: 'CATEGORIES', label: 'Danh mục thu chi' },
 ] as const;
 
+const formatDateTime = (dateStr?: string | Date | null) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  const time = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const date = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return `${time} ${date}`;
+};
+
 export const CashflowPage: React.FC = () => {
   const navigate = useNavigate();
   const { selectedShopId: storeShopId, setSelectedShopId: setStoreShopId, shops: storeShops } =
@@ -840,8 +849,9 @@ export const CashflowPage: React.FC = () => {
                       <tr key={tx.id} className="hover:bg-gray-50 dark:hover:bg-[#1a1f2e]/40 transition-colors">
                         <td className="py-3 px-4">
                           <div className="font-semibold text-gray-900 dark:text-white">{tx.transactionCode}</div>
-                          <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                            {new Date(tx.transactionDate).toLocaleDateString('vi-VN')}
+                          <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1 font-mono">
+                            <Clock size={11} className="shrink-0 text-gray-400" />
+                            <span>{formatDateTime(tx.transactionDate || tx.createdAt)}</span>
                           </div>
                         </td>
                         <td className="py-3 px-4 font-medium text-gray-800 dark:text-gray-200">
@@ -1061,15 +1071,18 @@ export const CashflowPage: React.FC = () => {
                           {stt}
                         </SystemTd>
                         <SystemTd>
-                        <div className="font-mono font-medium text-xs text-gray-900 dark:text-gray-100">
-                          {tx.transactionCode}
+                          <div className="font-mono font-medium text-xs text-gray-900 dark:text-gray-100">
+                            {tx.transactionCode}
+                          </div>
+                          {tx.referenceCode && (
+                            <div className="text-[10px] text-gray-400">UNC: {tx.referenceCode}</div>
+                          )}
+                        </SystemTd>
+                        <SystemTd className="text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap font-mono">
+                        <div className="flex items-center gap-1">
+                          <Clock size={11} className="shrink-0 text-gray-400" />
+                          <span>{formatDateTime(tx.transactionDate || tx.createdAt)}</span>
                         </div>
-                        {tx.referenceCode && (
-                          <div className="text-[10px] text-gray-400">UNC: {tx.referenceCode}</div>
-                        )}
-                      </SystemTd>
-                      <SystemTd className="text-xs text-gray-500 whitespace-nowrap">
-                        {new Date(tx.transactionDate).toLocaleDateString('vi-VN')}
                       </SystemTd>
                       <SystemTd>
                         <div className="font-medium text-xs text-gray-900 dark:text-white">
@@ -1263,7 +1276,7 @@ export const CashflowPage: React.FC = () => {
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-gray-400 text-[10px]">
-                        <span>Ngày: {new Date(tx.transactionDate).toLocaleDateString('vi-VN')}</span>
+                        <span className="flex items-center gap-1 font-mono"><Clock size={10} /> {formatDateTime(tx.transactionDate || tx.createdAt)}</span>
                         {tx.performedByName && <span>Bởi: {tx.performedByName}</span>}
                       </div>
                     </div>
