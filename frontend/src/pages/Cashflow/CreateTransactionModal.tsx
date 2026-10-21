@@ -537,10 +537,39 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
                 />
               </div>
 
-              <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/80 px-3 py-2 rounded border border-slate-200 dark:border-slate-700">
-                <Wallet className="w-4 h-4 mr-2 text-indigo-500 shrink-0" />
-                {accounts.find((a) => a.id === accountId)?.note ||
-                  'Tiền sẽ trực tiếp cộng/trừ vào tài khoản này khi xác nhận.'}
+              <div className="flex flex-col justify-center text-xs bg-white dark:bg-slate-800/80 px-3 py-2 rounded border border-slate-200 dark:border-slate-700">
+                {(() => {
+                  const selAcc = accounts.find((a) => a.id === accountId);
+                  if (!selAcc) {
+                    return (
+                      <div className="flex items-center text-slate-500 dark:text-slate-400">
+                        <Wallet className="w-4 h-4 mr-2 text-indigo-500 shrink-0" />
+                        Tiền sẽ trực tiếp cộng/trừ vào tài khoản này khi xác nhận.
+                      </div>
+                    );
+                  }
+                  const oldBal = Number(selAcc.currentBalance || 0);
+                  const isOut = type === 'EXPENSE' || type === 'REIMBURSEMENT' || type === 'CAPITAL_OUT';
+                  const newBal = isOut ? oldBal - amount : oldBal + amount;
+                  return (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-slate-500">
+                        <span>Số dư cũ trước GD:</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                          {oldBal.toLocaleString('vi-VN')}đ
+                        </span>
+                      </div>
+                      {amount > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Dự kiến sau GD:</span>
+                          <span className={`font-bold ${newBal < 0 ? 'text-rose-600' : isOut ? 'text-slate-900 dark:text-slate-100' : 'text-emerald-600'}`}>
+                            {newBal.toLocaleString('vi-VN')}đ
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           ) : (
@@ -600,6 +629,34 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
                 </div>
               )}
             </div>
+
+            {selectedSupplierId && (
+              <div className="p-2.5 rounded bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/50 flex flex-wrap items-center justify-between gap-2 text-xs">
+                {(() => {
+                  const s = suppliers.find((sup) => sup.id === selectedSupplierId);
+                  const oldDebt = Number(s?.closingDebt || 0);
+                  const newDebt = oldDebt - amount;
+                  return (
+                    <>
+                      <div>
+                        <span className="text-slate-500">Công nợ cũ trước GD: </span>
+                        <b className={oldDebt > 0 ? 'text-rose-600' : oldDebt < 0 ? 'text-emerald-600' : 'text-slate-700 dark:text-slate-300'}>
+                          {oldDebt > 0 ? `Nợ NCC ${oldDebt.toLocaleString('vi-VN')}đ` : oldDebt < 0 ? `NCC giữ cọc ${Math.abs(oldDebt).toLocaleString('vi-VN')}đ` : 'Hết nợ (0đ)'}
+                        </b>
+                      </div>
+                      {amount > 0 && (
+                        <div>
+                          <span className="text-slate-500">Dự kiến nợ sau GD: </span>
+                          <b className={newDebt > 0 ? 'text-amber-600' : newDebt < 0 ? 'text-emerald-600' : 'text-slate-700 dark:text-slate-300'}>
+                            {newDebt > 0 ? `Còn nợ NCC ${newDebt.toLocaleString('vi-VN')}đ` : newDebt < 0 ? `Dư cọc NCC ${Math.abs(newDebt).toLocaleString('vi-VN')}đ` : 'Sạch nợ (0đ)'}
+                          </b>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
 
             {loadingReceipts ? (
               <p className="text-xs text-slate-400 italic">Đang tải phiếu nhập kho...</p>

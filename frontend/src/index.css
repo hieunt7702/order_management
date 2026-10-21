@@ -364,47 +364,126 @@ textarea:focus-visible {
 .datepicker-theme {
   position: relative;
 }
+.datepicker-popup,
 .datepicker-wrapper [id^="headlessui-popover-panel"],
 .datepicker-theme [id^="headlessui-popover-panel"],
 div[id^="headlessui-popover-panel"] {
   z-index: 9999 !important;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.15) !important;
 }
+.dark .datepicker-popup,
 .dark .datepicker-wrapper .bg-slate-800,
 .dark .datepicker-theme .bg-slate-800 {
   background-color: #181b22 !important; /* Matches our card bg */
 }
+.dark .datepicker-popup .border-slate-800,
+.dark .datepicker-popup .border-gray-700,
 .dark .datepicker-wrapper .border-slate-800,
 .dark .datepicker-wrapper .border-gray-700,
 .dark .datepicker-theme .border-slate-800,
 .dark .datepicker-theme .border-gray-700 {
   border-color: rgba(255,255,255,0.08) !important;
 }
+.dark .datepicker-popup .bg-slate-700,
 .dark .datepicker-wrapper .bg-slate-700,
 .dark .datepicker-theme .bg-slate-700 {
   background-color: #262930 !important;
 }
+.dark .datepicker-popup .hover\:bg-slate-700:hover,
 .dark .datepicker-wrapper .hover\:bg-slate-700:hover,
 .dark .datepicker-theme .hover\:bg-slate-700:hover {
   background-color: #2f3440 !important;
 }
+.dark .datepicker-popup .text-slate-300,
 .dark .datepicker-wrapper .text-slate-300,
 .dark .datepicker-theme .text-slate-300 {
   color: #dcddde !important;
 }
+.dark .datepicker-popup .text-slate-400,
 .dark .datepicker-wrapper .text-slate-400,
 .dark .datepicker-theme .text-slate-400 {
   color: #8e9297 !important;
 }
 /* For the active selected date background */
+.dark .datepicker-popup .bg-blue-600,
 .dark .datepicker-wrapper .bg-blue-600,
 .dark .datepicker-theme .bg-blue-600 {
   background-color: #5865f2 !important;
 }
 /* Light Mode Tweaks to match our border radius / colors */
+.datepicker-popup .border-gray-200,
 .datepicker-wrapper .border-gray-200,
 .datepicker-theme .border-gray-200 {
   border-color: rgba(203, 213, 225, 0.6) !important;
+}
+
+/* Mobile Full Width & Bottom Drawer for Datepicker */
+@media (max-width: 640px) {
+  .datepicker-wrapper {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .datepicker-wrapper input {
+    font-size: 13px !important;
+    min-height: 36px !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* Popover dropdown width full on mobile */
+  .datepicker-popup,
+  .datepicker-wrapper [id^="headlessui-popover-panel"],
+  .datepicker-theme [id^="headlessui-popover-panel"],
+  div[id^="headlessui-popover-panel"] {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 99999 !important;
+    box-sizing: border-box !important;
+    transform: translateY(0) !important;
+  }
+
+  /* Hide the pointer arrow on mobile full-width drawer */
+  .datepicker-popup > div:first-child {
+    display: none !important;
+  }
+
+  /* Calendar card content container */
+  .datepicker-popup > div:last-child,
+  .datepicker-wrapper [id^="headlessui-popover-panel"] > div,
+  div[id^="headlessui-popover-panel"] > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 16px 16px 0 0 !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35) !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 12px 10px 24px 10px !important;
+  }
+
+  /* Calendar grids inside popup */
+  .datepicker-popup .flex-col.lg\:flex-row,
+  .datepicker-popup .flex.items-stretch {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
 }
 
 /* ==========================================================================

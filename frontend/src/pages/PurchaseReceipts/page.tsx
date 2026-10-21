@@ -388,6 +388,20 @@ export const PurchaseReceiptsPage: React.FC = () => {
   const autoDeductAmount = Math.min(formPayable, supplierAdvanceHeld);
   const actualPayable = Math.max(0, formPayable - autoDeductAmount);
 
+  const getVariantStock = (variantId: string, warehouseId?: string) => {
+    if (!variantId) return 0;
+    const v = allVariants.find((it) => it.id === variantId);
+    if (!v) return 0;
+    if (warehouseId && (v as any).inventoryBalances && Array.isArray((v as any).inventoryBalances)) {
+      const wb = (v as any).inventoryBalances.find((b: any) => b.warehouseId === warehouseId);
+      if (wb) return Number(wb.onHand || 0);
+    }
+    if ((v as any).inventoryBalances && Array.isArray((v as any).inventoryBalances)) {
+      return (v as any).inventoryBalances.reduce((sum: number, b: any) => sum + Number(b.onHand || 0), 0);
+    }
+    return Number((v as any).onHand || 0);
+  };
+
   const generateNextReceiptCode = () => {
     const now = new Date();
     const y = String(now.getFullYear());
@@ -1457,37 +1471,43 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 <table className="w-full text-left text-xs">
                   <thead className="bg-gray-100 dark:bg-gray-800/80 text-gray-600 dark:text-gray-300">
                     <tr>
-                      <th className="py-2 px-3 w-[30%]">
+                      <th className="py-2 px-3 w-[26%]">
                         <div className="flex items-center gap-1">
                           <Package size={12} className="text-gray-400" />
                           <span>Biến Thể / SKU *</span>
                         </div>
                       </th>
                       <th className="py-2 px-2 text-center w-[12%]">
+                        <div className="flex items-center justify-center gap-1" title="Số lượng tồn kho thực tế trước khi nhập hàng">
+                          <Boxes size={12} className="text-blue-500" />
+                          <span>Tồn Trước Nhập</span>
+                        </div>
+                      </th>
+                      <th className="py-2 px-2 text-center w-[10%]">
                         <div className="flex items-center justify-center gap-1">
                           <Boxes size={12} className="text-gray-400" />
                           <span>SL Đặt</span>
                         </div>
                       </th>
-                      <th className="py-2 px-2 text-center w-[12%]">
+                      <th className="py-2 px-2 text-center w-[11%]">
                         <div className="flex items-center justify-center gap-1">
                           <CheckCircle2 size={12} className="text-indigo-500" />
                           <span>SL Thực Nhận</span>
                         </div>
                       </th>
-                      <th className="py-2 px-2 text-center w-[12%]">
+                      <th className="py-2 px-2 text-center w-[10%]">
                         <div className="flex items-center justify-center gap-1">
                           <AlertCircle size={12} className="text-rose-500" />
                           <span>Lỗi/Thiếu</span>
                         </div>
                       </th>
-                      <th className="py-2 px-3 text-right w-[16%]">
+                      <th className="py-2 px-3 text-right w-[14%]">
                         <div className="flex items-center justify-end gap-1">
                           <DollarSign size={12} className="text-gray-400" />
                           <span>Đơn Giá (đ)</span>
                         </div>
                       </th>
-                      <th className="py-2 px-3 text-right w-[16%]">
+                      <th className="py-2 px-3 text-right w-[13%]">
                         <div className="flex items-center justify-end gap-1">
                           <Receipt size={12} className="text-gray-400" />
                           <span>Thành Tiền</span>
@@ -1499,6 +1519,8 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {createForm.items.map((row, idx) => {
                       const rowSubtotal = (row.receivedQuantity || 0) * (row.unitPrice || 0);
+                      const currentStock = getVariantStock(row.variantId, createForm.warehouseId);
+                      const stockAfter = currentStock + Number(row.receivedQuantity || 0);
 
                       return (
                         <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
@@ -1514,10 +1536,11 @@ export const PurchaseReceiptsPage: React.FC = () => {
                                     v.name && v.name !== 'Mặc định' && v.name !== prodName
                                       ? ` (${v.name})`
                                       : '';
+                                  const stock = getVariantStock(v.id, createForm.warehouseId);
                                   return {
                                     value: v.id,
-                                    label: `[${v.sku || 'SKU'}] ${prodName}${varName}`,
-                                    badge: v.costPrice ? `${Number(v.costPrice).toLocaleString('vi-VN')}đ` : undefined,
+                                    label: `[${v.sku || 'SKU'}] ${prodName}${varName} (Tồn: ${stock})`,
+                                    badge: `Tồn: ${stock} • ${v.costPrice ? `${Number(v.costPrice).toLocaleString('vi-VN')}đ` : 'Chưa có giá vốn'}`,
                                   };
                                 }),
                               ]}
@@ -1533,6 +1556,26 @@ export const PurchaseReceiptsPage: React.FC = () => {
                               onChange={(e) => handleItemChange(idx, 'note', e.target.value)}
                               className="w-full mt-1.5 bg-transparent border-0 border-b border-gray-200 dark:border-gray-700/80 p-0.5 text-[11px] text-gray-600 dark:text-gray-400 focus:outline-none focus:border-indigo-500"
                             />
+                          </td>
+                          <td className="p-2 text-center">
+                            {row.variantId ? (
+                              <div>
+                                <span
+                                  className="px-2 py-0.5 rounded font-mono font-bold text-xs bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 inline-block"
+                                  title="Số lượng tồn kho thực tế trước khi nhập hàng"
+                                >
+                                  {currentStock.toLocaleString('vi-VN')}
+                                </span>
+                                <div
+                                  className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-semibold mt-0.5"
+                                  title="Dự kiến tồn kho sau khi hoàn tất nhập phiếu này"
+                                >
+                                  Sau: {stockAfter.toLocaleString('vi-VN')}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-xs">-</span>
+                            )}
                           </td>
                           <td className="p-2 text-center">
                             <input
@@ -1598,6 +1641,8 @@ export const PurchaseReceiptsPage: React.FC = () => {
               <div className="md:hidden space-y-2.5">
                 {createForm.items.map((row, idx) => {
                   const rowSubtotal = (row.receivedQuantity || 0) * (row.unitPrice || 0);
+                  const currentStock = getVariantStock(row.variantId, createForm.warehouseId);
+                  const stockAfter = currentStock + Number(row.receivedQuantity || 0);
 
                   return (
                     <div
@@ -1638,10 +1683,11 @@ export const PurchaseReceiptsPage: React.FC = () => {
                                 v.name && v.name !== 'Mặc định' && v.name !== prodName
                                   ? ` (${v.name})`
                                   : '';
+                              const stock = getVariantStock(v.id, createForm.warehouseId);
                               return {
                                 value: v.id,
-                                label: `[${v.sku || 'SKU'}] ${prodName}${varName}`,
-                                badge: v.costPrice ? `${Number(v.costPrice).toLocaleString('vi-VN')}đ` : undefined,
+                                label: `[${v.sku || 'SKU'}] ${prodName}${varName} (Tồn: ${stock})`,
+                                badge: `Tồn: ${stock} • ${v.costPrice ? `${Number(v.costPrice).toLocaleString('vi-VN')}đ` : 'Chưa có giá vốn'}`,
                               };
                             }),
                           ]}
@@ -1650,6 +1696,25 @@ export const PurchaseReceiptsPage: React.FC = () => {
                           size="sm"
                           className="w-full"
                         />
+
+                        {/* View Stock Quantity Before Import on Mobile */}
+                        {row.variantId && (
+                          <div className="mt-2 flex items-center justify-between px-2.5 py-1.5 rounded bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/50 text-xs">
+                            <span className="text-blue-700 dark:text-blue-300 flex items-center gap-1 font-medium">
+                              <Boxes size={12} className="text-blue-500" />
+                              <span>Số lượng trước nhập:</span>
+                            </span>
+                            <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                              <span className="font-bold text-blue-800 dark:text-blue-200">
+                                {currentStock.toLocaleString('vi-VN')} cái
+                              </span>
+                              <span className="text-gray-400">→</span>
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400" title="Dự kiến tồn kho sau nhập">
+                                Sau: {stockAfter.toLocaleString('vi-VN')} cái
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* 3 Quantities Grid: Đặt, Nhận, Lỗi */}
@@ -1916,6 +1981,38 @@ export const PurchaseReceiptsPage: React.FC = () => {
 
                       {createForm.immediatePayment && (
                         <div className="w-full space-y-2.5 pt-2 text-xs">
+                          {/* Chi tiết công nợ cũ trước và sau giao dịch */}
+                          <div className="p-2.5 rounded bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 space-y-1.5 text-xs">
+                            <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                              <span>Công nợ NCC cũ trước giao dịch:</span>
+                              <span className={`font-mono font-bold ${Number(selectedCreateSupplier?.closingDebt || 0) > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                {Number(selectedCreateSupplier?.closingDebt || 0) > 0
+                                  ? `${Number(selectedCreateSupplier?.closingDebt || 0).toLocaleString('vi-VN')}đ (Nợ NCC)`
+                                  : Number(selectedCreateSupplier?.closingDebt || 0) < 0
+                                    ? `Cọc/Ứng trước ${Math.abs(Number(selectedCreateSupplier?.closingDebt || 0)).toLocaleString('vi-VN')}đ`
+                                    : '0đ (Cân bằng)'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                              <span>Tổng giá trị phiếu nhập mới:</span>
+                              <span className="font-mono font-bold text-gray-900 dark:text-white">
+                                +{actualPayable.toLocaleString('vi-VN')}đ
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                              <span>Số tiền chi thanh toán ngay:</span>
+                              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                -{Number(createForm.immediatePaymentAmount || 0).toLocaleString('vi-VN')}đ
+                              </span>
+                            </div>
+                            <div className="pt-1 border-t border-amber-200/80 dark:border-amber-900/40 flex items-center justify-between font-semibold">
+                              <span className="text-gray-700 dark:text-gray-300">Dự kiến nợ NCC sau giao dịch:</span>
+                              <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                {(Number(selectedCreateSupplier?.closingDebt || 0) + actualPayable - Number(createForm.immediatePaymentAmount || 0)).toLocaleString('vi-VN')}đ
+                              </span>
+                            </div>
+                          </div>
+
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div>
                               <label className="block text-[11px] font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1 mb-1">
@@ -2154,25 +2251,36 @@ export const PurchaseReceiptsPage: React.FC = () => {
 
               return (
                 <div className="w-full space-y-2.5">
-                  <div className="p-2.5 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-200 dark:border-amber-900/30 flex justify-between">
-                    <div>
-                      <div className="text-[11px] text-gray-500 flex items-center gap-1">
-                        <Building2 size={12} />
-                        <span>Nhà cung cấp:</span>
+                  <div className="p-2.5 bg-amber-50 dark:bg-amber-950/20 rounded border border-amber-200 dark:border-amber-900/30 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="text-[11px] text-gray-500 flex items-center gap-1">
+                          <Building2 size={12} />
+                          <span>Nhà cung cấp:</span>
+                        </div>
+                        <div className="font-bold text-gray-900 dark:text-white mt-0.5 text-xs">
+                          {targetSupplier?.name || quickPayReceipt?.supplier?.name}
+                        </div>
                       </div>
-                      <div className="font-bold text-gray-900 dark:text-white mt-0.5 text-xs">
-                        {targetSupplier?.name || quickPayReceipt?.supplier?.name}
+                      <div className="text-right">
+                        <div className="text-[11px] text-gray-500 flex items-center justify-end gap-1">
+                          <AlertCircle size={12} className="text-rose-500" />
+                          <span>Tiền nợ cũ trước giao dịch:</span>
+                        </div>
+                        <div className="font-bold text-rose-600 font-mono mt-0.5 text-xs">
+                          {Number(quickPayReceipt?.remainingAmount || 0).toLocaleString('vi-VN')}đ
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-[11px] text-gray-500 flex items-center justify-end gap-1">
-                        <AlertCircle size={12} className="text-rose-500" />
-                        <span>Số tiền còn nợ:</span>
+
+                    {Number(quickPayForm.amount || 0) > 0 && (
+                      <div className="pt-2 border-t border-amber-200/80 dark:border-amber-900/40 flex items-center justify-between text-xs">
+                        <span className="text-gray-600 dark:text-gray-400">Dự kiến nợ còn lại sau giao dịch:</span>
+                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          {Math.max(0, Number(quickPayReceipt?.remainingAmount || 0) - Number(quickPayForm.amount || 0)).toLocaleString('vi-VN')}đ
+                        </span>
                       </div>
-                      <div className="font-bold text-rose-600 font-mono mt-0.5 text-xs">
-                        {Number(quickPayReceipt?.remainingAmount || 0).toLocaleString('vi-VN')}đ
-                      </div>
-                    </div>
+                    )}
                   </div>
 
                   <div>

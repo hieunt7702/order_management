@@ -289,88 +289,175 @@ export class ReportsService {
       ];
     }
 
-    // 1. Aggregates
-    const [summaryAgg, itemsAgg, receipts] = await Promise.all([
-      this.prisma.purchaseReceipt.aggregate({
-        where,
-        _count: { id: true },
-        _sum: {
-          totalItemsAmount: true,
-          payableAmount: true,
-          paidAmount: true,
-          returnDeductionAmount: true,
-          remainingAmount: true,
-          discountAmount: true,
-          shippingFee: true,
-        },
-      }),
-      this.prisma.purchaseReceiptItem.aggregate({
-        where: { receipt: where },
-        _sum: {
-          orderedQuantity: true,
-          receivedQuantity: true,
-          disputedQuantity: true,
-          subtotal: true,
-        },
-      }),
-      this.prisma.purchaseReceipt.findMany({
-        where,
-        orderBy: [{ receiptDate: 'desc' }, { createdAt: 'desc' }],
-        take: 500, // Load up to 500 for rich analytical breakdowns
-        include: {
-          shop: { select: { id: true, name: true, code: true } },
-          supplier: { select: { id: true, name: true, code: true } },
-          warehouse: { select: { id: true, name: true, code: true } },
-          items: true,
-          purchaseReturns: {
-            where: { status: 'CONFIRMED' },
-            select: { id: true, returnCode: true, debtOffsetAmount: true },
-          },
-        },
-      }),
-    ]);
+    // 1. Aggregates with safe fallback
+    let summaryAgg: any = { _count: { id: 0 }, _sum: {} };
+    let itemsAgg: any = { _sum: {} };
+    let receipts: any[] = [];
 
-    const totalReceipts = summaryAgg._count.id || 0;
+    try {
+      const [sAgg, rList] = await Promise.all([
+        this.prisma.purchaseReceipt.aggregate({
+          where,
+          _count: { id: true },
+          _sum: {
+            totalItemsAmount: true,
+            payableAmount: true,
+            paidAmount: true,
+            returnDeductionAmount: true,
+            remainingAmount: true,
+            discountAmount: true,
+            shippingFee: true,
+          },
+        }),
+        this.prisma.purchaseReceipt.findMany({
+          where,
+          orderBy: [{ receiptDate: 'desc' }, { createdAt: 'desc' }],
+          take: 1000, // Load up to 1000 for comprehensive analytical breakdowns
+          include: {
+            shop: { select: { id: true, name: true, code: true } },
+            supplier: { select: { id: true, name: true, code: true } },
+            warehouse: { select: { id: true, name: true, code: true } },
+            items: true,
+            purchaseReturns: {
+              where: { status: 'CONFIRMED' },
+              select: { id: true, returnCode: true, debtOffsetAmount: true },
+            },
+          },
+        }),
+      ]);
+      summaryAgg = sAgg;
+      receipts = rList;
+
+      try {
+        itemsAgg = await this.prisma.purchaseReceiptItem.aggregate({
+          where: { receipt: where },
+          _sum: {
+            orderedQuantity: true,
+            receivedQuantity: true,
+            disputedQuantity: true,
+            subtotal: true,
+          },
+        });
+      } catch (itemAggErr) {
+        // Fallback to computing from receipts if relation aggregate is restricted
+      }
+    } catch (dbErr) {
+      console.error('Error fetching purchase report data:', dbErr);
+    }
+
+    const totalReceipts = summaryAgg._count.id || receipts.length || 0;
     const totalItemsAmount = Number(summaryAgg._sum.totalItemsAmount || 0);
     const totalReturnDeductionAmount = Number(summaryAgg._sum.returnDeductionAmount || 0);
     const netItemsAmount = Math.max(0, totalItemsAmount - totalReturnDeductionAmount);
     const totalPayableAmount = Math.max(0, Number(summaryAgg._sum.payableAmount || 0) - totalReturnDeductionAmount);
     const totalPaidAmount = Number(summaryAgg._sum.paidAmount || 0);
     const totalRemainingAmount = Number(summaryAgg._sum.remainingAmount || 0);
-    const totalReceivedQuantity = Number(itemsAgg._sum.receivedQuantity || 0);
-    const totalDisputedQuantity = Number(itemsAgg._sum.disputedQuantity || 0);
+    let totalReceivedQuantity = Number(itemsAgg._sum.receivedQuantity || 0);
+    let totalDisputedQuantity = Number(itemsAgg._sum.disputedQuantity || 0);
 
     // 2. Daily Trend Breakdown
-    const dailyMap = new Map<string, { date: string; count: number; totalAmount: number; returnDeduction: number; netAmount: number; quantity: number }>();
+    const dailyMap = new Map<string, {
+      date: string;
+      count: number;
+      totalAmount: number;
+      returnDeduction: number;
+      netAmount: number;
+      paidAmount: number;
+      remainingAmount: number;
+      quantity: number;
+    }>();
+
     // 3. Shop Breakdown
-    const shopMap = new Map<string, { shopId: string; shopName: string; shopCode: string; count: number; totalAmount: number; returnDeduction: number; netAmount: number; paidAmount: number; remainingAmount: number; quantity: number }>();
-    // 4. Supplier Breakdown
-    const supplierMap = new Map<string, { supplierId: string; supplierName: string; supplierCode: string; count: number; totalAmount: number; returnDeduction: number; netAmount: number; paidAmount: number; remainingAmount: number; quantity: number }>();
-    // 5. SKU / Product Breakdown
-    const skuMap = new Map<string, { sku: string; productName: string; variationName: string | null; quantity: number; totalAmount: number; receiptsCount: number }>();
+    const shopMap = new Map<string, {
+      shopId: string;
+      shopName: string;
+      shopCode: string;
+      count: number;
+      totalAmount: number;
+      returnDeduction: number;
+      netAmount: number;
+      paidAmount: number;
+      remainingAmount: number;
+      quantity: number;
+    }>();
+
+    // 4. Supplier Breakdown with nested SKU Breakdown
+    const supplierMap = new Map<string, {
+      supplierId: string;
+      supplierName: string;
+      supplierCode: string;
+      count: number;
+      totalAmount: number;
+      returnDeduction: number;
+      netAmount: number;
+      paidAmount: number;
+      remainingAmount: number;
+      quantity: number;
+      skuMap: Map<string, {
+        sku: string;
+        productName: string;
+        variationName: string | null;
+        quantity: number;
+        totalAmount: number;
+        receiptsCount: number;
+      }>;
+    }>();
+
+    // 5. Overall SKU / Product Breakdown
+    const skuMap = new Map<string, {
+      sku: string;
+      productName: string;
+      variationName: string | null;
+      quantity: number;
+      totalAmount: number;
+      receiptsCount: number;
+      suppliers: Set<string>;
+    }>();
+
+    let computedReceivedQty = 0;
+    let computedDisputedQty = 0;
 
     for (const r of receipts) {
-      const dateKey = r.receiptDate.toISOString().slice(0, 10);
+      let dateKey = 'N/A';
+      if (r.receiptDate) {
+        try {
+          dateKey = r.receiptDate instanceof Date
+            ? r.receiptDate.toISOString().slice(0, 10)
+            : String(r.receiptDate).slice(0, 10);
+        } catch {
+          dateKey = 'N/A';
+        }
+      }
+
       const itemsAmt = Number(r.totalItemsAmount || 0);
       const returnDed = Number(r.returnDeductionAmount || 0);
       const netAmt = Math.max(0, itemsAmt - returnDed);
       const paidAmt = Number(r.paidAmount || 0);
       const remAmt = Number(r.remainingAmount || 0);
-      const receiptQty = r.items.reduce((s, it) => s + (it.receivedQuantity || 0), 0);
+      const rItems = Array.isArray(r.items) ? r.items : [];
+      const receiptQty = rItems.reduce((s: number, it: any) => s + (Number(it.receivedQuantity) || 0), 0);
+      const disputedQty = rItems.reduce((s: number, it: any) => s + (Number(it.disputedQuantity) || 0), 0);
 
-      // Trend
+      computedReceivedQty += receiptQty;
+      computedDisputedQty += disputedQty;
+
+      // Daily Trend / Daily Breakdown
       const currentDay = dailyMap.get(dateKey) || {
         date: dateKey,
         count: 0,
         totalAmount: 0,
         returnDeduction: 0,
         netAmount: 0,
+        paidAmount: 0,
+        remainingAmount: 0,
         quantity: 0,
       };
       currentDay.count += 1;
       currentDay.totalAmount += itemsAmt;
       currentDay.returnDeduction += returnDed;
       currentDay.netAmount += netAmt;
+      currentDay.paidAmount += paidAmt;
+      currentDay.remainingAmount += remAmt;
       currentDay.quantity += receiptQty;
       dailyMap.set(dateKey, currentDay);
 
@@ -400,9 +487,9 @@ export class ReportsService {
       shopMap.set(sId, currentShop);
 
       // Supplier
-      const supId = r.supplierId;
-      const supName = r.supplier.name;
-      const supCode = r.supplier.code;
+      const supId = r.supplierId || 'UNKNOWN';
+      const supName = r.supplier?.name || 'Nhà cung cấp không xác định';
+      const supCode = r.supplier?.code || 'NCC-UNKNOWN';
       const currentSupplier = supplierMap.get(supId) || {
         supplierId: supId,
         supplierName: supName,
@@ -414,6 +501,7 @@ export class ReportsService {
         paidAmount: 0,
         remainingAmount: 0,
         quantity: 0,
+        skuMap: new Map(),
       };
       currentSupplier.count += 1;
       currentSupplier.totalAmount += itemsAmt;
@@ -422,32 +510,91 @@ export class ReportsService {
       currentSupplier.paidAmount += paidAmt;
       currentSupplier.remainingAmount += remAmt;
       currentSupplier.quantity += receiptQty;
-      supplierMap.set(supId, currentSupplier);
 
-      // Items
-      for (const item of r.items) {
-        const itemKey = item.sku || item.productName;
+      // Process Items for Supplier & Global SKU maps
+      for (const item of rItems) {
+        const itemKey = item.sku || item.productName || item.id;
+        const itQty = Number(item.receivedQuantity) || 0;
+        const itSubtotal = Number(item.subtotal || 0);
+
+        // Global SKU
         const currentItem = skuMap.get(itemKey) || {
-          sku: item.sku,
-          productName: item.productName,
+          sku: item.sku || 'N/A',
+          productName: item.productName || 'Chưa đặt tên',
+          variationName: item.variationName || null,
+          quantity: 0,
+          totalAmount: 0,
+          receiptsCount: 0,
+          suppliers: new Set<string>(),
+        };
+        currentItem.quantity += itQty;
+        currentItem.totalAmount += itSubtotal;
+        currentItem.receiptsCount += 1;
+        currentItem.suppliers.add(supName);
+        skuMap.set(itemKey, currentItem);
+
+        // Supplier-specific SKU
+        const currentSupItem = currentSupplier.skuMap.get(itemKey) || {
+          sku: item.sku || 'N/A',
+          productName: item.productName || 'Chưa đặt tên',
           variationName: item.variationName || null,
           quantity: 0,
           totalAmount: 0,
           receiptsCount: 0,
         };
-        currentItem.quantity += item.receivedQuantity || 0;
-        currentItem.totalAmount += Number(item.subtotal || 0);
-        currentItem.receiptsCount += 1;
-        skuMap.set(itemKey, currentItem);
+        currentSupItem.quantity += itQty;
+        currentSupItem.totalAmount += itSubtotal;
+        currentSupItem.receiptsCount += 1;
+        currentSupplier.skuMap.set(itemKey, currentSupItem);
       }
+
+      supplierMap.set(supId, currentSupplier);
+    }
+
+    if (totalReceivedQuantity === 0 && computedReceivedQty > 0) {
+      totalReceivedQuantity = computedReceivedQty;
+    }
+    if (totalDisputedQuantity === 0 && computedDisputedQty > 0) {
+      totalDisputedQuantity = computedDisputedQty;
     }
 
     const dailyTrend = Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+    const byDate = Array.from(dailyMap.values()).sort((a, b) => b.date.localeCompare(a.date));
     const byShop = Array.from(shopMap.values()).sort((a, b) => b.netAmount - a.netAmount);
-    const bySupplier = Array.from(supplierMap.values()).sort((a, b) => b.netAmount - a.netAmount);
+
+    const bySupplier = Array.from(supplierMap.values()).map((s) => {
+      const skus = Array.from(s.skuMap.values())
+        .map((it) => ({
+          ...it,
+          avgPrice: it.quantity > 0 ? Math.round(it.totalAmount / it.quantity) : 0,
+        }))
+        .sort((a, b) => b.totalAmount - a.totalAmount);
+
+      return {
+        supplierId: s.supplierId,
+        supplierName: s.supplierName,
+        supplierCode: s.supplierCode,
+        count: s.count,
+        totalAmount: s.totalAmount,
+        returnDeduction: s.returnDeduction,
+        netAmount: s.netAmount,
+        paidAmount: s.paidAmount,
+        remainingAmount: s.remainingAmount,
+        quantity: s.quantity,
+        skusCount: skus.length,
+        skus,
+      };
+    }).sort((a, b) => b.netAmount - a.netAmount);
+
     const topProducts = Array.from(skuMap.values())
       .map((it) => ({
-        ...it,
+        sku: it.sku,
+        productName: it.productName,
+        variationName: it.variationName,
+        quantity: it.quantity,
+        totalAmount: it.totalAmount,
+        receiptsCount: it.receiptsCount,
+        suppliers: Array.from(it.suppliers),
         avgPrice: it.quantity > 0 ? Math.round(it.totalAmount / it.quantity) : 0,
       }))
       .sort((a, b) => b.totalAmount - a.totalAmount);
@@ -466,6 +613,7 @@ export class ReportsService {
         uniqueSkusCount: skuMap.size,
       },
       dailyTrend,
+      byDate,
       byShop,
       bySupplier,
       topProducts,

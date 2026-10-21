@@ -75,12 +75,12 @@ export const SystemDatePicker: React.FC<SystemDatePickerProps> = ({
   return (
     <div
       className={cn(
-        'relative inline-flex items-center datepicker-wrapper group',
-        size === 'sm' ? 'min-w-[210px]' : 'min-w-[240px]',
+        'relative flex items-center w-full sm:w-auto min-w-0 datepicker-wrapper group',
+        size === 'sm' ? 'sm:min-w-[210px]' : 'sm:min-w-[240px]',
         className,
       )}
     >
-      <div className="w-full relative">
+      <div className="w-full min-w-0 relative">
         <DatepickerComponent
           value={dateValue}
           onChange={handleDateChange}
@@ -102,9 +102,10 @@ export const SystemDatePicker: React.FC<SystemDatePickerProps> = ({
               pastMonth: 'Tháng trước',
             },
           }}
-          containerClassName="relative w-full"
+          containerClassName="relative w-full min-w-0"
+          popupClassName={(defaultClass: string) => `datepicker-popup ${defaultClass || ''} z-50`}
           inputClassName={cn(
-            'w-full bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/80 rounded font-normal text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-[2px] focus:ring-[#5865f2]/20 focus:border-[#5865f2] transition-all cursor-pointer pl-8 pr-7',
+            'w-full min-w-0 bg-white dark:bg-[#1a1b23] border border-gray-200 dark:border-gray-700/80 rounded font-normal text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-[2px] focus:ring-[#5865f2]/20 focus:border-[#5865f2] transition-all cursor-pointer pl-8 pr-7 text-ellipsis overflow-hidden whitespace-nowrap',
             heightClass,
           )}
           toggleClassName="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"

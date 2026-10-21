@@ -2061,17 +2061,49 @@ export const SupplierDebtsPage: React.FC = () => {
                         />
                         {(() => {
                           if (!curSupplier) return null;
-                          const debt = curSupplier.closingDebt || 0;
+                          const debtBefore = Number(curSupplier.closingDebt || 0);
+                          const payAmt = Number(paymentForm.amount || 0);
+                          const debtAfter = debtBefore - payAmt;
                           return (
-                            <div className="flex items-center justify-between mt-1.5 text-[11px]">
-                              <span className="text-gray-500">Dư nợ hiện tại:</span>
-                              <span
-                                className={`font-mono font-bold ${
-                                  debt > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
-                                }`}
-                              >
-                                {debt > 0 ? `${debt.toLocaleString('vi-VN')} đ` : '0 đ (Cân bằng)'}
-                              </span>
+                            <div className="mt-2 p-2 rounded bg-gray-100/70 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700/60 space-y-1 text-[11px]">
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-500">Tiền nợ cũ trước giao dịch:</span>
+                                <span
+                                  className={`font-mono font-bold ${
+                                    debtBefore > 0
+                                      ? 'text-rose-600 dark:text-rose-400'
+                                      : debtBefore < 0
+                                        ? 'text-blue-600 dark:text-blue-400'
+                                        : 'text-emerald-600 dark:text-emerald-400'
+                                  }`}
+                                >
+                                  {debtBefore > 0
+                                    ? `${debtBefore.toLocaleString('vi-VN')} đ (Shop nợ NCC)`
+                                    : debtBefore < 0
+                                      ? `Cọc/Ứng trước ${Math.abs(debtBefore).toLocaleString('vi-VN')} đ`
+                                      : '0 đ (Cân bằng)'}
+                                </span>
+                              </div>
+                              {payAmt > 0 && (
+                                <div className="flex items-center justify-between pt-1 border-t border-gray-200/60 dark:border-gray-700/60">
+                                  <span className="text-gray-600 dark:text-gray-300 font-medium">Dự kiến nợ sau giao dịch:</span>
+                                  <span
+                                    className={`font-mono font-bold ${
+                                      debtAfter > 0
+                                        ? 'text-rose-600 dark:text-rose-400'
+                                        : debtAfter < 0
+                                          ? 'text-blue-600 dark:text-blue-400'
+                                          : 'text-emerald-600 dark:text-emerald-400'
+                                    }`}
+                                  >
+                                    {debtAfter > 0
+                                      ? `Còn nợ: ${debtAfter.toLocaleString('vi-VN')} đ`
+                                      : debtAfter < 0
+                                        ? `Dư cọc: ${Math.abs(debtAfter).toLocaleString('vi-VN')} đ`
+                                        : '0 đ (Hết nợ)'}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           );
                         })()}

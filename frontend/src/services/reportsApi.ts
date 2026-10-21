@@ -39,6 +39,18 @@ export interface PurchaseReportData {
     returnDeduction: number;
     netAmount: number;
     quantity: number;
+    paidAmount?: number;
+    remainingAmount?: number;
+  }>;
+  byDate: Array<{
+    date: string;
+    count: number;
+    totalAmount: number;
+    returnDeduction: number;
+    netAmount: number;
+    paidAmount: number;
+    remainingAmount: number;
+    quantity: number;
   }>;
   byShop: Array<{
     shopId: string;
@@ -63,6 +75,16 @@ export interface PurchaseReportData {
     paidAmount: number;
     remainingAmount: number;
     quantity: number;
+    skusCount?: number;
+    skus?: Array<{
+      sku: string;
+      productName: string;
+      variationName: string | null;
+      quantity: number;
+      totalAmount: number;
+      avgPrice: number;
+      receiptsCount: number;
+    }>;
   }>;
   topProducts: Array<{
     sku: string;
@@ -72,6 +94,7 @@ export interface PurchaseReportData {
     totalAmount: number;
     avgPrice: number;
     receiptsCount: number;
+    suppliers?: string[];
   }>;
   receipts: any[];
 }

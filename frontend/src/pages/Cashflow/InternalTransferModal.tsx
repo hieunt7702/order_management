@@ -171,11 +171,21 @@ export const InternalTransferModal: React.FC<InternalTransferModalProps> = ({
                 className="w-full"
               />
               {fromAccount && (
-                <div className="mt-2 text-[11px] text-slate-500 flex justify-between">
-                  <span>Số dư hiện tại:</span>
-                  <span className="font-bold text-slate-700 dark:text-slate-300">
-                    {Number(fromAccount.currentBalance).toLocaleString('vi-VN')}đ
-                  </span>
+                <div className="mt-2 text-[11px] text-slate-500 space-y-0.5">
+                  <div className="flex justify-between">
+                    <span>Số dư cũ trước GD:</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                      {Number(fromAccount.currentBalance).toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                  {amount > 0 && (
+                    <div className="flex justify-between">
+                      <span>Dự kiến sau chuyển:</span>
+                      <span className={`font-bold ${Number(fromAccount.currentBalance) - amount < 0 ? 'text-rose-600' : 'text-slate-900 dark:text-slate-100'}`}>
+                        {(Number(fromAccount.currentBalance) - amount).toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -202,11 +212,21 @@ export const InternalTransferModal: React.FC<InternalTransferModalProps> = ({
                 className="w-full"
               />
               {toAccount && (
-                <div className="mt-2 text-[11px] text-slate-500 flex justify-between">
-                  <span>Số dư hiện tại:</span>
-                  <span className="font-bold text-slate-700 dark:text-slate-300">
-                    {Number(toAccount.currentBalance).toLocaleString('vi-VN')}đ
-                  </span>
+                <div className="mt-2 text-[11px] text-slate-500 space-y-0.5">
+                  <div className="flex justify-between">
+                    <span>Số dư cũ trước GD:</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                      {Number(toAccount.currentBalance).toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                  {netAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span>Dự kiến sau nhận:</span>
+                      <span className="font-bold text-emerald-600">
+                        {(Number(toAccount.currentBalance) + netAmount).toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

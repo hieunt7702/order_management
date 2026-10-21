@@ -415,6 +415,8 @@ export class PurchaseReceiptsService {
           ],
         });
       }
+    }
+
     if (filter.startDate || filter.endDate) {
       const dateFilter: Prisma.DateTimeFilter = {};
       if (filter.startDate) {
