@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   PackagePlus,
   RefreshCw,
@@ -19,6 +20,7 @@ import {
   Calendar,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -61,10 +63,12 @@ export const PurchaseReportsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'DATES' | 'SUPPLIERS' | 'PRODUCTS' | 'SHOPS' | 'RECEIPTS'>('DATES');
   const [expandedSupplierIds, setExpandedSupplierIds] = useState<Record<string, boolean>>({});
+  const [showChart, setShowChart] = useState<boolean>(true);
 
   // Filters
   const [selectedShopId, setSelectedShopId] = useState<string>('ALL');
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('ALL');
+  const [datePreset, setDatePreset] = useState<string>('ALL');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -96,26 +100,78 @@ export const PurchaseReportsPage: React.FC = () => {
     }
   };
 
-  // Load Shop & Supplier metadata
+  // Safe load Shop & Supplier metadata with Promise.allSettled
   useEffect(() => {
+    let isMounted = true;
     const loadMetadata = async () => {
       try {
-        const [shopsRes, supsRes]: [any, any] = await Promise.all([
+        const [shopsResult, supsResult] = await Promise.allSettled([
           shopsApi.findAll(),
           suppliersApi.findAll({ status: 'ACTIVE' }),
         ]);
 
-        const shopsData = shopsRes?.data || (Array.isArray(shopsRes) ? shopsRes : shopsRes?.items || []);
-        const supsData = supsRes?.data || (Array.isArray(supsRes) ? supsRes : supsRes?.items || []);
+        if (!isMounted) return;
 
-        setShops(Array.isArray(shopsData) ? shopsData : []);
-        setSuppliers(Array.isArray(supsData) ? supsData : []);
+        if (shopsResult.status === 'fulfilled') {
+          const res: any = shopsResult.value;
+          const data = res?.data || (Array.isArray(res) ? res : res?.items || []);
+          if (Array.isArray(data)) setShops(data);
+        }
+
+        if (supsResult.status === 'fulfilled') {
+          const res: any = supsResult.value;
+          const data = res?.data || (Array.isArray(res) ? res : res?.items || []);
+          if (Array.isArray(data)) setSuppliers(data);
+        }
       } catch (err) {
-        console.error('Lỗi nạp danh sách cửa hàng/NCC:', err);
+        console.warn('Lỗi nạp danh sách cửa hàng/NCC (suppressed):', err);
       }
     };
     loadMetadata();
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  // Quick Date Presets Handler
+  const handleDatePresetChange = (preset: string) => {
+    setDatePreset(preset);
+    const now = new Date();
+    const formatYMD = (d: Date) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    if (preset === 'ALL') {
+      setStartDate('');
+      setEndDate('');
+    } else if (preset === 'TODAY') {
+      const todayStr = formatYMD(now);
+      setStartDate(todayStr);
+      setEndDate(todayStr);
+    } else if (preset === 'YESTERDAY') {
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const yesterdayStr = formatYMD(yesterday);
+      setStartDate(yesterdayStr);
+      setEndDate(yesterdayStr);
+    } else if (preset === 'LAST_7_DAYS') {
+      const past = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      setStartDate(formatYMD(past));
+      setEndDate(formatYMD(now));
+    } else if (preset === 'THIS_MONTH') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      setStartDate(formatYMD(firstDay));
+      setEndDate(formatYMD(lastDay));
+    } else if (preset === 'LAST_MONTH') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+      setStartDate(formatYMD(firstDay));
+      setEndDate(formatYMD(lastDay));
+    }
+  };
 
   // Load report data
   const loadReport = async () => {
@@ -149,6 +205,7 @@ export const PurchaseReportsPage: React.FC = () => {
   const handleResetFilters = () => {
     setSelectedShopId('ALL');
     setSelectedSupplierId('ALL');
+    setDatePreset('ALL');
     setStartDate('');
     setEndDate('');
     setSearchTerm('');
@@ -318,57 +375,68 @@ export const PurchaseReportsPage: React.FC = () => {
   const hasFilterActive = Boolean(
     selectedShopId !== 'ALL' ||
     selectedSupplierId !== 'ALL' ||
+    datePreset !== 'ALL' ||
     startDate ||
     endDate ||
     searchTerm.trim()
   );
 
   return (
-    <div className="p-3 sm:p-5 space-y-3.5 sm:space-y-4 max-w-[1600px] mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#14151a] p-3 sm:p-4 rounded border border-gray-200 dark:border-gray-800">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <PackagePlus className="w-5 h-5 text-[#5865f2] shrink-0" />
-              <span>Báo Cáo Nhập Hàng</span>
-            </h1>
-            <span className="px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold bg-[#5865f2]/10 text-[#5865f2] rounded">
-              Báo cáo & Phân tích
-            </span>
-          </div>
-          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300 max-w-full overflow-x-hidden min-w-0">
+      {/* Top Header */}
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+            <PackagePlus size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
+            <span className="sm:hidden truncate">Báo cáo nhập</span>
+            <span className="hidden sm:inline truncate">Báo Cáo Nhập Hàng</span>
+          </h1>
+          <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
             Tổng hợp dữ liệu nhập kho theo từng cửa hàng, nhà cung cấp, phân bổ chi phí & xu hướng nhập hàng
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <Link to="/purchase-receipts">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 px-2.5 sm:px-3 text-[#5865f2] border-[#5865f2]/30 hover:bg-[#5865f2]/10"
+              title="Xem danh sách quản lý phiếu nhập kho"
+            >
+              <Receipt size={14} />
+              <span className="hidden sm:inline">Quản lý phiếu nhập</span>
+            </Button>
+          </Link>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportExcel}
+            disabled={!data || data.summary.totalReceipts === 0}
+            className="gap-1.5 px-2.5 sm:px-3 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+            title="Xuất file Excel"
+          >
+            <FileSpreadsheet size={14} />
+            <span className="hidden sm:inline">Xuất Excel</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
             onClick={loadReport}
             disabled={isLoading}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5"
+            className="gap-1.5 p-2 lg:px-3"
+            title="Làm mới dữ liệu"
           >
             <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-            <span>Làm mới</span>
-          </Button>
-
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleExportExcel}
-            disabled={!data || data.summary.totalReceipts === 0}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            <FileSpreadsheet size={14} />
-            <span>Xuất Excel</span>
+            <span className="hidden lg:inline">Làm mới</span>
           </Button>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+      {/* KPI Cards Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
         <SystemMetricPairCard
           leftItem={{
             title: 'Hàng thực nhận (Net)',
@@ -413,25 +481,51 @@ export const PurchaseReportsPage: React.FC = () => {
       </div>
 
       {/* Unified Filters Bar */}
-      <SystemFilter className="flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 flex-1">
-          {/* 1. Date Range Picker (Unified SystemDatePicker Component) */}
-          <div className="w-full sm:w-[240px]">
+      <SystemFilter className="p-2.5 sm:p-3 flex-col sm:flex-row items-stretch sm:items-center">
+        {/* Quick Date Presets Chips */}
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 max-w-full">
+          {[
+            { id: 'ALL', label: 'Tất cả' },
+            { id: 'TODAY', label: 'Hôm nay' },
+            { id: 'YESTERDAY', label: 'Hôm qua' },
+            { id: 'LAST_7_DAYS', label: '7 ngày' },
+            { id: 'THIS_MONTH', label: 'Tháng này' },
+            { id: 'LAST_MONTH', label: 'Tháng trước' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => handleDatePresetChange(tab.id)}
+              className={`px-2.5 py-1 rounded text-xs whitespace-nowrap transition-colors cursor-pointer border-0 shrink-0 ${
+                datePreset === tab.id
+                  ? 'bg-[#5865f2] text-white font-medium shadow-xs'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1a1b23] font-normal'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto sm:ml-auto">
+          {/* Custom Date Range Picker */}
+          <div className="w-full sm:w-[220px]">
             <SystemDatePicker
               startDate={startDate}
               endDate={endDate}
               onChange={(start, end) => {
                 setStartDate(start || '');
                 setEndDate(end || '');
+                setDatePreset(start || end ? 'CUSTOM' : 'ALL');
               }}
               size="sm"
               className="w-full"
-              placeholder="Chọn khoảng ngày nhập..."
+              placeholder="Khoảng ngày nhập..."
             />
           </div>
 
-          {/* 2. Shop Filter */}
-          <div className="w-full sm:w-52">
+          {/* Shop Filter */}
+          <div className="w-full sm:w-48">
             <Select
               value={selectedShopId}
               onChange={(val) => setSelectedShopId(String(val))}
@@ -449,8 +543,8 @@ export const PurchaseReportsPage: React.FC = () => {
             />
           </div>
 
-          {/* 3. Supplier Filter */}
-          <div className="w-full sm:w-56">
+          {/* Supplier Filter */}
+          <div className="w-full sm:w-52">
             <Select
               value={selectedSupplierId}
               onChange={(val) => setSelectedSupplierId(String(val))}
@@ -467,9 +561,9 @@ export const PurchaseReportsPage: React.FC = () => {
             />
           </div>
 
-          {/* 4. Search Filter & Reset */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <form onSubmit={handleSearchSubmit} className="flex-1 sm:w-64">
+          {/* Search & Reset */}
+          <div className="w-full sm:w-60 flex items-center gap-1.5 col-span-2 sm:col-span-1">
+            <form onSubmit={handleSearchSubmit} className="flex-1">
               <SystemFilterSearch
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -477,7 +571,6 @@ export const PurchaseReportsPage: React.FC = () => {
                 className="w-full"
               />
             </form>
-
             {hasFilterActive && (
               <SystemFilterReset onClick={handleResetFilters} className="shrink-0" />
             )}
@@ -487,66 +580,80 @@ export const PurchaseReportsPage: React.FC = () => {
 
       {/* Chart Section */}
       <div className="bg-white dark:bg-[#14151a] p-3 sm:p-4 rounded border border-gray-200 dark:border-gray-800">
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <div className="flex items-center justify-between mb-2">
           <div>
             <h2 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
               <TrendingUp size={16} className="text-[#5865f2] shrink-0" />
-              <span>Xu Hướng Giá Trị & Số Lượng Nhập Hàng Theo Ngày</span>
+              <span>Biểu Đồ Xu Hướng Nhập Hàng Theo Ngày</span>
             </h2>
-            <p className="text-[10px] sm:text-[11px] text-gray-400 mt-0.5">
+            <p className="text-[10px] sm:text-[11px] text-gray-400 mt-0.5 hidden sm:block">
               Đường biến thiên giá trị nhập thực nhận (VND) và số lượng sản phẩm nhập kho
             </p>
           </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowChart(!showChart)}
+            className="text-xs text-gray-500 hover:text-gray-900 dark:hover:text-white gap-1 h-7 px-2"
+          >
+            {showChart ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            <span className="hidden sm:inline">{showChart ? 'Thu gọn biểu đồ' : 'Mở biểu đồ'}</span>
+          </Button>
         </div>
 
-        {chartData.length === 0 ? (
-          <div className="h-[180px] sm:h-[220px] flex flex-col items-center justify-center text-gray-400 text-xs">
-            <AlertCircle size={22} className="mb-2 opacity-50" />
-            Không có dữ liệu nhập hàng trong khoảng thời gian đã chọn
-          </div>
-        ) : (
-          <div className="h-[200px] sm:h-[240px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#5865f2" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#5865f2" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#88888820" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#888' }} />
-                <YAxis
-                  tick={{ fontSize: 10, fill: '#888' }}
-                  tickFormatter={(val) => (val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : `${val.toLocaleString('vi-VN')}`)}
-                />
-                <Tooltip
-                  formatter={(val: any, name: string) => {
-                    if (name === 'netAmount') return [`${Number(val).toLocaleString('vi-VN')}đ`, 'Tiền nhập Net'];
-                    if (name === 'quantity') return [`${Number(val).toLocaleString('vi-VN')} cái`, 'Số lượng'];
-                    return [val, name];
-                  }}
-                  labelFormatter={(lbl) => `Ngày ${lbl}`}
-                  contentStyle={{
-                    backgroundColor: '#1f2937',
-                    borderColor: '#374151',
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    color: '#fff',
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="netAmount"
-                  name="netAmount"
-                  stroke="#5865f2"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#colorAmount)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+        {showChart && (
+          <>
+            {chartData.length === 0 ? (
+              <div className="h-[160px] sm:h-[200px] flex flex-col items-center justify-center text-gray-400 text-xs">
+                <AlertCircle size={22} className="mb-2 opacity-50" />
+                Không có dữ liệu nhập hàng trong khoảng thời gian đã chọn
+              </div>
+            ) : (
+              <div className="h-[180px] sm:h-[220px] w-full pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#5865f2" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#5865f2" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#88888820" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#888' }} />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: '#888' }}
+                      tickFormatter={(val) => (val >= 1000000 ? `${(val / 1000000).toFixed(1)}M` : `${val.toLocaleString('vi-VN')}`)}
+                    />
+                    <Tooltip
+                      formatter={(val: any, name: string) => {
+                        if (name === 'netAmount') return [`${Number(val).toLocaleString('vi-VN')}đ`, 'Tiền nhập Net'];
+                        if (name === 'quantity') return [`${Number(val).toLocaleString('vi-VN')} cái`, 'Số lượng'];
+                        return [val, name];
+                      }}
+                      labelFormatter={(lbl) => `Ngày ${lbl}`}
+                      contentStyle={{
+                        backgroundColor: '#1f2937',
+                        borderColor: '#374151',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        color: '#fff',
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="netAmount"
+                      name="netAmount"
+                      stroke="#5865f2"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#colorAmount)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </>
         )}
       </div>
 

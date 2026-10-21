@@ -103,8 +103,331 @@ export const reportsApi = {
   getDashboard: (params: ReportQueryParams = {}) => {
     return api.get(`/reports/dashboard${buildQuery(params)}`);
   },
-  getPurchaseReport: (params: PurchaseReportFilterParams = {}): Promise<PurchaseReportData> => {
-    return api.get(`/reports/purchases${buildQuery(params)}`);
+  getPurchaseReport: async (params: PurchaseReportFilterParams = {}): Promise<PurchaseReportData> => {
+    try {
+      const res = await api.get(`/reports/purchases${buildQuery(params)}`);
+      if (res && res.summary) {
+        return res;
+      }
+    } catch (err: any) {
+      console.warn(
+        'Backend /reports/purchases unavailable or 404, calculating client-side fallback from purchase receipts:',
+        err?.message || err,
+      );
+    }
+
+    // Fallback: Load receipts and compute report metrics
+    const queryParams: any = { limit: 500 };
+    if (params.shopId && params.shopId !== 'ALL') queryParams.shopId = params.shopId;
+    if (params.supplierId && params.supplierId !== 'ALL') queryParams.supplierId = params.supplierId;
+    if (params.warehouseId) queryParams.warehouseId = params.warehouseId;
+    if (params.startDate) queryParams.startDate = params.startDate;
+    if (params.endDate) queryParams.endDate = params.endDate;
+    if (params.search) queryParams.search = params.search;
+
+    const receiptsRes: any = await api.get(`/purchase-receipts${buildQuery(queryParams)}`);
+    const receipts: any[] = Array.isArray(receiptsRes)
+      ? receiptsRes
+      : receiptsRes?.data || receiptsRes?.items || [];
+
+    return computePurchaseReportFromReceipts(receipts);
   },
 };
+
+function computePurchaseReportFromReceipts(receipts: any[]): PurchaseReportData {
+  let totalReceipts = receipts.length;
+  let totalItemsAmount = 0;
+  let totalReturnDeductionAmount = 0;
+  let totalPayableAmount = 0;
+  let totalPaidAmount = 0;
+  let totalRemainingAmount = 0;
+  let totalReceivedQuantity = 0;
+  let totalDisputedQuantity = 0;
+
+  const skuSet = new Set<string>();
+  const dailyMap: Record<
+    string,
+    {
+      count: number;
+      totalAmount: number;
+      returnDeduction: number;
+      netAmount: number;
+      paidAmount: number;
+      remainingAmount: number;
+      quantity: number;
+    }
+  > = {};
+  const supplierMap: Record<
+    string,
+    {
+      supplierId: string;
+      supplierName: string;
+      supplierCode: string;
+      count: number;
+      totalAmount: number;
+      returnDeduction: number;
+      netAmount: number;
+      paidAmount: number;
+      remainingAmount: number;
+      quantity: number;
+      skusMap: Record<
+        string,
+        {
+          sku: string;
+          productName: string;
+          variationName: string | null;
+          quantity: number;
+          totalAmount: number;
+          receiptsCount: number;
+        }
+      >;
+    }
+  > = {};
+  const shopMap: Record<
+    string,
+    {
+      shopId: string;
+      shopName: string;
+      shopCode: string;
+      count: number;
+      totalAmount: number;
+      returnDeduction: number;
+      netAmount: number;
+      paidAmount: number;
+      remainingAmount: number;
+      quantity: number;
+    }
+  > = {};
+  const productMap: Record<
+    string,
+    {
+      sku: string;
+      productName: string;
+      variationName: string | null;
+      quantity: number;
+      totalAmount: number;
+      receiptsCount: number;
+      suppliers: Set<string>;
+    }
+  > = {};
+
+  for (const r of receipts) {
+    const rItemsAmt = Number(r.totalItemsAmount || 0);
+    const rRetDed = Number(r.returnDeductionAmount || 0);
+    const rPayable = Number(r.payableAmount || 0);
+    const rPaid = Number(r.paidAmount || 0);
+    const rRemaining = Number(r.remainingAmount || 0);
+    const rNet = Math.max(0, rItemsAmt - rRetDed);
+
+    totalItemsAmount += rItemsAmt;
+    totalReturnDeductionAmount += rRetDed;
+    totalPayableAmount += rPayable;
+    totalPaidAmount += rPaid;
+    totalRemainingAmount += rRemaining;
+
+    // Date
+    let dStr = 'N/A';
+    if (r.receiptDate) {
+      try {
+        dStr = new Date(r.receiptDate).toISOString().slice(0, 10);
+      } catch {
+        dStr = String(r.receiptDate).slice(0, 10);
+      }
+    }
+    if (!dailyMap[dStr]) {
+      dailyMap[dStr] = {
+        count: 0,
+        totalAmount: 0,
+        returnDeduction: 0,
+        netAmount: 0,
+        paidAmount: 0,
+        remainingAmount: 0,
+        quantity: 0,
+      };
+    }
+    dailyMap[dStr].count += 1;
+    dailyMap[dStr].totalAmount += rItemsAmt;
+    dailyMap[dStr].returnDeduction += rRetDed;
+    dailyMap[dStr].netAmount += rNet;
+    dailyMap[dStr].paidAmount += rPaid;
+    dailyMap[dStr].remainingAmount += rRemaining;
+
+    // Supplier
+    const supId = r.supplierId || 'UNKNOWN';
+    const supName = r.supplier?.name || 'Nhà cung cấp khác';
+    const supCode = r.supplier?.code || 'NCC_N/A';
+    if (!supplierMap[supId]) {
+      supplierMap[supId] = {
+        supplierId: supId,
+        supplierName: supName,
+        supplierCode: supCode,
+        count: 0,
+        totalAmount: 0,
+        returnDeduction: 0,
+        netAmount: 0,
+        paidAmount: 0,
+        remainingAmount: 0,
+        quantity: 0,
+        skusMap: {},
+      };
+    }
+    supplierMap[supId].count += 1;
+    supplierMap[supId].totalAmount += rItemsAmt;
+    supplierMap[supId].returnDeduction += rRetDed;
+    supplierMap[supId].netAmount += rNet;
+    supplierMap[supId].paidAmount += rPaid;
+    supplierMap[supId].remainingAmount += rRemaining;
+
+    // Shop
+    const sId = r.shopId || 'CENTRAL';
+    const sName = r.shop?.name || 'Kho chung / Chưa gán shop';
+    const sCode = r.shop?.code || 'CENTRAL';
+    if (!shopMap[sId]) {
+      shopMap[sId] = {
+        shopId: sId,
+        shopName: sName,
+        shopCode: sCode,
+        count: 0,
+        totalAmount: 0,
+        returnDeduction: 0,
+        netAmount: 0,
+        paidAmount: 0,
+        remainingAmount: 0,
+        quantity: 0,
+      };
+    }
+    shopMap[sId].count += 1;
+    shopMap[sId].totalAmount += rItemsAmt;
+    shopMap[sId].returnDeduction += rRetDed;
+    shopMap[sId].netAmount += rNet;
+    shopMap[sId].paidAmount += rPaid;
+    shopMap[sId].remainingAmount += rRemaining;
+
+    // Items
+    let rQty = 0;
+    if (r.items && Array.isArray(r.items)) {
+      for (const it of r.items) {
+        const qty = Number(it.receivedQuantity || 0);
+        const subtotal = Number(it.subtotal || qty * Number(it.unitPrice || 0));
+        rQty += qty;
+        totalReceivedQuantity += qty;
+        totalDisputedQuantity += Number(it.disputedQuantity || 0);
+        if (it.sku) skuSet.add(it.sku);
+
+        // Sub-SKU in Supplier
+        if (it.sku) {
+          if (!supplierMap[supId].skusMap[it.sku]) {
+            supplierMap[supId].skusMap[it.sku] = {
+              sku: it.sku,
+              productName: it.productName || it.sku,
+              variationName: it.variationName || null,
+              quantity: 0,
+              totalAmount: 0,
+              receiptsCount: 0,
+            };
+          }
+          supplierMap[supId].skusMap[it.sku].quantity += qty;
+          supplierMap[supId].skusMap[it.sku].totalAmount += subtotal;
+          supplierMap[supId].skusMap[it.sku].receiptsCount += 1;
+
+          // Top products
+          if (!productMap[it.sku]) {
+            productMap[it.sku] = {
+              sku: it.sku,
+              productName: it.productName || it.sku,
+              variationName: it.variationName || null,
+              quantity: 0,
+              totalAmount: 0,
+              receiptsCount: 0,
+              suppliers: new Set(),
+            };
+          }
+          productMap[it.sku].quantity += qty;
+          productMap[it.sku].totalAmount += subtotal;
+          productMap[it.sku].receiptsCount += 1;
+          if (supName) productMap[it.sku].suppliers.add(supName);
+        }
+      }
+    }
+    dailyMap[dStr].quantity += rQty;
+    supplierMap[supId].quantity += rQty;
+    shopMap[sId].quantity += rQty;
+  }
+
+  // Format daily trend (chronological) & byDate (newest first)
+  const sortedDatesAsc = Object.keys(dailyMap).sort();
+  const dailyTrend = sortedDatesAsc.map((d) => ({
+    date: d,
+    count: dailyMap[d].count,
+    totalAmount: dailyMap[d].totalAmount,
+    returnDeduction: dailyMap[d].returnDeduction,
+    netAmount: dailyMap[d].netAmount,
+    quantity: dailyMap[d].quantity,
+    paidAmount: dailyMap[d].paidAmount,
+    remainingAmount: dailyMap[d].remainingAmount,
+  }));
+
+  const byDate = [...dailyTrend].reverse();
+
+  // Format bySupplier
+  const bySupplier = Object.values(supplierMap)
+    .sort((a, b) => b.totalAmount - a.totalAmount)
+    .map((s) => ({
+      supplierId: s.supplierId,
+      supplierName: s.supplierName,
+      supplierCode: s.supplierCode,
+      count: s.count,
+      totalAmount: s.totalAmount,
+      returnDeduction: s.returnDeduction,
+      netAmount: s.netAmount,
+      paidAmount: s.paidAmount,
+      remainingAmount: s.remainingAmount,
+      quantity: s.quantity,
+      skusCount: Object.keys(s.skusMap).length,
+      skus: Object.values(s.skusMap)
+        .sort((a, b) => b.totalAmount - a.totalAmount)
+        .map((it) => ({
+          ...it,
+          avgPrice: it.quantity > 0 ? Math.round(it.totalAmount / it.quantity) : 0,
+        })),
+    }));
+
+  // Format byShop
+  const byShop = Object.values(shopMap).sort((a, b) => b.totalAmount - a.totalAmount);
+
+  // Format topProducts
+  const topProducts = Object.values(productMap)
+    .sort((a, b) => b.quantity - a.quantity)
+    .map((p) => ({
+      sku: p.sku,
+      productName: p.productName,
+      variationName: p.variationName,
+      quantity: p.quantity,
+      totalAmount: p.totalAmount,
+      avgPrice: p.quantity > 0 ? Math.round(p.totalAmount / p.quantity) : 0,
+      receiptsCount: p.receiptsCount,
+      suppliers: Array.from(p.suppliers),
+    }));
+
+  return {
+    summary: {
+      totalReceipts,
+      totalItemsAmount,
+      totalReturnDeductionAmount,
+      netItemsAmount: Math.max(0, totalItemsAmount - totalReturnDeductionAmount),
+      totalPayableAmount,
+      totalPaidAmount,
+      totalRemainingAmount,
+      totalReceivedQuantity,
+      totalDisputedQuantity,
+      uniqueSkusCount: skuSet.size,
+    },
+    dailyTrend,
+    byDate,
+    byShop,
+    bySupplier,
+    topProducts,
+    receipts: receipts.slice(0, 50),
+  };
+}
 
