@@ -10,7 +10,7 @@ import {
 import { Modal, ModalBody, ModalFooter, ModalButton } from './Modal';
 import { cn } from '../../lib/utils';
 
-export type ConfirmVariant = 'danger' | 'warning' | 'primary';
+export type ConfirmVariant = 'danger' | 'warning' | 'primary' | 'destructive';
 
 export interface ConfirmOptions {
   id?: string;
@@ -79,23 +79,38 @@ class ConfirmManager {
 
 export const confirmManager = new ConfirmManager();
 
+export interface ConfirmHelperOptions extends Omit<ConfirmOptions, 'variant'> {
+  onConfirm?: () => void;
+}
+
 /**
  * Imperative confirm dialog function
  * Returns a promise that resolves to true if confirmed, false if cancelled.
- *
- * Example:
- * ```ts
- * const ok = await confirmModal({
- *   title: 'Hủy phiếu chi',
- *   message: 'Bạn có chắc chắn muốn hủy phiếu chi này?',
- *   variant: 'danger',
- * });
- * if (!ok) return;
- * ```
  */
 export function confirmModal(options: ConfirmOptions): Promise<boolean> {
   return confirmManager.confirm(options);
 }
+
+confirmModal.danger = (options: ConfirmHelperOptions): Promise<boolean> => {
+  return confirmModal({ ...options, variant: 'danger' }).then((ok) => {
+    if (ok) options.onConfirm?.();
+    return ok;
+  });
+};
+
+confirmModal.warning = (options: ConfirmHelperOptions): Promise<boolean> => {
+  return confirmModal({ ...options, variant: 'warning' }).then((ok) => {
+    if (ok) options.onConfirm?.();
+    return ok;
+  });
+};
+
+confirmModal.primary = (options: ConfirmHelperOptions): Promise<boolean> => {
+  return confirmModal({ ...options, variant: 'primary' }).then((ok) => {
+    if (ok) options.onConfirm?.();
+    return ok;
+  });
+};
 
 /**
  * Global Container that renders the active confirm dialog.
@@ -112,7 +127,9 @@ export const ConfirmModalContainer: React.FC = () => {
 
   if (!active) return null;
 
-  const variant = active.variant || 'danger';
+  const rawVariant = active.variant || 'danger';
+  const variant: 'danger' | 'warning' | 'primary' =
+    rawVariant === 'destructive' ? 'danger' : rawVariant;
 
   // Determine icon based on variant
   const IconComponent =

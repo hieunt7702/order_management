@@ -44,15 +44,19 @@ export interface SystemTableEmptyProps {
   icon?: ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
   title?: string;
   description?: string;
+  message?: string;
   colSpan?: number;
 }
 
 export const SystemTableEmpty: React.FC<SystemTableEmptyProps> = ({
   icon: Icon = Inbox,
   title = 'Không có dữ liệu',
-  description = 'Không tìm thấy bản ghi nào phù hợp với điều kiện tìm kiếm.',
+  description,
+  message,
   colSpan = 100,
 }) => {
+  const displayDesc = description || message || 'Không tìm thấy bản ghi nào phù hợp với điều kiện tìm kiếm.';
+
   return (
     <tr>
       <td
@@ -67,7 +71,7 @@ export const SystemTableEmpty: React.FC<SystemTableEmptyProps> = ({
             {title}
           </h3>
           <p className="text-xs text-gray-400 dark:text-gray-500 max-w-sm mx-auto">
-            {description}
+            {displayDesc}
           </p>
         </div>
       </td>
@@ -75,10 +79,21 @@ export const SystemTableEmpty: React.FC<SystemTableEmptyProps> = ({
   );
 };
 
-export const SystemTableSkeleton: React.FC<{ rows?: number; cols?: number }> = ({
+export interface SystemTableSkeletonProps {
+  rows?: number;
+  cols?: number;
+  columns?: number;
+  colSpan?: number;
+}
+
+export const SystemTableSkeleton: React.FC<SystemTableSkeletonProps> = ({
   rows = 6,
   cols = 8,
+  columns,
+  colSpan,
 }) => {
+  const totalCols = columns ?? colSpan ?? cols;
+
   return (
     <>
       {Array.from({ length: rows }).map((_, rIdx) => (
@@ -86,7 +101,7 @@ export const SystemTableSkeleton: React.FC<{ rows?: number; cols?: number }> = (
           key={rIdx}
           className="border-b border-gray-100 dark:border-gray-800 animate-pulse"
         >
-          {Array.from({ length: cols }).map((_, cIdx) => (
+          {Array.from({ length: totalCols }).map((_, cIdx) => (
             <td
               key={cIdx}
               className="px-4 py-3 border-l border-gray-200 dark:border-gray-800 first:border-l-0"

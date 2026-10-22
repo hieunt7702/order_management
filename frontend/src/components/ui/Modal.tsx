@@ -213,7 +213,8 @@ export const ModalFooter: React.FC<{
 );
 
 export interface ModalButtonProps {
-  variant?: 'secondary' | 'primary' | 'danger' | 'outline';
+  variant?: 'secondary' | 'primary' | 'danger' | 'outline' | 'destructive';
+  size?: 'sm' | 'md' | 'lg' | string;
   type?: 'button' | 'submit' | 'reset';
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   disabled?: boolean;
@@ -224,6 +225,7 @@ export interface ModalButtonProps {
 
 export const ModalButton: React.FC<ModalButtonProps> = ({
   variant = 'secondary',
+  size,
   type = 'button',
   onClick,
   disabled = false,
@@ -232,7 +234,9 @@ export const ModalButton: React.FC<ModalButtonProps> = ({
   className = '',
 }) => {
   const baseClasses =
-    'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-1.5 min-h-[38px] sm:min-h-[32px] text-xs sm:text-sm font-medium rounded sm:rounded transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-95';
+    size === 'sm'
+      ? 'inline-flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[32px] text-xs font-medium rounded transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-95'
+      : 'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-1.5 min-h-[38px] sm:min-h-[32px] text-xs sm:text-sm font-medium rounded sm:rounded transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-95';
 
   const variantClasses = {
     secondary:
@@ -243,6 +247,8 @@ export const ModalButton: React.FC<ModalButtonProps> = ({
       'bg-[#5865f2] hover:bg-[#4752c4] text-white border-0 shadow-none active:translate-y-px',
     danger:
       'bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 active:translate-y-px',
+    destructive:
+      'bg-red-600 hover:bg-red-700 text-white border-0 shadow-none active:translate-y-px',
   };
 
   return (

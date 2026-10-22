@@ -356,6 +356,8 @@ export const OrdersPage: React.FC = () => {
       trackingCode: autoTracking,
       shippingFee: 0,
       note: '',
+      isVirtual: false,
+      isRealGoods: false,
       items: [
         {
           variantId: '',

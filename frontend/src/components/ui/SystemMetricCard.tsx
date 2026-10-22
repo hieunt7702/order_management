@@ -7,7 +7,8 @@ export type SystemMetricColorScheme =
   | 'orange'
   | 'red'
   | 'blue'
-  | 'purple';
+  | 'purple'
+  | 'indigo';
 
 export interface SystemMetricCardProps {
   title: string;
@@ -109,6 +110,17 @@ const schemes: Record<
     indicatorColor: 'bg-purple-500',
     iconColor: 'text-purple-500 dark:text-purple-400',
     textColor: 'text-purple-500',
+  },
+  indigo: {
+    borderActive: 'border-indigo-500 ring-1 ring-indigo-500/20 bg-indigo-500/[0.03]',
+    borderInactive:
+      'border-gray-200/60 dark:border-white/[0.08] hover:border-indigo-300 dark:hover:border-indigo-900/50',
+    circleActive: 'bg-indigo-500/20 border-indigo-500/40 text-indigo-500',
+    circleInactive:
+      'bg-indigo-500/10 dark:bg-indigo-500/15 border-indigo-500/25 dark:border-indigo-500/30 text-indigo-500 dark:text-indigo-400',
+    indicatorColor: 'bg-indigo-500',
+    iconColor: 'text-indigo-500 dark:text-indigo-400',
+    textColor: 'text-indigo-500',
   },
 };
 
