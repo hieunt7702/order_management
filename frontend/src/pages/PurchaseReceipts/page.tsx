@@ -2528,7 +2528,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
           loadReceipts();
           loadSuppliers();
           loadVariants();
-          if (selectedReceiptDetail && selectedReceiptDetail.id === updated.id) {
+          if (selectedReceiptDetail && updated && selectedReceiptDetail.id === updated.id) {
             setSelectedReceiptDetail(updated);
           }
         }}

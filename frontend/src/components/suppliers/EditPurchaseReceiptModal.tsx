@@ -80,29 +80,67 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
 
     let isMounted = true;
     setIsLoadingDetail(true);
+    setFullReceipt(receipt);
+
+    // Initialise with existing receipt data right away so UI isn't empty
+    setForm({
+      supplierId: receipt.supplierId || '',
+      warehouseId: receipt.warehouseId || '',
+      shopId: receipt.shopId || undefined,
+      receiptDate: receipt.receiptDate ? receipt.receiptDate.split('T')[0] : '',
+      paymentDueDate: receipt.paymentDueDate ? receipt.paymentDueDate.split('T')[0] : '',
+      discountAmount: Number(receipt.discountAmount || 0),
+      taxAmount: Number(receipt.taxAmount || 0),
+      shippingFee: Number(receipt.shippingFee || 0),
+      shippingFeePayerType: receipt.shippingFeePayerType || 'PAID_TO_SUPPLIER',
+      note: receipt.note || '',
+      syncOrderCogs: true,
+      items:
+        receipt.items && receipt.items.length > 0
+          ? receipt.items.map((it) => ({
+            id: it.id,
+            variantId: it.variantId,
+            productName: it.productName,
+            variationName: it.variationName || '',
+            sku: it.sku,
+            orderedQuantity: it.orderedQuantity,
+            receivedQuantity: it.receivedQuantity,
+            disputedQuantity: it.disputedQuantity || 0,
+            unitPrice: Number(it.unitPrice || 0),
+            note: it.note || '',
+          }))
+          : [],
+    });
 
     purchaseReceiptsApi
       .findOne(receipt.id)
-      .then((res) => {
+      .then((res: any) => {
         if (!isMounted) return;
-        const data = res.data;
+        // Unpack safely whether res is the receipt object or wrapped in { data: ... }
+        const data =
+          res && typeof res === 'object' && 'data' in res && res.data ? res.data : (res || receipt);
         setFullReceipt(data);
 
         setForm({
-          supplierId: data.supplierId,
-          warehouseId: data.warehouseId,
-          shopId: data.shopId || undefined,
-          receiptDate: data.receiptDate ? data.receiptDate.split('T')[0] : '',
-          paymentDueDate: data.paymentDueDate ? data.paymentDueDate.split('T')[0] : '',
-          discountAmount: Number(data.discountAmount || 0),
-          taxAmount: Number(data.taxAmount || 0),
-          shippingFee: Number(data.shippingFee || 0),
-          shippingFeePayerType: data.shippingFeePayerType || 'PAID_TO_SUPPLIER',
-          note: data.note || '',
+          supplierId: data?.supplierId || receipt.supplierId || '',
+          warehouseId: data?.warehouseId || receipt.warehouseId || '',
+          shopId: data?.shopId || receipt.shopId || undefined,
+          receiptDate: data?.receiptDate
+            ? data.receiptDate.split('T')[0]
+            : (receipt.receiptDate ? receipt.receiptDate.split('T')[0] : ''),
+          paymentDueDate: data?.paymentDueDate
+            ? data.paymentDueDate.split('T')[0]
+            : (receipt.paymentDueDate ? receipt.paymentDueDate.split('T')[0] : ''),
+          discountAmount: Number(data?.discountAmount ?? receipt.discountAmount ?? 0),
+          taxAmount: Number(data?.taxAmount ?? receipt.taxAmount ?? 0),
+          shippingFee: Number(data?.shippingFee ?? receipt.shippingFee ?? 0),
+          shippingFeePayerType:
+            data?.shippingFeePayerType || receipt.shippingFeePayerType || 'PAID_TO_SUPPLIER',
+          note: data?.note ?? receipt.note ?? '',
           syncOrderCogs: true,
           items:
-            data.items && data.items.length > 0
-              ? data.items.map((it) => ({
+            data?.items && data.items.length > 0
+              ? data.items.map((it: any) => ({
                 id: it.id,
                 variantId: it.variantId,
                 productName: it.productName,
@@ -114,19 +152,32 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
                 unitPrice: Number(it.unitPrice || 0),
                 note: it.note || '',
               }))
-              : [
-                {
-                  variantId: '',
-                  productName: '',
-                  variationName: '',
-                  sku: '',
-                  orderedQuantity: 1,
-                  receivedQuantity: 1,
-                  disputedQuantity: 0,
-                  unitPrice: 0,
-                  note: '',
-                },
-              ],
+              : (receipt.items && receipt.items.length > 0
+                ? receipt.items.map((it: any) => ({
+                  id: it.id,
+                  variantId: it.variantId,
+                  productName: it.productName,
+                  variationName: it.variationName || '',
+                  sku: it.sku,
+                  orderedQuantity: it.orderedQuantity,
+                  receivedQuantity: it.receivedQuantity,
+                  disputedQuantity: it.disputedQuantity || 0,
+                  unitPrice: Number(it.unitPrice || 0),
+                  note: it.note || '',
+                }))
+                : [
+                  {
+                    variantId: '',
+                    productName: '',
+                    variationName: '',
+                    sku: '',
+                    orderedQuantity: 1,
+                    receivedQuantity: 1,
+                    disputedQuantity: 0,
+                    unitPrice: 0,
+                    note: '',
+                  },
+                ]),
         });
       })
       .catch((err) => {
@@ -251,11 +302,13 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
 
     try {
       setIsSubmitting(true);
-      const res = await purchaseReceiptsApi.update(fullReceipt.id, form);
+      const res: any = await purchaseReceiptsApi.update(fullReceipt.id, form);
       toast.success(
         'Cập nhật phiếu nhập thành công! Giá vốn và số tiền toàn hệ thống đã được đồng bộ.',
       );
-      onSuccess(res.data);
+      const updated =
+        res && typeof res === 'object' && 'data' in res && res.data ? res.data : (res || fullReceipt);
+      onSuccess(updated);
       onClose();
     } catch (err: any) {
       toast.error('Lỗi khi cập nhật phiếu nhập', err?.response?.data?.message || err?.message);
