@@ -34,6 +34,7 @@ import {
   SlidersHorizontal,
   QrCode,
   TrendingUp,
+  Pencil,
 } from 'lucide-react';
 import { purchaseReceiptsApi, PurchaseReceiptModel, CreatePurchaseReceiptPayload, PurchaseReceiptsSummary } from '../../services/purchaseReceiptsApi';
 import { suppliersApi, SupplierItem } from '../../services/suppliersApi';
@@ -67,6 +68,7 @@ import { Checkbox } from '../../components/ui/Checkbox';
 import { CurrencyInput } from '../../components/ui/CurrencyInput';
 import { toast } from '../../components/ui/Toast';
 import { QuickCreateSupplierModal } from '../../components/suppliers/QuickCreateSupplierModal';
+import { EditPurchaseReceiptModal } from '../../components/suppliers/EditPurchaseReceiptModal';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -114,6 +116,8 @@ export const PurchaseReceiptsPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [selectedReceiptDetail, setSelectedReceiptDetail] = useState<PurchaseReceiptModel | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [editingReceipt, setEditingReceipt] = useState<PurchaseReceiptModel | null>(null);
 
   // Quick Create Supplier Modal
   const [isQuickSupplierModalOpen, setIsQuickSupplierModalOpen] = useState<boolean>(false);
@@ -429,6 +433,13 @@ export const PurchaseReceiptsPage: React.FC = () => {
       warehouseId: selectedWarehouseId || (warehouses[0]?.id || ''),
     });
     setIsCreateModalOpen(true);
+  };
+
+  const handleOpenEditModal = (receipt: PurchaseReceiptModel) => {
+    loadSuppliers();
+    loadVariants();
+    setEditingReceipt(receipt);
+    setIsEditModalOpen(true);
   };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
@@ -1004,7 +1015,16 @@ export const PurchaseReceiptsPage: React.FC = () => {
 
                     {/* Thao tác */}
                     <SystemTd className="text-center" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditModal(r)}
+                          className="w-7 h-7 rounded flex items-center justify-center text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors cursor-pointer"
+                          title="Sửa phiếu nhập & giá vốn"
+                        >
+                          <Pencil size={13} />
+                        </button>
+
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button
@@ -1024,6 +1044,15 @@ export const PurchaseReceiptsPage: React.FC = () => {
                             >
                               <Eye size={13} className="text-gray-400" />
                               <span>Xem chi tiết</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                              onClick={() => handleOpenEditModal(r)}
+                            >
+                              <Pencil size={13} className="text-amber-500" />
+                              <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                Sửa phiếu nhập
+                              </span>
                             </DropdownMenuItem>
 
                             {hasRemaining && (
@@ -1213,6 +1242,15 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   >
                     <Trash2 size={12} />
                     <span>Hủy</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditModal(r)}
+                    className="px-2 py-1 text-xs rounded border border-amber-200 dark:border-amber-900/60 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center gap-1 font-medium cursor-pointer"
+                    title="Sửa phiếu nhập & giá vốn"
+                  >
+                    <Pencil size={12} />
+                    <span>Sửa</span>
                   </button>
                   <button
                     type="button"
@@ -2213,10 +2251,25 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 <Trash2 size={14} />
                 <span>Hủy phiếu nhập</span>
               </ModalButton>
-              <ModalButton type="button" variant="secondary" onClick={() => setIsDetailModalOpen(false)} className="gap-1.5">
-                <X size={14} />
-                <span>Đóng</span>
-              </ModalButton>
+              <div className="flex items-center gap-2">
+                <ModalButton
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const rc = selectedReceiptDetail;
+                    setIsDetailModalOpen(false);
+                    handleOpenEditModal(rc);
+                  }}
+                  className="gap-1.5 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                >
+                  <Pencil size={14} />
+                  <span>Sửa phiếu nhập</span>
+                </ModalButton>
+                <ModalButton type="button" variant="secondary" onClick={() => setIsDetailModalOpen(false)} className="gap-1.5">
+                  <X size={14} />
+                  <span>Đóng</span>
+                </ModalButton>
+              </div>
             </ModalFooter>
           </>
         )}
@@ -2399,6 +2452,28 @@ export const PurchaseReceiptsPage: React.FC = () => {
           setSuppliers((prev) => [newSupplier, ...prev.filter((s) => s.id !== newSupplier.id)]);
           setCreateForm((prev) => ({ ...prev, supplierId: newSupplier.id }));
           setIsQuickSupplierModalOpen(false);
+        }}
+      />
+
+      {/* Edit Purchase Receipt Modal */}
+      <EditPurchaseReceiptModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingReceipt(null);
+        }}
+        receipt={editingReceipt}
+        suppliers={suppliers}
+        warehouses={warehouses}
+        shops={shops}
+        allVariants={allVariants}
+        onSuccess={(updated) => {
+          loadReceipts();
+          loadSuppliers();
+          loadVariants();
+          if (selectedReceiptDetail && selectedReceiptDetail.id === updated.id) {
+            setSelectedReceiptDetail(updated);
+          }
         }}
       />
     </div>

@@ -108,6 +108,32 @@ export interface CreatePurchaseReceiptPayload {
   immediatePaymentMethod?: string;
 }
 
+export interface UpdatePurchaseReceiptPayload {
+  supplierId?: string;
+  shopId?: string;
+  warehouseId?: string;
+  receiptDate?: string;
+  paymentDueDate?: string;
+  discountAmount?: number;
+  taxAmount?: number;
+  shippingFee?: number;
+  shippingFeePayerType?: 'PAID_TO_SUPPLIER' | 'PAID_TO_CARRIER';
+  note?: string;
+  items?: Array<{
+    id?: string;
+    variantId: string;
+    productName: string;
+    variationName?: string;
+    sku: string;
+    orderedQuantity: number;
+    receivedQuantity: number;
+    disputedQuantity?: number;
+    unitPrice: number;
+    note?: string;
+  }>;
+  syncOrderCogs?: boolean;
+}
+
 export interface PurchaseReceiptsSummary {
   totalItemsAmount: number;
   payableAmount: number;
@@ -150,17 +176,8 @@ export const purchaseReceiptsApi = {
   create: (data: CreatePurchaseReceiptPayload) =>
     api.post<PurchaseReceiptModel>('/purchase-receipts', data),
 
-  update: (
-    id: string,
-    data: Partial<{
-      paymentDueDate?: string;
-      discountAmount?: number;
-      taxAmount?: number;
-      shippingFee?: number;
-      shippingFeePayerType?: 'PAID_TO_SUPPLIER' | 'PAID_TO_CARRIER';
-      note?: string;
-    }>,
-  ) => api.patch<PurchaseReceiptModel>(`/purchase-receipts/${id}`, data),
+  update: (id: string, data: UpdatePurchaseReceiptPayload) =>
+    api.patch<PurchaseReceiptModel>(`/purchase-receipts/${id}`, data),
 
   delete: (id: string) =>
     api.delete<{ success: boolean; message: string }>(`/purchase-receipts/${id}`),

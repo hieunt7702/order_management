@@ -197,6 +197,14 @@ export class PurchaseReceiptsService {
             },
           });
         }
+
+        // Cập nhật giá vốn sản phẩm ProductVariant.costPrice theo đơn giá nhập
+        if (Number(item.unitPrice) > 0) {
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: { costPrice: item.unitPrice },
+          });
+        }
       }
 
       // C. Tự động cấn trừ tiền NCC nợ shop / tiền ứng trước nếu có
@@ -600,18 +608,463 @@ export class PurchaseReceiptsService {
     };
   }
 
-  async update(tenantId: string, id: string, dto: UpdatePurchaseReceiptDto) {
-    await this.findOne(tenantId, id);
-
-    return this.prisma.purchaseReceipt.update({
-      where: { id },
-      data: {
-        ...(dto.paymentDueDate !== undefined && {
-          paymentDueDate: dto.paymentDueDate ? new Date(dto.paymentDueDate) : null,
-        }),
-        ...(dto.note !== undefined && { note: dto.note?.trim() || null }),
+  async update(
+    tenantId: string,
+    id: string,
+    dto: UpdatePurchaseReceiptDto,
+    userId?: string,
+  ) {
+    const receipt = await this.prisma.purchaseReceipt.findFirst({
+      where: { id, tenantId },
+      include: {
+        items: true,
+        supplier: true,
+        warehouse: true,
+        paymentAllocations: {
+          include: {
+            payment: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        purchaseReturns: true,
       },
     });
+
+    if (!receipt) {
+      throw new NotFoundException('Không tìm thấy phiếu nhập kho');
+    }
+
+    // 1. Kiểm tra kho và NCC nếu có thay đổi
+    const targetWarehouseId = dto.warehouseId || receipt.warehouseId;
+    const warehouse = await this.prisma.warehouse.findFirst({
+      where: { id: targetWarehouseId, tenantId },
+    });
+    if (!warehouse) {
+      throw new NotFoundException('Không tìm thấy kho hàng');
+    }
+
+    // Không cho phép đổi NCC nếu phiếu đã phát sinh thanh toán hoặc trả hàng
+    if (dto.supplierId && dto.supplierId !== receipt.supplierId) {
+      if (receipt.paymentAllocations.length > 0 || receipt.purchaseReturns.length > 0) {
+        throw new BadRequestException(
+          'Không thể thay đổi Nhà cung cấp khi phiếu nhập đã có giao dịch thanh toán hoặc trả hàng.',
+        );
+      }
+      const supplierExists = await this.prisma.supplier.findFirst({
+        where: { id: dto.supplierId, tenantId },
+      });
+      if (!supplierExists) {
+        throw new NotFoundException('Không tìm thấy nhà cung cấp mới');
+      }
+    }
+    const targetSupplierId = dto.supplierId || receipt.supplierId;
+
+    // 2. Chuẩn bị dữ liệu items
+    const hasItemsUpdate = dto.items !== undefined;
+    let itemsData: Array<{
+      tenantId: string;
+      receiptId: string;
+      variantId: string;
+      productName: string;
+      variationName: string | null;
+      sku: string;
+      orderedQuantity: number;
+      receivedQuantity: number;
+      disputedQuantity: number;
+      unitPrice: Prisma.Decimal;
+      subtotal: Prisma.Decimal;
+      note: string | null;
+    }> = [];
+
+    let totalItemsAmount = Number(receipt.totalItemsAmount);
+
+    if (hasItemsUpdate) {
+      if (!dto.items || dto.items.length === 0) {
+        throw new BadRequestException('Phiếu nhập phải có ít nhất 1 sản phẩm');
+      }
+
+      totalItemsAmount = 0;
+      itemsData = dto.items.map((it) => {
+        const subtotal = (it.receivedQuantity || 0) * (it.unitPrice || 0);
+        totalItemsAmount += subtotal;
+        return {
+          tenantId,
+          receiptId: id,
+          variantId: it.variantId,
+          productName: it.productName.trim(),
+          variationName: it.variationName?.trim() || null,
+          sku: it.sku.trim(),
+          orderedQuantity: it.orderedQuantity || 1,
+          receivedQuantity: it.receivedQuantity !== undefined ? it.receivedQuantity : it.orderedQuantity,
+          disputedQuantity: it.disputedQuantity || 0,
+          unitPrice: new Prisma.Decimal(it.unitPrice || 0),
+          subtotal: new Prisma.Decimal(subtotal),
+          note: it.note?.trim() || null,
+        };
+      });
+    }
+
+    // 3. Tính toán lại tài chính
+    const discountAmount =
+      dto.discountAmount !== undefined ? dto.discountAmount : Number(receipt.discountAmount);
+    const taxAmount =
+      dto.taxAmount !== undefined ? dto.taxAmount : Number(receipt.taxAmount);
+    const shippingFee =
+      dto.shippingFee !== undefined ? dto.shippingFee : Number(receipt.shippingFee);
+    const shippingFeePayerType =
+      dto.shippingFeePayerType || receipt.shippingFeePayerType;
+    const isShippingPaidToSupplier = shippingFeePayerType === 'PAID_TO_SUPPLIER';
+
+    const newPayableAmount =
+      totalItemsAmount -
+      discountAmount +
+      taxAmount +
+      (isShippingPaidToSupplier ? shippingFee : 0);
+
+    const currentPaid = Number(receipt.paidAmount);
+    const currentReturnDeduction = Number(receipt.returnDeductionAmount);
+
+    // Xác định receivingStatus
+    let receivingStatus = receipt.receivingStatus;
+    if (hasItemsUpdate) {
+      const totalOrdered = itemsData.reduce((acc, it) => acc + it.orderedQuantity, 0);
+      const totalReceived = itemsData.reduce((acc, it) => acc + it.receivedQuantity, 0);
+      if (totalReceived === 0) {
+        receivingStatus = 'PENDING_RECEIVE';
+      } else if (totalReceived < totalOrdered) {
+        receivingStatus = 'PARTIALLY_RECEIVED';
+      } else {
+        receivingStatus = 'RECEIVED';
+      }
+    }
+
+    // 4. Thực thi transaction đảm bảo tính toàn vẹn và bất biến
+    const updatedReceipt = await this.prisma.$transaction(async (tx) => {
+      let finalPaid = currentPaid;
+      let finalRemaining = Math.max(0, newPayableAmount - currentPaid - currentReturnDeduction);
+
+      // Nếu số tiền phải trả mới nhỏ hơn số tiền đã trả + giảm trừ trả hàng (do giảm giá/giảm số lượng)
+      // -> Trả lại phần thừa cho NCC vào quỹ tiền ứng trước (advanceAmount)
+      if (newPayableAmount < currentPaid + currentReturnDeduction) {
+        let excessAmount = (currentPaid + currentReturnDeduction) - newPayableAmount;
+        let totalDeductedFromAllocations = 0;
+
+        for (const alloc of receipt.paymentAllocations) {
+          if (excessAmount <= 0) break;
+          const allocAmount = Number(alloc.allocatedAmount);
+          const deduct = Math.min(allocAmount, excessAmount);
+          const newAlloc = allocAmount - deduct;
+
+          if (newAlloc <= 0) {
+            await tx.paymentAllocation.delete({ where: { id: alloc.id } });
+          } else {
+            await tx.paymentAllocation.update({
+              where: { id: alloc.id },
+              data: { allocatedAmount: new Prisma.Decimal(newAlloc) },
+            });
+          }
+
+          if (alloc.payment) {
+            const currentAllocOfPayment = Number(alloc.payment.allocatedAmount);
+            const currentAdvOfPayment = Number(alloc.payment.advanceAmount);
+            await tx.supplierPayment.update({
+              where: { id: alloc.payment.id },
+              data: {
+                allocatedAmount: new Prisma.Decimal(Math.max(0, currentAllocOfPayment - deduct)),
+                advanceAmount: new Prisma.Decimal(currentAdvOfPayment + deduct),
+              },
+            });
+          }
+
+          excessAmount -= deduct;
+          totalDeductedFromAllocations += deduct;
+        }
+
+        finalPaid = Math.max(0, currentPaid - totalDeductedFromAllocations);
+        finalRemaining = 0;
+      }
+
+      const newPaymentStatus: PurchasePaymentStatus =
+        finalRemaining === 0
+          ? PurchasePaymentStatus.PAID
+          : finalPaid > 0
+          ? PurchasePaymentStatus.PARTIALLY_PAID
+          : PurchasePaymentStatus.UNPAID;
+
+      // Xử lý tồn kho nếu items hoặc kho thay đổi
+      if (hasItemsUpdate || (dto.warehouseId && dto.warehouseId !== receipt.warehouseId)) {
+        const isWarehouseChanged = dto.warehouseId && dto.warehouseId !== receipt.warehouseId;
+
+        if (isWarehouseChanged) {
+          // Trừ toàn bộ tồn kho cũ ở kho cũ
+          for (const oldItem of receipt.items) {
+            if (oldItem.receivedQuantity > 0) {
+              await tx.inventoryBalance.upsert({
+                where: {
+                  tenantId_warehouseId_variantId: {
+                    tenantId,
+                    warehouseId: receipt.warehouseId,
+                    variantId: oldItem.variantId,
+                  },
+                },
+                create: {
+                  tenantId,
+                  warehouseId: receipt.warehouseId,
+                  variantId: oldItem.variantId,
+                  onHand: -oldItem.receivedQuantity,
+                  reserved: 0,
+                },
+                update: {
+                  onHand: { decrement: oldItem.receivedQuantity },
+                },
+              });
+
+              await tx.inventoryLedger.create({
+                data: {
+                  tenantId,
+                  warehouseId: receipt.warehouseId,
+                  variantId: oldItem.variantId,
+                  movementType: InventoryMovementType.ADJUST,
+                  deltaOnHand: -oldItem.receivedQuantity,
+                  deltaReserved: 0,
+                  referenceType: 'UPDATE_PURCHASE_RECEIPT',
+                  referenceId: receipt.id,
+                  performedByUserId: userId,
+                  note: `Chuyển kho nhập cho phiếu ${receipt.receiptCode}: Hoàn trả kho cũ`,
+                },
+              });
+            }
+          }
+
+          // Cộng toàn bộ tồn kho mới ở kho mới
+          for (const newItem of itemsData) {
+            if (newItem.receivedQuantity > 0) {
+              await tx.inventoryBalance.upsert({
+                where: {
+                  tenantId_warehouseId_variantId: {
+                    tenantId,
+                    warehouseId: targetWarehouseId,
+                    variantId: newItem.variantId,
+                  },
+                },
+                create: {
+                  tenantId,
+                  warehouseId: targetWarehouseId,
+                  variantId: newItem.variantId,
+                  onHand: newItem.receivedQuantity,
+                  reserved: 0,
+                },
+                update: {
+                  onHand: { increment: newItem.receivedQuantity },
+                },
+              });
+
+              await tx.inventoryLedger.create({
+                data: {
+                  tenantId,
+                  warehouseId: targetWarehouseId,
+                  variantId: newItem.variantId,
+                  movementType: InventoryMovementType.RECEIVE,
+                  deltaOnHand: newItem.receivedQuantity,
+                  deltaReserved: 0,
+                  referenceType: 'UPDATE_PURCHASE_RECEIPT',
+                  referenceId: receipt.id,
+                  performedByUserId: userId,
+                  note: `Chuyển kho nhập cho phiếu ${receipt.receiptCode}: Nhập vào kho mới`,
+                },
+              });
+            }
+          }
+        } else {
+          // Cùng kho: Tính delta từng variant
+          const oldVariantMap = new Map<string, number>();
+          for (const it of receipt.items) {
+            oldVariantMap.set(it.variantId, (oldVariantMap.get(it.variantId) || 0) + it.receivedQuantity);
+          }
+
+          const newVariantMap = new Map<string, number>();
+          for (const it of itemsData) {
+            newVariantMap.set(it.variantId, (newVariantMap.get(it.variantId) || 0) + it.receivedQuantity);
+          }
+
+          const allVariantIds = new Set([...oldVariantMap.keys(), ...newVariantMap.keys()]);
+          for (const vId of allVariantIds) {
+            const oldQty = oldVariantMap.get(vId) || 0;
+            const newQty = newVariantMap.get(vId) || 0;
+            const delta = newQty - oldQty;
+
+            if (delta !== 0) {
+              await tx.inventoryBalance.upsert({
+                where: {
+                  tenantId_warehouseId_variantId: {
+                    tenantId,
+                    warehouseId: targetWarehouseId,
+                    variantId: vId,
+                  },
+                },
+                create: {
+                  tenantId,
+                  warehouseId: targetWarehouseId,
+                  variantId: vId,
+                  onHand: delta,
+                  reserved: 0,
+                },
+                update: {
+                  onHand: { increment: delta },
+                },
+              });
+
+              await tx.inventoryLedger.create({
+                data: {
+                  tenantId,
+                  warehouseId: targetWarehouseId,
+                  variantId: vId,
+                  movementType: InventoryMovementType.ADJUST,
+                  deltaOnHand: delta,
+                  deltaReserved: 0,
+                  referenceType: 'UPDATE_PURCHASE_RECEIPT',
+                  referenceId: receipt.id,
+                  performedByUserId: userId,
+                  note: `Điều chỉnh SL phiếu nhập ${receipt.receiptCode} (${delta > 0 ? '+' : ''}${delta})`,
+                },
+              });
+            }
+          }
+        }
+
+        // Cập nhật lại items trong database
+        await tx.purchaseReceiptItem.deleteMany({
+          where: { receiptId: id },
+        });
+
+        await tx.purchaseReceiptItem.createMany({
+          data: itemsData,
+        });
+      }
+
+      // 5. Cập nhật giá vốn sản phẩm ProductVariant.costPrice & Đồng bộ COGS toàn hệ thống
+      const itemsToCheckPrice = hasItemsUpdate ? itemsData : receipt.items;
+      const syncOrderCogs = dto.syncOrderCogs !== false;
+
+      for (const it of itemsToCheckPrice) {
+        const unitPriceNum = Number(it.unitPrice);
+        if (unitPriceNum >= 0) {
+          // Cập nhật giá vốn biến thể SKU
+          await tx.productVariant.update({
+            where: { id: it.variantId },
+            data: { costPrice: new Prisma.Decimal(unitPriceNum) },
+          });
+
+          // Nếu được bật: Đồng bộ tính lại giá vốn cho tất cả đơn hàng đã phát sinh
+          if (syncOrderCogs) {
+            const orderItems = await tx.orderItem.findMany({
+              where: { tenantId, variantId: it.variantId },
+              select: { id: true, orderId: true, quantity: true },
+            });
+
+            if (orderItems.length > 0) {
+              const affectedOrderIds = new Set<string>();
+
+              for (const oi of orderItems) {
+                const itemCogs = unitPriceNum * (oi.quantity || 1);
+                await tx.orderItem.update({
+                  where: { id: oi.id },
+                  data: { itemCogs: new Prisma.Decimal(itemCogs) },
+                });
+                affectedOrderIds.add(oi.orderId);
+              }
+
+              for (const orderId of affectedOrderIds) {
+                const allItems = await tx.orderItem.findMany({
+                  where: { orderId },
+                  select: { itemCogs: true },
+                });
+                const totalOrderCogs = allItems.reduce(
+                  (sum, item) => sum + Number(item.itemCogs || 0),
+                  0,
+                );
+                await tx.order.update({
+                  where: { id: orderId },
+                  data: { cogsTotal: new Prisma.Decimal(totalOrderCogs) },
+                });
+              }
+            }
+          }
+        }
+      }
+
+      // 6. Cập nhật PurchaseReceipt
+      const updated = await tx.purchaseReceipt.update({
+        where: { id },
+        data: {
+          supplierId: targetSupplierId,
+          warehouseId: targetWarehouseId,
+          shopId: dto.shopId !== undefined ? (dto.shopId || null) : receipt.shopId,
+          ...(dto.receiptDate && {
+            receiptDate: dto.receiptDate.includes('T')
+              ? new Date(dto.receiptDate)
+              : new Date(`${dto.receiptDate}T${new Date().toTimeString().split(' ')[0]}`),
+          }),
+          ...(dto.paymentDueDate !== undefined && {
+            paymentDueDate: dto.paymentDueDate ? new Date(dto.paymentDueDate) : null,
+          }),
+          ...(dto.note !== undefined && { note: dto.note?.trim() || null }),
+          totalItemsAmount: new Prisma.Decimal(totalItemsAmount),
+          discountAmount: new Prisma.Decimal(discountAmount),
+          taxAmount: new Prisma.Decimal(taxAmount),
+          shippingFee: new Prisma.Decimal(shippingFee),
+          shippingFeePayerType,
+          payableAmount: new Prisma.Decimal(newPayableAmount),
+          paidAmount: new Prisma.Decimal(finalPaid),
+          remainingAmount: new Prisma.Decimal(finalRemaining),
+          paymentStatus: newPaymentStatus,
+          receivingStatus,
+        },
+        include: {
+          items: true,
+          supplier: true,
+          warehouse: true,
+          shop: true,
+          paymentAllocations: {
+            include: { payment: true },
+          },
+          purchaseReturns: true,
+        },
+      });
+
+      // 7. Nếu còn nợ và NCC có tiền ứng trước, thử auto offset
+      if (finalRemaining > 0) {
+        await this.autoOffsetSupplierReceipts(tx, tenantId, targetSupplierId, id);
+      }
+
+      return updated;
+    });
+
+    // 8. Ghi Audit Log
+    await this.auditService.log({
+      tenantId,
+      userId,
+      action: 'PURCHASE_RECEIPT_UPDATED',
+      entityType: 'PurchaseReceipt',
+      entityId: id,
+      oldValues: {
+        receiptCode: receipt.receiptCode,
+        payableAmount: Number(receipt.payableAmount),
+        paidAmount: Number(receipt.paidAmount),
+        remainingAmount: Number(receipt.remainingAmount),
+        itemCount: receipt.items.length,
+      },
+      newValues: {
+        receiptCode: updatedReceipt.receiptCode,
+        payableAmount: Number(updatedReceipt.payableAmount),
+        paidAmount: Number(updatedReceipt.paidAmount),
+        remainingAmount: Number(updatedReceipt.remainingAmount),
+        itemCount: updatedReceipt.items.length,
+        syncOrderCogs: dto.syncOrderCogs !== false,
+      },
+    });
+
+    return updatedReceipt;
   }
 
   async delete(tenantId: string, id: string, userId?: string) {

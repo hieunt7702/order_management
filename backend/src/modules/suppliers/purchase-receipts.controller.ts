@@ -89,14 +89,22 @@ export class PurchaseReceiptsController {
   }
 
   @Patch(':id')
-  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.ACCOUNTANT)
-  @ApiOperation({ summary: 'Cập nhật thông tin phiếu nhập kho (hạn nợ, ghi chú, chiết khấu)' })
+  @Roles(
+    MembershipRole.OWNER,
+    MembershipRole.ADMIN,
+    MembershipRole.WAREHOUSE,
+    MembershipRole.ACCOUNTANT,
+  )
+  @ApiOperation({
+    summary: 'Cập nhật thông tin phiếu nhập kho, số lượng, đơn giá và đồng bộ toàn hệ thống',
+  })
   async update(
     @CurrentTenantId() tenantId: string,
+    @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
     @Body() dto: UpdatePurchaseReceiptDto,
   ) {
-    return this.receiptsService.update(tenantId, id, dto);
+    return this.receiptsService.update(tenantId, id, dto, user.id);
   }
 
   @Post('auto-offset')
