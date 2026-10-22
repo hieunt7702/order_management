@@ -729,22 +729,22 @@ export const PurchaseReportsPage: React.FC = () => {
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
-                  <SystemTh>Ngày nhập hàng</SystemTh>
-                  <SystemTh className="text-center">Số phiếu</SystemTh>
-                  <SystemTh className="text-center">Số lượng nhập</SystemTh>
-                  <SystemTh className="text-right">Tổng tiền hàng gốc</SystemTh>
-                  <SystemTh className="text-right">Đã trừ trả hàng</SystemTh>
-                  <SystemTh className="text-right">Tiền nhập thực nhận (Net)</SystemTh>
-                  <SystemTh className="text-right">Đã thanh toán</SystemTh>
-                  <SystemTh className="text-right">Còn nợ NCC</SystemTh>
-                  <SystemTh className="text-right">Tỷ trọng</SystemTh>
+                  <SystemTh className="w-[180px]">Ngày nhập hàng</SystemTh>
+                  <SystemTh className="w-[100px] text-center">Số phiếu</SystemTh>
+                  <SystemTh className="w-[120px] text-center">Số lượng nhập</SystemTh>
+                  <SystemTh className="w-[150px] text-right">Tổng tiền hàng gốc</SystemTh>
+                  <SystemTh className="w-[130px] text-right">Đã trừ trả hàng</SystemTh>
+                  <SystemTh className="w-[170px] text-right">Tiền nhập thực nhận (Net)</SystemTh>
+                  <SystemTh className="w-[140px] text-right">Đã thanh toán</SystemTh>
+                  <SystemTh className="w-[140px] text-right">Còn nợ NCC</SystemTh>
+                  <SystemTh className="w-[100px] text-right">Tỷ trọng</SystemTh>
                 </SystemTr>
               </SystemThead>
               <SystemTbody>
                 {isLoading ? (
                   <SystemTableSkeleton rows={5} columns={9} />
                 ) : !data?.byDate || data.byDate.length === 0 ? (
-                  <SystemTableEmpty message="Không có số liệu nhập hàng theo ngày trong khoảng thời gian đã chọn" />
+                  <SystemTableEmpty colSpan={9} message="Không có số liệu nhập hàng theo ngày trong khoảng thời gian đã chọn" />
                 ) : (
                   data.byDate.map((d) => {
                     const percent =
@@ -890,24 +890,24 @@ export const PurchaseReportsPage: React.FC = () => {
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
-                  <SystemTh className="w-8"></SystemTh>
-                  <SystemTh>Nhà cung cấp</SystemTh>
-                  <SystemTh className="text-center">Số phiếu</SystemTh>
-                  <SystemTh className="text-center">Số SKU nhập</SystemTh>
-                  <SystemTh className="text-center">Số lượng nhập</SystemTh>
-                  <SystemTh className="text-right">Tổng tiền hàng gốc</SystemTh>
-                  <SystemTh className="text-right">Đã trừ trả hàng</SystemTh>
-                  <SystemTh className="text-right">Tiền nhập thực nhận (Net)</SystemTh>
-                  <SystemTh className="text-right">Đã thanh toán</SystemTh>
-                  <SystemTh className="text-right">Còn nợ NCC</SystemTh>
-                  <SystemTh className="text-right">Tỷ lệ thanh toán</SystemTh>
+                  <SystemTh className="w-9 text-center"></SystemTh>
+                  <SystemTh className="w-[220px]">Nhà cung cấp</SystemTh>
+                  <SystemTh className="w-[90px] text-center">Số phiếu</SystemTh>
+                  <SystemTh className="w-[110px] text-center">Số SKU nhập</SystemTh>
+                  <SystemTh className="w-[120px] text-center">Số lượng nhập</SystemTh>
+                  <SystemTh className="w-[150px] text-right">Tổng tiền hàng gốc</SystemTh>
+                  <SystemTh className="w-[130px] text-right">Đã trừ trả hàng</SystemTh>
+                  <SystemTh className="w-[170px] text-right">Tiền nhập thực nhận (Net)</SystemTh>
+                  <SystemTh className="w-[140px] text-right">Đã thanh toán</SystemTh>
+                  <SystemTh className="w-[140px] text-right">Còn nợ NCC</SystemTh>
+                  <SystemTh className="w-[120px] text-right">Tỷ lệ thanh toán</SystemTh>
                 </SystemTr>
               </SystemThead>
               <SystemTbody>
                 {isLoading ? (
                   <SystemTableSkeleton rows={4} columns={11} />
                 ) : !data?.bySupplier || data.bySupplier.length === 0 ? (
-                  <SystemTableEmpty message="Không có số liệu nhập hàng cho nhà cung cấp đã chọn" />
+                  <SystemTableEmpty colSpan={11} message="Không có số liệu nhập hàng cho nhà cung cấp đã chọn" />
                 ) : (
                   data.bySupplier.map((s) => {
                     const payRate =
@@ -1235,21 +1235,21 @@ export const PurchaseReportsPage: React.FC = () => {
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
-                  <SystemTh>Mã SKU</SystemTh>
-                  <SystemTh>Tên sản phẩm</SystemTh>
-                  <SystemTh>Phân loại hàng</SystemTh>
-                  <SystemTh>Nhà cung cấp</SystemTh>
-                  <SystemTh className="text-center">Số lần nhập</SystemTh>
-                  <SystemTh className="text-center">Số lượng nhập</SystemTh>
-                  <SystemTh className="text-right">Đơn giá bình quân</SystemTh>
-                  <SystemTh className="text-right">Tổng thành tiền</SystemTh>
+                  <SystemTh className="w-[130px]">Mã SKU</SystemTh>
+                  <SystemTh className="w-[260px]">Tên sản phẩm</SystemTh>
+                  <SystemTh className="w-[140px]">Phân loại hàng</SystemTh>
+                  <SystemTh className="w-[180px]">Nhà cung cấp</SystemTh>
+                  <SystemTh className="w-[100px] text-center">Số lần nhập</SystemTh>
+                  <SystemTh className="w-[120px] text-center">Số lượng nhập</SystemTh>
+                  <SystemTh className="w-[140px] text-right">Đơn giá bình quân</SystemTh>
+                  <SystemTh className="w-[150px] text-right">Tổng thành tiền</SystemTh>
                 </SystemTr>
               </SystemThead>
               <SystemTbody>
                 {isLoading ? (
                   <SystemTableSkeleton rows={5} columns={8} />
                 ) : !data?.topProducts || data.topProducts.length === 0 ? (
-                  <SystemTableEmpty message="Không có sản phẩm nào được nhập trong khoảng thời gian này" />
+                  <SystemTableEmpty colSpan={8} message="Không có sản phẩm nào được nhập trong khoảng thời gian này" />
                 ) : (
                   data.topProducts.map((p, idx) => (
                     <SystemTr key={`${p.sku}-${idx}`}>
@@ -1360,22 +1360,22 @@ export const PurchaseReportsPage: React.FC = () => {
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
-                  <SystemTh>Cửa hàng / Gian hàng</SystemTh>
-                  <SystemTh className="text-center">Số phiếu</SystemTh>
-                  <SystemTh className="text-center">Số lượng nhập</SystemTh>
-                  <SystemTh className="text-right">Tổng tiền hàng gốc</SystemTh>
-                  <SystemTh className="text-right">Đã trừ trả hàng</SystemTh>
-                  <SystemTh className="text-right">Tiền nhập thực nhận (Net)</SystemTh>
-                  <SystemTh className="text-right">Đã thanh toán</SystemTh>
-                  <SystemTh className="text-right">Còn nợ NCC</SystemTh>
-                  <SystemTh className="text-right">Tỷ trọng</SystemTh>
+                  <SystemTh className="w-[200px]">Cửa hàng / Gian hàng</SystemTh>
+                  <SystemTh className="w-[100px] text-center">Số phiếu</SystemTh>
+                  <SystemTh className="w-[120px] text-center">Số lượng nhập</SystemTh>
+                  <SystemTh className="w-[150px] text-right">Tổng tiền hàng gốc</SystemTh>
+                  <SystemTh className="w-[130px] text-right">Đã trừ trả hàng</SystemTh>
+                  <SystemTh className="w-[170px] text-right">Tiền nhập thực nhận (Net)</SystemTh>
+                  <SystemTh className="w-[140px] text-right">Đã thanh toán</SystemTh>
+                  <SystemTh className="w-[140px] text-right">Còn nợ NCC</SystemTh>
+                  <SystemTh className="w-[100px] text-right">Tỷ trọng</SystemTh>
                 </SystemTr>
               </SystemThead>
               <SystemTbody>
                 {isLoading ? (
                   <SystemTableSkeleton rows={4} columns={9} />
                 ) : !data?.byShop || data.byShop.length === 0 ? (
-                  <SystemTableEmpty message="Không có số liệu nhập hàng cho cửa hàng đã chọn" />
+                  <SystemTableEmpty colSpan={9} message="Không có số liệu nhập hàng cho cửa hàng đã chọn" />
                 ) : (
                   data.byShop.map((s) => {
                     const percent =
@@ -1521,23 +1521,23 @@ export const PurchaseReportsPage: React.FC = () => {
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
-                  <SystemTh>Mã phiếu</SystemTh>
-                  <SystemTh>Ngày nhập</SystemTh>
-                  <SystemTh>Cửa hàng</SystemTh>
-                  <SystemTh>Nhà cung cấp</SystemTh>
-                  <SystemTh className="text-center">Số SKU</SystemTh>
-                  <SystemTh className="text-right">Hàng thực nhận</SystemTh>
-                  <SystemTh className="text-right">Tổng tiền hàng (Net)</SystemTh>
-                  <SystemTh className="text-right">Đã thanh toán</SystemTh>
-                  <SystemTh className="text-right">Còn nợ NCC</SystemTh>
-                  <SystemTh className="text-center">Trạng thái nợ</SystemTh>
+                  <SystemTh className="w-[130px]">Mã phiếu</SystemTh>
+                  <SystemTh className="w-[110px]">Ngày nhập</SystemTh>
+                  <SystemTh className="w-[150px]">Cửa hàng</SystemTh>
+                  <SystemTh className="w-[180px]">Nhà cung cấp</SystemTh>
+                  <SystemTh className="w-[90px] text-center">Số SKU</SystemTh>
+                  <SystemTh className="w-[140px] text-right">Hàng thực nhận</SystemTh>
+                  <SystemTh className="w-[160px] text-right">Tổng tiền hàng (Net)</SystemTh>
+                  <SystemTh className="w-[130px] text-right">Đã thanh toán</SystemTh>
+                  <SystemTh className="w-[130px] text-right">Còn nợ NCC</SystemTh>
+                  <SystemTh className="w-[130px] text-center">Trạng thái nợ</SystemTh>
                 </SystemTr>
               </SystemThead>
               <SystemTbody>
                 {isLoading ? (
                   <SystemTableSkeleton rows={5} columns={10} />
                 ) : !data?.receipts || data.receipts.length === 0 ? (
-                  <SystemTableEmpty message="Không tìm thấy phiếu nhập nào phù hợp bộ lọc" />
+                  <SystemTableEmpty colSpan={10} message="Không tìm thấy phiếu nhập nào phù hợp bộ lọc" />
                 ) : (
                   data.receipts.map((r: any) => {
                     const returnDed = Number(r.returnDeductionAmount || 0);

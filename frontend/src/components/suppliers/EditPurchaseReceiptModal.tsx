@@ -103,30 +103,30 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
           items:
             data.items && data.items.length > 0
               ? data.items.map((it) => ({
-                  id: it.id,
-                  variantId: it.variantId,
-                  productName: it.productName,
-                  variationName: it.variationName || '',
-                  sku: it.sku,
-                  orderedQuantity: it.orderedQuantity,
-                  receivedQuantity: it.receivedQuantity,
-                  disputedQuantity: it.disputedQuantity || 0,
-                  unitPrice: Number(it.unitPrice || 0),
-                  note: it.note || '',
-                }))
+                id: it.id,
+                variantId: it.variantId,
+                productName: it.productName,
+                variationName: it.variationName || '',
+                sku: it.sku,
+                orderedQuantity: it.orderedQuantity,
+                receivedQuantity: it.receivedQuantity,
+                disputedQuantity: it.disputedQuantity || 0,
+                unitPrice: Number(it.unitPrice || 0),
+                note: it.note || '',
+              }))
               : [
-                  {
-                    variantId: '',
-                    productName: '',
-                    variationName: '',
-                    sku: '',
-                    orderedQuantity: 1,
-                    receivedQuantity: 1,
-                    disputedQuantity: 0,
-                    unitPrice: 0,
-                    note: '',
-                  },
-                ],
+                {
+                  variantId: '',
+                  productName: '',
+                  variationName: '',
+                  sku: '',
+                  orderedQuantity: 1,
+                  receivedQuantity: 1,
+                  disputedQuantity: 0,
+                  unitPrice: 0,
+                  note: '',
+                },
+              ],
         });
       })
       .catch((err) => {
@@ -300,7 +300,7 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
               <Sparkles className="w-4 h-4 text-[#5865f2] shrink-0 mt-0.5 animate-pulse" />
               <div className="space-y-1">
                 <div className="font-semibold text-indigo-950 dark:text-indigo-200">
-                  ⚡ Tự động đồng bộ số tiền & giá vốn toàn hệ thống
+                  Tự động đồng bộ số tiền & giá vốn toàn hệ thống
                 </div>
                 <div className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed">
                   Khi bạn sửa lại <strong>Đơn giá nhập hàng</strong> hoặc <strong>Số lượng thực nhận</strong>, hệ thống sẽ:
@@ -868,36 +868,34 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
                           {currentSupplierDebtBefore > 0
                             ? `Nợ NCC ${currentSupplierDebtBefore.toLocaleString('vi-VN')}đ`
                             : currentSupplierDebtBefore < 0
-                            ? `NCC giữ cọc ${Math.abs(currentSupplierDebtBefore).toLocaleString('vi-VN')}đ`
-                            : '0đ'}
+                              ? `NCC giữ cọc ${Math.abs(currentSupplierDebtBefore).toLocaleString('vi-VN')}đ`
+                              : '0đ'}
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-gray-500">
                         <span>Biến động phiếu (Delta):</span>
                         <span
-                          className={`font-mono font-semibold ${
-                            payableDelta > 0 ? 'text-rose-600' : payableDelta < 0 ? 'text-emerald-600' : 'text-gray-600'
-                          }`}
+                          className={`font-mono font-semibold ${payableDelta > 0 ? 'text-rose-600' : payableDelta < 0 ? 'text-emerald-600' : 'text-gray-600'
+                            }`}
                         >
                           {payableDelta > 0
                             ? `+${payableDelta.toLocaleString('vi-VN')}đ`
                             : payableDelta < 0
-                            ? `${payableDelta.toLocaleString('vi-VN')}đ`
-                            : '0đ'}
+                              ? `${payableDelta.toLocaleString('vi-VN')}đ`
+                              : '0đ'}
                         </span>
                       </div>
                       <div className="flex justify-between items-center font-bold pt-1 border-t border-dashed border-indigo-100 dark:border-indigo-900/40">
                         <span className="text-indigo-900 dark:text-indigo-200">Dự kiến nợ NCC sau khi lưu:</span>
                         <span
-                          className={`font-mono text-sm ${
-                            projectedSupplierDebt > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
-                          }`}
+                          className={`font-mono text-sm ${projectedSupplierDebt > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                            }`}
                         >
                           {projectedSupplierDebt > 0
                             ? `Còn nợ: ${projectedSupplierDebt.toLocaleString('vi-VN')}đ`
                             : projectedSupplierDebt < 0
-                            ? `Dư cọc: ${Math.abs(projectedSupplierDebt).toLocaleString('vi-VN')}đ`
-                            : '0đ (Sạch nợ)'}
+                              ? `Dư cọc: ${Math.abs(projectedSupplierDebt).toLocaleString('vi-VN')}đ`
+                              : '0đ (Sạch nợ)'}
                         </span>
                       </div>
                     </div>

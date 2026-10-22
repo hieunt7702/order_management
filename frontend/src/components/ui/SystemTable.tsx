@@ -53,7 +53,7 @@ export const SystemTableEmpty: React.FC<SystemTableEmptyProps> = ({
   title = 'Không có dữ liệu',
   description,
   message,
-  colSpan = 100,
+  colSpan = 12,
 }) => {
   const displayDesc = description || message || 'Không tìm thấy bản ghi nào phù hợp với điều kiện tìm kiếm.';
 
