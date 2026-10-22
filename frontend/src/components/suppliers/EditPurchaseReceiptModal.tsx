@@ -228,6 +228,11 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
   const excessAmount = isExcessPaid ? paidAmount + returnDeduction - formPayable : 0;
   const newRemainingDebt = Math.max(0, formPayable - paidAmount - returnDeduction);
 
+  const currentSupplier = suppliers.find((s) => s.id === form.supplierId);
+  const currentSupplierDebtBefore = Number(currentSupplier?.closingDebt || 0);
+  const payableDelta = formPayable - oldPayable;
+  const projectedSupplierDebt = currentSupplierDebtBefore + payableDelta;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullReceipt) return;
@@ -848,10 +853,53 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
                     </div>
                   ) : (
                     <div className="flex justify-between items-center text-rose-600 dark:text-rose-400 font-bold pt-1 border-t border-indigo-100 dark:border-indigo-900/40">
-                      <span>Còn nợ NCC mới:</span>
+                      <span>Còn nợ phiếu nhập mới:</span>
                       <span className="font-mono font-bold text-sm">
                         {newRemainingDebt.toLocaleString('vi-VN')}đ
                       </span>
+                    </div>
+                  )}
+
+                  {currentSupplier && (
+                    <div className="pt-2 border-t border-indigo-100 dark:border-indigo-900/40 space-y-1 text-xs">
+                      <div className="flex justify-between items-center text-gray-500">
+                        <span>Công nợ NCC trước khi sửa:</span>
+                        <span className="font-mono font-semibold text-gray-700 dark:text-gray-300">
+                          {currentSupplierDebtBefore > 0
+                            ? `Nợ NCC ${currentSupplierDebtBefore.toLocaleString('vi-VN')}đ`
+                            : currentSupplierDebtBefore < 0
+                            ? `NCC giữ cọc ${Math.abs(currentSupplierDebtBefore).toLocaleString('vi-VN')}đ`
+                            : '0đ'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-gray-500">
+                        <span>Biến động phiếu (Delta):</span>
+                        <span
+                          className={`font-mono font-semibold ${
+                            payableDelta > 0 ? 'text-rose-600' : payableDelta < 0 ? 'text-emerald-600' : 'text-gray-600'
+                          }`}
+                        >
+                          {payableDelta > 0
+                            ? `+${payableDelta.toLocaleString('vi-VN')}đ`
+                            : payableDelta < 0
+                            ? `${payableDelta.toLocaleString('vi-VN')}đ`
+                            : '0đ'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center font-bold pt-1 border-t border-dashed border-indigo-100 dark:border-indigo-900/40">
+                        <span className="text-indigo-900 dark:text-indigo-200">Dự kiến nợ NCC sau khi lưu:</span>
+                        <span
+                          className={`font-mono text-sm ${
+                            projectedSupplierDebt > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                          }`}
+                        >
+                          {projectedSupplierDebt > 0
+                            ? `Còn nợ: ${projectedSupplierDebt.toLocaleString('vi-VN')}đ`
+                            : projectedSupplierDebt < 0
+                            ? `Dư cọc: ${Math.abs(projectedSupplierDebt).toLocaleString('vi-VN')}đ`
+                            : '0đ (Sạch nợ)'}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>

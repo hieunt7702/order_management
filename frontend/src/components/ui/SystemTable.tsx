@@ -79,6 +79,43 @@ export const SystemTableEmpty: React.FC<SystemTableEmptyProps> = ({
   );
 };
 
+export interface SystemMobileEmptyProps {
+  icon?: ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  title?: string;
+  description?: string;
+  message?: string;
+  className?: string;
+}
+
+export const SystemMobileEmpty: React.FC<SystemMobileEmptyProps> = ({
+  icon: Icon = Inbox,
+  title = 'Không có dữ liệu',
+  description,
+  message,
+  className = '',
+}) => {
+  const displayDesc = description || message || 'Không tìm thấy bản ghi nào phù hợp với điều kiện tìm kiếm.';
+
+  return (
+    <div
+      className={cn(
+        'p-6 sm:p-8 text-center flex flex-col items-center justify-center my-auto bg-white dark:bg-[#14151a] rounded border border-gray-100 dark:border-gray-800/80 shadow-xs',
+        className,
+      )}
+    >
+      <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3 text-gray-400">
+        <Icon size={24} strokeWidth={1.5} />
+      </div>
+      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        {title}
+      </h3>
+      <p className="text-xs text-gray-400 dark:text-gray-500 max-w-sm mx-auto">
+        {displayDesc}
+      </p>
+    </div>
+  );
+};
+
 export interface SystemTableSkeletonProps {
   rows?: number;
   cols?: number;

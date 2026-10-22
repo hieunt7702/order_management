@@ -54,6 +54,7 @@ import {
   SystemTr,
   SystemTd,
   SystemTableEmpty,
+  SystemMobileEmpty,
   SystemTableSkeleton,
 } from '../../components/ui/SystemTable';
 import { toast } from '../../components/ui/Toast';
@@ -804,7 +805,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 ))}
               </div>
             ) : !data?.byDate || data.byDate.length === 0 ? (
-              <SystemTableEmpty message="Không có số liệu nhập hàng theo ngày trong khoảng thời gian đã chọn" />
+              <SystemMobileEmpty message="Không có số liệu nhập hàng theo ngày trong khoảng thời gian đã chọn" />
             ) : (
               data.byDate.map((d) => {
                 const percent =
@@ -1081,7 +1082,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 ))}
               </div>
             ) : !data?.bySupplier || data.bySupplier.length === 0 ? (
-              <SystemTableEmpty message="Không có số liệu nhập hàng cho nhà cung cấp đã chọn" />
+              <SystemMobileEmpty message="Không có số liệu nhập hàng cho nhà cung cấp đã chọn" />
             ) : (
               data.bySupplier.map((s) => {
                 const payRate =
@@ -1296,7 +1297,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 ))}
               </div>
             ) : !data?.topProducts || data.topProducts.length === 0 ? (
-              <SystemTableEmpty message="Không có sản phẩm nào được nhập trong khoảng thời gian này" />
+              <SystemMobileEmpty message="Không có sản phẩm nào được nhập trong khoảng thời gian này" />
             ) : (
               data.topProducts.map((p, idx) => (
                 <div
@@ -1435,7 +1436,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 ))}
               </div>
             ) : !data?.byShop || data.byShop.length === 0 ? (
-              <SystemTableEmpty message="Không có số liệu nhập hàng cho cửa hàng đã chọn" />
+              <SystemMobileEmpty message="Không có số liệu nhập hàng cho cửa hàng đã chọn" />
             ) : (
               data.byShop.map((s) => {
                 const percent =
@@ -1610,7 +1611,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 ))}
               </div>
             ) : !data?.receipts || data.receipts.length === 0 ? (
-              <SystemTableEmpty message="Không tìm thấy phiếu nhập nào phù hợp bộ lọc" />
+              <SystemMobileEmpty message="Không tìm thấy phiếu nhập nào phù hợp bộ lọc" />
             ) : (
               data.receipts.map((r: any) => {
                 const returnDed = Number(r.returnDeductionAmount || 0);

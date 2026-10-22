@@ -517,7 +517,7 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
           </div>
 
           {!isPersonalAdvance ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-3">
               <div>
                 <Select
                   value={accountId}
@@ -537,40 +537,85 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
                 />
               </div>
 
-              <div className="flex flex-col justify-center text-xs bg-white dark:bg-slate-800/80 px-3 py-2 rounded border border-slate-200 dark:border-slate-700">
-                {(() => {
-                  const selAcc = accounts.find((a) => a.id === accountId);
-                  if (!selAcc) {
-                    return (
-                      <div className="flex items-center text-slate-500 dark:text-slate-400">
-                        <Wallet className="w-4 h-4 mr-2 text-indigo-500 shrink-0" />
-                        Tiền sẽ trực tiếp cộng/trừ vào tài khoản này khi xác nhận.
-                      </div>
-                    );
-                  }
-                  const oldBal = Number(selAcc.currentBalance || 0);
-                  const isOut = type === 'EXPENSE' || type === 'REIMBURSEMENT' || type === 'CAPITAL_OUT';
-                  const newBal = isOut ? oldBal - amount : oldBal + amount;
+              {/* Bảng đối chiếu số dư TRƯỚC & SAU giao dịch tài chính */}
+              {(() => {
+                const selAcc = accounts.find((a) => a.id === accountId);
+                if (!selAcc) {
                   return (
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-slate-500">
-                        <span>Số dư cũ trước GD:</span>
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 p-2.5 bg-white dark:bg-slate-800/80 rounded border border-slate-200 dark:border-slate-700">
+                      <Wallet className="w-4 h-4 mr-2 text-indigo-500 shrink-0" />
+                      Tiền sẽ trực tiếp cộng/trừ vào tài khoản này khi xác nhận.
+                    </div>
+                  );
+                }
+                const oldBal = Number(selAcc.currentBalance || 0);
+                const isOut = type === 'EXPENSE' || type === 'REIMBURSEMENT' || type === 'CAPITAL_OUT';
+                const newBal = isOut ? oldBal - amount : oldBal + amount;
+                return (
+                  <div className="p-3 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 pb-1.5 border-b border-slate-100 dark:border-slate-800">
+                      <span className="flex items-center gap-1.5">
+                        <Landmark size={13} className="text-indigo-600 dark:text-indigo-400" />
+                        <span>Đối chiếu biến động số dư: {selAcc.name}</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-normal">
+                        {selAcc.type === 'CASH' ? 'Tiền mặt' : selAcc.type === 'BANK' ? 'Ngân hàng' : 'Ví sàn'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                      <div className="p-2 rounded bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">
+                          Số dư TRƯỚC giao dịch:
+                        </span>
+                        <span className="text-xs sm:text-sm font-bold font-mono text-slate-800 dark:text-slate-200 block mt-0.5">
                           {oldBal.toLocaleString('vi-VN')}đ
                         </span>
                       </div>
-                      {amount > 0 && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-500">Dự kiến sau GD:</span>
-                          <span className={`font-bold ${newBal < 0 ? 'text-rose-600' : isOut ? 'text-slate-900 dark:text-slate-100' : 'text-emerald-600'}`}>
-                            {newBal.toLocaleString('vi-VN')}đ
-                          </span>
-                        </div>
-                      )}
+
+                      <div className="p-2 rounded bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">
+                          {isOut ? 'Số tiền CHI (-):' : 'Số tiền THU (+):'}
+                        </span>
+                        <span
+                          className={`text-xs sm:text-sm font-bold font-mono block mt-0.5 ${
+                            isOut ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                          }`}
+                        >
+                          {amount > 0
+                            ? isOut
+                              ? `-${amount.toLocaleString('vi-VN')}đ`
+                              : `+${amount.toLocaleString('vi-VN')}đ`
+                            : '0đ'}
+                        </span>
+                      </div>
+
+                      <div
+                        className={`p-2 rounded border ${
+                          newBal < 0
+                            ? 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/60'
+                            : 'bg-indigo-50/60 dark:bg-indigo-950/30 border-indigo-100 dark:border-indigo-900/50'
+                        }`}
+                      >
+                        <span
+                          className={`text-[10px] block font-medium ${
+                            newBal < 0 ? 'text-rose-700 dark:text-rose-300' : 'text-indigo-700 dark:text-indigo-300'
+                          }`}
+                        >
+                          Dự kiến số dư SAU GD:
+                        </span>
+                        <span
+                          className={`text-xs sm:text-sm font-bold font-mono block mt-0.5 ${
+                            newBal < 0 ? 'text-rose-700 dark:text-rose-300' : 'text-indigo-700 dark:text-indigo-300'
+                          }`}
+                        >
+                          {newBal.toLocaleString('vi-VN')}đ
+                        </span>
+                      </div>
                     </div>
-                  );
-                })()}
-              </div>
+                  </div>
+                );
+              })()}
             </div>
           ) : (
             <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded text-xs text-amber-800 dark:text-amber-200">
@@ -631,27 +676,70 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
             </div>
 
             {selectedSupplierId && (
-              <div className="p-2.5 rounded bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/50 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="p-3 rounded bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/50 space-y-2">
                 {(() => {
                   const s = suppliers.find((sup) => sup.id === selectedSupplierId);
                   const oldDebt = Number(s?.closingDebt || 0);
                   const newDebt = oldDebt - amount;
                   return (
                     <>
-                      <div>
-                        <span className="text-slate-500">Công nợ cũ trước GD: </span>
-                        <b className={oldDebt > 0 ? 'text-rose-600' : oldDebt < 0 ? 'text-emerald-600' : 'text-slate-700 dark:text-slate-300'}>
-                          {oldDebt > 0 ? `Nợ NCC ${oldDebt.toLocaleString('vi-VN')}đ` : oldDebt < 0 ? `NCC giữ cọc ${Math.abs(oldDebt).toLocaleString('vi-VN')}đ` : 'Hết nợ (0đ)'}
-                        </b>
+                      <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-indigo-900 dark:text-indigo-200 pb-1.5 border-b border-indigo-50 dark:border-indigo-950/40">
+                        <span>Đối chiếu công nợ NCC: {s?.name} ({s?.code})</span>
+                        <span className="text-[10px] font-normal text-slate-400">Thời gian thực</span>
                       </div>
-                      {amount > 0 && (
-                        <div>
-                          <span className="text-slate-500">Dự kiến nợ sau GD: </span>
-                          <b className={newDebt > 0 ? 'text-amber-600' : newDebt < 0 ? 'text-emerald-600' : 'text-slate-700 dark:text-slate-300'}>
-                            {newDebt > 0 ? `Còn nợ NCC ${newDebt.toLocaleString('vi-VN')}đ` : newDebt < 0 ? `Dư cọc NCC ${Math.abs(newDebt).toLocaleString('vi-VN')}đ` : 'Sạch nợ (0đ)'}
-                          </b>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <div className="p-2 rounded bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">
+                            Công nợ TRƯỚC giao dịch:
+                          </span>
+                          <span
+                            className={`text-xs sm:text-sm font-bold font-mono block mt-0.5 ${
+                              oldDebt > 0
+                                ? 'text-rose-600 dark:text-rose-400'
+                                : oldDebt < 0
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            {oldDebt > 0
+                              ? `Nợ NCC ${oldDebt.toLocaleString('vi-VN')}đ`
+                              : oldDebt < 0
+                              ? `NCC giữ cọc ${Math.abs(oldDebt).toLocaleString('vi-VN')}đ`
+                              : '0đ (Hết nợ)'}
+                          </span>
                         </div>
-                      )}
+
+                        <div className="p-2 rounded bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">
+                            Số tiền chi thanh toán (-):
+                          </span>
+                          <span className="text-xs sm:text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400 block mt-0.5">
+                            {amount > 0 ? `-${amount.toLocaleString('vi-VN')}đ` : '0đ'}
+                          </span>
+                        </div>
+
+                        <div className="p-2 rounded bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50">
+                          <span className="text-[10px] text-indigo-700 dark:text-indigo-300 block font-medium">
+                            Dự kiến công nợ SAU GD:
+                          </span>
+                          <span
+                            className={`text-xs sm:text-sm font-bold font-mono block mt-0.5 ${
+                              newDebt > 0
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : newDebt < 0
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            {newDebt > 0
+                              ? `Còn nợ NCC ${newDebt.toLocaleString('vi-VN')}đ`
+                              : newDebt < 0
+                              ? `Dư cọc NCC ${Math.abs(newDebt).toLocaleString('vi-VN')}đ`
+                              : '0đ (Sạch nợ)'}
+                          </span>
+                        </div>
+                      </div>
                     </>
                   );
                 })()}

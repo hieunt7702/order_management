@@ -1377,17 +1377,32 @@ export const PurchaseReceiptsPage: React.FC = () => {
                     },
                   }}
                 />
-                {supplierAdvanceHeld > 0 && (
-                  <div className="mt-2 p-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded flex items-start gap-2 text-xs animate-in fade-in duration-200">
-                    <CheckCircle2 size={15} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-emerald-900 dark:text-emerald-200 font-medium">
-                        NCC đang nợ tiền shop: <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300">{supplierAdvanceHeld.toLocaleString('vi-VN')}đ</span>
-                      </div>
-                      <div className="text-[11px] text-emerald-700/90 dark:text-emerald-300/80 mt-0.5">
-                        Mặc định sẽ <strong>tự động trừ luôn</strong> vào tiền hàng của phiếu nhập này.
-                      </div>
+                {selectedCreateSupplier && (
+                  <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-850 border border-gray-200 dark:border-gray-700/80 rounded text-xs space-y-1 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Công nợ NCC trước giao dịch:</span>
+                      <span
+                        className={`font-mono font-bold ${
+                          Number(selectedCreateSupplier.closingDebt || 0) > 0
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : Number(selectedCreateSupplier.closingDebt || 0) < 0
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        {Number(selectedCreateSupplier.closingDebt || 0) > 0
+                          ? `Nợ NCC ${Number(selectedCreateSupplier.closingDebt || 0).toLocaleString('vi-VN')}đ`
+                          : Number(selectedCreateSupplier.closingDebt || 0) < 0
+                          ? `NCC giữ cọc ${Math.abs(Number(selectedCreateSupplier.closingDebt || 0)).toLocaleString('vi-VN')}đ`
+                          : '0đ (Cân bằng)'}
+                      </span>
                     </div>
+                    {supplierAdvanceHeld > 0 && (
+                      <div className="text-[11px] text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                        <CheckCircle2 size={12} className="shrink-0" />
+                        <span>Sẽ tự động cấn trừ {autoDeductAmount.toLocaleString('vi-VN')}đ tiền cọc vào phiếu này.</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1973,6 +1988,79 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   )}
                 </div>
 
+                {/* Bảng đối chiếu biến động công nợ NCC TRƯỚC & SAU khi tạo phiếu nhập */}
+                {selectedCreateSupplier && (
+                  <div className="mt-3.5 p-3 rounded bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-amber-900 dark:text-amber-200 pb-1.5 border-b border-amber-200/60 dark:border-amber-900/40">
+                      <span>Đối chiếu công nợ NCC: {selectedCreateSupplier.name}</span>
+                      <span className="text-[10px] font-normal text-slate-400">Thời gian thực</span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                      <span>1. Công nợ NCC TRƯỚC giao dịch:</span>
+                      <span
+                        className={`font-mono font-bold ${
+                          Number(selectedCreateSupplier.closingDebt || 0) > 0
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : Number(selectedCreateSupplier.closingDebt || 0) < 0
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        {Number(selectedCreateSupplier.closingDebt || 0) > 0
+                          ? `${Number(selectedCreateSupplier.closingDebt || 0).toLocaleString('vi-VN')}đ (Shop nợ NCC)`
+                          : Number(selectedCreateSupplier.closingDebt || 0) < 0
+                          ? `Cọc/Ứng trước ${Math.abs(Number(selectedCreateSupplier.closingDebt || 0)).toLocaleString('vi-VN')}đ`
+                          : '0đ (Cân bằng)'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                      <span>2. Tổng giá trị phiếu nhập mới (+):</span>
+                      <span className="font-mono font-bold text-gray-900 dark:text-white">
+                        +{formPayable.toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+
+                    {(autoDeductAmount > 0 || (createForm.immediatePayment && Number(createForm.immediatePaymentAmount || 0) > 0)) && (
+                      <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
+                        <span>3. Cấn trừ cọc / Chi trả ngay (-):</span>
+                        <span className="font-mono font-bold">
+                          -{(autoDeductAmount + (createForm.immediatePayment ? Number(createForm.immediatePaymentAmount || 0) : 0)).toLocaleString('vi-VN')}đ
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="pt-1.5 border-t border-amber-200/80 dark:border-amber-900/40 flex items-center justify-between font-semibold">
+                      <span className="text-gray-800 dark:text-gray-200">DỰ KIẾN CÔNG NỢ NCC SAU GIAO DỊCH:</span>
+                      {(() => {
+                        const projectedDebt =
+                          Number(selectedCreateSupplier.closingDebt || 0) +
+                          formPayable -
+                          autoDeductAmount -
+                          (createForm.immediatePayment ? Number(createForm.immediatePaymentAmount || 0) : 0);
+                        return (
+                          <span
+                            className={`font-mono font-bold text-sm ${
+                              projectedDebt > 0
+                                ? 'text-rose-600 dark:text-rose-400'
+                                : projectedDebt < 0
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-indigo-600 dark:text-indigo-400'
+                            }`}
+                          >
+                            {projectedDebt > 0
+                              ? `${projectedDebt.toLocaleString('vi-VN')}đ (Nợ NCC)`
+                              : projectedDebt < 0
+                              ? `Dư cọc: ${Math.abs(projectedDebt).toLocaleString('vi-VN')}đ`
+                              : '0đ (Sạch nợ)'}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+
                 {/* Immediate payment switch */}
                 <div className="mt-4 pt-3 border-t border-indigo-100 dark:border-indigo-900/30 space-y-2">
                   {supplierAdvanceHeld > 0 && actualPayable === 0 ? (
@@ -2019,37 +2107,6 @@ export const PurchaseReceiptsPage: React.FC = () => {
 
                       {createForm.immediatePayment && (
                         <div className="w-full space-y-2.5 pt-2 text-xs">
-                          {/* Chi tiết công nợ cũ trước và sau giao dịch */}
-                          <div className="p-2.5 rounded bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 space-y-1.5 text-xs">
-                            <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
-                              <span>Công nợ NCC cũ trước giao dịch:</span>
-                              <span className={`font-mono font-bold ${Number(selectedCreateSupplier?.closingDebt || 0) > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                                {Number(selectedCreateSupplier?.closingDebt || 0) > 0
-                                  ? `${Number(selectedCreateSupplier?.closingDebt || 0).toLocaleString('vi-VN')}đ (Nợ NCC)`
-                                  : Number(selectedCreateSupplier?.closingDebt || 0) < 0
-                                    ? `Cọc/Ứng trước ${Math.abs(Number(selectedCreateSupplier?.closingDebt || 0)).toLocaleString('vi-VN')}đ`
-                                    : '0đ (Cân bằng)'}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
-                              <span>Tổng giá trị phiếu nhập mới:</span>
-                              <span className="font-mono font-bold text-gray-900 dark:text-white">
-                                +{actualPayable.toLocaleString('vi-VN')}đ
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
-                              <span>Số tiền chi thanh toán ngay:</span>
-                              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                -{Number(createForm.immediatePaymentAmount || 0).toLocaleString('vi-VN')}đ
-                              </span>
-                            </div>
-                            <div className="pt-1 border-t border-amber-200/80 dark:border-amber-900/40 flex items-center justify-between font-semibold">
-                              <span className="text-gray-700 dark:text-gray-300">Dự kiến nợ NCC sau giao dịch:</span>
-                              <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                                {(Number(selectedCreateSupplier?.closingDebt || 0) + actualPayable - Number(createForm.immediatePaymentAmount || 0)).toLocaleString('vi-VN')}đ
-                              </span>
-                            </div>
-                          </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div>
