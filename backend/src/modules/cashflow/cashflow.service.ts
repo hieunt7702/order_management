@@ -489,11 +489,43 @@ export class CashflowService {
     await this.ensureDefaults(tenantId);
 
     // Xác thực danh mục
-    const category = await this.prisma.cashCategory.findFirst({
-      where: { id: dto.categoryId, tenantId },
-    });
+    let category: any = null;
+    if (dto.categoryId) {
+      category = await this.prisma.cashCategory.findFirst({
+        where: { id: dto.categoryId, tenantId },
+      });
+    }
+
     if (!category) {
-      throw new NotFoundException('Không tìm thấy khoản mục thu chi');
+      // Tự động gán danh mục mặc định phù hợp với type nếu client không truyền
+      if (dto.type === CashTransactionType.CAPITAL_IN || dto.type === CashTransactionType.CAPITAL_OUT) {
+        category = await this.prisma.cashCategory.findFirst({
+          where: { tenantId, type: CashCategoryType.CAPITAL },
+        });
+        if (!category) {
+          category = await this.prisma.cashCategory.create({
+            data: {
+              tenantId,
+              code: 'GOP_RUT_VON',
+              name: 'Chủ shop góp/rút tiền',
+              type: CashCategoryType.CAPITAL,
+              isSystemDefault: true,
+            },
+          });
+        }
+      } else if (dto.type === CashTransactionType.INCOME) {
+        category = await this.prisma.cashCategory.findFirst({
+          where: { tenantId, type: CashCategoryType.INCOME },
+        });
+      } else if (dto.type === CashTransactionType.EXPENSE) {
+        category = await this.prisma.cashCategory.findFirst({
+          where: { tenantId, type: CashCategoryType.EXPENSE },
+        });
+      }
+    }
+
+    if (!category) {
+      throw new NotFoundException('Không tìm thấy khoản mục thu chi phù hợp');
     }
 
     // Xác thực tài khoản tiền theo hướng giao dịch
@@ -530,7 +562,7 @@ export class CashflowService {
           isCommonExpense: dto.isCommonExpense || false,
           transactionCode: txCode,
           type: dto.type,
-          categoryId: dto.categoryId,
+          categoryId: category.id,
           fromAccountId: dto.fromAccountId || null,
           toAccountId: dto.toAccountId || null,
           amount: amountDec,
@@ -750,35 +782,38 @@ export class CashflowService {
     const limit = Number(filter.limit) || 50;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.CashTransactionWhereInput = {
-      tenantId,
-      ...(filter.type && { type: filter.type as CashTransactionType }),
-      ...(filter.categoryId && { categoryId: filter.categoryId }),
-      ...(filter.status && { status: filter.status as CashTransactionStatus }),
-      ...(filter.shopId && { shopId: filter.shopId }),
-      ...(filter.accountId && {
+    const andConditions: Prisma.CashTransactionWhereInput[] = [{ tenantId }];
+
+    if (filter.type) andConditions.push({ type: filter.type as CashTransactionType });
+    if (filter.categoryId) andConditions.push({ categoryId: filter.categoryId });
+    if (filter.status) andConditions.push({ status: filter.status as CashTransactionStatus });
+    if (filter.shopId) andConditions.push({ shopId: filter.shopId });
+    if (filter.accountId) {
+      andConditions.push({
         OR: [{ fromAccountId: filter.accountId }, { toAccountId: filter.accountId }],
-      }),
-      ...(filter.startDate || filter.endDate
-        ? {
-            transactionDate: {
-              ...(filter.startDate && { gte: new Date(filter.startDate) }),
-              ...(filter.endDate && { lte: new Date(filter.endDate) }),
-            },
-          }
-        : {}),
-      ...(filter.search?.trim()
-        ? {
-            OR: [
-              { transactionCode: { contains: filter.search.trim(), mode: 'insensitive' } },
-              { referenceCode: { contains: filter.search.trim(), mode: 'insensitive' } },
-              { counterpartyName: { contains: filter.search.trim(), mode: 'insensitive' } },
-              { performedByName: { contains: filter.search.trim(), mode: 'insensitive' } },
-              { note: { contains: filter.search.trim(), mode: 'insensitive' } },
-            ],
-          }
-        : {}),
-    };
+      });
+    }
+    if (filter.startDate || filter.endDate) {
+      andConditions.push({
+        transactionDate: {
+          ...(filter.startDate && { gte: new Date(filter.startDate) }),
+          ...(filter.endDate && { lte: new Date(filter.endDate) }),
+        },
+      });
+    }
+    if (filter.search?.trim()) {
+      andConditions.push({
+        OR: [
+          { transactionCode: { contains: filter.search.trim(), mode: 'insensitive' } },
+          { referenceCode: { contains: filter.search.trim(), mode: 'insensitive' } },
+          { counterpartyName: { contains: filter.search.trim(), mode: 'insensitive' } },
+          { performedByName: { contains: filter.search.trim(), mode: 'insensitive' } },
+          { note: { contains: filter.search.trim(), mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    const where: Prisma.CashTransactionWhereInput = { AND: andConditions };
 
     const [total, items] = await Promise.all([
       this.prisma.cashTransaction.count({ where }),
@@ -796,18 +831,78 @@ export class CashflowService {
       }),
     ]);
 
+    // Thống kê tài khoản nếu đang xem theo 1 tài khoản cụ thể (phục vụ xem lịch sử nạp rút quỹ)
+    let accountSummary: any = null;
+    if (filter.accountId) {
+      try {
+        const targetAcc = await this.prisma.cashAccount.findFirst({
+          where: { id: filter.accountId, tenantId },
+        });
+        if (targetAcc) {
+          const [inflowAgg, outflowAgg, txCount] = await Promise.all([
+            this.prisma.cashTransaction.aggregate({
+              where: {
+                tenantId,
+                toAccountId: targetAcc.id,
+                status: CashTransactionStatus.CONFIRMED,
+              },
+              _sum: { amount: true },
+            }),
+            this.prisma.cashTransaction.aggregate({
+              where: {
+                tenantId,
+                fromAccountId: targetAcc.id,
+                status: CashTransactionStatus.CONFIRMED,
+              },
+              _sum: { amount: true },
+            }),
+            this.prisma.cashTransaction.count({
+              where: {
+                tenantId,
+                OR: [{ fromAccountId: targetAcc.id }, { toAccountId: targetAcc.id }],
+              },
+            }),
+          ]);
+
+          const totalIn = Number(inflowAgg._sum.amount || 0);
+          const totalOut = Number(outflowAgg._sum.amount || 0);
+
+          accountSummary = {
+            account: {
+              id: targetAcc.id,
+              name: targetAcc.name,
+              type: targetAcc.type,
+              currentBalance: Number(targetAcc.currentBalance || 0),
+              accountNumber: targetAcc.accountNumber,
+              bankName: targetAcc.bankName,
+              note: targetAcc.note,
+            },
+            totalInflow: totalIn,
+            totalOutflow: totalOut,
+            netChange: totalIn - totalOut,
+            transactionCount: txCount,
+          };
+        }
+      } catch (err) {
+        console.warn('Lỗi tính accountSummary (suppressed):', err);
+      }
+    }
+
     // Tính toán số dư tài khoản TRƯỚC và SAU từng giao dịch theo dòng thời gian luỹ kế
     const txBalanceMap: Record<string, { balanceBefore: number; balanceAfter: number }> = {};
     if (items.length > 0) {
       try {
-        const accountIds = Array.from(
-          new Set(
-            items.flatMap((it) => [it.fromAccountId, it.toAccountId]).filter(Boolean) as string[],
-          ),
-        );
+        const targetAccountId = filter.accountId;
+        const accountIds = targetAccountId
+          ? [targetAccountId]
+          : Array.from(
+              new Set(
+                items.flatMap((it) => [it.fromAccountId, it.toAccountId]).filter(Boolean) as string[],
+              ),
+            );
 
         if (accountIds.length > 0) {
-          const [accounts, allTxs, allTransfers] = await Promise.all([
+          const [accounts, allTxs] = await Promise.all([
             this.prisma.cashAccount.findMany({
               where: { id: { in: accountIds } },
               select: { id: true, initialBalance: true },
@@ -829,23 +924,6 @@ export class CashflowService {
               },
               orderBy: [{ transactionDate: 'asc' }, { createdAt: 'asc' }],
             }),
-            this.prisma.cashTransfer.findMany({
-              where: {
-                tenantId,
-                status: CashTransactionStatus.CONFIRMED,
-                OR: [{ fromAccountId: { in: accountIds } }, { toAccountId: { in: accountIds } }],
-              },
-              select: {
-                id: true,
-                fromAccountId: true,
-                toAccountId: true,
-                amount: true,
-                feeAmount: true,
-                transferDate: true,
-                createdAt: true,
-              },
-              orderBy: [{ transferDate: 'asc' }, { createdAt: 'asc' }],
-            }),
           ]);
 
           const runningBalances: Record<string, number> = {};
@@ -853,63 +931,26 @@ export class CashflowService {
             runningBalances[a.id] = Number(a.initialBalance || 0);
           });
 
-          type ChronoEvent = {
-            id: string;
-            type: 'TX' | 'TRANSFER';
-            fromAccountId?: string | null;
-            toAccountId?: string | null;
-            amount: number;
-            feeAmount?: number;
-            date: Date;
-            created: Date;
-          };
+          for (const ev of allTxs) {
+            const evAmt = Number(ev.amount || 0);
 
-          const chronoEvents: ChronoEvent[] = [
-            ...allTxs.map((t) => ({
-              id: t.id,
-              type: 'TX' as const,
-              fromAccountId: t.fromAccountId,
-              toAccountId: t.toAccountId,
-              amount: Number(t.amount || 0),
-              date: new Date(t.transactionDate),
-              created: new Date(t.createdAt),
-            })),
-            ...allTransfers.map((tr) => ({
-              id: tr.id,
-              type: 'TRANSFER' as const,
-              fromAccountId: tr.fromAccountId,
-              toAccountId: tr.toAccountId,
-              amount: Number(tr.amount || 0),
-              feeAmount: Number(tr.feeAmount || 0),
-              date: new Date(tr.transferDate),
-              created: new Date(tr.createdAt),
-            })),
-          ];
-
-          chronoEvents.sort(
-            (a, b) => a.date.getTime() - b.date.getTime() || a.created.getTime() - b.created.getTime(),
-          );
-
-          for (const ev of chronoEvents) {
-            if (ev.type === 'TX') {
-              const accId = ev.fromAccountId || ev.toAccountId;
-              if (accId) {
-                const prevBal = runningBalances[accId] ?? 0;
-                let nextBal = prevBal;
-                if (ev.fromAccountId === accId) {
-                  nextBal = prevBal - ev.amount;
-                } else if (ev.toAccountId === accId) {
-                  nextBal = prevBal + ev.amount;
-                }
-                runningBalances[accId] = nextBal;
-                txBalanceMap[ev.id] = { balanceBefore: prevBal, balanceAfter: nextBal };
+            // Khi tài khoản là nguồn tiền (chi / rút / chuyển đi)
+            if (ev.fromAccountId && runningBalances[ev.fromAccountId] !== undefined) {
+              const prev = runningBalances[ev.fromAccountId];
+              const next = prev - evAmt;
+              runningBalances[ev.fromAccountId] = next;
+              if (!targetAccountId || targetAccountId === ev.fromAccountId) {
+                txBalanceMap[ev.id] = { balanceBefore: prev, balanceAfter: next };
               }
-            } else if (ev.type === 'TRANSFER') {
-              if (ev.fromAccountId && runningBalances[ev.fromAccountId] !== undefined) {
-                runningBalances[ev.fromAccountId] -= ev.amount + (ev.feeAmount || 0);
-              }
-              if (ev.toAccountId && runningBalances[ev.toAccountId] !== undefined) {
-                runningBalances[ev.toAccountId] += ev.amount;
+            }
+
+            // Khi tài khoản là đích nhận tiền (thu / nạp / nhận chuyển)
+            if (ev.toAccountId && runningBalances[ev.toAccountId] !== undefined) {
+              const prev = runningBalances[ev.toAccountId];
+              const next = prev + evAmt;
+              runningBalances[ev.toAccountId] = next;
+              if (!targetAccountId || targetAccountId === ev.toAccountId) {
+                txBalanceMap[ev.id] = { balanceBefore: prev, balanceAfter: next };
               }
             }
           }
@@ -921,7 +962,7 @@ export class CashflowService {
 
     const enhancedItems = items.map((it) => {
       const balInfo = txBalanceMap[it.id];
-      const primaryAcc = it.fromAccount || it.toAccount;
+      const primaryAcc = (filter.accountId && (it.fromAccountId === filter.accountId ? it.fromAccount : it.toAccount)) || it.toAccount || it.fromAccount;
       const fallbackBefore = primaryAcc ? Number(primaryAcc.currentBalance || 0) : 0;
       return {
         ...it,
@@ -936,6 +977,7 @@ export class CashflowService {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
+      accountSummary,
     };
   }
 

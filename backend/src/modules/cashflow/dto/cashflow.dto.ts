@@ -120,8 +120,8 @@ export class CreateCashTransactionDto {
   type!: CashTransactionType;
 
   @IsString()
-  @IsNotEmpty()
-  categoryId!: string;
+  @IsOptional()
+  categoryId?: string;
 
   @IsNumber()
   @IsPositive()

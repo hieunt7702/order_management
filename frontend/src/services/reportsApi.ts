@@ -39,6 +39,9 @@ export interface ProductImportTransaction {
   stockAfter: number;
   note?: string | null;
   createdAt: string;
+  transactionType?: 'IMPORT' | 'RETURN';
+  reason?: string | null;
+  debtOffsetAmount?: number;
 }
 
 export interface PurchaseReportData {
@@ -103,9 +106,16 @@ export interface PurchaseReportData {
       productName: string;
       variationName: string | null;
       quantity: number;
+      grossQuantity?: number;
+      returnedQuantity?: number;
+      netQuantity?: number;
       totalAmount: number;
+      grossAmount?: number;
+      returnedAmount?: number;
+      netAmount?: number;
       avgPrice: number;
       receiptsCount: number;
+      returnsCount?: number;
       transactions?: ProductImportTransaction[];
     }>;
   }>;
@@ -114,9 +124,16 @@ export interface PurchaseReportData {
     productName: string;
     variationName: string | null;
     quantity: number;
+    grossQuantity?: number;
+    returnedQuantity?: number;
+    netQuantity?: number;
     totalAmount: number;
+    grossAmount?: number;
+    returnedAmount?: number;
+    netAmount?: number;
     avgPrice: number;
     receiptsCount: number;
+    returnsCount?: number;
     suppliers?: string[];
     transactions?: ProductImportTransaction[];
   }>;
@@ -177,6 +194,7 @@ export interface OrderReconciliationItem {
   unit: string;
   costPrice: number;
   sellingPrice: number;
+  stockBefore: number;
   grossImportedQuantity?: number;
   supplierReturnedQuantity?: number;
   importedQuantity: number;
@@ -200,6 +218,7 @@ export interface OrderReconciliationItem {
 
 export interface OrderReconciliationSummary {
   totalVariants: number;
+  totalStockBefore?: number;
   totalGrossImported?: number;
   totalSupplierReturned?: number;
   totalImportedQuantity: number;
@@ -242,6 +261,10 @@ export interface OrderReconciliationTransactionsData {
       name: string;
     };
   };
+  stockBefore?: number;
+  calculatedStock?: number;
+  discrepancy?: number;
+  reconciliationStatus?: 'BALANCED' | 'SURPLUS' | 'DEFICIT';
   inventoryBalances: Array<{
     warehouseId: string;
     warehouseName: string;
@@ -278,6 +301,8 @@ export interface OrderReconciliationTransactionsData {
     unitPrice: number;
     subtotal: number;
     paymentStatus: string;
+    stockBefore?: number;
+    stockAfter?: number;
   }>;
   purchaseReturns?: Array<{
     id: string;

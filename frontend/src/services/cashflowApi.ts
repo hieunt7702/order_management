@@ -268,7 +268,41 @@ export const cashflowApi = {
       page: number;
       limit: number;
       totalPages: number;
+      accountSummary?: {
+        account: CashAccountModel;
+        totalInflow: number;
+        totalOutflow: number;
+        netChange: number;
+        transactionCount: number;
+      };
     }>(`/cashflow/transactions${buildQuery(params)}`),
+
+  getAccountTransactions: (
+    accountId: string,
+    params?: {
+      startDate?: string;
+      endDate?: string;
+      type?: string;
+      status?: string;
+      search?: string;
+      page?: number;
+      limit?: number;
+    },
+  ) =>
+    api.get<{
+      items: CashTransactionModel[];
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+      accountSummary?: {
+        account: CashAccountModel;
+        totalInflow: number;
+        totalOutflow: number;
+        netChange: number;
+        transactionCount: number;
+      };
+    }>(`/cashflow/accounts/${accountId}/transactions${buildQuery(params)}`),
 
   checkDuplicate: (data: {
     amount: number;

@@ -80,6 +80,23 @@ export class CashflowController {
     return this.cashflowService.getAccounts(tenantId);
   }
 
+  @Get('accounts/:id/transactions')
+  @Roles(
+    MembershipRole.OWNER,
+    MembershipRole.ADMIN,
+    MembershipRole.ACCOUNTANT,
+    MembershipRole.WAREHOUSE,
+    MembershipRole.VIEWER,
+  )
+  @ApiOperation({ summary: 'Lịch sử giao dịch nạp rút, biến động số dư của một tài khoản' })
+  async getAccountTransactions(
+    @CurrentTenantId() tenantId: string,
+    @Param('id') id: string,
+    @Query() filter: CashflowFilterDto,
+  ) {
+    return this.cashflowService.getTransactions(tenantId, { ...filter, accountId: id });
+  }
+
   @Post('accounts')
   @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Tạo tài khoản tiền mới' })

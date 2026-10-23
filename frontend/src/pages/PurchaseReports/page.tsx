@@ -1151,18 +1151,35 @@ export const PurchaseReportsPage: React.FC = () => {
                                                   {skuItem.variationName || 'Mặc định'}
                                                 </td>
                                                 <td className="py-2 px-2.5 text-center text-gray-700 dark:text-gray-300">
-                                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[11px]">
-                                                    {skuItem.receiptsCount} lần
-                                                  </span>
+                                                  <div className="inline-flex flex-col items-center gap-0.5">
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[11px]">
+                                                      {skuItem.receiptsCount} lần
+                                                    </span>
+                                                    {skuItem.returnsCount && skuItem.returnsCount > 0 ? (
+                                                      <span className="inline-flex items-center px-1 py-0.2 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-[9px] border border-amber-200/60">
+                                                        {skuItem.returnsCount} trả
+                                                      </span>
+                                                    ) : null}
+                                                  </div>
                                                 </td>
                                                 <td className="py-2 px-2.5 text-center font-mono font-bold text-gray-900 dark:text-white">
-                                                  {skuItem.quantity.toLocaleString('vi-VN')}
+                                                  <div>{skuItem.quantity.toLocaleString('vi-VN')}</div>
+                                                  {skuItem.returnedQuantity && skuItem.returnedQuantity > 0 ? (
+                                                    <div className="text-[9px] text-gray-400 font-normal">
+                                                      Gốc {skuItem.grossQuantity?.toLocaleString('vi-VN')} • Trả -{skuItem.returnedQuantity.toLocaleString('vi-VN')}
+                                                    </div>
+                                                  ) : null}
                                                 </td>
                                                 <td className="py-2 px-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
                                                   {skuItem.avgPrice.toLocaleString('vi-VN')}đ
                                                 </td>
                                                 <td className="py-2 px-2.5 text-right font-mono font-bold text-gray-900 dark:text-white">
-                                                  {skuItem.totalAmount.toLocaleString('vi-VN')}đ
+                                                  <div>{skuItem.totalAmount.toLocaleString('vi-VN')}đ</div>
+                                                  {skuItem.returnedAmount && skuItem.returnedAmount > 0 ? (
+                                                    <div className="text-[9px] text-amber-600 dark:text-amber-400 font-normal">
+                                                      Đã trừ trả -{skuItem.returnedAmount.toLocaleString('vi-VN')}đ
+                                                    </div>
+                                                  ) : null}
                                                 </td>
                                                 <td className="py-2 px-2.5 text-right text-gray-500 font-mono text-[11px]">
                                                   {skuRatio}%
@@ -1175,12 +1192,14 @@ export const PurchaseReportsPage: React.FC = () => {
                                                   <td colSpan={8} className="p-2.5">
                                                     <div className="rounded border border-indigo-200/50 dark:border-indigo-900/30 bg-white dark:bg-[#15171e] p-2.5 space-y-2">
                                                       <div className="text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center justify-between">
-                                                        <span>Lịch sử nhập SKU {skuItem.sku} từ NCC {s.supplierName} ({skuTxList.length} lần nhập):</span>
-                                                        <span className="text-gray-400 font-normal">Tồn trước nhập & SL thực nhập</span>
+                                                        <span>
+                                                          Lịch sử giao dịch SKU {skuItem.sku} từ NCC {s.supplierName} ({skuTxList.length} giao dịch):
+                                                        </span>
+                                                        <span className="text-gray-400 font-normal">Tồn trước & biến động nhập/trả</span>
                                                       </div>
                                                       {skuTxList.length === 0 ? (
                                                         <div className="text-center py-2 text-xs text-gray-400">
-                                                          Không có chi tiết lịch sử nhập hàng cho mã SKU này
+                                                          Không có chi tiết lịch sử nhập/trả hàng cho mã SKU này
                                                         </div>
                                                       ) : (
                                                         <div className="overflow-x-auto">
@@ -1188,62 +1207,87 @@ export const PurchaseReportsPage: React.FC = () => {
                                                             <thead>
                                                               <tr className="border-b border-gray-100 dark:border-gray-800 text-gray-400 bg-gray-50/60 dark:bg-gray-800/20">
                                                                 <th className="py-1 px-2">Mã phiếu</th>
-                                                                <th className="py-1 px-2">Ngày nhập</th>
+                                                                <th className="py-1 px-2">Ngày GD</th>
                                                                 <th className="py-1 px-2">Kho hàng</th>
-                                                                <th className="py-1 px-2 text-center font-bold text-gray-700 dark:text-gray-300">Số hàng trước nhập</th>
-                                                                <th className="py-1 px-2 text-center font-bold text-emerald-600 dark:text-emerald-400">SL nhập (+)</th>
-                                                                <th className="py-1 px-2 text-center font-bold text-indigo-600 dark:text-indigo-400">Tồn sau nhập (=)</th>
+                                                                <th className="py-1 px-2 text-center font-bold text-gray-700 dark:text-gray-300">Số hàng trước GD</th>
+                                                                <th className="py-1 px-2 text-center font-bold text-emerald-600 dark:text-emerald-400">SL biến động (+/-)</th>
+                                                                <th className="py-1 px-2 text-center font-bold text-indigo-600 dark:text-indigo-400">Tồn sau GD (=)</th>
                                                                 <th className="py-1 px-2 text-right">Đơn giá</th>
                                                                 <th className="py-1 px-2 text-right font-bold">Thành tiền</th>
                                                                 <th className="py-1 px-2 text-center">Trạng thái nợ</th>
                                                               </tr>
                                                             </thead>
                                                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
-                                                              {skuTxList.map((tx, tIdx) => (
-                                                                <tr key={`${tx.receiptId}-${tIdx}`} className="hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                                                                  <td className="py-1.5 px-2 font-mono font-semibold text-indigo-600 dark:text-indigo-400">
-                                                                    <Link to={`/suppliers?tab=RECEIPTS&search=${tx.receiptCode}`} className="hover:underline flex items-center gap-1">
-                                                                      <Receipt size={11} />
-                                                                      <span>{tx.receiptCode}</span>
-                                                                    </Link>
-                                                                  </td>
-                                                                  <td className="py-1.5 px-2 text-gray-600 dark:text-gray-400">{tx.receiptDate ? tx.receiptDate.slice(0, 10) : ''}</td>
-                                                                  <td className="py-1.5 px-2 text-gray-600 dark:text-gray-400">{tx.warehouseName}</td>
-                                                                  <td className="py-1.5 px-2 text-center font-mono font-bold text-gray-800 dark:text-gray-200">
-                                                                    <span className="px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                                                                      {tx.stockBefore.toLocaleString('vi-VN')}
-                                                                    </span>
-                                                                  </td>
-                                                                  <td className="py-1.5 px-2 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                                                    <span className="px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40">
-                                                                      +{tx.receivedQuantity.toLocaleString('vi-VN')}
-                                                                    </span>
-                                                                  </td>
-                                                                  <td className="py-1.5 px-2 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                                                                    <span className="px-1.5 py-0.2 rounded bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40">
-                                                                      ={tx.stockAfter.toLocaleString('vi-VN')}
-                                                                    </span>
-                                                                  </td>
-                                                                  <td className="py-1.5 px-2 text-right font-mono">{tx.unitPrice.toLocaleString('vi-VN')}đ</td>
-                                                                  <td className="py-1.5 px-2 text-right font-mono font-bold">{tx.subtotal.toLocaleString('vi-VN')}đ</td>
-                                                                  <td className="py-1.5 px-2 text-center">
-                                                                    <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                                                                      tx.paymentStatus === 'PAID'
-                                                                        ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-                                                                        : tx.paymentStatus === 'PARTIALLY_PAID'
-                                                                          ? 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
-                                                                          : 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300'
-                                                                    }`}>
-                                                                      {tx.paymentStatus === 'PAID' ? 'Đã trả' : tx.paymentStatus === 'PARTIALLY_PAID' ? 'Trả 1 phần' : 'Chưa trả'}
-                                                                    </span>
-                                                                  </td>
-                                                                </tr>
-                                                              ))}
+                                                              {skuTxList.map((tx, tIdx) => {
+                                                                const isReturn = tx.transactionType === 'RETURN' || tx.receivedQuantity < 0;
+
+                                                                return (
+                                                                  <tr key={`${tx.receiptId}-${tIdx}`} className={`hover:bg-gray-50 dark:hover:bg-gray-800/30 ${isReturn ? 'bg-amber-50/10 dark:bg-amber-950/5' : ''}`}>
+                                                                    <td className="py-1.5 px-2 font-mono font-semibold">
+                                                                      {isReturn ? (
+                                                                        <Link to={`/suppliers?tab=RETURNS&search=${tx.receiptCode}`} className="text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 font-semibold">
+                                                                          <RotateCcw size={11} className="shrink-0" />
+                                                                          <span>{tx.receiptCode}</span>
+                                                                          <span className="px-1 py-0.1 rounded text-[8px] bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300">Trả</span>
+                                                                        </Link>
+                                                                      ) : (
+                                                                        <Link to={`/suppliers?tab=RECEIPTS&search=${tx.receiptCode}`} className="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+                                                                          <Receipt size={11} />
+                                                                          <span>{tx.receiptCode}</span>
+                                                                        </Link>
+                                                                      )}
+                                                                    </td>
+                                                                    <td className="py-1.5 px-2 text-gray-600 dark:text-gray-400">{tx.receiptDate ? tx.receiptDate.slice(0, 10) : ''}</td>
+                                                                    <td className="py-1.5 px-2 text-gray-600 dark:text-gray-400">{tx.warehouseName}</td>
+                                                                    <td className="py-1.5 px-2 text-center font-mono font-bold text-gray-800 dark:text-gray-200">
+                                                                      <span className="px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                                                        {tx.stockBefore.toLocaleString('vi-VN')}
+                                                                      </span>
+                                                                    </td>
+                                                                    <td className="py-1.5 px-2 text-center font-mono font-bold">
+                                                                      {isReturn ? (
+                                                                        <span className="px-1.5 py-0.2 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/60">
+                                                                          {tx.receivedQuantity.toLocaleString('vi-VN')}
+                                                                        </span>
+                                                                      ) : (
+                                                                        <span className="px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 text-emerald-600 dark:text-emerald-400">
+                                                                          +{tx.receivedQuantity.toLocaleString('vi-VN')}
+                                                                        </span>
+                                                                      )}
+                                                                    </td>
+                                                                    <td className="py-1.5 px-2 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                                                      <span className="px-1.5 py-0.2 rounded bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40">
+                                                                        ={tx.stockAfter.toLocaleString('vi-VN')}
+                                                                      </span>
+                                                                    </td>
+                                                                    <td className="py-1.5 px-2 text-right font-mono">{tx.unitPrice.toLocaleString('vi-VN')}đ</td>
+                                                                    <td className={`py-1.5 px-2 text-right font-mono font-bold ${isReturn ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+                                                                      {tx.subtotal.toLocaleString('vi-VN')}đ
+                                                                    </td>
+                                                                    <td className="py-1.5 px-2 text-center">
+                                                                      {isReturn ? (
+                                                                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">
+                                                                          {tx.paymentStatus === 'DEBT_OFFSET' || (tx.debtOffsetAmount && tx.debtOffsetAmount > 0) ? 'Đã trừ nợ' : 'Đã trả hàng'}
+                                                                        </span>
+                                                                      ) : (
+                                                                        <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                                                                          tx.paymentStatus === 'PAID'
+                                                                            ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                                                            : tx.paymentStatus === 'PARTIALLY_PAID'
+                                                                              ? 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
+                                                                              : 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300'
+                                                                        }`}>
+                                                                          {tx.paymentStatus === 'PAID' ? 'Đã trả' : tx.paymentStatus === 'PARTIALLY_PAID' ? 'Trả 1 phần' : 'Chưa trả'}
+                                                                        </span>
+                                                                      )}
+                                                                    </td>
+                                                                  </tr>
+                                                                );
+                                                              })}
                                                             </tbody>
                                                           </table>
                                                         </div>
-                                                      )}
-                                                    </div>
+                                                      )}                                                    </div>
                                                   </td>
                                                 </tr>
                                               )}
@@ -1429,7 +1473,7 @@ export const PurchaseReportsPage: React.FC = () => {
                                     className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-semibold pt-0.5 cursor-pointer"
                                   >
                                     <Receipt size={11} />
-                                    <span>{isSkuExpanded ? 'Thu gọn biến động' : `Xem biến động tồn ${skuTxList.length} lần nhập`}</span>
+                                    <span>{isSkuExpanded ? 'Thu gọn biến động' : `Xem biến động tồn ${skuTxList.length} giao dịch`}</span>
                                     {isSkuExpanded ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
                                   </button>
                                 )}
@@ -1557,22 +1601,39 @@ export const PurchaseReportsPage: React.FC = () => {
                             )}
                           </SystemTd>
                           <SystemTd className="text-center font-semibold text-gray-700 dark:text-gray-300">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-xs">
-                              {p.receiptsCount} lần
-                            </span>
+                            <div className="inline-flex flex-col items-center gap-1">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-xs">
+                                {p.receiptsCount} lần
+                              </span>
+                              {p.returnsCount && p.returnsCount > 0 ? (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-[10px] font-medium border border-amber-200/60 dark:border-amber-800/40">
+                                  {p.returnsCount} lần trả
+                                </span>
+                              ) : null}
+                            </div>
                           </SystemTd>
                           <SystemTd className="text-center font-mono font-bold text-gray-900 dark:text-white">
-                            {p.quantity.toLocaleString('vi-VN')}
+                            <div>{p.quantity.toLocaleString('vi-VN')}</div>
+                            {p.returnedQuantity && p.returnedQuantity > 0 ? (
+                              <div className="text-[10px] text-gray-400 font-normal">
+                                Gốc {p.grossQuantity?.toLocaleString('vi-VN')} • Trả -{p.returnedQuantity.toLocaleString('vi-VN')}
+                              </div>
+                            ) : null}
                           </SystemTd>
                           <SystemTd className="text-right font-mono text-gray-700 dark:text-gray-300">
                             {p.avgPrice.toLocaleString('vi-VN')}đ
                           </SystemTd>
                           <SystemTd className="text-right font-mono font-bold text-gray-900 dark:text-white">
-                            {p.totalAmount.toLocaleString('vi-VN')}đ
+                            <div>{p.totalAmount.toLocaleString('vi-VN')}đ</div>
+                            {p.returnedAmount && p.returnedAmount > 0 ? (
+                              <div className="text-[10px] text-amber-600 dark:text-amber-400 font-normal">
+                                Đã trừ trả -{p.returnedAmount.toLocaleString('vi-VN')}đ
+                              </div>
+                            ) : null}
                           </SystemTd>
                         </SystemTr>
 
-                        {/* Nested Import Transactions Breakdown Row */}
+                        {/* Nested Import & Return Transactions Breakdown Row */}
                         {isExpanded && (
                           <SystemTr className="bg-gray-50/70 dark:bg-[#101115]">
                             <SystemTd colSpan={9} className="p-3 sm:p-4">
@@ -1582,29 +1643,42 @@ export const PurchaseReportsPage: React.FC = () => {
                                     <Boxes size={16} className="text-[#5865f2]" />
                                     <div>
                                       <span className="text-xs font-bold text-gray-900 dark:text-white">
-                                        Chi tiết từng lần nhập hàng & tồn kho: <span className="text-indigo-600 dark:text-indigo-400 font-mono">{p.sku}</span> - {p.productName}
+                                        Chi tiết từng lần nhập hàng & trả hàng: <span className="text-indigo-600 dark:text-indigo-400 font-mono">{p.sku}</span> - {p.productName}
                                       </span>
                                       <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                                        Xem số hàng trước khi nhập, số lượng nhập và tồn sau khi nhập của từng phiếu
+                                        Xem số hàng trước khi giao dịch, số lượng nhập/xuất trả và tồn sau giao dịch
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2.5 text-xs font-mono">
+                                  <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
                                     <span className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
                                       Số lần nhập: <b>{p.receiptsCount}</b> lần
                                     </span>
-                                    <span className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                                      Tổng nhập: <b>{p.quantity.toLocaleString('vi-VN')}</b> cái
+                                    {p.returnsCount && p.returnsCount > 0 ? (
+                                      <span className="px-2 py-1 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40">
+                                        Số lần trả: <b>{p.returnsCount}</b> lần
+                                      </span>
+                                    ) : null}
+                                    <span className="px-2 py-1 rounded bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50">
+                                      Tổng nhập: <b>{(p.grossQuantity ?? p.quantity).toLocaleString('vi-VN')}</b> cái
                                     </span>
-                                    <span className="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/40 text-[#5865f2] dark:text-indigo-300 font-bold">
-                                      Tổng tiền: {p.totalAmount.toLocaleString('vi-VN')}đ
+                                    {p.returnedQuantity && p.returnedQuantity > 0 ? (
+                                      <span className="px-2 py-1 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200/60 font-bold">
+                                        Đã trả NCC: <b>-{p.returnedQuantity.toLocaleString('vi-VN')}</b> cái
+                                      </span>
+                                    ) : null}
+                                    <span className="px-2 py-1 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-bold border border-blue-200/50">
+                                      Thực nhận ròng: <b>{p.quantity.toLocaleString('vi-VN')}</b> cái
+                                    </span>
+                                    <span className="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/40 text-[#5865f2] dark:text-indigo-300 font-bold border border-indigo-200/50">
+                                      Tổng tiền ròng: {p.totalAmount.toLocaleString('vi-VN')}đ
                                     </span>
                                   </div>
                                 </div>
 
                                 {txList.length === 0 ? (
                                   <div className="text-center py-4 text-xs text-gray-400">
-                                    Không có chi tiết lịch sử nhập hàng cho sản phẩm này
+                                    Không có chi tiết lịch sử nhập/trả hàng cho sản phẩm này
                                   </div>
                                 ) : (
                                   <div className="overflow-x-auto rounded border border-gray-200/60 dark:border-gray-800">
@@ -1612,92 +1686,134 @@ export const PurchaseReportsPage: React.FC = () => {
                                       <thead>
                                         <tr className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider bg-gray-50/80 dark:bg-gray-800/40">
                                           <th className="py-2.5 px-3">Mã phiếu</th>
-                                          <th className="py-2.5 px-3">Ngày nhập</th>
+                                          <th className="py-2.5 px-3">Ngày GD</th>
                                           <th className="py-2.5 px-3">Nhà cung cấp</th>
-                                          <th className="py-2.5 px-3">Kho nhập hàng</th>
+                                          <th className="py-2.5 px-3">Kho hàng</th>
                                           <th className="py-2.5 px-3 text-center bg-gray-100/60 dark:bg-gray-800/60 font-bold text-gray-700 dark:text-gray-300">
-                                            Số hàng trước nhập
+                                            Số hàng trước GD
                                           </th>
                                           <th className="py-2.5 px-3 text-center bg-emerald-50/50 dark:bg-emerald-950/20 font-bold text-emerald-700 dark:text-emerald-300">
-                                            SL thực nhập (+)
+                                            SL biến động (+/-)
                                           </th>
                                           <th className="py-2.5 px-3 text-center bg-indigo-50/50 dark:bg-indigo-950/20 font-bold text-[#5865f2] dark:text-indigo-300">
-                                            Tồn sau nhập (=)
+                                            Tồn sau GD (=)
                                           </th>
-                                          <th className="py-2.5 px-3 text-right">Đơn giá nhập</th>
+                                          <th className="py-2.5 px-3 text-right">Đơn giá</th>
                                           <th className="py-2.5 px-3 text-right font-bold">Thành tiền</th>
                                           <th className="py-2.5 px-3 text-center">Trạng thái nợ</th>
                                           <th className="py-2.5 px-3">Ghi chú</th>
                                         </tr>
                                       </thead>
                                       <tbody className="divide-y divide-gray-100 dark:divide-gray-800/80">
-                                        {txList.map((tx, tIdx) => (
-                                          <tr
-                                            key={`${tx.receiptId}-${tIdx}`}
-                                            className="hover:bg-indigo-50/20 dark:hover:bg-indigo-950/20 transition-colors"
-                                          >
-                                            <td className="py-2.5 px-3 font-mono font-semibold">
-                                              <Link
-                                                to={`/suppliers?tab=RECEIPTS&search=${tx.receiptCode}`}
-                                                className="text-[#5865f2] hover:underline flex items-center gap-1.5"
-                                                title="Mở chi tiết phiếu nhập kho"
-                                              >
-                                                <Receipt size={13} className="shrink-0" />
-                                                <span>{tx.receiptCode}</span>
-                                              </Link>
-                                            </td>
-                                            <td className="py-2.5 px-3 text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                                              {tx.receiptDate ? tx.receiptDate.slice(0, 10) : 'N/A'}
-                                            </td>
-                                            <td className="py-2.5 px-3 text-gray-800 dark:text-gray-200 max-w-[150px] truncate">
-                                              {tx.supplierName}
-                                            </td>
-                                            <td className="py-2.5 px-3 text-gray-600 dark:text-gray-400 max-w-[130px] truncate">
-                                              {tx.warehouseName}
-                                            </td>
-                                            <td className="py-2.5 px-3 text-center bg-gray-100/30 dark:bg-gray-800/30 font-mono">
-                                              <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
-                                                {tx.stockBefore.toLocaleString('vi-VN')}
-                                              </span>
-                                            </td>
-                                            <td className="py-2.5 px-3 text-center bg-emerald-50/20 dark:bg-emerald-950/10 font-mono font-bold">
-                                              <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
-                                                +{tx.receivedQuantity.toLocaleString('vi-VN')}
-                                              </span>
-                                            </td>
-                                            <td className="py-2.5 px-3 text-center bg-indigo-50/20 dark:bg-indigo-950/10 font-mono font-bold">
-                                              <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
-                                                ={tx.stockAfter.toLocaleString('vi-VN')}
-                                              </span>
-                                            </td>
-                                            <td className="py-2.5 px-3 text-right font-mono text-gray-700 dark:text-gray-300">
-                                              {tx.unitPrice.toLocaleString('vi-VN')}đ
-                                            </td>
-                                            <td className="py-2.5 px-3 text-right font-mono font-bold text-gray-900 dark:text-white">
-                                              {tx.subtotal.toLocaleString('vi-VN')}đ
-                                            </td>
-                                            <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                                              <span
-                                                className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                                                  tx.paymentStatus === 'PAID'
-                                                    ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-                                                    : tx.paymentStatus === 'PARTIALLY_PAID'
-                                                      ? 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
-                                                      : 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300'
-                                                }`}
-                                              >
-                                                {tx.paymentStatus === 'PAID'
-                                                  ? 'Đã trả'
-                                                  : tx.paymentStatus === 'PARTIALLY_PAID'
-                                                    ? 'Trả một phần'
-                                                    : 'Chưa trả'}
-                                              </span>
-                                            </td>
-                                            <td className="py-2.5 px-3 text-gray-500 text-[11px] max-w-[140px] truncate">
-                                              {tx.note || '-'}
-                                            </td>
-                                          </tr>
-                                        ))}
+                                        {txList.map((tx, tIdx) => {
+                                          const isReturn = tx.transactionType === 'RETURN' || tx.receivedQuantity < 0;
+
+                                          return (
+                                            <tr
+                                              key={`${tx.receiptId}-${tIdx}`}
+                                              className={
+                                                isReturn
+                                                  ? 'hover:bg-amber-50/20 dark:hover:bg-amber-950/20 bg-amber-50/10 dark:bg-amber-950/5 transition-colors'
+                                                  : 'hover:bg-indigo-50/20 dark:hover:bg-indigo-950/20 transition-colors'
+                                              }
+                                            >
+                                              <td className="py-2.5 px-3 font-mono font-semibold">
+                                                {isReturn ? (
+                                                  <Link
+                                                    to={`/suppliers?tab=RETURNS&search=${tx.receiptCode}`}
+                                                    className="text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1.5"
+                                                    title="Mở chi tiết phiếu xuất trả hàng NCC"
+                                                  >
+                                                    <RotateCcw size={13} className="shrink-0" />
+                                                    <span>{tx.receiptCode}</span>
+                                                    <span className="px-1 py-0.2 rounded text-[9px] bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 font-sans">
+                                                      Trả hàng
+                                                    </span>
+                                                  </Link>
+                                                ) : (
+                                                  <Link
+                                                    to={`/suppliers?tab=RECEIPTS&search=${tx.receiptCode}`}
+                                                    className="text-[#5865f2] hover:underline flex items-center gap-1.5"
+                                                    title="Mở chi tiết phiếu nhập kho"
+                                                  >
+                                                    <Receipt size={13} className="shrink-0" />
+                                                    <span>{tx.receiptCode}</span>
+                                                  </Link>
+                                                )}
+                                              </td>
+                                              <td className="py-2.5 px-3 text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                                {tx.receiptDate ? tx.receiptDate.slice(0, 10) : 'N/A'}
+                                              </td>
+                                              <td className="py-2.5 px-3 text-gray-800 dark:text-gray-200 max-w-[150px] truncate">
+                                                {tx.supplierName}
+                                              </td>
+                                              <td className="py-2.5 px-3 text-gray-600 dark:text-gray-400 max-w-[130px] truncate">
+                                                {tx.warehouseName}
+                                              </td>
+                                              <td className="py-2.5 px-3 text-center bg-gray-100/30 dark:bg-gray-800/30 font-mono">
+                                                <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
+                                                  {tx.stockBefore.toLocaleString('vi-VN')}
+                                                </span>
+                                              </td>
+                                              <td className={`py-2.5 px-3 text-center font-mono font-bold ${
+                                                isReturn
+                                                  ? 'bg-amber-50/20 dark:bg-amber-950/10'
+                                                  : 'bg-emerald-50/20 dark:bg-emerald-950/10'
+                                              }`}>
+                                                {isReturn ? (
+                                                  <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
+                                                    {tx.receivedQuantity.toLocaleString('vi-VN')}
+                                                  </span>
+                                                ) : (
+                                                  <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
+                                                    +{tx.receivedQuantity.toLocaleString('vi-VN')}
+                                                  </span>
+                                                )}
+                                              </td>
+                                              <td className="py-2.5 px-3 text-center bg-indigo-50/20 dark:bg-indigo-950/10 font-mono font-bold">
+                                                <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
+                                                  ={tx.stockAfter.toLocaleString('vi-VN')}
+                                                </span>
+                                              </td>
+                                              <td className="py-2.5 px-3 text-right font-mono text-gray-700 dark:text-gray-300">
+                                                {tx.unitPrice.toLocaleString('vi-VN')}đ
+                                              </td>
+                                              <td className={`py-2.5 px-3 text-right font-mono font-bold ${
+                                                isReturn ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'
+                                              }`}>
+                                                {tx.subtotal.toLocaleString('vi-VN')}đ
+                                              </td>
+                                              <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                                                {isReturn ? (
+                                                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">
+                                                    {tx.paymentStatus === 'DEBT_OFFSET' || (tx.debtOffsetAmount && tx.debtOffsetAmount > 0)
+                                                      ? 'Đã trừ nợ'
+                                                      : 'Đã trả hàng'}
+                                                  </span>
+                                                ) : (
+                                                  <span
+                                                    className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                                      tx.paymentStatus === 'PAID'
+                                                        ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                                        : tx.paymentStatus === 'PARTIALLY_PAID'
+                                                          ? 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
+                                                          : 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300'
+                                                    }`}
+                                                  >
+                                                    {tx.paymentStatus === 'PAID'
+                                                      ? 'Đã trả'
+                                                      : tx.paymentStatus === 'PARTIALLY_PAID'
+                                                        ? 'Trả một phần'
+                                                        : 'Chưa trả'}
+                                                  </span>
+                                                )}
+                                              </td>
+                                              <td className="py-2.5 px-3 text-gray-500 text-[11px] max-w-[140px] truncate">
+                                                {tx.note || tx.reason || '-'}
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
                                       </tbody>
                                     </table>
                                   </div>
@@ -1765,7 +1881,7 @@ export const PurchaseReportsPage: React.FC = () => {
                         </div>
                       </div>
                       <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 shrink-0">
-                        {p.receiptsCount} lần nhập
+                        {p.receiptsCount} lần nhập{p.returnsCount && p.returnsCount > 0 ? ` • ${p.returnsCount} lần trả` : ''}
                       </span>
                     </div>
 
@@ -1778,10 +1894,15 @@ export const PurchaseReportsPage: React.FC = () => {
 
                     <div className="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-800/80">
                       <div>
-                        <span className="text-[10px] text-gray-400 block">Số lượng nhập:</span>
+                        <span className="text-[10px] text-gray-400 block">Số lượng:</span>
                         <span className="font-mono font-bold text-gray-900 dark:text-white">
                           {p.quantity.toLocaleString('vi-VN')}
                         </span>
+                        {p.returnedQuantity && p.returnedQuantity > 0 ? (
+                          <span className="text-[9px] text-amber-600 dark:text-amber-400 block font-normal">
+                            Trả: -{p.returnedQuantity.toLocaleString('vi-VN')}
+                          </span>
+                        ) : null}
                       </div>
                       <div>
                         <span className="text-[10px] text-gray-400 block">Đơn giá BQ:</span>
@@ -1804,7 +1925,7 @@ export const PurchaseReportsPage: React.FC = () => {
                       className="w-full mt-1 py-1.5 px-2 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/60 dark:hover:bg-gray-800 text-[11px] font-semibold text-[#5865f2] dark:text-indigo-400 rounded flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Receipt size={13} />
-                      <span>{isExpanded ? 'Thu gọn lịch sử nhập' : `Xem chi tiết ${txList.length || p.receiptsCount} lần giao dịch nhập`}</span>
+                      <span>{isExpanded ? 'Thu gọn lịch sử giao dịch' : `Xem chi tiết ${txList.length || p.receiptsCount} lần giao dịch (nhập/trả)`}</span>
                       {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                     </button>
 
@@ -1822,13 +1943,27 @@ export const PurchaseReportsPage: React.FC = () => {
                               className="py-2.5 first:pt-1 last:pb-0 text-xs space-y-1.5"
                             >
                               <div className="flex items-center justify-between gap-1">
-                                <Link
-                                  to={`/suppliers?tab=RECEIPTS&search=${tx.receiptCode}`}
-                                  className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs flex items-center gap-1 hover:underline"
-                                >
-                                  <Receipt size={12} className="shrink-0" />
-                                  <span>{tx.receiptCode}</span>
-                                </Link>
+                                {(() => {
+                                  const isReturn = tx.transactionType === 'RETURN' || tx.receivedQuantity < 0;
+                                  return isReturn ? (
+                                    <Link
+                                      to={`/suppliers?tab=RETURNS&search=${tx.receiptCode}`}
+                                      className="font-mono font-bold text-amber-600 dark:text-amber-400 text-xs flex items-center gap-1 hover:underline"
+                                    >
+                                      <RotateCcw size={12} className="shrink-0" />
+                                      <span>{tx.receiptCode}</span>
+                                      <span className="px-1 py-0.2 rounded text-[8px] bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 font-sans">Trả hàng</span>
+                                    </Link>
+                                  ) : (
+                                    <Link
+                                      to={`/suppliers?tab=RECEIPTS&search=${tx.receiptCode}`}
+                                      className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs flex items-center gap-1 hover:underline"
+                                    >
+                                      <Receipt size={12} className="shrink-0" />
+                                      <span>{tx.receiptCode}</span>
+                                    </Link>
+                                  );
+                                })()}
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-[10px] text-gray-400">
                                     {tx.receiptDate ? tx.receiptDate.slice(0, 10) : ''}
@@ -1862,10 +1997,21 @@ export const PurchaseReportsPage: React.FC = () => {
                                   </span>
                                 </div>
                                 <div className="text-center border-x border-gray-200 dark:border-gray-700/60">
-                                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-medium">SL nhập (+)</span>
-                                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                    +{tx.receivedQuantity.toLocaleString('vi-VN')}
-                                  </span>
+                                  {tx.transactionType === 'RETURN' || tx.receivedQuantity < 0 ? (
+                                    <>
+                                      <span className="text-[10px] text-amber-600 dark:text-amber-400 block font-medium">SL trả (-)</span>
+                                      <span className="font-mono font-bold text-amber-600 dark:text-amber-400">
+                                        {tx.receivedQuantity.toLocaleString('vi-VN')}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-medium">SL nhập (+)</span>
+                                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                        +{tx.receivedQuantity.toLocaleString('vi-VN')}
+                                      </span>
+                                    </>
+                                  )}
                                 </div>
                                 <div className="text-center">
                                   <span className="text-[10px] text-indigo-600 dark:text-indigo-400 block font-medium">Tồn sau nhập (=)</span>

@@ -323,7 +323,13 @@ export const OrderReportsPage: React.FC = () => {
             title: 'Sản phẩm thực nhập kho',
             value: `${summary.totalImportedQuantity.toLocaleString('vi-VN')}`,
             subtitle:
-              summary.totalSupplierReturned && summary.totalSupplierReturned > 0
+              summary.totalStockBefore !== undefined
+                ? `Tồn trước nhập: ${summary.totalStockBefore.toLocaleString('vi-VN')}${
+                    summary.totalSupplierReturned && summary.totalSupplierReturned > 0
+                      ? ` • Trả NCC: ${summary.totalSupplierReturned.toLocaleString('vi-VN')}`
+                      : ''
+                  }`
+                : summary.totalSupplierReturned && summary.totalSupplierReturned > 0
                 ? `Đã trừ ${summary.totalSupplierReturned.toLocaleString('vi-VN')} hàng trả NCC`
                 : `Từ các phiếu nhập kho NCC`,
             icon: PackageCheck,
@@ -362,7 +368,7 @@ export const OrderReportsPage: React.FC = () => {
           leftItem={{
             title: 'SKU khớp đối soát',
             value: `${summary.balancedCount.toLocaleString('vi-VN')}`,
-            subtitle: `Tồn thực tế = Tồn tính toán`,
+            subtitle: `Tồn kho = Tồn trước nhập + Nhập - Bán`,
             icon: CheckCircle2,
             colorScheme: 'green',
           }}
@@ -541,20 +547,24 @@ export const OrderReportsPage: React.FC = () => {
             className="flex-1 flex flex-col min-h-0 border-0 rounded-none shadow-none"
           >
             <colgroup>
-              <col style={{ width: '52px' }} />
-              <col style={{ width: '28%' }} />
-              <col style={{ width: '11%' }} />
-              <col style={{ width: '11%' }} />
+              <col style={{ width: '48px' }} />
+              <col style={{ width: '24%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '10%' }} />
               <col style={{ width: '9%' }} />
               <col style={{ width: '9%' }} />
-              <col style={{ width: '15%' }} />
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '80px' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '70px' }} />
             </colgroup>
             <SystemThead>
               <SystemTr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50/75 dark:bg-[#1a1b23]/50">
                 <SystemTh align="center" className="text-center">STT</SystemTh>
                 <SystemTh align="left">Sản phẩm & SKU hệ thống</SystemTh>
+                <SystemTh align="center" className="text-center font-bold text-gray-700 dark:text-gray-300">
+                  Số hàng trước nhập
+                </SystemTh>
                 <SystemTh align="right" className="text-right">Đã nhập kho</SystemTh>
                 <SystemTh align="right" className="text-right">Đơn hàng đi</SystemTh>
                 <SystemTh align="right" className="text-right">Tồn thực tế</SystemTh>
@@ -567,10 +577,10 @@ export const OrderReportsPage: React.FC = () => {
 
             <SystemTbody>
               {isLoading ? (
-                <SystemTableSkeleton rows={8} cols={9} />
+                <SystemTableSkeleton rows={8} cols={10} />
               ) : items.length === 0 ? (
                 <SystemTableEmpty
-                  colSpan={9}
+                  colSpan={10}
                   title="Không tìm thấy sản phẩm đối soát"
                   description="Hãy thử thay đổi bộ lọc ngày, cửa hàng hoặc từ khóa tìm kiếm SKU."
                 />
@@ -613,6 +623,13 @@ export const OrderReportsPage: React.FC = () => {
                             </span>
                           </div>
                         </div>
+                      </SystemTd>
+
+                      {/* Số hàng trước nhập */}
+                      <SystemTd align="center" className="text-center font-mono">
+                        <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
+                          {item.stockBefore.toLocaleString('vi-VN')}
+                        </span>
                       </SystemTd>
 
                       {/* Nhập kho */}
@@ -814,10 +831,16 @@ export const OrderReportsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 3 Metrics: Nhập - Bán - Tồn */}
-                <div className="grid grid-cols-3 gap-2 py-2 border-y border-gray-100 dark:border-gray-800 text-center">
+                {/* 4 Metrics: Trước nhập - Nhập - Bán - Tồn */}
+                <div className="grid grid-cols-4 gap-1.5 py-2 border-y border-gray-100 dark:border-gray-800 text-center">
                   <div>
-                    <span className="text-[10px] text-gray-500 block">Thực nhập</span>
+                    <span className="text-[10px] text-gray-500 block truncate">Trước nhập</span>
+                    <span className="text-xs font-bold font-mono text-gray-800 dark:text-gray-200">
+                      {item.stockBefore.toLocaleString('vi-VN')}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-gray-500 block truncate">Thực nhập</span>
                     <span
                       className={`text-xs font-bold font-mono ${
                         item.importedQuantity > 0
@@ -829,14 +852,14 @@ export const OrderReportsPage: React.FC = () => {
                     </span>
                     {item.supplierReturnedQuantity && item.supplierReturnedQuantity > 0 ? (
                       <span className="text-[9px] text-amber-600 dark:text-amber-400 block font-medium truncate">
-                        Trả NCC -{item.supplierReturnedQuantity}
+                        Trả -{item.supplierReturnedQuantity}
                       </span>
                     ) : (
-                      <span className="text-[9px] text-gray-400 block">{item.receiptsCount} phiếu</span>
+                      <span className="text-[9px] text-gray-400 block truncate">{item.receiptsCount} phiếu</span>
                     )}
                   </div>
                   <div>
-                    <span className="text-[10px] text-gray-500 block">Thực bán</span>
+                    <span className="text-[10px] text-gray-500 block truncate">Thực bán</span>
                     <span
                       className={`text-xs font-bold font-mono ${
                         item.exportedQuantity > 0
@@ -851,16 +874,16 @@ export const OrderReportsPage: React.FC = () => {
                         Hoàn -{item.customerReturnedQuantity}
                       </span>
                     ) : (
-                      <span className="text-[9px] text-gray-400 block">{item.ordersCount} đơn</span>
+                      <span className="text-[9px] text-gray-400 block truncate">{item.ordersCount} đơn</span>
                     )}
                   </div>
                   <div>
-                    <span className="text-[10px] text-gray-500 block">Tồn kho</span>
+                    <span className="text-[10px] text-gray-500 block truncate">Tồn kho</span>
                     <span className="text-xs font-bold font-mono text-gray-900 dark:text-white">
                       {item.onHand}
                     </span>
                     {item.reserved > 0 && (
-                      <span className="text-[9px] text-amber-500 block font-mono">
+                      <span className="text-[9px] text-amber-500 block font-mono truncate">
                         (giữ {item.reserved})
                       </span>
                     )}
@@ -949,7 +972,13 @@ export const OrderReportsPage: React.FC = () => {
                   </div>
 
                   {/* Summary row */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-gray-200 dark:border-gray-700/60 text-center">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-gray-200 dark:border-gray-700/60 text-center">
+                    <div className="p-2 rounded bg-white dark:bg-[#131720]">
+                      <span className="text-[10px] text-gray-400 block">Số hàng trước nhập</span>
+                      <span className="font-mono text-xs font-bold text-gray-800 dark:text-gray-200">
+                        {(detailData.stockBefore ?? 0).toLocaleString('vi-VN')} {detailData.variant.unit}
+                      </span>
+                    </div>
                     <div className="p-2 rounded bg-white dark:bg-[#131720]">
                       <span className="text-[10px] text-gray-400 block">Thực nhập kho</span>
                       <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
@@ -1164,7 +1193,9 @@ export const OrderReportsPage: React.FC = () => {
                               <th className="p-2.5">Nhà cung cấp</th>
                               <th className="p-2.5">Kho nhận</th>
                               <th className="p-2.5">Ngày nhập</th>
-                              <th className="p-2.5 text-center">Thực nhận</th>
+                              <th className="p-2.5 text-center font-bold text-gray-700 dark:text-gray-300">Số hàng trước nhập</th>
+                              <th className="p-2.5 text-center font-bold text-emerald-600 dark:text-emerald-400">SL thực nhận (+)</th>
+                              <th className="p-2.5 text-center font-bold text-indigo-600 dark:text-indigo-400">Tồn sau nhập (=)</th>
                               <th className="p-2.5 text-right">Đơn giá nhập</th>
                               <th className="p-2.5 text-right">Thành tiền</th>
                               <th className="p-2.5 text-center">Thanh toán</th>
@@ -1182,11 +1213,23 @@ export const OrderReportsPage: React.FC = () => {
                                 <td className="p-2.5 text-gray-600 dark:text-gray-400">
                                   {r.warehouseName}
                                 </td>
-                                <td className="p-2.5 text-gray-500">
+                                <td className="p-2.5 text-gray-500 whitespace-nowrap">
                                   {r.receiptDate ? new Date(r.receiptDate).toLocaleDateString('vi-VN') : '—'}
                                 </td>
+                                <td className="p-2.5 text-center font-mono font-bold text-gray-800 dark:text-gray-200">
+                                  <span className="px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                    {(r.stockBefore ?? 0).toLocaleString('vi-VN')}
+                                  </span>
+                                </td>
                                 <td className="p-2.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                  +{r.receivedQuantity}
+                                  <span className="px-2 py-0.5 rounded text-xs bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40">
+                                    +{r.receivedQuantity.toLocaleString('vi-VN')}
+                                  </span>
+                                </td>
+                                <td className="p-2.5 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                  <span className="px-2 py-0.5 rounded text-xs bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40">
+                                    ={(r.stockAfter ?? r.receivedQuantity).toLocaleString('vi-VN')}
+                                  </span>
                                 </td>
                                 <td className="p-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
                                   {r.unitPrice.toLocaleString('vi-VN')}đ

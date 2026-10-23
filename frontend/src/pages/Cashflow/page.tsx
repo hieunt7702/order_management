@@ -85,6 +85,8 @@ import { InternalTransferModal } from './InternalTransferModal';
 import { ImportSettlementModal } from './ImportSettlementModal';
 import { CreateAccountModal } from './CreateAccountModal';
 import { CreateCategoryModal } from './CreateCategoryModal';
+import { DepositFundsModal } from './DepositFundsModal';
+import { AccountTransactionsModal } from './AccountTransactionsModal';
 
 type ActiveTab =
   | 'OVERVIEW'
@@ -189,6 +191,20 @@ export const CashflowPage: React.FC = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState<boolean>(false);
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState<boolean>(false);
+  const [depositModalAccountId, setDepositModalAccountId] = useState<string | undefined>(undefined);
+  const [isAccountHistoryOpen, setIsAccountHistoryOpen] = useState<boolean>(false);
+  const [accountHistoryId, setAccountHistoryId] = useState<string | null>(null);
+
+  const handleOpenDepositModal = (targetAccountId?: string) => {
+    setDepositModalAccountId(targetAccountId);
+    setIsDepositModalOpen(true);
+  };
+
+  const handleOpenAccountHistory = (targetAccountId: string) => {
+    setAccountHistoryId(targetAccountId);
+    setIsAccountHistoryOpen(true);
+  };
 
   // Keep workspace shop in sync if changed from header
   useEffect(() => {
@@ -672,7 +688,13 @@ export const CashflowPage: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-3 shrink-0 ml-3">
-                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                          <span
+                            className={`text-sm font-semibold ${
+                              Number(acc.currentBalance || 0) < 0
+                                ? 'text-rose-600 dark:text-rose-400'
+                                : 'text-gray-900 dark:text-white'
+                            }`}
+                          >
                             {Number(acc.currentBalance || 0).toLocaleString('vi-VN')} đ
                           </span>
                           <DropdownMenu>
@@ -684,13 +706,22 @@ export const CashflowPage: React.FC = () => {
                                 <MoreVertical size={16} />
                               </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="min-w-[190px]">
+                            <DropdownMenuContent align="end" className="min-w-[210px]">
+                              <DropdownMenuItem onClick={() => handleOpenDepositModal(acc.id)}>
+                                <ArrowDownLeft size={14} className="mr-2 text-emerald-500" />
+                                Nạp tiền vào ví này
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenAccountHistory(acc.id)}>
+                                <Clock size={14} className="mr-2 text-blue-500" />
+                                Lịch sử nạp rút & GD
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => setIsTransferModalOpen(true)}>
                                 <ArrowLeftRight size={14} className="mr-2 text-indigo-400" />
                                 Chuyển tiền từ ví này
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setActiveTab('ACCOUNTS')}>
-                                <Landmark size={14} className="mr-2 text-emerald-400" />
+                                <Landmark size={14} className="mr-2 text-purple-400" />
                                 Chi tiết tài khoản
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -1958,6 +1989,14 @@ export const CashflowPage: React.FC = () => {
 
             <div className="flex items-center gap-2 shrink-0">
               <Button
+                size="sm"
+                onClick={() => handleOpenDepositModal()}
+                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+              >
+                <ArrowDownLeft size={14} />
+                <span>Nạp tiền vào quỹ</span>
+              </Button>
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsTransferModalOpen(true)}
@@ -1978,40 +2017,94 @@ export const CashflowPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {accounts.map((acc) => (
-              <div
-                key={acc.id}
-                className="p-4 sm:p-5 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs space-y-3.5"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#5865f2] dark:text-[#7b85f5]">
-                      {acc.type}
-                    </span>
-                    <h4 className="font-semibold text-base text-gray-900 dark:text-white mt-0.5 truncate">
-                      {acc.name}
-                    </h4>
-                    {acc.accountNumber && (
-                      <p className="text-xs font-mono text-gray-500 dark:text-gray-400 truncate">
-                        {acc.accountNumber} ({acc.bankName})
-                      </p>
+            {accounts.map((acc) => {
+              const isAccNeg = Number(acc.currentBalance || 0) < 0;
+              return (
+                <div
+                  key={acc.id}
+                  className="p-4 sm:p-5 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs space-y-3.5 flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#5865f2] dark:text-[#7b85f5]">
+                          {acc.type}
+                        </span>
+                        <h4 className="font-semibold text-base text-gray-900 dark:text-white mt-0.5 truncate">
+                          {acc.name}
+                        </h4>
+                        {acc.accountNumber && (
+                          <p className="text-xs font-mono text-gray-500 dark:text-gray-400 truncate">
+                            {acc.accountNumber} ({acc.bankName})
+                          </p>
+                        )}
+                      </div>
+                      <div className="p-2.5 rounded bg-gray-100 dark:bg-[#1a1b23] text-gray-600 dark:text-gray-400 shrink-0 ml-2">
+                        <Landmark size={18} />
+                      </div>
+                    </div>
+
+                    <div
+                      className={`p-3 rounded transition-colors ${
+                        isAccNeg
+                          ? 'bg-rose-500/10 border border-rose-500/20'
+                          : 'bg-gray-50 dark:bg-[#1a1b23]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-gray-400">Số dư hiện tại:</span>
+                        {isAccNeg && (
+                          <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">
+                            Đang âm
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        className={`text-xl sm:text-2xl font-bold ${
+                          isAccNeg
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : 'text-gray-900 dark:text-white'
+                        }`}
+                      >
+                        {Number(acc.currentBalance).toLocaleString('vi-VN')}đ
+                      </div>
+                    </div>
+
+                    {acc.note && (
+                      <p className="text-xs text-gray-500 italic truncate">{acc.note}</p>
                     )}
                   </div>
-                  <div className="p-2.5 rounded bg-gray-100 dark:bg-[#1a1b23] text-gray-600 dark:text-gray-400 shrink-0 ml-2">
-                    <Landmark size={18} />
+
+                  {/* Card Actions: Nạp tiền / Xem lịch sử / Chuyển tiền */}
+                  <div className="pt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenDepositModal(acc.id)}
+                      className="flex-1 py-1.5 px-2 text-xs font-medium rounded border border-emerald-300 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <ArrowDownLeft size={13} />
+                      <span>Nạp tiền</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAccountHistory(acc.id)}
+                      className="flex-1 py-1.5 px-2 text-xs font-medium rounded border border-blue-300 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Clock size={13} />
+                      <span>Lịch sử GD</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsTransferModalOpen(true)}
+                      className="py-1.5 px-2 text-xs font-medium rounded border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center cursor-pointer"
+                      title="Chuyển tiền từ ví này"
+                    >
+                      <ArrowLeftRight size={13} />
+                    </button>
                   </div>
                 </div>
-
-                <div className="p-3 bg-gray-50 dark:bg-[#1a1b23] rounded">
-                  <span className="text-[11px] text-gray-400">Số dư hiện tại:</span>
-                  <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                    {Number(acc.currentBalance).toLocaleString('vi-VN')}đ
-                  </div>
-                </div>
-
-                {acc.note && <p className="text-xs text-gray-500 italic truncate">{acc.note}</p>}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -2290,6 +2383,31 @@ export const CashflowPage: React.FC = () => {
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
         onSuccess={() => loadBaseData()}
+      />
+
+      <DepositFundsModal
+        isOpen={isDepositModalOpen}
+        onClose={() => setIsDepositModalOpen(false)}
+        onSuccess={() => {
+          loadBaseData();
+          if (activeTab === 'TRANSACTIONS') loadTransactions();
+        }}
+        initialAccountId={depositModalAccountId}
+        accounts={accounts}
+        categories={categories}
+      />
+
+      <AccountTransactionsModal
+        isOpen={isAccountHistoryOpen}
+        onClose={() => setIsAccountHistoryOpen(false)}
+        accountId={accountHistoryId}
+        onOpenDepositModal={(targetId) => {
+          handleOpenDepositModal(targetId || accountHistoryId || undefined);
+        }}
+        onOpenTransferModal={(targetId) => {
+          setIsTransferModalOpen(true);
+        }}
+        accounts={accounts}
       />
     </div>
   );

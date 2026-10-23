@@ -23,6 +23,9 @@ export interface ProductImportTransaction {
   stockAfter: number;
   note?: string | null;
   createdAt: string;
+  transactionType?: 'IMPORT' | 'RETURN';
+  reason?: string | null;
+  debtOffsetAmount?: number;
 }
 
 @Injectable()
@@ -315,9 +318,72 @@ export class ReportsService {
     let summaryAgg: any = { _count: { id: 0 }, _sum: {} };
     let itemsAgg: any = { _sum: {} };
     let receipts: any[] = [];
+    let purchaseReturns: any[] = [];
+
+    // Filter for purchase returns
+    const returnWhere: Prisma.PurchaseReturnWhereInput = {
+      tenantId,
+      status: 'CONFIRMED',
+    };
+    if (start || end) {
+      returnWhere.returnDate = {};
+      if (start) {
+        const startDateObj = new Date(start);
+        startDateObj.setHours(0, 0, 0, 0);
+        returnWhere.returnDate.gte = startDateObj;
+      }
+      if (end) {
+        const endDateObj = new Date(end);
+        if (end.length <= 10) {
+          endDateObj.setHours(23, 59, 59, 999);
+        }
+        returnWhere.returnDate.lte = endDateObj;
+      }
+    }
+    if (filter.supplierId && filter.supplierId !== 'ALL') {
+      returnWhere.supplierId = filter.supplierId;
+    }
+    const receiptWhere: Prisma.PurchaseReceiptWhereInput = {};
+    let hasReceiptWhere = false;
+
+    if (allowedShopIds && allowedShopIds.length > 0) {
+      if (filter.shopId) {
+        if (filter.shopId === 'CENTRAL' || filter.shopId === 'NONE') {
+          receiptWhere.shopId = null;
+          hasReceiptWhere = true;
+        } else if (allowedShopIds.includes(filter.shopId)) {
+          receiptWhere.shopId = filter.shopId;
+          hasReceiptWhere = true;
+        } else {
+          returnWhere.id = '00000000-0000-0000-0000-000000000000';
+        }
+      } else {
+        returnWhere.OR = [
+          { receiptId: null },
+          { receipt: { shopId: { in: allowedShopIds } } },
+          { receipt: { shopId: null } },
+        ];
+      }
+    } else if (filter.shopId && filter.shopId !== 'ALL') {
+      if (filter.shopId === 'CENTRAL' || filter.shopId === 'NONE') {
+        receiptWhere.shopId = null;
+        hasReceiptWhere = true;
+      } else {
+        receiptWhere.shopId = filter.shopId;
+        hasReceiptWhere = true;
+      }
+    }
+    if (filter.warehouseId && filter.warehouseId !== 'ALL') {
+      receiptWhere.warehouseId = filter.warehouseId;
+      hasReceiptWhere = true;
+    }
+
+    if (hasReceiptWhere) {
+      returnWhere.receipt = receiptWhere;
+    }
 
     try {
-      const [sAgg, rList] = await Promise.all([
+      const [sAgg, rList, retList] = await Promise.all([
         this.prisma.purchaseReceipt.aggregate({
           where,
           _count: { id: true },
@@ -346,9 +412,40 @@ export class ReportsService {
             },
           },
         }),
+        this.prisma.purchaseReturn.findMany({
+          where: returnWhere,
+          orderBy: [{ returnDate: 'desc' }, { createdAt: 'desc' }],
+          take: 1000,
+          include: {
+            supplier: { select: { id: true, name: true, code: true } },
+            receipt: {
+              select: {
+                id: true,
+                receiptCode: true,
+                warehouseId: true,
+                warehouse: { select: { id: true, name: true, code: true } },
+                shopId: true,
+                shop: { select: { id: true, name: true, code: true } },
+              },
+            },
+            items: {
+              include: {
+                variant: {
+                  select: {
+                    id: true,
+                    name: true,
+                    sku: true,
+                    product: { select: { id: true, name: true } },
+                  },
+                },
+              },
+            },
+          },
+        }),
       ]);
       summaryAgg = sAgg;
       receipts = rList;
+      purchaseReturns = retList || [];
 
       try {
         itemsAgg = await this.prisma.purchaseReceiptItem.aggregate({
@@ -369,7 +466,14 @@ export class ReportsService {
 
     const totalReceipts = summaryAgg._count.id || receipts.length || 0;
     const totalItemsAmount = Number(summaryAgg._sum.totalItemsAmount || 0);
-    const totalReturnDeductionAmount = Number(summaryAgg._sum.returnDeductionAmount || 0);
+    const confirmedReturnsTotal = purchaseReturns.reduce(
+      (acc, r) => acc + Number(r.debtOffsetAmount || r.totalReturnAmount || 0),
+      0,
+    );
+    const totalReturnDeductionAmount = Math.max(
+      Number(summaryAgg._sum.returnDeductionAmount || 0),
+      confirmedReturnsTotal,
+    );
     const netItemsAmount = Math.max(0, totalItemsAmount - totalReturnDeductionAmount);
     const totalPayableAmount = Math.max(0, Number(summaryAgg._sum.payableAmount || 0) - totalReturnDeductionAmount);
     const totalPaidAmount = Number(summaryAgg._sum.paidAmount || 0);
@@ -382,11 +486,14 @@ export class ReportsService {
 
     try {
       const variantIds = Array.from(
-        new Set(
-          receipts
+        new Set([
+          ...receipts
             .flatMap((r) => (r.items || []).map((it: any) => it.variantId))
             .filter(Boolean),
-        ),
+          ...purchaseReturns
+            .flatMap((ret) => (ret.items || []).map((it: any) => it.variantId))
+            .filter(Boolean),
+        ]),
       );
 
       if (variantIds.length > 0) {
@@ -458,7 +565,7 @@ export class ReportsService {
             }
             runningStock = after;
 
-            if (l.referenceType === 'PURCHASE_RECEIPT' && l.referenceId) {
+            if ((l.referenceType === 'PURCHASE_RECEIPT' || l.referenceType === 'PURCHASE_RETURN') && l.referenceId) {
               receiptVariantStockMap.set(`${l.referenceId}_${l.variantId}`, {
                 stockBefore: before,
                 stockAfter: after,
@@ -468,7 +575,7 @@ export class ReportsService {
         }
       }
     } catch (err) {
-      console.warn('Lỗi tính tồn kho trước/sau phiếu nhập từ ledger:', err);
+      console.warn('Lỗi tính tồn kho trước/sau phiếu nhập/trả từ ledger:', err);
     }
 
     // Chronological cumulative fallback for any receipt items not matched in ledger
@@ -540,8 +647,13 @@ export class ReportsService {
         productName: string;
         variationName: string | null;
         quantity: number;
+        grossQuantity: number;
+        returnedQuantity: number;
         totalAmount: number;
+        grossAmount: number;
+        returnedAmount: number;
         receiptsCount: number;
+        returnsCount: number;
         transactions: ProductImportTransaction[];
       }>;
     }>();
@@ -552,8 +664,13 @@ export class ReportsService {
       productName: string;
       variationName: string | null;
       quantity: number;
+      grossQuantity: number;
+      returnedQuantity: number;
       totalAmount: number;
+      grossAmount: number;
+      returnedAmount: number;
       receiptsCount: number;
+      returnsCount: number;
       suppliers: Set<string>;
       transactions: ProductImportTransaction[];
     }>();
@@ -645,15 +762,7 @@ export class ReportsService {
         paidAmount: 0,
         remainingAmount: 0,
         quantity: 0,
-        skuMap: new Map<string, {
-          sku: string;
-          productName: string;
-          variationName: string | null;
-          quantity: number;
-          totalAmount: number;
-          receiptsCount: number;
-          transactions: ProductImportTransaction[];
-        }>(),
+        skuMap: new Map(),
       };
       currentSupplier.count += 1;
       currentSupplier.totalAmount += itemsAmt;
@@ -675,13 +784,20 @@ export class ReportsService {
           productName: item.productName || 'Chưa đặt tên',
           variationName: item.variationName || null,
           quantity: 0,
+          grossQuantity: 0,
+          returnedQuantity: 0,
           totalAmount: 0,
+          grossAmount: 0,
+          returnedAmount: 0,
           receiptsCount: 0,
+          returnsCount: 0,
           suppliers: new Set<string>(),
           transactions: [] as ProductImportTransaction[],
         };
-        currentItem.quantity += itQty;
-        currentItem.totalAmount += itSubtotal;
+        currentItem.grossQuantity += itQty;
+        currentItem.grossAmount += itSubtotal;
+        currentItem.quantity = Math.max(0, currentItem.grossQuantity - currentItem.returnedQuantity);
+        currentItem.totalAmount = Math.max(0, currentItem.grossAmount - currentItem.returnedAmount);
         currentItem.receiptsCount += 1;
         currentItem.suppliers.add(supName);
 
@@ -691,12 +807,19 @@ export class ReportsService {
           productName: item.productName || 'Chưa đặt tên',
           variationName: item.variationName || null,
           quantity: 0,
+          grossQuantity: 0,
+          returnedQuantity: 0,
           totalAmount: 0,
+          grossAmount: 0,
+          returnedAmount: 0,
           receiptsCount: 0,
+          returnsCount: 0,
           transactions: [] as ProductImportTransaction[],
         };
-        currentSupItem.quantity += itQty;
-        currentSupItem.totalAmount += itSubtotal;
+        currentSupItem.grossQuantity += itQty;
+        currentSupItem.grossAmount += itSubtotal;
+        currentSupItem.quantity = Math.max(0, currentSupItem.grossQuantity - currentSupItem.returnedQuantity);
+        currentSupItem.totalAmount = Math.max(0, currentSupItem.grossAmount - currentSupItem.returnedAmount);
         currentSupItem.receiptsCount += 1;
 
         // Transaction detail with stockBefore and stockAfter
@@ -729,6 +852,128 @@ export class ReportsService {
           createdAt: r.createdAt
             ? (r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt))
             : '',
+          transactionType: 'IMPORT',
+        };
+
+        currentItem.transactions.push(txObj);
+        currentSupItem.transactions.push(txObj);
+
+        skuMap.set(itemKey, currentItem);
+        currentSupplier.skuMap.set(itemKey, currentSupItem);
+      }
+
+      supplierMap.set(supId, currentSupplier);
+    }
+
+    // Process Goods Returned to Supplier (PurchaseReturns) per SKU
+    for (const ret of purchaseReturns) {
+      const supId = ret.supplierId || 'UNKNOWN';
+      const supName = ret.supplier?.name || 'Nhà cung cấp không xác định';
+      const supCode = ret.supplier?.code || 'NCC-UNKNOWN';
+
+      const currentSupplier = supplierMap.get(supId) || {
+        supplierId: supId,
+        supplierName: supName,
+        supplierCode: supCode,
+        count: 0,
+        totalAmount: 0,
+        returnDeduction: 0,
+        netAmount: 0,
+        paidAmount: 0,
+        remainingAmount: 0,
+        quantity: 0,
+        skuMap: new Map(),
+      };
+
+      const retItems = Array.isArray(ret.items) ? ret.items : [];
+      for (const item of retItems) {
+        const itemKey = item.sku || item.variant?.sku || item.variant?.product?.name || item.id;
+        const itQty = Number(item.quantity) || 0;
+        const unitPrice = Number(item.unitPrice || 0);
+        const itSubtotal = Number(item.subtotal || 0) || (itQty * unitPrice);
+
+        const productName = item.variant?.product?.name || item.variant?.name || item.sku || 'Chưa đặt tên';
+        const variationName = item.variant?.name || null;
+
+        // Global SKU
+        const currentItem = skuMap.get(itemKey) || {
+          sku: item.sku || item.variant?.sku || 'N/A',
+          productName,
+          variationName,
+          quantity: 0,
+          grossQuantity: 0,
+          returnedQuantity: 0,
+          totalAmount: 0,
+          grossAmount: 0,
+          returnedAmount: 0,
+          receiptsCount: 0,
+          returnsCount: 0,
+          suppliers: new Set<string>(),
+          transactions: [] as ProductImportTransaction[],
+        };
+
+        currentItem.returnedQuantity += itQty;
+        currentItem.returnedAmount += itSubtotal;
+        currentItem.quantity = Math.max(0, currentItem.grossQuantity - currentItem.returnedQuantity);
+        currentItem.totalAmount = Math.max(0, currentItem.grossAmount - currentItem.returnedAmount);
+        currentItem.returnsCount += 1;
+        currentItem.suppliers.add(supName);
+
+        // Supplier-specific SKU
+        const currentSupItem = currentSupplier.skuMap.get(itemKey) || {
+          sku: item.sku || item.variant?.sku || 'N/A',
+          productName,
+          variationName,
+          quantity: 0,
+          grossQuantity: 0,
+          returnedQuantity: 0,
+          totalAmount: 0,
+          grossAmount: 0,
+          returnedAmount: 0,
+          receiptsCount: 0,
+          returnsCount: 0,
+          transactions: [] as ProductImportTransaction[],
+        };
+
+        currentSupItem.returnedQuantity += itQty;
+        currentSupItem.returnedAmount += itSubtotal;
+        currentSupItem.quantity = Math.max(0, currentSupItem.grossQuantity - currentSupItem.returnedQuantity);
+        currentSupItem.totalAmount = Math.max(0, currentSupItem.grossAmount - currentSupItem.returnedAmount);
+        currentSupItem.returnsCount += 1;
+
+        // Transaction detail with stockBefore and stockAfter
+        const txStock = receiptVariantStockMap.get(`${ret.id}_${item.variantId}`) || {
+          stockBefore: itQty,
+          stockAfter: 0,
+        };
+
+        const txObj: ProductImportTransaction = {
+          receiptId: ret.id,
+          receiptCode: ret.returnCode,
+          receiptDate: ret.returnDate
+            ? (ret.returnDate instanceof Date ? ret.returnDate.toISOString() : String(ret.returnDate))
+            : (ret.createdAt instanceof Date ? ret.createdAt.toISOString() : String(ret.createdAt || '')),
+          supplierId: ret.supplierId || undefined,
+          supplierName: supName,
+          supplierCode: supCode,
+          warehouseId: ret.receipt?.warehouseId || undefined,
+          warehouseName: ret.receipt?.warehouse?.name || 'Kho xuất trả',
+          shopId: ret.receipt?.shopId || null,
+          shopName: ret.receipt?.shop?.name || 'Kho chung',
+          paymentStatus: Number(ret.debtOffsetAmount || 0) > 0 ? 'DEBT_OFFSET' : 'RETURNED',
+          orderedQuantity: 0,
+          receivedQuantity: -itQty, // Negative indicates goods returned to supplier
+          unitPrice,
+          subtotal: -itSubtotal, // Negative subtotal reflects goods returned
+          stockBefore: txStock.stockBefore,
+          stockAfter: txStock.stockAfter,
+          note: ret.note || ret.reason || 'Xuất trả hàng cho NCC',
+          createdAt: ret.createdAt
+            ? (ret.createdAt instanceof Date ? ret.createdAt.toISOString() : String(ret.createdAt))
+            : '',
+          transactionType: 'RETURN',
+          reason: ret.reason || null,
+          debtOffsetAmount: Number(ret.debtOffsetAmount || 0),
         };
 
         currentItem.transactions.push(txObj);
@@ -756,7 +1001,14 @@ export class ReportsService {
       const skus = Array.from(s.skuMap.values())
         .map((it) => ({
           ...it,
-          avgPrice: it.quantity > 0 ? Math.round(it.totalAmount / it.quantity) : 0,
+          grossQuantity: it.grossQuantity,
+          returnedQuantity: it.returnedQuantity,
+          netQuantity: it.quantity,
+          grossAmount: it.grossAmount,
+          returnedAmount: it.returnedAmount,
+          netAmount: it.totalAmount,
+          returnsCount: it.returnsCount,
+          avgPrice: it.grossQuantity > 0 ? Math.round(it.grossAmount / it.grossQuantity) : (it.returnedQuantity > 0 ? Math.round(it.returnedAmount / it.returnedQuantity) : 0),
           transactions: it.transactions.sort((a, b) => {
             const timeA = new Date(a.receiptDate || a.createdAt).getTime();
             const timeB = new Date(b.receiptDate || b.createdAt).getTime();
@@ -787,10 +1039,17 @@ export class ReportsService {
         productName: it.productName,
         variationName: it.variationName,
         quantity: it.quantity,
+        grossQuantity: it.grossQuantity,
+        returnedQuantity: it.returnedQuantity,
+        netQuantity: it.quantity,
         totalAmount: it.totalAmount,
+        grossAmount: it.grossAmount,
+        returnedAmount: it.returnedAmount,
+        netAmount: it.totalAmount,
         receiptsCount: it.receiptsCount,
+        returnsCount: it.returnsCount,
         suppliers: Array.from(it.suppliers),
-        avgPrice: it.quantity > 0 ? Math.round(it.totalAmount / it.quantity) : 0,
+        avgPrice: it.grossQuantity > 0 ? Math.round(it.grossAmount / it.grossQuantity) : (it.returnedQuantity > 0 ? Math.round(it.returnedAmount / it.returnedQuantity) : 0),
         transactions: it.transactions.sort((a, b) => {
           const timeA = new Date(a.receiptDate || a.createdAt).getTime();
           const timeB = new Date(b.receiptDate || b.createdAt).getTime();
@@ -1140,7 +1399,178 @@ export class ReportsService {
       ],
     });
 
+    const variantIds = variants.map((v) => v.id);
+
+    // 3b. Query inventory balances, ledgers and purchase receipts to calculate stockBefore
+    const [balances, ledgers, receiptItemsInScope] = await Promise.all([
+      this.prisma.inventoryBalance.findMany({
+        where: {
+          tenantId,
+          variantId: { in: variantIds },
+          ...(filter.warehouseId && filter.warehouseId !== 'ALL' ? { warehouseId: filter.warehouseId } : {}),
+        },
+        select: {
+          warehouseId: true,
+          variantId: true,
+          onHand: true,
+        },
+      }),
+      this.prisma.inventoryLedger.findMany({
+        where: {
+          tenantId,
+          variantId: { in: variantIds },
+          ...(filter.warehouseId && filter.warehouseId !== 'ALL' ? { warehouseId: filter.warehouseId } : {}),
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+        select: {
+          id: true,
+          warehouseId: true,
+          variantId: true,
+          movementType: true,
+          deltaOnHand: true,
+          beforeOnHand: true,
+          afterOnHand: true,
+          referenceType: true,
+          referenceId: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.purchaseReceiptItem.findMany({
+        where: {
+          tenantId,
+          variantId: { in: variantIds },
+          receipt: receiptWhere,
+        },
+        select: {
+          id: true,
+          receiptId: true,
+          variantId: true,
+          receivedQuantity: true,
+          receipt: {
+            select: {
+              id: true,
+              receiptCode: true,
+              receiptDate: true,
+              warehouseId: true,
+              createdAt: true,
+            },
+          },
+        },
+        orderBy: [
+          { receipt: { receiptDate: 'asc' } },
+          { receipt: { createdAt: 'asc' } },
+        ],
+      }),
+    ]);
+
+    // Group ledgers by `${variantId}_${warehouseId}`
+    const ledgerGroup = new Map<string, typeof ledgers>();
+    for (const l of ledgers) {
+      const key = `${l.variantId}_${l.warehouseId}`;
+      const list = ledgerGroup.get(key) || [];
+      list.push(l);
+      ledgerGroup.set(key, list);
+    }
+
+    // Create balance lookup: `${variantId}_${warehouseId}` -> onHand
+    const balanceMap = new Map<string, number>();
+    for (const b of balances) {
+      balanceMap.set(`${b.variantId}_${b.warehouseId}`, Number(b.onHand || 0));
+    }
+
+    // Map: `${receiptId}_${variantId}` -> { stockBefore, stockAfter }
+    const receiptVariantStockMap = new Map<string, { stockBefore: number; stockAfter: number }>();
+    // Map: `${variantId}_${warehouseId}` -> stockAtStart
+    const warehouseInitialStockMap = new Map<string, number>();
+
+    const startDateObj = start ? new Date(start) : null;
+    if (startDateObj) startDateObj.setHours(0, 0, 0, 0);
+
+    for (const [key, vLedgers] of ledgerGroup.entries()) {
+      const currentOnHand = balanceMap.get(key) ?? 0;
+      const sumDelta = vLedgers.reduce((acc, l) => acc + (l.deltaOnHand || 0), 0);
+      const initialOnHand = currentOnHand - sumDelta;
+
+      let runningStock = initialOnHand;
+      let stockAtStartPeriod: number | null = null;
+
+      for (const l of vLedgers) {
+        let before = runningStock;
+        if (l.beforeOnHand !== null && l.beforeOnHand !== undefined) {
+          before = l.beforeOnHand;
+        }
+        let after = before + (l.deltaOnHand || 0);
+        if (l.afterOnHand !== null && l.afterOnHand !== undefined) {
+          after = l.afterOnHand;
+        }
+        runningStock = after;
+
+        if (startDateObj) {
+          const lDate = new Date(l.createdAt);
+          if (lDate < startDateObj) {
+            stockAtStartPeriod = after;
+          }
+        }
+
+        if (l.referenceType === 'PURCHASE_RECEIPT' && l.referenceId) {
+          receiptVariantStockMap.set(`${l.referenceId}_${l.variantId}`, {
+            stockBefore: before,
+            stockAfter: after,
+          });
+        }
+      }
+
+      warehouseInitialStockMap.set(key, stockAtStartPeriod !== null ? stockAtStartPeriod : initialOnHand);
+    }
+
+    // Group earliest receipt in scope by variant and warehouse
+    const variantEarliestReceiptMap = new Map<string, Map<string, typeof receiptItemsInScope[0]>>();
+    for (const ri of receiptItemsInScope) {
+      const whId = ri.receipt.warehouseId;
+      const whMap = variantEarliestReceiptMap.get(ri.variantId) || new Map<string, typeof receiptItemsInScope[0]>();
+      if (!whMap.has(whId)) {
+        whMap.set(whId, ri);
+      }
+      variantEarliestReceiptMap.set(ri.variantId, whMap);
+    }
+
+    // Calculate stockBefore for each variant
+    const variantStockBeforeMap = new Map<string, number>();
+    for (const v of variants) {
+      const whMap = variantEarliestReceiptMap.get(v.id);
+      let variantStockBefore = 0;
+
+      const variantWarehouses = v.inventoryBalances.map((b) => b.warehouseId);
+      const targetWarehouses =
+        filter.warehouseId && filter.warehouseId !== 'ALL'
+          ? [filter.warehouseId]
+          : variantWarehouses.length > 0
+          ? variantWarehouses
+          : ['DEFAULT'];
+
+      for (const whId of targetWarehouses) {
+        const key = `${v.id}_${whId}`;
+        const earliestReceiptItem = whMap?.get(whId);
+
+        if (earliestReceiptItem) {
+          const rStock = receiptVariantStockMap.get(`${earliestReceiptItem.receiptId}_${v.id}`);
+          if (rStock !== undefined) {
+            variantStockBefore += rStock.stockBefore;
+          } else {
+            variantStockBefore += warehouseInitialStockMap.get(key) ?? balanceMap.get(key) ?? 0;
+          }
+        } else {
+          variantStockBefore += warehouseInitialStockMap.get(key) ?? balanceMap.get(key) ?? 0;
+        }
+      }
+
+      variantStockBeforeMap.set(v.id, variantStockBefore);
+    }
+
     // 4. Combine and calculate metrics per variant
+    let totalStockBefore = 0;
     let totalGrossImported = 0;
     let totalSupplierReturned = 0;
     let totalImportedQuantity = 0;
@@ -1167,6 +1597,9 @@ export class ReportsService {
       const available = Math.max(0, onHand - reserved);
       const damaged = v.inventoryBalances.reduce((acc, b) => acc + (b.damaged || 0), 0);
 
+      // Stock before import (Số hàng trước nhập)
+      const stockBefore = variantStockBeforeMap.get(v.id) ?? 0;
+
       // Inbound: Gross receipt import minus returned to supplier = Net imported quantity
       const grossImportedQty = rData.receivedQty;
       const supplierReturnedQty = prData.returnedQty;
@@ -1177,10 +1610,11 @@ export class ReportsService {
       const customerReturnedQty = orData.sellableQty;
       const exportedQty = Math.max(0, grossExportedQty - customerReturnedQty);
 
-      // Theoretical stock = Net Inbound - Net Outbound
-      const calculatedStock = importedQty - exportedQty;
+      // Theoretical stock = Stock Before Import + Net Inbound - Net Outbound
+      const calculatedStock = stockBefore + importedQty - exportedQty;
       const discrepancy = onHand - calculatedStock;
 
+      totalStockBefore += stockBefore;
       totalGrossImported += grossImportedQty;
       totalSupplierReturned += supplierReturnedQty;
       totalImportedQuantity += importedQty;
@@ -1220,6 +1654,7 @@ export class ReportsService {
         unit: v.unit,
         costPrice: Number(v.costPrice || 0),
         sellingPrice: Number(v.sellingPrice || 0),
+        stockBefore,
         grossImportedQuantity: grossImportedQty,
         supplierReturnedQuantity: supplierReturnedQty,
         importedQuantity: importedQty,
@@ -1261,6 +1696,7 @@ export class ReportsService {
     return {
       summary: {
         totalVariants: variants.length,
+        totalStockBefore,
         totalGrossImported,
         totalSupplierReturned,
         totalImportedQuantity,
@@ -1405,6 +1841,7 @@ export class ReportsService {
             id: true,
             receiptCode: true,
             receiptDate: true,
+            warehouseId: true,
             paymentStatus: true,
             supplier: { select: { id: true, name: true, code: true } },
             warehouse: { select: { id: true, name: true, code: true } },
@@ -1536,6 +1973,172 @@ export class ReportsService {
       take: 100,
     });
 
+    // Query ledgers for this variant to calculate stockBefore and stockAfter
+    const [balances, ledgers] = await Promise.all([
+      this.prisma.inventoryBalance.findMany({
+        where: {
+          tenantId,
+          variantId,
+          ...(filter.warehouseId && filter.warehouseId !== 'ALL' ? { warehouseId: filter.warehouseId } : {}),
+        },
+        select: {
+          warehouseId: true,
+          variantId: true,
+          onHand: true,
+        },
+      }),
+      this.prisma.inventoryLedger.findMany({
+        where: {
+          tenantId,
+          variantId,
+          ...(filter.warehouseId && filter.warehouseId !== 'ALL' ? { warehouseId: filter.warehouseId } : {}),
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+        select: {
+          id: true,
+          warehouseId: true,
+          variantId: true,
+          movementType: true,
+          deltaOnHand: true,
+          beforeOnHand: true,
+          afterOnHand: true,
+          referenceType: true,
+          referenceId: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    // Group ledgers by `${variantId}_${warehouseId}`
+    const ledgerGroup = new Map<string, typeof ledgers>();
+    for (const l of ledgers) {
+      const key = `${l.variantId}_${l.warehouseId}`;
+      const list = ledgerGroup.get(key) || [];
+      list.push(l);
+      ledgerGroup.set(key, list);
+    }
+
+    const balanceMap = new Map<string, number>();
+    for (const b of balances) {
+      balanceMap.set(`${b.variantId}_${b.warehouseId}`, Number(b.onHand || 0));
+    }
+
+    const receiptVariantStockMap = new Map<string, { stockBefore: number; stockAfter: number }>();
+    const warehouseInitialStockMap = new Map<string, number>();
+
+    const startDateObj = start ? new Date(start) : null;
+    if (startDateObj) startDateObj.setHours(0, 0, 0, 0);
+
+    for (const [key, vLedgers] of ledgerGroup.entries()) {
+      const currentOnHand = balanceMap.get(key) ?? 0;
+      const sumDelta = vLedgers.reduce((acc, l) => acc + (l.deltaOnHand || 0), 0);
+      const initialOnHand = currentOnHand - sumDelta;
+
+      let runningStock = initialOnHand;
+      let stockAtStartPeriod: number | null = null;
+
+      for (const l of vLedgers) {
+        let before = runningStock;
+        if (l.beforeOnHand !== null && l.beforeOnHand !== undefined) {
+          before = l.beforeOnHand;
+        }
+        let after = before + (l.deltaOnHand || 0);
+        if (l.afterOnHand !== null && l.afterOnHand !== undefined) {
+          after = l.afterOnHand;
+        }
+        runningStock = after;
+
+        if (startDateObj) {
+          const lDate = new Date(l.createdAt);
+          if (lDate < startDateObj) {
+            stockAtStartPeriod = after;
+          }
+        }
+
+        if (l.referenceType === 'PURCHASE_RECEIPT' && l.referenceId) {
+          receiptVariantStockMap.set(`${l.referenceId}_${l.variantId}`, {
+            stockBefore: before,
+            stockAfter: after,
+          });
+        }
+      }
+
+      warehouseInitialStockMap.set(key, stockAtStartPeriod !== null ? stockAtStartPeriod : initialOnHand);
+    }
+
+    // Chronological fallback for any receipt items not matched in ledger
+    const chronologicalReceipts = [...receiptItems].sort((a, b) => {
+      const timeA = new Date(a.receipt.receiptDate || a.createdAt).getTime();
+      const timeB = new Date(b.receipt.receiptDate || b.createdAt).getTime();
+      return timeA - timeB;
+    });
+
+    const fallbackStockMap = new Map<string, number>();
+    for (const ri of chronologicalReceipts) {
+      const key = `${ri.receipt.id}_${variantId}`;
+      const itQty = Number(ri.receivedQuantity) || 0;
+      const prevFallback = fallbackStockMap.get(variantId) || 0;
+      const nextFallback = prevFallback + itQty;
+      fallbackStockMap.set(variantId, nextFallback);
+
+      if (!receiptVariantStockMap.has(key)) {
+        receiptVariantStockMap.set(key, {
+          stockBefore: prevFallback,
+          stockAfter: nextFallback,
+        });
+      }
+    }
+
+    // Earliest receipt in scope per warehouse
+    const whEarliestReceiptMap = new Map<string, typeof receiptItems[0]>();
+    for (const ri of chronologicalReceipts) {
+      const whId = ri.receipt.warehouseId;
+      if (!whEarliestReceiptMap.has(whId)) {
+        whEarliestReceiptMap.set(whId, ri);
+      }
+    }
+
+    let variantStockBefore = 0;
+    const variantWarehouses = variant.inventoryBalances.map((b) => b.warehouseId);
+    const targetWarehouses =
+      filter.warehouseId && filter.warehouseId !== 'ALL'
+        ? [filter.warehouseId]
+        : variantWarehouses.length > 0
+        ? variantWarehouses
+        : ['DEFAULT'];
+
+    for (const whId of targetWarehouses) {
+      const key = `${variantId}_${whId}`;
+      const earliestReceipt = whEarliestReceiptMap.get(whId);
+      if (earliestReceipt) {
+        const rStock = receiptVariantStockMap.get(`${earliestReceipt.receipt.id}_${variantId}`);
+        if (rStock !== undefined) {
+          variantStockBefore += rStock.stockBefore;
+        } else {
+          variantStockBefore += warehouseInitialStockMap.get(key) ?? balanceMap.get(key) ?? 0;
+        }
+      } else {
+        variantStockBefore += warehouseInitialStockMap.get(key) ?? balanceMap.get(key) ?? 0;
+      }
+    }
+
+    const totalImported = Math.max(
+      0,
+      receiptItems.reduce((acc, ri) => acc + ri.receivedQuantity, 0) -
+        purchaseReturnItems.reduce((acc, pri) => acc + pri.quantity, 0),
+    );
+    const totalExported = Math.max(
+      0,
+      orderItems.reduce((acc, oi) => acc + oi.quantity, 0) -
+        orderReturnItems.reduce((acc, ori) => acc + (ori.sellableQuantity || 0), 0),
+    );
+    const totalOnHand = variant.inventoryBalances.reduce((acc, b) => acc + b.onHand, 0);
+    const calculatedStock = variantStockBefore + totalImported - totalExported;
+    const discrepancy = totalOnHand - calculatedStock;
+    const reconciliationStatus = discrepancy === 0 ? 'BALANCED' : discrepancy > 0 ? 'SURPLUS' : 'DEFICIT';
+
     return {
       variant: {
         id: variant.id,
@@ -1547,6 +2150,10 @@ export class ReportsService {
         sellingPrice: Number(variant.sellingPrice || 0),
         product: variant.product,
       },
+      stockBefore: variantStockBefore,
+      calculatedStock,
+      discrepancy,
+      reconciliationStatus,
       inventoryBalances: variant.inventoryBalances.map((b) => ({
         warehouseId: b.warehouseId,
         warehouseName: b.warehouse.name,
@@ -1571,19 +2178,24 @@ export class ReportsService {
         originalPrice: Number(oi.originalPrice || 0),
         discountedPrice: Number(oi.discountedPrice || 0),
       })),
-      receipts: receiptItems.map((ri) => ({
-        id: ri.receipt.id,
-        receiptCode: ri.receipt.receiptCode,
-        receiptDate: ri.receipt.receiptDate,
-        supplierName: ri.receipt.supplier?.name || 'N/A',
-        warehouseName: ri.receipt.warehouse?.name || 'Kho chung',
-        shopName: ri.receipt.shop?.name || 'Kho chung',
-        orderedQuantity: ri.orderedQuantity,
-        receivedQuantity: ri.receivedQuantity,
-        unitPrice: Number(ri.unitPrice || 0),
-        subtotal: Number(ri.subtotal || 0),
-        paymentStatus: ri.receipt.paymentStatus,
-      })),
+      receipts: receiptItems.map((ri) => {
+        const txStock = receiptVariantStockMap.get(`${ri.receipt.id}_${variantId}`);
+        return {
+          id: ri.receipt.id,
+          receiptCode: ri.receipt.receiptCode,
+          receiptDate: ri.receipt.receiptDate,
+          supplierName: ri.receipt.supplier?.name || 'N/A',
+          warehouseName: ri.receipt.warehouse?.name || 'Kho chung',
+          shopName: ri.receipt.shop?.name || 'Kho chung',
+          orderedQuantity: ri.orderedQuantity,
+          receivedQuantity: ri.receivedQuantity,
+          unitPrice: Number(ri.unitPrice || 0),
+          subtotal: Number(ri.subtotal || 0),
+          paymentStatus: ri.receipt.paymentStatus,
+          stockBefore: txStock?.stockBefore ?? 0,
+          stockAfter: txStock?.stockAfter ?? ri.receivedQuantity,
+        };
+      }),
       purchaseReturns: purchaseReturnItems.map((pri) => ({
         id: pri.return.id,
         returnCode: pri.return.returnCode,
