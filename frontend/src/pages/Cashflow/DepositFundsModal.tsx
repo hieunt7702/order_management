@@ -178,24 +178,15 @@ export const DepositFundsModal: React.FC<DepositFundsModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      icon={ArrowDownLeft}
+      title="Nạp tiền vào tài khoản / quỹ"
+      subtitle="Bổ sung tiền mặt vào quỹ, góp vốn chủ shop hoặc nạp tiền vào tài khoản ngân hàng"
+    >
       <form onSubmit={handleSubmit}>
-        <div className="p-5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-              <ArrowDownLeft size={22} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
-                Nạp tiền vào tài khoản / quỹ
-              </h3>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Bổ sung tiền mặt vào quỹ, góp vốn chủ shop hoặc nạp tiền vào tài khoản ngân hàng
-              </p>
-            </div>
-          </div>
-        </div>
-
         <ModalBody className="space-y-4">
           {/* 1. Chọn tài khoản nhận tiền */}
           <div>
@@ -204,15 +195,14 @@ export const DepositFundsModal: React.FC<DepositFundsModalProps> = ({
             </label>
             <Select
               value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
+              onChange={(val) => setAccountId(String(val || ''))}
+              options={accounts.map((acc) => ({
+                value: acc.id,
+                label: `${acc.name} (${acc.type === 'CASH' ? 'Tiền mặt' : acc.type === 'PLATFORM_WALLET' ? 'Ví Shopee' : `${acc.bankName || 'Ngân hàng'} ···· ${acc.accountNumber?.slice(-4) || ''}`}) - Số dư: ${Number(acc.currentBalance).toLocaleString('vi-VN')} đ`,
+              }))}
+              placeholder="Chọn tài khoản / quỹ"
               className="w-full text-sm font-medium"
-            >
-              {accounts.map((acc) => (
-                <option key={acc.id} value={acc.id}>
-                  {acc.name} ({acc.type === 'CASH' ? 'Tiền mặt' : acc.type === 'PLATFORM_WALLET' ? 'Ví Shopee' : `${acc.bankName || 'Ngân hàng'} ···· ${acc.accountNumber?.slice(-4) || ''}`}) - Số dư: {Number(acc.currentBalance).toLocaleString('vi-VN')} đ
-                </option>
-              ))}
-            </Select>
+            />
 
             {/* Account Card Preview */}
             {selectedAccount && (
@@ -348,15 +338,17 @@ export const DepositFundsModal: React.FC<DepositFundsModalProps> = ({
               </label>
               <Select
                 value={depositPurpose}
-                onChange={(e) => setDepositPurpose(e.target.value)}
+                onChange={(val) => setDepositPurpose(String(val || 'GOP_VON'))}
+                options={[
+                  { value: 'GOP_VON', label: 'Chủ shop nạp / Góp vốn kinh doanh' },
+                  { value: 'NAP_TIEN_QUY', label: 'Nạp tiền mặt vào két / quỹ' },
+                  { value: 'THU_BAN_HANG', label: 'Tiền bán hàng trực tiếp' },
+                  { value: 'THU_NCC_HOAN_TIEN', label: 'Nhà cung cấp hoàn tiền mặt' },
+                  { value: 'THU_KHAC', label: 'Khoản thu / Nạp khác' },
+                ]}
+                placeholder="Chọn mục đích nạp"
                 className="w-full text-sm"
-              >
-                <option value="GOP_VON">Chủ shop nạp / Góp vốn kinh doanh</option>
-                <option value="NAP_TIEN_QUY">Nạp tiền mặt vào két / quỹ</option>
-                <option value="THU_BAN_HANG">Tiền bán hàng trực tiếp</option>
-                <option value="THU_NCC_HOAN_TIEN">Nhà cung cấp hoàn tiền mặt</option>
-                <option value="THU_KHAC">Khoản thu / Nạp khác</option>
-              </Select>
+              />
             </div>
 
             <div>
@@ -365,14 +357,16 @@ export const DepositFundsModal: React.FC<DepositFundsModalProps> = ({
               </label>
               <Select
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
+                onChange={(val) => setPaymentMethod(String(val || 'BANK_TRANSFER'))}
+                options={[
+                  { value: 'BANK_TRANSFER', label: 'Chuyển khoản ngân hàng' },
+                  { value: 'CASH', label: 'Tiền mặt' },
+                  { value: 'E_WALLET', label: 'Ví điện tử' },
+                  { value: 'OTHER', label: 'Hình thức khác' },
+                ]}
+                placeholder="Chọn hình thức giao dịch"
                 className="w-full text-sm"
-              >
-                <option value="BANK_TRANSFER">Chuyển khoản ngân hàng</option>
-                <option value="CASH">Tiền mặt</option>
-                <option value="E_WALLET">Ví điện tử</option>
-                <option value="OTHER">Hình thức khác</option>
-              </Select>
+              />
             </div>
           </div>
 

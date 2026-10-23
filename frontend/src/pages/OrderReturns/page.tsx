@@ -226,7 +226,7 @@ export const OrderReturnsPage: React.FC = () => {
   const totalItemsWaiting = returnQueue.reduce((sum, q) => sum + q.remainingTotal, 0);
 
   return (
-    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:h-full md:overflow-hidden space-y-2.5 sm:space-y-3 animate-in fade-in duration-300">
       {/* Top Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0 flex-1">
@@ -323,7 +323,7 @@ export const OrderReturnsPage: React.FC = () => {
 
       {/* TAB 1: DANH SÁCH CHỜ NHẬN HOÀN */}
       {activeTab === 'QUEUE' && (
-        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden space-y-3">
           {/* Quick Scanner Bar */}
           <div className="p-3 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
             <div className="relative w-full sm:max-w-md">
@@ -348,7 +348,7 @@ export const OrderReturnsPage: React.FC = () => {
           </div>
 
           {/* Desktop Table View */}
-          <div className="hidden md:flex flex-1 flex-col min-h-fit md:min-h-0">
+          <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
                 <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
@@ -561,9 +561,9 @@ export const OrderReturnsPage: React.FC = () => {
 
       {/* TAB 2: LỊCH SỬ PHIẾU NHẬN HOÀN */}
       {activeTab === 'HISTORY' && (
-        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden space-y-3">
           {/* Desktop Table View */}
-          <div className="hidden md:flex flex-1 flex-col min-h-fit md:min-h-0">
+          <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
             <SystemTableWrapper
               tableClassName="min-w-[1100px]"
               pagination={

@@ -294,7 +294,7 @@ export const SuppliersPage: React.FC = () => {
   const totalPayableDebt = suppliers.reduce((sum, s) => sum + (s.closingDebt > 0 ? s.closingDebt : 0), 0);
 
   return (
-    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:h-full md:overflow-hidden space-y-2.5 sm:space-y-3 animate-in fade-in duration-300">
       {/* 1. Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0 flex-1">
@@ -462,9 +462,9 @@ export const SuppliersPage: React.FC = () => {
       </div>
 
       {/* 4. Desktop Table View */}
-      <div className="hidden md:flex flex-1 flex-col min-h-0">
+      <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
         <SystemTableWrapper
-          tableClassName="min-w-[1000px]"
+          tableClassName="min-w-[1150px]"
           pagination={
             <SystemPagination
               page={page - 1}
@@ -482,6 +482,7 @@ export const SuppliersPage: React.FC = () => {
           <SystemThead>
             <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
             <SystemTh className="w-56">Mã & Tên Nhà Cung Cấp</SystemTh>
+            <SystemTh className="w-32 text-center" align="center">Phiếu nhập kho</SystemTh>
             <SystemTh className="w-44">Thông tin liên hệ</SystemTh>
             <SystemTh className="w-56">Địa chỉ</SystemTh>
             <SystemTh className="w-52">Tài khoản thanh toán</SystemTh>
@@ -492,7 +493,7 @@ export const SuppliersPage: React.FC = () => {
           </SystemThead>
           <SystemTbody>
             {isLoading ? (
-              <SystemTableSkeleton cols={9} rows={7} />
+              <SystemTableSkeleton cols={10} rows={7} />
             ) : filteredSuppliers.length === 0 ? (
               <SystemTableEmpty
                 title="Không có nhà cung cấp nào"
@@ -501,7 +502,7 @@ export const SuppliersPage: React.FC = () => {
                     ? 'Không tìm thấy nhà cung cấp phù hợp với bộ lọc hiện tại.'
                     : 'Chưa có nhà cung cấp nào. Hãy bấm "Thêm nhà cung cấp mới" để khởi tạo danh bạ.'
                 }
-                colSpan={9}
+                colSpan={10}
               />
             ) : (
               paginatedSuppliers.map((s, index) => {
@@ -539,10 +540,15 @@ export const SuppliersPage: React.FC = () => {
                       <div className="font-medium text-xs text-gray-800 dark:text-gray-200 truncate mt-0.5" title={s.name}>
                         {s.name}
                       </div>
-                      {s.receiptCount !== undefined && s.receiptCount > 0 && (
-                        <div className="text-[10px] text-gray-400 mt-0.5">
-                          {s.receiptCount} phiếu nhập kho
-                        </div>
+                    </SystemTd>
+
+                    <SystemTd align="center" className="text-center">
+                      {s.receiptCount !== undefined && s.receiptCount > 0 ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold font-mono bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-700/60">
+                          {s.receiptCount} phiếu
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 font-mono text-xs">0</span>
                       )}
                     </SystemTd>
 

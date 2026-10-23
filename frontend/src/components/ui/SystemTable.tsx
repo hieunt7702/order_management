@@ -23,8 +23,8 @@ export const SystemTableWrapper: React.FC<SystemTableWrapperProps> = ({
         className,
       )}
     >
-      <div className="relative flex-1 flex flex-col min-h-[300px] md:min-h-0">
-        <div className="flex-1 overflow-auto custom-scrollbar">
+      <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-auto custom-scrollbar">
           <table
             className={cn(
               'w-full text-left border-collapse table-fixed',
@@ -35,7 +35,7 @@ export const SystemTableWrapper: React.FC<SystemTableWrapperProps> = ({
           </table>
         </div>
       </div>
-      {pagination && pagination}
+      {pagination && <div className="shrink-0">{pagination}</div>}
     </div>
   );
 };
@@ -230,7 +230,7 @@ export const SystemTh: React.FC<SystemThProps> = ({
     colSpan={colSpan}
     style={style}
     className={cn(
-      'px-4 py-3 font-medium text-gray-500 dark:text-gray-400 text-xs border-l border-gray-200 dark:border-gray-800 uppercase tracking-wide first:border-l-0 whitespace-nowrap align-middle',
+      'px-4 py-3 font-medium text-gray-500 dark:text-gray-400 text-xs border-l border-gray-200 dark:border-gray-800 uppercase tracking-wide first:border-l-0 whitespace-nowrap align-middle bg-gray-50 dark:bg-[#1a1b23]',
       align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left',
       className,
     )}

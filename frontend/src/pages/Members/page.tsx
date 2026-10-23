@@ -251,7 +251,7 @@ export const MembersPage: React.FC = () => {
   const paginatedMembers = filteredMembers.slice((page - 1) * limit, page * limit);
 
   return (
-    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:h-full md:overflow-hidden space-y-2.5 sm:space-y-3 animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0 flex-1">
@@ -586,7 +586,7 @@ export const MembersPage: React.FC = () => {
         </div>
       ) : (
         /* Members Table */
-        <div className="hidden md:flex flex-1 flex-col min-h-0">
+        <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
           <SystemTableWrapper
             tableClassName="min-w-[850px]"
             pagination={

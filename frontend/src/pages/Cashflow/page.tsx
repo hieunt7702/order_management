@@ -406,7 +406,7 @@ export const CashflowPage: React.FC = () => {
       : [];
 
   return (
-    <div className="flex-1 flex flex-col min-h-fit space-y-4 animate-in fade-in duration-300 max-w-full overflow-x-hidden min-w-0">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:h-full md:overflow-hidden space-y-2.5 sm:space-y-3 animate-in fade-in duration-300 max-w-full min-w-0">
       {/* 1. Top Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0 flex-1">
@@ -582,7 +582,7 @@ export const CashflowPage: React.FC = () => {
 
       {/* -------------------- TAB 1: TỔNG QUAN -------------------- */}
       {activeTab === 'OVERVIEW' && (
-        <div className="space-y-4 animate-in fade-in duration-200">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-y-auto custom-scrollbar space-y-3.5 animate-in fade-in duration-200 pr-0.5">
           {/* Row 1: 4 KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 shrink-0">
             <SystemMetricPairCard
@@ -977,7 +977,7 @@ export const CashflowPage: React.FC = () => {
 
       {/* -------------------- TAB 2: SỔ THU CHI -------------------- */}
       {activeTab === 'TRANSACTIONS' && (
-        <div className="space-y-3.5 animate-in fade-in duration-200">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden space-y-3 animate-in fade-in duration-200">
           {/* Sub Filters */}
           <SystemFilter className="p-2 sm:p-2.5 flex-col sm:flex-row items-stretch sm:items-center shrink-0">
             <SystemFilterSearch
@@ -1079,7 +1079,7 @@ export const CashflowPage: React.FC = () => {
           </SystemFilter>
 
           {/* Desktop Transactions Table */}
-          <div className="hidden md:flex bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden shadow-xs flex-1 flex-col">
+          <div className="hidden md:flex bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden shadow-xs flex-1 flex-col min-h-0">
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
@@ -1423,7 +1423,7 @@ export const CashflowPage: React.FC = () => {
 
       {/* -------------------- TAB 3: ĐỐI SOÁT TIỀN SHOPEE -------------------- */}
       {activeTab === 'RECONCILIATION' && (
-        <div className="space-y-3.5 animate-in fade-in duration-200">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden space-y-3 animate-in fade-in duration-200">
           {/* Important Rules Alert Banner */}
           <div className="p-3.5 sm:p-4 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-900/40 rounded flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
             <div className="flex items-start gap-2.5">
@@ -1549,7 +1549,7 @@ export const CashflowPage: React.FC = () => {
           </SystemFilter>
 
           {/* Desktop Reconciliation Table */}
-          <div className="hidden md:flex bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden shadow-xs flex-1 flex-col">
+          <div className="hidden md:flex bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden shadow-xs flex-1 flex-col min-h-0">
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
@@ -1795,7 +1795,7 @@ export const CashflowPage: React.FC = () => {
 
       {/* -------------------- TAB 4: THANH TOÁN NCC & CÔNG NỢ -------------------- */}
       {activeTab === 'SUPPLIERS' && (
-        <div className="space-y-3.5 animate-in fade-in duration-200">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden space-y-3 animate-in fade-in duration-200">
           <div className="p-4 sm:p-5 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="font-semibold text-base text-gray-900 dark:text-white flex items-center gap-2">
@@ -1852,8 +1852,8 @@ export const CashflowPage: React.FC = () => {
           </div>
 
           {/* Unified Supplier Debts Summary Table */}
-          <div className="flex flex-col space-y-2">
-            <div className="flex items-center justify-between px-1">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden space-y-2">
+            <div className="flex items-center justify-between px-1 shrink-0">
               <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                 Danh sách công nợ nhà cung cấp ({supplierList.length})
               </h4>
@@ -1975,7 +1975,7 @@ export const CashflowPage: React.FC = () => {
 
       {/* -------------------- TAB 5: TÀI KHOẢN & QUỸ -------------------- */}
       {activeTab === 'ACCOUNTS' && (
-        <div className="space-y-3.5 animate-in fade-in duration-200">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-y-auto custom-scrollbar space-y-3.5 animate-in fade-in duration-200 pr-0.5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="font-semibold text-base text-gray-900 dark:text-white flex items-center gap-2">
@@ -2111,8 +2111,8 @@ export const CashflowPage: React.FC = () => {
 
       {/* -------------------- TAB 6: DANH MỤC THU CHI -------------------- */}
       {activeTab === 'CATEGORIES' && (
-        <div className="space-y-3.5 animate-in fade-in duration-200">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden space-y-3 animate-in fade-in duration-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
             <div>
               <h3 className="font-semibold text-base text-gray-900 dark:text-white flex items-center gap-2">
                 <Tag size={18} className="text-[#5865f2]" />
@@ -2133,9 +2133,9 @@ export const CashflowPage: React.FC = () => {
             </Button>
           </div>
 
-          <div className="bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden shadow-xs">
+          <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden shadow-xs">
             {/* Desktop Table */}
-            <div className="hidden md:block">
+            <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
               <SystemTableWrapper>
                 <SystemThead>
                   <SystemTr>

@@ -23,6 +23,10 @@ export const AppLayout: React.FC = () => {
     location.pathname.startsWith('/inventory') ||
     location.pathname.startsWith('/products');
   const isSettingsActive = location.pathname.startsWith('/settings');
+  const isScrollablePage =
+    isHomeActive ||
+    isSettingsActive ||
+    isScanActive;
 
   return (
     <div className="flex h-[100dvh] bg-[#f9f9fa] dark:bg-[#0f1115] text-[#151a1e] dark:text-[#dcddde] overflow-hidden font-sans transition-colors duration-300">
@@ -38,13 +42,25 @@ export const AppLayout: React.FC = () => {
 
         {/* Page Content */}
         <main
-          className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar [-webkit-overflow-scrolling:touch] ${
+          className={`flex-1 min-h-0 ${
+            isScrollablePage
+              ? 'overflow-y-auto custom-scrollbar'
+              : 'overflow-y-auto lg:overflow-hidden custom-scrollbar'
+          } [-webkit-overflow-scrolling:touch] ${
             isScanActive
               ? 'p-2.5 sm:p-3.5 md:px-5 md:py-4 pt-[max(0.85rem,env(safe-area-inset-top,0px))] lg:pt-4 pb-28 lg:pb-6'
-              : 'p-3.5 sm:p-5 md:px-6 md:py-5 pt-[max(1.15rem,env(safe-area-inset-top,0px))] lg:pt-5 pb-32 lg:pb-6'
+              : isScrollablePage
+              ? 'p-3.5 sm:p-5 md:px-6 md:py-5 pt-[max(1.15rem,env(safe-area-inset-top,0px))] lg:pt-5 pb-32 lg:pb-6'
+              : 'p-3.5 sm:p-5 md:px-6 md:py-5 pt-[max(1.15rem,env(safe-area-inset-top,0px))] lg:p-4 lg:px-5 pb-32 lg:pb-3 flex flex-col'
           }`}
         >
-          <div className="flex-1 flex flex-col min-h-full">
+          <div
+            className={`flex-1 flex flex-col ${
+              isScrollablePage
+                ? 'min-h-full'
+                : 'min-h-full lg:min-h-0 lg:h-full lg:overflow-hidden'
+            }`}
+          >
             <Outlet />
           </div>
         </main>

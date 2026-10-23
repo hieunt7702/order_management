@@ -376,9 +376,142 @@ export class FulfillmentService {
 
     if (isOrderCancelled) {
       const wasDispatched = targetPackage.status === PackageStatus.DISPATCHED;
-      const cancelMessage = wasDispatched
-        ? 'Đơn hàng ĐÃ XUẤT TRƯỚC NHƯNG ĐÃ BỊ HỦY trên sàn Shopee! Tuyệt đối giữ lại kiện hàng!'
-        : 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho';
+
+      // NẾU ĐƠN ĐÃ QUÉT XÁC NHẬN ĐI ĐƠN TRƯỚC ĐÓ (DISPATCHED):
+      // Khi đối soát phát hiện đơn đã hủy trên sàn, tự động hủy bỏ xác nhận đi đơn và tự động cộng lại tồn kho
+      if (wasDispatched) {
+        let itemsToRestock = (targetPackage.packageItems || [])
+          .filter((pi: any) => !!pi.orderItem?.variantId)
+          .map((pi: any) => ({
+            variantId: pi.orderItem.variantId,
+            quantity: pi.quantity,
+          }));
+
+        if (itemsToRestock.length === 0 && order.orderItems && order.orderItems.length > 0) {
+          itemsToRestock = order.orderItems
+            .filter((oi: any) => !!oi.variantId)
+            .map((oi: any) => ({
+              variantId: oi.variantId,
+              quantity: oi.quantity,
+            }));
+        }
+
+        const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
+        const cancelMessage =
+          'Đơn hàng ĐÃ BỊ HỦY trên sàn Shopee! Hệ thống đã tự động hủy xác nhận đi đơn và cộng lại tồn kho cho sản phẩm. Tuyệt đối giữ lại kiện hàng!';
+
+        return this.prisma.$transaction(async (tx) => {
+          // 1. Cập nhật trạng thái kiện hàng từ DISPATCHED sang CANCELLED, xóa người và thời gian xác nhận
+          await tx.package.update({
+            where: { id: targetPackage.id },
+            data: {
+              status: PackageStatus.CANCELLED,
+              verifiedAt: null,
+              verifiedByUserId: null,
+            },
+          });
+
+          // 2. Cập nhật trạng thái đơn hàng: Hủy xác nhận và đánh dấu CANCELLED_RESTOCKED
+          await tx.order.update({
+            where: { id: order.id },
+            data: {
+              verificationStatus: VerificationStatus.NOT_VERIFIED,
+              fulfillmentStatus: FulfillmentStatus.CANCELLED_RESTOCKED,
+            },
+          });
+
+          // 3. Tự động hoàn lại tồn kho thực tế nếu không phải đơn ảo không đi hàng
+          if (!isVirtualNoStock && itemsToRestock.length > 0) {
+            await this.inventoryService.revertDispatchStockForPackage(
+              tx,
+              tenantId,
+              warehouseId,
+              itemsToRestock,
+              order.id,
+              targetPackage.id,
+              userId,
+              {
+                orderCode: order.externalOrderId || order.internalOrderCode,
+                packageCode: targetPackage.packageCode,
+                trackingCode: targetPackage.trackingCode || order.trackingCode,
+                note: `Tự động hủy xác nhận đi đơn và hoàn tồn kho thực tế do đơn hàng ${order.externalOrderId || order.internalOrderCode} bị hủy trên sàn khi đối soát`,
+              },
+            );
+          }
+
+          // 4. Ghi log sự kiện quét
+          await tx.scanEvent.create({
+            data: {
+              tenantId,
+              shopId: order.shopId,
+              warehouseId,
+              orderId: order.id,
+              packageId: targetPackage.id,
+              rawCode,
+              normalizedCode,
+              scanResult: ScanResult.INVALID_ORDER_STATUS,
+              deviceId: dto.deviceId,
+              performedByUserId: userId,
+              idempotencyKey,
+              errorMessage: cancelMessage,
+            },
+          });
+
+          // 5. Ghi audit log
+          await this.auditService.log({
+            tenantId,
+            userId,
+            action: 'SCAN_CANCELLED_AUTO_RESTOCK',
+            entityType: 'Package',
+            entityId: targetPackage.id,
+            newValues: {
+              orderId: order.id,
+              externalOrderId: order.externalOrderId,
+              packageCode: targetPackage.packageCode,
+              trackingCode: targetPackage.trackingCode || order.trackingCode,
+              restockedItemsCount: itemsToRestock.length,
+            },
+          });
+
+          return {
+            result: ScanResult.INVALID_ORDER_STATUS,
+            message: cancelMessage,
+            isCancelled: true,
+            wasDispatched: true,
+            autoRestocked: !isVirtualNoStock,
+            restockedItemsCount: itemsToRestock.length,
+            orderId: order.externalOrderId || order.id,
+            internalOrderCode: order.internalOrderCode,
+            shopName: order.shop?.name,
+            carrierName: targetPackage.carrierName || order.shippingCarrier,
+            packageCode: targetPackage.packageCode,
+            packageId: targetPackage.id,
+            order: {
+              id: order.id,
+              externalOrderId: order.externalOrderId,
+              internalOrderCode: order.internalOrderCode,
+              trackingCode: order.trackingCode || targetPackage.trackingCode,
+              platformStatus: order.platformStatus,
+              fulfillmentStatus: FulfillmentStatus.CANCELLED_RESTOCKED,
+              verificationStatus: VerificationStatus.NOT_VERIFIED,
+              shop: order.shop,
+              isVirtual: order.isVirtual,
+              isRealGoods: order.isRealGoods,
+            },
+            package: {
+              id: targetPackage.id,
+              packageCode: targetPackage.packageCode,
+              trackingCode: targetPackage.trackingCode || order.trackingCode,
+              carrierName: targetPackage.carrierName || order.shippingCarrier,
+              status: PackageStatus.CANCELLED,
+            },
+          };
+        });
+      }
+
+      // Đơn bị hủy trên sàn nhưng chưa từng xuất kho (chưa DISPATCHED)
+      const cancelMessage =
+        'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho. Tuyệt đối giữ lại kiện hàng!';
 
       await this.prisma.scanEvent.create({
         data: {
@@ -401,7 +534,8 @@ export class FulfillmentService {
         result: ScanResult.INVALID_ORDER_STATUS,
         message: cancelMessage,
         isCancelled: true,
-        wasDispatched,
+        wasDispatched: false,
+        autoRestocked: false,
         orderId: order.externalOrderId || order.id,
         internalOrderCode: order.internalOrderCode,
         shopName: order.shop?.name,
@@ -940,6 +1074,7 @@ export class FulfillmentService {
     let alreadyVerifiedCount = 0;
     let notFoundCount = 0;
     let cancelledCount = 0;
+    let cancelledRestockedCount = 0;
     let failedCount = 0;
 
     for (const code of rawCodes) {
@@ -961,6 +1096,9 @@ export class FulfillmentService {
 
         if (isCancelled) {
           cancelledCount++;
+          if (res.autoRestocked) {
+            cancelledRestockedCount++;
+          }
         } else if (res.result === ScanResult.VERIFIED) {
           verifiedCount++;
         } else if (res.result === ScanResult.ALREADY_VERIFIED) {
@@ -977,6 +1115,8 @@ export class FulfillmentService {
           message: res.message,
           isCancelled,
           wasDispatched: !!res.wasDispatched,
+          autoRestocked: !!res.autoRestocked,
+          restockedItemsCount: res.restockedItemsCount || 0,
           orderId: res.order?.externalOrderId || res.orderId || res.externalOrderId,
           internalOrderCode: res.order?.internalOrderCode || res.internalOrderCode,
           carrierName: res.package?.carrierName || res.carrierName,
@@ -1002,6 +1142,7 @@ export class FulfillmentService {
       alreadyVerifiedCount,
       notFoundCount,
       cancelledCount,
+      cancelledRestockedCount,
       failedCount,
       items: results,
     };

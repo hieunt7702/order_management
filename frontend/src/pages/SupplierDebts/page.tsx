@@ -682,7 +682,7 @@ export const SupplierDebtsPage: React.FC = () => {
   const summaryPendingReimbursement = debtReports?.summary?.totalPendingReimbursement ?? 0;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:h-full md:overflow-hidden space-y-2.5 sm:space-y-3 animate-in fade-in duration-300">
       {/* Top Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0 flex-1">
@@ -863,7 +863,7 @@ export const SupplierDebtsPage: React.FC = () => {
 
       {/* TAB 1: SỔ CÔNG NỢ NHÀ CUNG CẤP */}
       {activeTab === 'DEBT_LIST' && (
-        <div className="space-y-3">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden space-y-3">
           <div className="flex items-center justify-between gap-3 shrink-0">
             <div className="relative w-full max-w-sm">
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -879,7 +879,7 @@ export const SupplierDebtsPage: React.FC = () => {
           </div>
 
           {/* Desktop Table View */}
-          <div className="hidden md:flex flex-1 flex-col min-h-0">
+          <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
                 <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
@@ -1220,9 +1220,9 @@ export const SupplierDebtsPage: React.FC = () => {
 
       {/* TAB 2: LỊCH SỬ THANH TOÁN & NGUỒN TIỀN */}
       {activeTab === 'PAYMENTS' && (
-        <div className="space-y-3">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden space-y-3">
           {/* Desktop Table View */}
-          <div className="hidden md:flex flex-1 flex-col min-h-0">
+          <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
                 <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
@@ -1468,9 +1468,9 @@ export const SupplierDebtsPage: React.FC = () => {
 
       {/* TAB 3: TRẢ HÀNG NCC */}
       {activeTab === 'RETURNS' && (
-        <div className="space-y-3">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden space-y-3">
           {/* Desktop Table View */}
-          <div className="hidden md:flex flex-1 flex-col min-h-0">
+          <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
             <SystemTableWrapper tableClassName="min-w-[1100px]">
               <SystemThead>
                 <SystemTh className="w-14 text-center" align="center">STT</SystemTh>

@@ -842,6 +842,118 @@ export class InventoryService {
     }
   }
 
+  // CANCEL DISPATCH AND RESTOCK (AUTO REVERT WHEN CANCELLED ORDER IS INTERCEPTED AT DISPATCH RECONCILIATION)
+  async revertDispatchStockForPackage(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    warehouseId: string,
+    items: StockReservationItem[],
+    orderId: string,
+    packageId: string,
+    userId?: string,
+    meta?: {
+      orderCode?: string;
+      externalOrderId?: string;
+      packageCode?: string;
+      trackingCode?: string;
+      performerName?: string;
+      note?: string;
+    },
+  ) {
+    const sortedItems = [...items].sort((a, b) => a.variantId.localeCompare(b.variantId));
+
+    let orderCode = meta?.orderCode || meta?.externalOrderId;
+    let packageCode = meta?.packageCode || meta?.trackingCode;
+    let performerName = meta?.performerName;
+
+    if (!orderCode && (tx as any).order?.findUnique) {
+      const ord = await (tx as any).order
+        .findUnique({
+          where: { id: orderId },
+          select: { externalOrderId: true, internalOrderCode: true, trackingCode: true },
+        })
+        .catch(() => null);
+      orderCode = ord?.externalOrderId || ord?.internalOrderCode || ord?.trackingCode || orderId;
+    }
+    orderCode = orderCode || orderId;
+
+    if (!packageCode && (tx as any).package?.findUnique) {
+      const pkg = await (tx as any).package
+        .findUnique({
+          where: { id: packageId },
+          select: { packageCode: true, trackingCode: true },
+        })
+        .catch(() => null);
+      packageCode = pkg?.packageCode || pkg?.trackingCode || packageId;
+    }
+    packageCode = packageCode || packageId;
+
+    if (!performerName && userId && (tx as any).user?.findUnique) {
+      const user = await (tx as any).user
+        .findUnique({
+          where: { id: userId },
+          select: { name: true, email: true },
+        })
+        .catch(() => null);
+      performerName = user?.name || user?.email;
+    }
+    performerName = performerName || 'HieuNT';
+
+    for (const item of sortedItems) {
+      let balance = await tx.inventoryBalance.findUnique({
+        where: {
+          tenantId_warehouseId_variantId: {
+            tenantId,
+            warehouseId,
+            variantId: item.variantId,
+          },
+        },
+      });
+
+      if (!balance) {
+        balance = await tx.inventoryBalance.create({
+          data: {
+            tenantId,
+            warehouseId,
+            variantId: item.variantId,
+            onHand: 0,
+            reserved: 0,
+          },
+        });
+      }
+
+      const newOnHand = balance.onHand + item.quantity;
+
+      await tx.inventoryBalance.update({
+        where: { id: balance.id },
+        data: {
+          onHand: newOnHand,
+        },
+      });
+
+      await tx.inventoryLedger.create({
+        data: {
+          tenantId,
+          warehouseId,
+          variantId: item.variantId,
+          movementType: InventoryMovementType.RETURN_RECEIVE,
+          deltaOnHand: item.quantity,
+          deltaReserved: 0,
+          referenceType: 'SCAN_CANCELLED_RESTOCK',
+          referenceId: packageId,
+          voucherCode: orderCode || packageCode,
+          performerName,
+          beforeOnHand: balance.onHand,
+          afterOnHand: newOnHand,
+          performedByUserId: userId,
+          note:
+            meta?.note ||
+            `Tự động hủy xác nhận đi đơn và hoàn tồn kho thực tế do đơn hàng ${orderCode} bị hủy trên sàn khi đối soát`,
+        },
+      });
+    }
+  }
+
   // RETURN RECEIPT (ONLY RESTOCKS WHEN PHYSICALLY RECEIVED AT WAREHOUSE)
   async receiveReturnedStock(
     tx: Prisma.TransactionClient,

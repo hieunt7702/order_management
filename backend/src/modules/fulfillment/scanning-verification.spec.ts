@@ -14,6 +14,7 @@ describe('Scenarios 9, 10, 11, 12, 13: Fulfillment Scanning & Dispatch Verificat
         findFirst: jest.fn(),
         findUnique: jest.fn(),
         create: jest.fn(),
+        update: jest.fn(),
         updateMany: jest.fn(),
         count: jest.fn(),
       },
@@ -35,6 +36,7 @@ describe('Scenarios 9, 10, 11, 12, 13: Fulfillment Scanning & Dispatch Verificat
 
     mockInventoryService = {
       dispatchStockForPackage: jest.fn(),
+      revertDispatchStockForPackage: jest.fn(),
     };
 
     mockAuditService = {
@@ -135,7 +137,7 @@ describe('Scenarios 9, 10, 11, 12, 13: Fulfillment Scanning & Dispatch Verificat
       expect(mockInventoryService.dispatchStockForPackage).not.toHaveBeenCalled();
     });
 
-    it('kể cả khi kiện hàng đã xuất trước (DISPATCHED) nhưng sau đó đơn bị CANCELLED, vẫn phải trả về INVALID_ORDER_STATUS, isCancelled = true, wasDispatched = true', async () => {
+    it('kể cả khi kiện hàng đã xuất trước (DISPATCHED) nhưng sau đó đơn bị CANCELLED, tự động hủy xác nhận đi đơn, hoàn tồn kho, trả về autoRestocked = true', async () => {
       mockPrisma.package.findMany.mockResolvedValue([
         {
           id: 'pkg-1',
@@ -150,7 +152,12 @@ describe('Scenarios 9, 10, 11, 12, 13: Fulfillment Scanning & Dispatch Verificat
             shopId: 'shop-1',
             shop: { defaultWarehouseId: 'wh-1' },
           },
-          packageItems: [],
+          packageItems: [
+            {
+              quantity: 2,
+              orderItem: { variantId: 'var-1' },
+            },
+          ],
         },
       ]);
 
@@ -161,8 +168,25 @@ describe('Scenarios 9, 10, 11, 12, 13: Fulfillment Scanning & Dispatch Verificat
       expect(res.result).toBe(ScanResult.INVALID_ORDER_STATUS);
       expect((res as any).isCancelled).toBe(true);
       expect((res as any).wasDispatched).toBe(true);
-      expect(res.message).toContain('ĐÃ XUẤT TRƯỚC NHƯNG ĐÃ BỊ HỦY');
+      expect((res as any).autoRestocked).toBe(true);
+      expect(res.message).toContain('ĐÃ BỊ HỦY trên sàn Shopee');
       expect(mockInventoryService.dispatchStockForPackage).not.toHaveBeenCalled();
+      expect(mockInventoryService.revertDispatchStockForPackage).toHaveBeenCalledWith(
+        expect.anything(),
+        'tenant-1',
+        'wh-1',
+        [{ variantId: 'var-1', quantity: 2 }],
+        'ord-1',
+        'pkg-1',
+        'user-1',
+        expect.anything(),
+      );
+      expect(mockPrisma.package.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'pkg-1' },
+          data: expect.objectContaining({ status: PackageStatus.CANCELLED }),
+        }),
+      );
     });
   });
 

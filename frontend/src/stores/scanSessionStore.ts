@@ -18,6 +18,7 @@ export interface SessionItem {
   isRealGoods?: boolean;
   isCancelled?: boolean;
   wasDispatched?: boolean;
+  autoRestocked?: boolean;
 }
 
 export interface ScanSession {
@@ -36,6 +37,7 @@ export interface ScanSession {
     alreadyVerified: number;
     notFound: number;
     cancelled: number;
+    cancelledRestocked: number;
     failed: number;
   };
 }
@@ -69,6 +71,7 @@ const calculateStats = (items: SessionItem[]) => {
     alreadyVerified: items.filter((i) => i.status === 'ALREADY_VERIFIED' && !i.isCancelled).length,
     notFound: items.filter((i) => i.status === 'NOT_FOUND' && !i.isCancelled).length,
     cancelled: items.filter((i) => i.isCancelled).length,
+    cancelledRestocked: items.filter((i) => i.isCancelled && i.autoRestocked).length,
     failed: items.filter((i) => i.status === 'ERROR' && !i.isCancelled).length,
   };
 };
@@ -86,8 +89,6 @@ const saveToLocalStorage = (sessions: ScanSession[], activeId: string | null) =>
 
 const createDefaultSession = (index = 1, warehouseId?: string): ScanSession => {
   const now = new Date();
-  const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-  const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
   const randCode = Math.floor(1000 + Math.random() * 9000);
   const id = `ses_${Date.now()}_${randCode}`;
 
@@ -106,6 +107,7 @@ const createDefaultSession = (index = 1, warehouseId?: string): ScanSession => {
       alreadyVerified: 0,
       notFound: 0,
       cancelled: 0,
+      cancelledRestocked: 0,
       failed: 0,
     },
   };
@@ -260,7 +262,7 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
       status: 'DRAFT',
       items: [],
       updatedAt: new Date().toISOString(),
-      stats: { total: 0, verified: 0, alreadyVerified: 0, notFound: 0, cancelled: 0, failed: 0 },
+      stats: { total: 0, verified: 0, alreadyVerified: 0, notFound: 0, cancelled: 0, cancelledRestocked: 0, failed: 0 },
     };
 
     const updatedSessions = sessions.map((s) => (s.id === updatedActive.id ? updatedActive : s));
@@ -341,6 +343,7 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           backendResult.message?.toLowerCase().includes('hủy');
 
         const wasDispatched = !!backendResult.wasDispatched;
+        const autoRestocked = !!backendResult.autoRestocked;
 
         let status: SessionItem['status'] = 'PENDING';
         if (isCancelled) status = 'ERROR';
@@ -354,6 +357,7 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           status,
           isCancelled,
           wasDispatched,
+          autoRestocked,
           orderId: backendResult.orderId,
           internalOrderCode: backendResult.internalOrderCode,
           carrierName: backendResult.carrierName,
@@ -392,6 +396,7 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           alreadyVerified: res?.alreadyVerifiedCount || updatedSession.stats.alreadyVerified,
           notFound: res?.notFoundCount || updatedSession.stats.notFound,
           cancelled: res?.cancelledCount || updatedSession.stats.cancelled,
+          cancelledRestocked: res?.cancelledRestockedCount || updatedSession.stats.cancelledRestocked,
           failed: res?.failedCount || updatedSession.stats.failed,
         },
       };
@@ -476,10 +481,12 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           backendItem.message?.toLowerCase().includes('hủy');
 
         const wasDispatched = !!backendItem.wasDispatched;
+        const autoRestocked = !!backendItem.autoRestocked;
 
         if (isCancelled) {
           finalStatus = 'ERROR';
-          finalMessage = backendItem.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho';
+          finalMessage =
+            backendItem.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho';
         } else if (backendItem.result === 'VERIFIED') {
           finalStatus = 'VERIFIED';
           finalMessage = backendItem.message || 'Xác nhận xuất kho thành công';
@@ -500,6 +507,7 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           message: finalMessage,
           isCancelled,
           wasDispatched,
+          autoRestocked,
           orderId: backendItem.orderId,
           internalOrderCode: backendItem.internalOrderCode,
           carrierName: backendItem.carrierName,

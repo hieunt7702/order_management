@@ -1046,7 +1046,7 @@ export const OrdersPage: React.FC = () => {
   const hasActiveFilter = activeTab !== 'ALL' || searchTerm || fromDate || toDate;
 
   return (
-    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:h-full md:overflow-hidden space-y-2.5 sm:space-y-3 animate-in fade-in duration-300">
       {/* Top Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0 flex-1">
@@ -1240,7 +1240,7 @@ export const OrdersPage: React.FC = () => {
       </div>
 
       {/* Filter Bar */}
-      <SystemFilter className="p-2.5 sm:p-3 flex-col sm:flex-row items-stretch sm:items-center">
+      <SystemFilter className="p-2.5 sm:p-3 flex-col sm:flex-row items-stretch sm:items-center shrink-0">
         <SystemFilterItem icon={Activity} label="Trạng thái:" className="w-full sm:w-auto">
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 max-w-full">
             {PRESET_TABS.map((tab) => (
@@ -1341,7 +1341,7 @@ export const OrdersPage: React.FC = () => {
 
 
       {/* Desktop Table View */}
-      <div className="hidden md:flex flex-1 flex-col min-h-0">
+      <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
         <SystemTableWrapper
           tableClassName="min-w-[1050px]"
           pagination={

@@ -138,110 +138,72 @@ export const AccountTransactionsModal: React.FC<AccountTransactionsModalProps> =
   const totalOut = Number(accountSummary?.totalOutflow || 0);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
-      <div className="p-4 sm:p-5 border-b border-gray-200 dark:border-gray-800">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                activeAccount?.type === 'CASH'
-                  ? 'bg-blue-500/10 text-blue-500'
-                  : activeAccount?.type === 'PLATFORM_WALLET'
-                  ? 'bg-amber-500/10 text-amber-500'
-                  : 'bg-indigo-500/10 text-indigo-500'
-              }`}
-            >
-              {activeAccount?.type === 'CASH' ? (
-                <Wallet size={20} />
-              ) : activeAccount?.type === 'PLATFORM_WALLET' ? (
-                <Wallet size={20} />
-              ) : (
-                <Landmark size={20} />
-              )}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
-                  Lịch sử giao dịch & nạp rút tiền
-                </h3>
-                {activeAccount && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                    {activeAccount.type === 'CASH'
-                      ? 'Tiền mặt'
-                      : activeAccount.type === 'PLATFORM_WALLET'
-                      ? 'Ví Shopee'
-                      : activeAccount.bankName || 'Ngân hàng'}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Xem toàn bộ các lần nạp tiền, rút tiền, thanh toán và biến động số dư luỹ kế
-              </p>
-            </div>
-          </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="3xl"
+      maxWidth="w-[96vw] max-w-[1400px] xl:max-w-[1440px]"
+      icon={activeAccount?.type === 'BANK' ? Landmark : Wallet}
+      title={
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white">
+            Lịch sử giao dịch & nạp rút tiền
+          </span>
+          {activeAccount && (
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+              {activeAccount.type === 'CASH'
+                ? 'Tiền mặt'
+                : activeAccount.type === 'PLATFORM_WALLET'
+                ? 'Ví Shopee'
+                : activeAccount.bankName || 'Ngân hàng'}
+            </span>
+          )}
+        </div>
+      }
+      subtitle="Xem toàn bộ các lần nạp tiền, rút tiền, thanh toán và biến động số dư luỹ kế"
+      headerRight={
+        <div className="flex items-center gap-2">
+          {/* Quick Deposit button */}
+          <Button
+            size="sm"
+            onClick={() => {
+              onOpenDepositModal(selectedAccountId);
+            }}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 font-medium shadow-xs text-xs h-8"
+          >
+            <ArrowDownLeft size={14} />
+            <span className="hidden sm:inline">Nạp tiền vào quỹ</span>
+            <span className="sm:hidden">Nạp quỹ</span>
+          </Button>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Quick Deposit button */}
-            <Button
-              size="sm"
-              onClick={() => {
-                onOpenDepositModal(selectedAccountId);
-              }}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 font-medium shadow-xs"
-            >
-              <ArrowDownLeft size={15} />
-              <span>Nạp tiền vào quỹ</span>
-            </Button>
-
-            {/* Quick Transfer button */}
-            {onOpenTransferModal && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  onOpenTransferModal(selectedAccountId);
-                }}
-                className="gap-1.5"
-              >
-                <ArrowLeftRight size={14} className="text-[#5865f2]" />
-                <span>Chuyển tiền</span>
-              </Button>
-            )}
-
+          {/* Quick Transfer button */}
+          {onOpenTransferModal && (
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchTransactions}
-              disabled={loading}
-              className="p-2"
-              title="Làm mới"
-            >
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            </Button>
-          </div>
-        </div>
-
-        {/* Account Selector if multiple accounts */}
-        {accounts.length > 1 && (
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-xs text-gray-500 whitespace-nowrap">Đang xem quỹ:</span>
-            <Select
-              value={selectedAccountId}
-              onChange={(e) => {
-                setSelectedAccountId(e.target.value);
-                setPage(1);
+              onClick={() => {
+                onOpenTransferModal(selectedAccountId);
               }}
-              className="text-xs font-semibold py-1 h-8 max-w-xs"
+              className="gap-1.5 text-xs h-8"
             >
-              {accounts.map((acc) => (
-                <option key={acc.id} value={acc.id}>
-                  {acc.name} ({Number(acc.currentBalance).toLocaleString('vi-VN')} đ)
-                </option>
-              ))}
-            </Select>
-          </div>
-        )}
-      </div>
+              <ArrowLeftRight size={13} className="text-[#5865f2]" />
+              <span className="hidden sm:inline">Chuyển tiền</span>
+            </Button>
+          )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchTransactions}
+            disabled={loading}
+            className="p-1.5 h-8 w-8"
+            title="Làm mới"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          </Button>
+        </div>
+      }
+    >
 
       <ModalBody className="p-4 sm:p-5 space-y-4">
         {/* Account Metrics Card */}
@@ -341,21 +303,25 @@ export const AccountTransactionsModal: React.FC<AccountTransactionsModalProps> =
             </div>
 
             {/* Type Filter */}
-            <Select
-              value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value);
-                setPage(1);
-              }}
-              className="text-xs h-8 py-1 max-w-[150px]"
-            >
-              <option value="ALL">Tất cả nghiệp vụ</option>
-              <option value="INCOME">Tiền nạp & Thu (+)</option>
-              <option value="CAPITAL_IN">Góp vốn kinh doanh (+)</option>
-              <option value="EXPENSE">Tiền rút & Chi (-)</option>
-              <option value="CAPITAL_OUT">Rút vốn (-)</option>
-              <option value="INTERNAL_TRANSFER">Chuyển tiền nội bộ</option>
-            </Select>
+            <div className="w-[180px]">
+              <Select
+                value={typeFilter}
+                onChange={(val) => {
+                  setTypeFilter(String(val || 'ALL'));
+                  setPage(1);
+                }}
+                options={[
+                  { value: 'ALL', label: 'Tất cả nghiệp vụ' },
+                  { value: 'INCOME', label: 'Tiền nạp & Thu (+)' },
+                  { value: 'CAPITAL_IN', label: 'Góp vốn kinh doanh (+)' },
+                  { value: 'EXPENSE', label: 'Tiền rút & Chi (-)' },
+                  { value: 'CAPITAL_OUT', label: 'Rút vốn (-)' },
+                  { value: 'INTERNAL_TRANSFER', label: 'Chuyển tiền nội bộ' },
+                ]}
+                placeholder="Tất cả nghiệp vụ"
+                size="sm"
+              />
+            </div>
 
             {/* Date Range */}
             <div className="flex items-center gap-1.5 text-xs text-gray-500">
@@ -395,171 +361,170 @@ export const AccountTransactionsModal: React.FC<AccountTransactionsModalProps> =
         </div>
 
         {/* Transactions Table */}
-        <SystemTableWrapper>
-          <table className="w-full text-left border-collapse text-xs">
-            <SystemThead>
-              <tr>
-                <SystemTh>Mã GD / Thời gian</SystemTh>
-                <SystemTh>Loại nghiệp vụ</SystemTh>
-                <SystemTh>Khoản mục / Ghi chú</SystemTh>
-                <SystemTh className="text-right">Số dư trước</SystemTh>
-                <SystemTh className="text-right">Số tiền biến động</SystemTh>
-                <SystemTh className="text-right">Số dư sau</SystemTh>
-                <SystemTh>Người nộp / nhận</SystemTh>
-                <SystemTh className="text-center">Trạng thái</SystemTh>
-              </tr>
-            </SystemThead>
-            <SystemTbody>
-              {loading ? (
-                <SystemTableSkeleton colSpan={8} rows={5} />
-              ) : transactions.length === 0 ? (
-                <SystemTableEmpty
-                  colSpan={8}
-                  message="Chưa có giao dịch nạp rút nào được ghi nhận cho tài khoản này"
-                />
-              ) : (
-                transactions.map((tx) => {
-                  const isInflow =
-                    tx.toAccountId === selectedAccountId ||
-                    tx.type === 'INCOME' ||
-                    tx.type === 'CAPITAL_IN';
-                  const isOutflow =
-                    tx.fromAccountId === selectedAccountId ||
-                    tx.type === 'EXPENSE' ||
-                    tx.type === 'CAPITAL_OUT';
-                  const isTransfer = tx.type === 'INTERNAL_TRANSFER';
+        <SystemTableWrapper tableClassName="w-full min-w-[1100px] text-xs">
+          <SystemThead>
+            <SystemTh className="w-44">Mã GD / Thời gian</SystemTh>
+            <SystemTh className="w-40">Loại nghiệp vụ</SystemTh>
+            <SystemTh className="min-w-[200px]">Khoản mục / Ghi chú</SystemTh>
+            <SystemTh className="w-36 text-right" align="right">Số dư trước</SystemTh>
+            <SystemTh className="w-36 text-right" align="right">Số tiền biến động</SystemTh>
+            <SystemTh className="w-36 text-right" align="right">Số dư sau</SystemTh>
+            <SystemTh className="w-44">Người nộp / nhận</SystemTh>
+            <SystemTh className="w-28 text-center" align="center">Trạng thái</SystemTh>
+          </SystemThead>
+          <SystemTbody>
+            {loading ? (
+              <SystemTableSkeleton cols={8} rows={5} />
+            ) : transactions.length === 0 ? (
+              <SystemTableEmpty
+                colSpan={8}
+                title="Chưa có giao dịch"
+                description="Chưa có giao dịch nạp rút nào được ghi nhận cho tài khoản này"
+              />
+            ) : (
+              transactions.map((tx) => {
+                const isInflow =
+                  tx.toAccountId === selectedAccountId ||
+                  tx.type === 'INCOME' ||
+                  tx.type === 'CAPITAL_IN';
+                const isOutflow =
+                  tx.fromAccountId === selectedAccountId ||
+                  tx.type === 'EXPENSE' ||
+                  tx.type === 'CAPITAL_OUT';
+                const isTransfer = tx.type === 'INTERNAL_TRANSFER';
 
-                  const balBefore = Number(tx.balanceBefore || 0);
-                  const balAfter = Number(tx.balanceAfter || 0);
+                const balBefore = Number(tx.balanceBefore || 0);
+                const balAfter = Number(tx.balanceAfter || 0);
 
-                  return (
-                    <SystemTr key={tx.id}>
-                      {/* 1. Mã GD & Thời gian */}
-                      <SystemTd>
-                        <div className="font-mono font-medium text-gray-900 dark:text-white">
-                          {tx.transactionCode}
-                        </div>
-                        <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
-                          <Clock size={11} />
-                          <span>
-                            {new Date(tx.transactionDate).toLocaleDateString('vi-VN', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric',
-                            })}
-                          </span>
-                        </div>
-                      </SystemTd>
-
-                      {/* 2. Loại nghiệp vụ */}
-                      <SystemTd>
-                        {tx.type === 'CAPITAL_IN' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                            <ArrowDownLeft size={11} />
-                            Góp vốn / Nạp quỹ
-                          </span>
-                        ) : tx.type === 'CAPITAL_OUT' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400">
-                            <ArrowUpRight size={11} />
-                            Rút vốn
-                          </span>
-                        ) : tx.type === 'INCOME' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                            <ArrowDownLeft size={11} />
-                            Nạp tiền / Thu
-                          </span>
-                        ) : tx.type === 'EXPENSE' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400">
-                            <ArrowUpRight size={11} />
-                            Chi tiền / Rút
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                            <ArrowLeftRight size={11} />
-                            Chuyển nội bộ
-                          </span>
-                        )}
-                      </SystemTd>
-
-                      {/* 3. Khoản mục & Ghi chú */}
-                      <SystemTd className="max-w-xs">
-                        <div className="font-medium text-gray-900 dark:text-white truncate">
-                          {tx.category?.name || 'Khoản mục thu chi'}
-                        </div>
-                        {tx.note && (
-                          <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5 italic">
-                            {tx.note}
-                          </div>
-                        )}
-                        {tx.referenceCode && (
-                          <div className="text-[10px] font-mono text-gray-400 mt-0.5">
-                            Mã UNC: {tx.referenceCode}
-                          </div>
-                        )}
-                      </SystemTd>
-
-                      {/* 4. Số dư trước GD */}
-                      <SystemTd className="text-right font-mono text-gray-500">
-                        {balBefore.toLocaleString('vi-VN')} đ
-                      </SystemTd>
-
-                      {/* 5. Biến động */}
-                      <SystemTd className="text-right">
-                        <span
-                          className={`font-mono font-bold text-sm ${
-                            isInflow
-                              ? 'text-emerald-600 dark:text-emerald-400'
-                              : 'text-rose-600 dark:text-rose-400'
-                          }`}
-                        >
-                          {isInflow ? '+' : '-'}
-                          {Number(tx.amount).toLocaleString('vi-VN')} đ
+                return (
+                  <SystemTr key={tx.id}>
+                    {/* 1. Mã GD & Thời gian */}
+                    <SystemTd className="w-44">
+                      <div className="font-mono font-medium text-gray-900 dark:text-white">
+                        {tx.transactionCode}
+                      </div>
+                      <div className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
+                        <Clock size={11} />
+                        <span>
+                          {new Date(tx.transactionDate).toLocaleDateString('vi-VN', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                          })}
                         </span>
-                      </SystemTd>
+                      </div>
+                    </SystemTd>
 
-                      {/* 6. Số dư sau GD */}
-                      <SystemTd className="text-right">
-                        <span
-                          className={`font-mono font-bold ${
-                            balAfter < 0
-                              ? 'text-rose-600 dark:text-rose-400'
-                              : 'text-gray-900 dark:text-white'
-                          }`}
-                        >
-                          {balAfter.toLocaleString('vi-VN')} đ
+                    {/* 2. Loại nghiệp vụ */}
+                    <SystemTd className="w-40">
+                      {tx.type === 'CAPITAL_IN' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                          <ArrowDownLeft size={11} />
+                          Góp vốn / Nạp quỹ
                         </span>
-                      </SystemTd>
+                      ) : tx.type === 'CAPITAL_OUT' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                          <ArrowUpRight size={11} />
+                          Rút vốn
+                        </span>
+                      ) : tx.type === 'INCOME' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                          <ArrowDownLeft size={11} />
+                          Nạp tiền / Thu
+                        </span>
+                      ) : tx.type === 'EXPENSE' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                          <ArrowUpRight size={11} />
+                          Chi tiền / Rút
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                          <ArrowLeftRight size={11} />
+                          Chuyển nội bộ
+                        </span>
+                      )}
+                    </SystemTd>
 
-                      {/* 7. Người nộp / nhận */}
-                      <SystemTd className="text-gray-600 dark:text-gray-300">
+                    {/* 3. Khoản mục & Ghi chú */}
+                    <SystemTd className="min-w-[200px]">
+                      <div className="font-medium text-gray-900 dark:text-white truncate">
+                        {tx.category?.name || 'Khoản mục thu chi'}
+                      </div>
+                      {tx.note && (
+                        <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5 italic">
+                          {tx.note}
+                        </div>
+                      )}
+                      {tx.referenceCode && (
+                        <div className="text-[10px] font-mono text-gray-400 mt-0.5">
+                          Mã UNC: {tx.referenceCode}
+                        </div>
+                      )}
+                    </SystemTd>
+
+                    {/* 4. Số dư trước GD */}
+                    <SystemTd className="w-36 text-right font-mono text-gray-500">
+                      {balBefore.toLocaleString('vi-VN')} đ
+                    </SystemTd>
+
+                    {/* 5. Biến động */}
+                    <SystemTd className="w-36 text-right">
+                      <span
+                        className={`font-mono font-bold text-sm ${
+                          isInflow
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-rose-600 dark:text-rose-400'
+                        }`}
+                      >
+                        {isInflow ? '+' : '-'}
+                        {Number(tx.amount).toLocaleString('vi-VN')} đ
+                      </span>
+                    </SystemTd>
+
+                    {/* 6. Số dư sau GD */}
+                    <SystemTd className="w-36 text-right">
+                      <span
+                        className={`font-mono font-bold ${
+                          balAfter < 0
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : 'text-gray-900 dark:text-white'
+                        }`}
+                      >
+                        {balAfter.toLocaleString('vi-VN')} đ
+                      </span>
+                    </SystemTd>
+
+                    {/* 7. Người nộp / nhận */}
+                    <SystemTd className="w-44 text-gray-600 dark:text-gray-300">
+                      <div className="truncate" title={tx.counterpartyName || tx.performedByName || '---'}>
                         {tx.counterpartyName || tx.performedByName || '---'}
-                      </SystemTd>
+                      </div>
+                    </SystemTd>
 
-                      {/* 8. Trạng thái */}
-                      <SystemTd className="text-center">
-                        {tx.status === 'CONFIRMED' ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                            <CheckCircle2 size={10} />
-                            Đã xác nhận
-                          </span>
-                        ) : tx.status === 'DRAFT' ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                            <Clock size={10} />
-                            Nháp
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-gray-500/10 text-gray-500">
-                            <Ban size={10} />
-                            Đã hủy
-                          </span>
-                        )}
-                      </SystemTd>
-                    </SystemTr>
-                  );
-                })
-              )}
-            </SystemTbody>
-          </table>
+                    {/* 8. Trạng thái */}
+                    <SystemTd className="w-28 text-center">
+                      {tx.status === 'CONFIRMED' ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle2 size={10} />
+                          Đã xác nhận
+                        </span>
+                      ) : tx.status === 'DRAFT' ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                          <Clock size={10} />
+                          Nháp
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-gray-500/10 text-gray-500">
+                          <Ban size={10} />
+                          Đã hủy
+                        </span>
+                      )}
+                    </SystemTd>
+                  </SystemTr>
+                );
+              })
+            )}
+          </SystemTbody>
         </SystemTableWrapper>
 
         {/* Pagination */}
@@ -569,7 +534,11 @@ export const AccountTransactionsModal: React.FC<AccountTransactionsModalProps> =
               page={page}
               totalPages={totalPages}
               totalItems={total}
-              limit={limit}
+              itemsPerPage={limit}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit);
+                setPage(1);
+              }}
               onPageChange={setPage}
             />
           </div>

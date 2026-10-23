@@ -555,7 +555,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300 max-w-full overflow-x-hidden min-w-0">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:h-full md:overflow-hidden space-y-2.5 sm:space-y-3 animate-in fade-in duration-300 max-w-full min-w-0">
       {/* Top Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0 flex-1">
@@ -644,7 +644,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
       </div>
 
       {/* Filter Bar */}
-      <SystemFilter className="p-2.5 sm:p-3 flex-col sm:flex-row items-stretch sm:items-center">
+      <SystemFilter className="p-2.5 sm:p-3 flex-col sm:flex-row items-stretch sm:items-center shrink-0">
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <SystemFilterSearch
             value={searchTerm}
@@ -768,7 +768,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
       </SystemFilter>
 
       {/* Desktop Table View */}
-      <div className="hidden md:flex flex-1 flex-col min-h-0">
+      <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
         <SystemTableWrapper
           tableClassName="min-w-[1100px]"
           pagination={
@@ -2274,7 +2274,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
         {selectedReceiptDetail && (() => {
           const debtBefore =
             selectedReceiptDetail.supplierDebtBefore ??
-            Number(selectedReceiptDetail.supplier?.closingDebt || 0) -
+            Number((selectedReceiptDetail.supplier as any)?.closingDebt || 0) -
               Number(selectedReceiptDetail.payableAmount || 0) +
               Number(selectedReceiptDetail.paidAmount || 0);
           const debtAfter =

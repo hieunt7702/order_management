@@ -99,7 +99,7 @@ export const ScanOrdersPage: React.FC = () => {
   const [, setIsCameraActive] = useState<boolean>(false);
   const [isCameraPaused, setIsCameraPaused] = useState<boolean>(false);
   const [cameraError, setCameraError] = useState<string>('');
-  const [, setCameras] = useState<Array<{ id: string; label: string }>>([]);
+  const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string>('');
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [torchOn, setTorchOn] = useState<boolean>(false);
@@ -123,6 +123,7 @@ export const ScanOrdersPage: React.FC = () => {
     timestamp: string;
     status?: 'PENDING' | 'VERIFIED' | 'ALREADY_VERIFIED' | 'NOT_FOUND' | 'CANCELLED' | 'ERROR';
     wasDispatched?: boolean;
+    autoRestocked?: boolean;
     message?: string;
     shopName?: string;
     carrierName?: string;
@@ -131,6 +132,8 @@ export const ScanOrdersPage: React.FC = () => {
   // Refs
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isCameraRunningRef = useRef<boolean>(false);
+  const isStartingRef = useRef<boolean>(false);
+  const isStoppingRef = useRef<boolean>(false);
   const isPausedRef = useRef<boolean>(false);
   const isLiveVerifyRef = useRef<boolean>(isLiveVerify);
   const selectedWarehouseIdRef = useRef<string>(selectedWarehouseId);
@@ -147,8 +150,10 @@ export const ScanOrdersPage: React.FC = () => {
 
   // List cameras
   useEffect(() => {
+    let isMounted = true;
     Html5Qrcode.getCameras()
       .then((devices) => {
+        if (!isMounted) return;
         if (devices && devices.length > 0) {
           setCameras(devices);
           const backCam = devices.find(
@@ -164,12 +169,24 @@ export const ScanOrdersPage: React.FC = () => {
       .catch((err) => {
         console.warn('Could not list cameras:', err);
       });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Initialize camera directly on mount
+  // Initialize camera directly on mount or when camera/facingMode changes
   useEffect(() => {
-    startCamera();
+    let isMounted = true;
+    const timer = setTimeout(() => {
+      if (isMounted) {
+        startCamera();
+      }
+    }, 80);
+
     return () => {
+      isMounted = false;
+      clearTimeout(timer);
       stopCamera();
     };
   }, [selectedCameraId, facingMode]);
@@ -214,14 +231,23 @@ export const ScanOrdersPage: React.FC = () => {
   };
 
   const startCamera = async () => {
+    if (isStartingRef.current) return;
+    isStartingRef.current = true;
+
     try {
       setCameraError('');
       if (scannerRef.current) {
         await stopCamera();
       }
 
+      // Small delay to allow browser hardware to release previous session
+      await new Promise((r) => setTimeout(r, 60));
+
       const container = document.getElementById('barcode-camera-reader');
-      if (!container) return;
+      if (!container) {
+        isStartingRef.current = false;
+        return;
+      }
 
       // Enable native BarcodeDetector API for instant recognition of Code 128 / SPX barcodes
       const html5QrCode = new Html5Qrcode('barcode-camera-reader', {
@@ -244,34 +270,57 @@ export const ScanOrdersPage: React.FC = () => {
       });
       scannerRef.current = html5QrCode;
 
-      // High FPS and native aspect ratio (no 4:3 squashing distortion for 1D barcodes)
       const config = {
         fps: 25,
       };
 
-      // Request HD resolution (ideal 1080p, min 720p) so Code 128 thin vertical stripes remain crisp
+      // Camera parameter: Use flexible constraints without rigid min/max
+      // which fail with OverconstrainedError on many standard PC webcams
       const cameraParam: any = selectedCameraId
-        ? {
-            deviceId: { exact: selectedCameraId },
-            width: { min: 640, ideal: 1920, max: 1920 },
-            height: { min: 480, ideal: 1080, max: 1080 },
-          }
-        : {
-            facingMode: { ideal: facingMode },
-            width: { min: 640, ideal: 1920, max: 1920 },
-            height: { min: 480, ideal: 1080, max: 1080 },
-          };
+        ? { deviceId: { exact: selectedCameraId } }
+        : { facingMode: facingMode || 'environment' };
 
-      await html5QrCode.start(
-        cameraParam,
-        config,
-        (decodedText) => {
-          if (!isPausedRef.current) {
-            handleIncomingBarcode(decodedText);
-          }
-        },
-        () => {},
-      );
+      try {
+        await html5QrCode.start(
+          cameraParam,
+          config,
+          (decodedText) => {
+            if (!isPausedRef.current) {
+              handleIncomingBarcode(decodedText);
+            }
+          },
+          () => {},
+        );
+      } catch (firstErr: any) {
+        console.warn('Initial camera start attempt failed, attempting fallback:', firstErr);
+        // Fallback 1: Direct device ID string or facingMode
+        const fallbackConfig: any = selectedCameraId || { facingMode: 'environment' };
+        try {
+          await html5QrCode.start(
+            fallbackConfig,
+            config,
+            (decodedText) => {
+              if (!isPausedRef.current) {
+                handleIncomingBarcode(decodedText);
+              }
+            },
+            () => {},
+          );
+        } catch (secondErr: any) {
+          // Fallback 2: Any default camera device
+          console.warn('Fallback 1 failed, trying fallback 2 (user camera):', secondErr);
+          await html5QrCode.start(
+            { facingMode: 'user' },
+            config,
+            (decodedText) => {
+              if (!isPausedRef.current) {
+                handleIncomingBarcode(decodedText);
+              }
+            },
+            () => {},
+          );
+        }
+      }
 
       setIsCameraActive(true);
       setIsCameraPaused(false);
@@ -303,25 +352,64 @@ export const ScanOrdersPage: React.FC = () => {
       } catch {
         // ignore
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Cannot start camera:', err);
-      setCameraError('Không thể mở camera. Vui lòng cấp quyền camera trong cài đặt trình duyệt.');
+      let errMsg = 'Không thể mở camera. Vui lòng cấp quyền camera trong cài đặt trình duyệt.';
+      const errStr = `${err?.name || ''} ${err?.message || ''}`;
+
+      if (
+        errStr.includes('NotReadableError') ||
+        errStr.includes('TrackStartError') ||
+        errStr.includes('Device in use')
+      ) {
+        errMsg =
+          'Camera đang bị ứng dụng khác hoặc tab trình duyệt khác chiếm dụng. Vui lòng đóng các ứng dụng đang dùng camera rồi bấm "Thử lại camera".';
+      } else if (errStr.includes('OverconstrainedError')) {
+        errMsg =
+          'Độ phân giải camera không tương thích. Vui lòng bấm "Đổi camera" hoặc bấm "Thử lại camera".';
+      } else if (errStr.includes('NotFoundError') || errStr.includes('DevicesNotFoundError')) {
+        errMsg = 'Không tìm thấy thiết bị camera nào được kết nối với máy tính.';
+      } else if (errStr.includes('NotAllowedError') || errStr.includes('PermissionDeniedError')) {
+        errMsg =
+          'Trình duyệt chưa được cấp quyền mở Camera. Vui lòng kiểm tra biểu tượng ổ khóa/camera trên thanh địa chỉ trình duyệt để BẬT quyền.';
+      } else if (err?.message) {
+        errMsg = `Không thể khởi động camera (${err?.name || 'Lỗi'}): ${err.message}`;
+      }
+
+      setCameraError(errMsg);
       setIsCameraActive(false);
       isCameraRunningRef.current = false;
+    } finally {
+      isStartingRef.current = false;
     }
   };
 
   const stopCamera = async () => {
-    if (scannerRef.current && isCameraRunningRef.current) {
-      try {
-        await scannerRef.current.stop();
-        scannerRef.current.clear();
-      } catch {
-        // ignore
+    if (isStoppingRef.current) return;
+    isStoppingRef.current = true;
+    try {
+      if (scannerRef.current) {
+        const scanner = scannerRef.current;
+        scannerRef.current = null;
+        try {
+          const state = (scanner as any).getState?.();
+          // Html5QrcodeScannerState: SCANNING is 2, PAUSED is 3
+          if (state === 2 || state === 3 || isCameraRunningRef.current) {
+            await scanner.stop();
+          }
+        } catch {
+          // ignore
+        }
+        try {
+          scanner.clear();
+        } catch {
+          // ignore
+        }
       }
-      scannerRef.current = null;
+    } finally {
       setIsCameraActive(false);
       isCameraRunningRef.current = false;
+      isStoppingRef.current = false;
     }
   };
 
@@ -370,8 +458,15 @@ export const ScanOrdersPage: React.FC = () => {
   };
 
   const handleSwitchCamera = () => {
-    setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
-    setSelectedCameraId('');
+    if (cameras.length > 1) {
+      const currentIndex = cameras.findIndex((c) => c.id === selectedCameraId);
+      const nextIndex = (currentIndex + 1) % cameras.length;
+      setSelectedCameraId(cameras[nextIndex].id);
+      toast.info(`Chuyển sang: ${cameras[nextIndex].label || `Camera #${nextIndex + 1}`}`);
+    } else {
+      setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
+      setSelectedCameraId('');
+    }
   };
 
   // CORE SCANNING HANDLER: Supports both Offline Batch Scanning and Live Verification
@@ -495,7 +590,10 @@ export const ScanOrdersPage: React.FC = () => {
           timestamp,
           status: 'CANCELLED',
           wasDispatched: item.wasDispatched,
-          message: item.wasDispatched
+          autoRestocked: item.autoRestocked,
+          message: item.autoRestocked
+            ? (item.message || 'Đơn hàng ĐÃ BỊ HỦY trên sàn Shopee! Hệ thống đã tự động hủy xác nhận đi đơn và hoàn tồn kho cho sản phẩm.')
+            : item.wasDispatched
             ? (item.message || 'Đơn hàng ĐÃ XUẤT TRƯỚC NHƯNG ĐÃ BỊ HỦY trên sàn Shopee! Tuyệt đối giữ lại kiện hàng!')
             : (item.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho!'),
           shopName: item.shopName,
@@ -639,10 +737,28 @@ export const ScanOrdersPage: React.FC = () => {
       const res = await submitSession(activeSession.id, whId);
 
       if (res.success) {
-        if (soundEnabled) playSuccessSound();
+        if (soundEnabled) {
+          if (res.summary?.cancelled > 0) {
+            playCancelledAlarm();
+          } else {
+            playSuccessSound();
+          }
+        }
+
         toast.success(
           `Đối soát hoàn tất: ${res.summary.verified} đơn thành công, ${res.summary.alreadyVerified} đã xuất trước, ${res.summary.notFound} không tìm thấy`,
         );
+
+        if (res.summary?.cancelled > 0) {
+          toast.error(
+            `Phát hiện ${res.summary.cancelled} đơn hàng ĐÃ BỊ HỦY trên sàn Shopee! ${
+              res.summary.cancelledRestocked > 0
+                ? `Hệ thống đã tự động hủy xác nhận đi đơn và hoàn tồn kho cho ${res.summary.cancelledRestocked} đơn hàng.`
+                : 'Tuyệt đối giữ lại kiện hàng không bàn giao cho shipper!'
+            }`,
+            { duration: 9000 },
+          );
+        }
       }
     } catch (err: any) {
       if (soundEnabled) playErrorSound();
@@ -1179,15 +1295,33 @@ export const ScanOrdersPage: React.FC = () => {
               {/* Camera Error Alert */}
               {cameraError && (
                 <div className="absolute inset-0 bg-black/90 p-5 flex flex-col items-center justify-center text-center z-30 space-y-3">
-                  <AlertTriangle size={30} className="text-amber-500" />
-                  <p className="text-xs text-gray-300 max-w-sm">{cameraError}</p>
-                  <button
-                    type="button"
-                    onClick={startCamera}
-                    className="px-3.5 py-1.5 rounded bg-[#2563eb] text-white text-xs font-semibold cursor-pointer"
-                  >
-                    Thử lại camera
-                  </button>
+                  <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center shadow-lg">
+                    <AlertTriangle size={24} className="stroke-[2]" />
+                  </div>
+                  <div className="space-y-1 max-w-sm">
+                    <p className="text-xs font-bold text-white">Chưa thể mở Camera</p>
+                    <p className="text-[11px] text-gray-300 leading-relaxed">{cameraError}</p>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1 flex-wrap justify-center">
+                    <button
+                      type="button"
+                      onClick={startCamera}
+                      className="px-3.5 py-1.5 rounded bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-semibold cursor-pointer active:scale-95 transition-all shadow-md flex items-center gap-1.5"
+                    >
+                      <RefreshCw size={12} />
+                      <span>Thử lại camera</span>
+                    </button>
+                    {cameras.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={handleSwitchCamera}
+                        className="px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-medium cursor-pointer active:scale-95 transition-all border border-gray-700 flex items-center gap-1.5"
+                      >
+                        <RefreshCw size={12} />
+                        <span>Đổi sang camera khác ({cameras.length})</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1232,7 +1366,7 @@ export const ScanOrdersPage: React.FC = () => {
           {/* 5. LIVE STATUS BANNER */}
           <div className={`p-2.5 rounded border shadow-xs flex items-center gap-2.5 transition-colors ${
             lastScannedFeedback?.status === 'CANCELLED'
-              ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-200'
+              ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-200 ring-1 ring-rose-500/30'
               : lastScannedFeedback?.status === 'NOT_FOUND'
               ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-500/50 text-amber-800 dark:text-amber-200'
               : 'bg-white dark:bg-[#161a23] border-gray-200 dark:border-gray-800'
@@ -1260,9 +1394,11 @@ export const ScanOrdersPage: React.FC = () => {
                   </span>
                 ) : lastScannedFeedback?.status === 'CANCELLED' ? (
                   <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1.5">
-                    <AlertTriangle size={14} className="shrink-0" />
+                    <AlertTriangle size={14} className="shrink-0 animate-bounce" />
                     <span>
-                      {lastScannedFeedback.wasDispatched
+                      {lastScannedFeedback.autoRestocked
+                        ? `🚨 ĐƠN HÀNG ĐÃ HỦY: ĐÃ TỰ ĐỘNG HOÀN KHO • ${lastScannedFeedback.code}`
+                        : lastScannedFeedback.wasDispatched
                         ? `🚨 CẢNH BÁO: ĐÃ XUẤT TRƯỚC NHƯNG ĐÃ BỊ HỦY • ${lastScannedFeedback.code}`
                         : `🚨 CẢNH BÁO ĐƠN HỦY: Mã ${lastScannedFeedback.code}`}
                     </span>
@@ -1299,7 +1435,7 @@ export const ScanOrdersPage: React.FC = () => {
                 {isCameraPaused
                   ? 'Máy quét phần cứng và camera đang tạm khóa. Không có mã nào được thêm vào phiên.'
                   : lastScannedFeedback?.status === 'CANCELLED'
-                  ? (lastScannedFeedback.message || 'Đơn hàng đã bị hủy trên sàn Shopee! Không xuất hàng cho shipper!')
+                  ? (lastScannedFeedback.message || 'Đơn hàng đã bị hủy trên sàn Shopee! Hệ thống đã tự động hủy xác nhận đi đơn và hoàn tồn kho!')
                   : lastScannedFeedback?.status === 'NOT_FOUND'
                   ? 'Mã vận đơn này chưa có trong hệ thống hoặc chưa được đồng bộ từ sàn.'
                   : lastScannedFeedback?.status === 'VERIFIED'
@@ -1431,14 +1567,28 @@ export const ScanOrdersPage: React.FC = () => {
                               {item.isCancelled ? (
                                 <span
                                   className={`px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap border shrink-0 flex items-center gap-1 animate-pulse ${
-                                    item.wasDispatched
+                                    item.autoRestocked
+                                      ? 'bg-rose-700 text-white border-rose-800 shadow-xs'
+                                      : item.wasDispatched
                                       ? 'bg-rose-600 text-white border-rose-700 shadow-xs'
                                       : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
                                   }`}
-                                  title={item.wasDispatched ? 'Đơn hàng đã xác nhận xuất trước đó nhưng đã bị hủy trên sàn' : 'Đơn hàng đã bị hủy trên sàn'}
+                                  title={
+                                    item.autoRestocked
+                                      ? 'Đơn hàng đã bị hủy trên sàn Shopee! Hệ thống đã tự động hủy xác nhận đi đơn và hoàn tồn kho thực tế'
+                                      : item.wasDispatched
+                                      ? 'Đơn hàng đã xác nhận xuất trước đó nhưng đã bị hủy trên sàn'
+                                      : 'Đơn hàng đã bị hủy trên sàn'
+                                  }
                                 >
                                   <AlertTriangle size={11} className="shrink-0" />
-                                  <span>{item.wasDispatched ? 'ĐÃ XUẤT (ĐÃ HỦY)' : 'ĐƠN ĐÃ HỦY'}</span>
+                                  <span>
+                                    {item.autoRestocked
+                                      ? 'ĐƠN HỦY (ĐÃ HOÀN KHO)'
+                                      : item.wasDispatched
+                                      ? 'ĐÃ XUẤT (ĐÃ HỦY)'
+                                      : 'ĐƠN ĐÃ HỦY'}
+                                  </span>
                                 </span>
                               ) : (
                                 <span
@@ -1647,14 +1797,28 @@ export const ScanOrdersPage: React.FC = () => {
                               {item.isCancelled ? (
                                 <span
                                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border animate-pulse ${
-                                    item.wasDispatched
+                                    item.autoRestocked
+                                      ? 'bg-rose-700 text-white border-rose-800 shadow-xs'
+                                      : item.wasDispatched
                                       ? 'bg-rose-600 text-white border-rose-700 shadow-xs'
                                       : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
                                   }`}
-                                  title={item.wasDispatched ? 'Đơn hàng đã xác nhận xuất trước đó nhưng đã bị hủy trên sàn' : 'Đơn hàng đã bị hủy trên sàn'}
+                                  title={
+                                    item.autoRestocked
+                                      ? 'Đơn hàng đã bị hủy trên sàn Shopee! Hệ thống đã tự động hủy xác nhận đi đơn và hoàn tồn kho thực tế'
+                                      : item.wasDispatched
+                                      ? 'Đơn hàng đã xác nhận xuất trước đó nhưng đã bị hủy trên sàn'
+                                      : 'Đơn hàng đã bị hủy trên sàn'
+                                  }
                                 >
                                   <AlertTriangle size={11} className="shrink-0" />
-                                  <span>{item.wasDispatched ? 'ĐÃ XUẤT (ĐÃ HỦY)' : 'ĐƠN ĐÃ HỦY'}</span>
+                                  <span>
+                                    {item.autoRestocked
+                                      ? 'ĐƠN HỦY • ĐÃ HOÀN KHO'
+                                      : item.wasDispatched
+                                      ? 'ĐÃ XUẤT (ĐÃ HỦY)'
+                                      : 'ĐƠN ĐÃ HỦY'}
+                                  </span>
                                 </span>
                               ) : (
                                 <span

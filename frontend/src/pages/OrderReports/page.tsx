@@ -278,7 +278,7 @@ export const OrderReportsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:h-full md:overflow-hidden space-y-2.5 sm:space-y-3 animate-in fade-in duration-300">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
         <div className="min-w-0 flex-1">
@@ -353,7 +353,7 @@ export const OrderReportsPage: React.FC = () => {
             value: `${summary.totalOnHand.toLocaleString('vi-VN')}`,
             subtitle: `Đang có trong các kho hàng`,
             icon: Warehouse,
-            colorScheme: 'cyan',
+            colorScheme: 'blue',
           }}
           rightItem={{
             title: 'Tồn khả dụng (Available)',
@@ -394,7 +394,7 @@ export const OrderReportsPage: React.FC = () => {
             value: `${summary.outOfStockCount.toLocaleString('vi-VN')}`,
             subtitle: summary.outOfStockCount > 0 ? 'Cần bổ sung nhập kho' : 'Đảm bảo tồn bán',
             icon: AlertCircle,
-            colorScheme: summary.outOfStockCount > 0 ? 'rose' : 'green',
+            colorScheme: summary.outOfStockCount > 0 ? 'red' : 'green',
           }}
         />
       </div>
@@ -539,7 +539,7 @@ export const OrderReportsPage: React.FC = () => {
       </SystemFilter>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded">
         {/* Desktop Table View (Hidden on mobile) */}
         <div className="hidden sm:flex flex-1 flex-col min-h-0 overflow-hidden">
           <SystemTableWrapper
@@ -914,7 +914,7 @@ export const OrderReportsPage: React.FC = () => {
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={totalItems}
-            pageSize={limit}
+            itemsPerPage={limit}
             onPageChange={(page) => setCurrentPage(page)}
           />
         </div>

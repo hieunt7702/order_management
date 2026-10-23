@@ -446,7 +446,7 @@ export const PurchaseReportsPage: React.FC = () => {
   );
 
   return (
-    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300 max-w-full overflow-x-hidden min-w-0">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:h-full md:overflow-hidden space-y-2.5 sm:space-y-3 animate-in fade-in duration-300 max-w-full min-w-0">
       {/* Top Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0 flex-1">
@@ -786,9 +786,9 @@ export const PurchaseReportsPage: React.FC = () => {
 
       {/* Tab 1: THEO NGÀY NHẬP */}
       {activeTab === 'DATES' && (
-        <div className="bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">
           {/* Desktop Table */}
-          <div className="hidden md:block">
+          <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
@@ -983,9 +983,9 @@ export const PurchaseReportsPage: React.FC = () => {
 
       {/* Tab 2: THEO NHÀ CUNG CẤP & CHI TIẾT TỪNG MÃ SKU */}
       {activeTab === 'SUPPLIERS' && (
-        <div className="bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">
           {/* Desktop Table View */}
-          <div className="hidden md:block">
+          <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
@@ -1538,9 +1538,9 @@ export const PurchaseReportsPage: React.FC = () => {
 
       {/* Tab 3: TOP SẢN PHẨM & SKU */}
       {activeTab === 'PRODUCTS' && (
-        <div className="bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">
           {/* Desktop Table View */}
-          <div className="hidden md:block">
+          <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
@@ -2061,9 +2061,9 @@ export const PurchaseReportsPage: React.FC = () => {
 
       {/* Tab 4: THEO CỬA HÀNG */}
       {activeTab === 'SHOPS' && (
-        <div className="bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">
           {/* Desktop Table View */}
-          <div className="hidden md:block">
+          <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
@@ -2258,9 +2258,9 @@ export const PurchaseReportsPage: React.FC = () => {
 
       {/* Tab 5: DANH SÁCH PHIẾU NHẬP GẦN ĐÂY */}
       {activeTab === 'RECEIPTS' && (
-        <div className="bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">
           {/* Desktop Table View */}
-          <div className="hidden md:block">
+          <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>

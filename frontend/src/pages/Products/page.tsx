@@ -1058,7 +1058,7 @@ export const ProductsPage: React.FC = () => {
         );
 
   return (
-    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5">
+    <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:h-full md:overflow-hidden space-y-2.5 sm:space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
@@ -1127,10 +1127,10 @@ export const ProductsPage: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-fit md:min-h-0">
+      <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden">
         {activeTab === 'PRODUCTS' ? (
           /* TAB 1: INTERNAL PRODUCTS */
-          <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3">
+          <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden space-y-2.5 sm:space-y-3">
             {/* Search filter & Mapping status toolbar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0 p-3 bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded">
               <div className="relative flex-1 max-w-md w-full">
@@ -1181,7 +1181,7 @@ export const ProductsPage: React.FC = () => {
             </div>
 
             {/* Products Table with Bottom-Pinned SystemPagination */}
-            <div className="flex-1 flex flex-col min-h-fit md:min-h-0">
+            <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden">
               {(() => {
                 const displayedProducts = products.filter((product) => {
                   if (mappingStatusFilter === 'ALL') return true;
@@ -1197,7 +1197,7 @@ export const ProductsPage: React.FC = () => {
                 return (
                   <>
                     {/* Desktop Products Table */}
-                    <div className="hidden md:flex flex-1 flex-col min-h-0">
+                    <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
                       <SystemTableWrapper
                         tableClassName="min-w-[1200px]"
                     pagination={
@@ -1719,7 +1719,7 @@ export const ProductsPage: React.FC = () => {
           </div>
         ) : (
           /* TAB 2: SHOPEE LISTING MAPPINGS & GROUPING */
-          <div className="flex flex-col gap-4">
+          <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden gap-3">
             {/* Banner Guide & Invariant */}
             <div className="bg-amber-50/80 dark:bg-amber-950/25 border border-amber-200/70 dark:border-amber-800/50 p-4 rounded flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
@@ -1840,7 +1840,7 @@ export const ProductsPage: React.FC = () => {
                 return (
                   <>
                     {/* Desktop Mappings Table */}
-                    <div className="hidden md:flex flex-1 flex-col min-h-0">
+                    <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
                       <SystemTableWrapper
                         tableClassName="min-w-[1100px]"
                     pagination={
