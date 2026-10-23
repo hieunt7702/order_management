@@ -72,6 +72,29 @@ export const SystemDatePicker: React.FC<SystemDatePickerProps> = ({
 
   const heightClass = size === 'sm' ? 'h-8 text-xs' : 'h-9 text-sm';
 
+  React.useEffect(() => {
+    const handleBackdropInteraction = (e: MouseEvent | TouchEvent) => {
+      // Find active open datepicker popup
+      const popup = document.querySelector('.datepicker-popup.block') as HTMLElement | null;
+      if (!popup) return;
+
+      const card = popup.querySelector(':scope > div:last-child');
+      // If user tapped on the popup container backdrop (outside the inner calendar card)
+      if (card && (e.target === popup || (!card.contains(e.target as Node) && popup.contains(e.target as Node)))) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Trigger library's useOnClickOutside
+        document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        document.body.dispatchEvent(new TouchEvent('touchstart', { bubbles: true }));
+      }
+    };
+
+    document.addEventListener('click', handleBackdropInteraction, true);
+    return () => {
+      document.removeEventListener('click', handleBackdropInteraction, true);
+    };
+  }, []);
+
   return (
     <div
       className={cn(
@@ -90,6 +113,7 @@ export const SystemDatePicker: React.FC<SystemDatePickerProps> = ({
           separator=" - "
           placeholder={placeholder}
           disabled={disabled}
+          readOnly={true}
           showShortcuts={showShortcuts && !asSingle}
           popoverDirection={popoverDirection}
           primaryColor="indigo"
