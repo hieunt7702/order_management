@@ -68,6 +68,7 @@ export interface PurchaseReceiptModel {
       fundSource: string;
       paymentMethod: string;
     };
+    cashTransaction?: any;
   }>;
   purchaseReturns?: Array<{
     id: string;
@@ -76,6 +77,8 @@ export interface PurchaseReceiptModel {
     debtOffsetAmount: number;
     reason?: string;
   }>;
+  supplierDebtBefore?: number;
+  supplierDebtAfter?: number;
 }
 
 export interface CreatePurchaseReceiptPayload {

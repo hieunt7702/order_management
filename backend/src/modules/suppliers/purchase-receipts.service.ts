@@ -602,8 +602,93 @@ export class PurchaseReceiptsService {
       }
     }
 
+    // Tính toán công nợ nhà cung cấp TRƯỚC và SAU khi phát sinh phiếu nhập này
+    let supplierDebtBefore = 0;
+    let supplierDebtAfter = 0;
+    try {
+      const sup = await this.prisma.supplier.findFirst({
+        where: { id: receipt.supplierId, tenantId },
+        include: {
+          purchaseReceipts: {
+            where: { createdAt: { lt: receipt.createdAt } },
+            select: { payableAmount: true, paidAmount: true, returnDeductionAmount: true },
+          },
+          purchaseReturns: {
+            where: { status: 'CONFIRMED', createdAt: { lt: receipt.createdAt } },
+            select: { debtOffsetAmount: true },
+          },
+          supplierPayments: {
+            where: { createdAt: { lt: receipt.createdAt } },
+            select: { amount: true, paymentType: true },
+          },
+          transfersFrom: {
+            where: { createdAt: { lt: receipt.createdAt } },
+            select: { amount: true },
+          },
+          transfersTo: {
+            where: { createdAt: { lt: receipt.createdAt } },
+            select: { amount: true },
+          },
+        },
+      });
+
+      if (sup) {
+        const opening = Number(sup.openingDebt || 0);
+        const prevPurchases = sup.purchaseReceipts.reduce((sum, r) => sum + Number(r.payableAmount || 0), 0);
+        const prevReturns = sup.purchaseReturns.reduce((sum, r) => sum + Number(r.debtOffsetAmount || 0), 0);
+        const prevPaid = sup.supplierPayments
+          .filter((p) => p.paymentType === 'PAYMENT' || p.paymentType === 'ADVANCE_DEPOSIT')
+          .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+        const prevRefund = sup.supplierPayments
+          .filter((p) => p.paymentType === 'REFUND_RECEIVED')
+          .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+        const prevTransOut = (sup.transfersFrom || []).reduce((sum, t) => sum + Number(t.amount || 0), 0);
+        const prevTransIn = (sup.transfersTo || []).reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+        supplierDebtBefore = opening + prevPurchases - prevReturns - prevPaid + prevRefund + prevTransOut - prevTransIn;
+        supplierDebtAfter =
+          supplierDebtBefore +
+          Number(receipt.payableAmount || 0) -
+          Number(receipt.paidAmount || 0) -
+          Number(receipt.returnDeductionAmount || 0);
+      }
+    } catch (err) {
+      console.warn('Lỗi tính công nợ trước/sau phiếu nhập (suppressed):', err);
+    }
+
+    // Tra cứu biến động số dư tài khoản quỹ cho các đợt thanh toán của phiếu nhập này
+    let enhancedAllocations = receipt.paymentAllocations;
+    try {
+      enhancedAllocations = await Promise.all(
+        receipt.paymentAllocations.map(async (alloc: any) => {
+          let cashTx: any = null;
+          if (alloc.payment?.id || alloc.payment?.paymentCode) {
+            cashTx = await this.prisma.cashTransaction.findFirst({
+              where: {
+                tenantId,
+                OR: [
+                  { relatedEntityId: alloc.payment?.id },
+                  { transactionCode: alloc.payment?.paymentCode },
+                ],
+              },
+              include: { fromAccount: true, toAccount: true },
+            });
+          }
+          return {
+            ...alloc,
+            cashTransaction: cashTx,
+          };
+        }),
+      );
+    } catch {
+      // suppress
+    }
+
     return {
       ...receipt,
+      paymentAllocations: enhancedAllocations,
+      supplierDebtBefore,
+      supplierDebtAfter,
       dueStatus: calculatedDueStatus,
     };
   }

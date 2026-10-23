@@ -796,8 +796,142 @@ export class CashflowService {
       }),
     ]);
 
+    // Tính toán số dư tài khoản TRƯỚC và SAU từng giao dịch theo dòng thời gian luỹ kế
+    const txBalanceMap: Record<string, { balanceBefore: number; balanceAfter: number }> = {};
+    if (items.length > 0) {
+      try {
+        const accountIds = Array.from(
+          new Set(
+            items.flatMap((it) => [it.fromAccountId, it.toAccountId]).filter(Boolean) as string[],
+          ),
+        );
+
+        if (accountIds.length > 0) {
+          const [accounts, allTxs, allTransfers] = await Promise.all([
+            this.prisma.cashAccount.findMany({
+              where: { id: { in: accountIds } },
+              select: { id: true, initialBalance: true },
+            }),
+            this.prisma.cashTransaction.findMany({
+              where: {
+                tenantId,
+                status: CashTransactionStatus.CONFIRMED,
+                OR: [{ fromAccountId: { in: accountIds } }, { toAccountId: { in: accountIds } }],
+              },
+              select: {
+                id: true,
+                fromAccountId: true,
+                toAccountId: true,
+                amount: true,
+                type: true,
+                transactionDate: true,
+                createdAt: true,
+              },
+              orderBy: [{ transactionDate: 'asc' }, { createdAt: 'asc' }],
+            }),
+            this.prisma.cashTransfer.findMany({
+              where: {
+                tenantId,
+                status: CashTransactionStatus.CONFIRMED,
+                OR: [{ fromAccountId: { in: accountIds } }, { toAccountId: { in: accountIds } }],
+              },
+              select: {
+                id: true,
+                fromAccountId: true,
+                toAccountId: true,
+                amount: true,
+                feeAmount: true,
+                transferDate: true,
+                createdAt: true,
+              },
+              orderBy: [{ transferDate: 'asc' }, { createdAt: 'asc' }],
+            }),
+          ]);
+
+          const runningBalances: Record<string, number> = {};
+          accounts.forEach((a) => {
+            runningBalances[a.id] = Number(a.initialBalance || 0);
+          });
+
+          type ChronoEvent = {
+            id: string;
+            type: 'TX' | 'TRANSFER';
+            fromAccountId?: string | null;
+            toAccountId?: string | null;
+            amount: number;
+            feeAmount?: number;
+            date: Date;
+            created: Date;
+          };
+
+          const chronoEvents: ChronoEvent[] = [
+            ...allTxs.map((t) => ({
+              id: t.id,
+              type: 'TX' as const,
+              fromAccountId: t.fromAccountId,
+              toAccountId: t.toAccountId,
+              amount: Number(t.amount || 0),
+              date: new Date(t.transactionDate),
+              created: new Date(t.createdAt),
+            })),
+            ...allTransfers.map((tr) => ({
+              id: tr.id,
+              type: 'TRANSFER' as const,
+              fromAccountId: tr.fromAccountId,
+              toAccountId: tr.toAccountId,
+              amount: Number(tr.amount || 0),
+              feeAmount: Number(tr.feeAmount || 0),
+              date: new Date(tr.transferDate),
+              created: new Date(tr.createdAt),
+            })),
+          ];
+
+          chronoEvents.sort(
+            (a, b) => a.date.getTime() - b.date.getTime() || a.created.getTime() - b.created.getTime(),
+          );
+
+          for (const ev of chronoEvents) {
+            if (ev.type === 'TX') {
+              const accId = ev.fromAccountId || ev.toAccountId;
+              if (accId) {
+                const prevBal = runningBalances[accId] ?? 0;
+                let nextBal = prevBal;
+                if (ev.fromAccountId === accId) {
+                  nextBal = prevBal - ev.amount;
+                } else if (ev.toAccountId === accId) {
+                  nextBal = prevBal + ev.amount;
+                }
+                runningBalances[accId] = nextBal;
+                txBalanceMap[ev.id] = { balanceBefore: prevBal, balanceAfter: nextBal };
+              }
+            } else if (ev.type === 'TRANSFER') {
+              if (ev.fromAccountId && runningBalances[ev.fromAccountId] !== undefined) {
+                runningBalances[ev.fromAccountId] -= ev.amount + (ev.feeAmount || 0);
+              }
+              if (ev.toAccountId && runningBalances[ev.toAccountId] !== undefined) {
+                runningBalances[ev.toAccountId] += ev.amount;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Lỗi tính số dư luỹ kế giao dịch (suppressed):', err);
+      }
+    }
+
+    const enhancedItems = items.map((it) => {
+      const balInfo = txBalanceMap[it.id];
+      const primaryAcc = it.fromAccount || it.toAccount;
+      const fallbackBefore = primaryAcc ? Number(primaryAcc.currentBalance || 0) : 0;
+      return {
+        ...it,
+        balanceBefore: balInfo ? balInfo.balanceBefore : fallbackBefore,
+        balanceAfter: balInfo ? balInfo.balanceAfter : fallbackBefore,
+      };
+    });
+
     return {
-      items,
+      items: enhancedItems,
       total,
       page,
       limit,

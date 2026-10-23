@@ -527,9 +527,11 @@ export class SuppliersService {
 
     let runningBalance = 0;
     const statementWithRunningBalance = events.map((ev) => {
+      const balanceBefore = runningBalance;
       runningBalance += ev.increaseDebt - ev.decreaseDebt;
       return {
         ...ev,
+        balanceBefore,
         runningBalance,
       };
     });

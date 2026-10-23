@@ -77,6 +77,8 @@ export interface CashTransactionModel {
   fromAccount?: CashAccountModel | null;
   toAccount?: CashAccountModel | null;
   shop?: { id: string; name: string } | null;
+  balanceBefore?: number;
+  balanceAfter?: number;
 }
 
 export interface CashTransferModel {

@@ -56,6 +56,7 @@ import {
   SystemTableEmpty,
   SystemMobileEmpty,
   SystemTableSkeleton,
+  SystemPagination,
 } from '../../components/ui/SystemTable';
 import { toast } from '../../components/ui/Toast';
 
@@ -372,6 +373,44 @@ export const PurchaseReportsPage: React.FC = () => {
     totalDisputedQuantity: 0,
     uniqueSkusCount: 0,
   };
+
+  // Pagination
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, selectedShopId, selectedSupplierId, startDate, endDate, searchTerm]);
+
+  const paginatedDates = useMemo(() => {
+    const list = data?.byDate || [];
+    const start = (page - 1) * pageSize;
+    return list.slice(start, start + pageSize);
+  }, [data?.byDate, page, pageSize]);
+
+  const paginatedSuppliers = useMemo(() => {
+    const list = data?.bySupplier || [];
+    const start = (page - 1) * pageSize;
+    return list.slice(start, start + pageSize);
+  }, [data?.bySupplier, page, pageSize]);
+
+  const paginatedProducts = useMemo(() => {
+    const list = data?.topProducts || [];
+    const start = (page - 1) * pageSize;
+    return list.slice(start, start + pageSize);
+  }, [data?.topProducts, page, pageSize]);
+
+  const paginatedShops = useMemo(() => {
+    const list = data?.byShop || [];
+    const start = (page - 1) * pageSize;
+    return list.slice(start, start + pageSize);
+  }, [data?.byShop, page, pageSize]);
+
+  const paginatedReceipts = useMemo(() => {
+    const list = data?.receipts || [];
+    const start = (page - 1) * pageSize;
+    return list.slice(start, start + pageSize);
+  }, [data?.receipts, page, pageSize]);
 
   const hasFilterActive = Boolean(
     selectedShopId !== 'ALL' ||
@@ -746,7 +785,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 ) : !data?.byDate || data.byDate.length === 0 ? (
                   <SystemTableEmpty colSpan={9} message="Không có số liệu nhập hàng theo ngày trong khoảng thời gian đã chọn" />
                 ) : (
-                  data.byDate.map((d) => {
+                  paginatedDates.map((d) => {
                     const percent =
                       summary.netItemsAmount > 0
                         ? ((d.netAmount / summary.netItemsAmount) * 100).toFixed(1)
@@ -794,6 +833,24 @@ export const PurchaseReportsPage: React.FC = () => {
                 )}
               </SystemTbody>
             </SystemTableWrapper>
+
+            {/* Desktop Pagination */}
+            {data?.byDate && data.byDate.length > 0 && (
+              <div className="border-t border-gray-200 dark:border-gray-800">
+                <SystemPagination
+                  currentPage={page}
+                  totalPages={Math.max(1, Math.ceil(data.byDate.length / pageSize))}
+                  totalItems={data.byDate.length}
+                  itemsPerPage={pageSize}
+                  onPageChange={(p) => setPage(p)}
+                  onLimitChange={(l) => {
+                    setPageSize(l);
+                    setPage(1);
+                  }}
+                  className="border-t-0"
+                />
+              </div>
+            )}
           </div>
 
           {/* Mobile Card View */}
@@ -807,7 +864,7 @@ export const PurchaseReportsPage: React.FC = () => {
             ) : !data?.byDate || data.byDate.length === 0 ? (
               <SystemMobileEmpty message="Không có số liệu nhập hàng theo ngày trong khoảng thời gian đã chọn" />
             ) : (
-              data.byDate.map((d) => {
+              paginatedDates.map((d) => {
                 const percent =
                   summary.netItemsAmount > 0
                     ? ((d.netAmount / summary.netItemsAmount) * 100).toFixed(1)
@@ -815,7 +872,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 return (
                   <div
                     key={d.date}
-                    className="bg-white dark:bg-[#14151a] p-3 rounded border border-gray-200 dark:border-gray-800 space-y-2 shadow-xs"
+                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2 shadow-none"
                   >
                     <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 pb-2">
                       <div>
@@ -878,6 +935,24 @@ export const PurchaseReportsPage: React.FC = () => {
                 );
               })
             )}
+
+            {/* Mobile Pagination */}
+            {data?.byDate && data.byDate.length > 0 && (
+              <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+                <SystemPagination
+                  currentPage={page}
+                  totalPages={Math.max(1, Math.ceil(data.byDate.length / pageSize))}
+                  totalItems={data.byDate.length}
+                  itemsPerPage={pageSize}
+                  onPageChange={(p) => setPage(p)}
+                  onLimitChange={(l) => {
+                    setPageSize(l);
+                    setPage(1);
+                  }}
+                  className="border-t-0"
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -909,7 +984,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 ) : !data?.bySupplier || data.bySupplier.length === 0 ? (
                   <SystemTableEmpty colSpan={11} message="Không có số liệu nhập hàng cho nhà cung cấp đã chọn" />
                 ) : (
-                  data.bySupplier.map((s) => {
+                  paginatedSuppliers.map((s) => {
                     const payRate =
                       s.netAmount > 0
                         ? Math.min(100, Math.round((s.paidAmount / s.netAmount) * 100))
@@ -1071,6 +1146,24 @@ export const PurchaseReportsPage: React.FC = () => {
                 )}
               </SystemTbody>
             </SystemTableWrapper>
+
+            {/* Desktop Pagination */}
+            {data?.bySupplier && data.bySupplier.length > 0 && (
+              <div className="border-t border-gray-200 dark:border-gray-800">
+                <SystemPagination
+                  currentPage={page}
+                  totalPages={Math.max(1, Math.ceil(data.bySupplier.length / pageSize))}
+                  totalItems={data.bySupplier.length}
+                  itemsPerPage={pageSize}
+                  onPageChange={(p) => setPage(p)}
+                  onLimitChange={(l) => {
+                    setPageSize(l);
+                    setPage(1);
+                  }}
+                  className="border-t-0"
+                />
+              </div>
+            )}
           </div>
 
           {/* Mobile Card View */}
@@ -1084,7 +1177,7 @@ export const PurchaseReportsPage: React.FC = () => {
             ) : !data?.bySupplier || data.bySupplier.length === 0 ? (
               <SystemMobileEmpty message="Không có số liệu nhập hàng cho nhà cung cấp đã chọn" />
             ) : (
-              data.bySupplier.map((s) => {
+              paginatedSuppliers.map((s) => {
                 const payRate =
                   s.netAmount > 0
                     ? Math.min(100, Math.round((s.paidAmount / s.netAmount) * 100))
@@ -1095,7 +1188,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 return (
                   <div
                     key={s.supplierId}
-                    className="bg-white dark:bg-[#14151a] p-3 rounded border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs"
+                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2.5 shadow-none"
                   >
                     <div className="flex items-start justify-between gap-2 border-b border-gray-100 dark:border-gray-800/80 pb-2">
                       <div>
@@ -1166,9 +1259,9 @@ export const PurchaseReportsPage: React.FC = () => {
                       {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                     </button>
 
-                    {/* Expanded SKU list on mobile */}
+                    {/* Expanded SKU list on mobile (flat divider items matching orders list) */}
                     {isExpanded && (
-                      <div className="pt-2 border-t border-gray-100 dark:border-gray-800/80 space-y-2">
+                      <div className="pt-2 border-t border-gray-100 dark:border-gray-800/80 divide-y divide-dashed divide-gray-100 dark:divide-gray-800">
                         {skuList.length === 0 ? (
                           <div className="text-center py-2 text-[11px] text-gray-400">
                             Không có chi tiết mã SKU phát sinh cho nhà cung cấp này
@@ -1181,37 +1274,30 @@ export const PurchaseReportsPage: React.FC = () => {
                             return (
                               <div
                                 key={`${s.supplierId}-${skuItem.sku}-${sIdx}`}
-                                className="p-2 rounded bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100/60 dark:border-indigo-900/30 text-xs space-y-1"
+                                className="py-2 first:pt-1 last:pb-0 text-xs space-y-1"
                               >
                                 <div className="flex items-start justify-between gap-1">
-                                  <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-[11px]">
-                                    {skuItem.sku}
-                                  </span>
-                                  <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <Boxes size={12} className="text-[#5865f2] shrink-0" />
+                                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs truncate">
+                                      {skuItem.sku}
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] font-medium text-gray-400 shrink-0">
                                     {skuRatio}% NCC
                                   </span>
                                 </div>
-                                <div className="font-medium text-gray-900 dark:text-gray-100 line-clamp-2 text-[11px]">
+                                <div className="font-medium text-gray-900 dark:text-gray-100 text-xs line-clamp-2">
                                   {skuItem.productName}
                                 </div>
                                 {skuItem.variationName && (
-                                  <div className="text-[10px] text-gray-500">Phân loại: {skuItem.variationName}</div>
+                                  <div className="text-[10px] text-gray-400">Phân loại: {skuItem.variationName}</div>
                                 )}
-                                <div className="grid grid-cols-3 gap-1 pt-1 text-[11px] border-t border-indigo-100/40 dark:border-indigo-900/20">
-                                  <div>
-                                    <span className="text-[10px] text-gray-400 block">Số lượng:</span>
-                                    <span className="font-mono font-bold">{skuItem.quantity.toLocaleString('vi-VN')}</span>
-                                  </div>
-                                  <div>
-                                    <span className="text-[10px] text-gray-400 block">Giá BQ:</span>
-                                    <span className="font-mono">{skuItem.avgPrice.toLocaleString('vi-VN')}đ</span>
-                                  </div>
-                                  <div className="text-right">
-                                    <span className="text-[10px] text-gray-400 block">Tổng tiền:</span>
-                                    <span className="font-mono font-bold text-gray-900 dark:text-white">
-                                      {skuItem.totalAmount.toLocaleString('vi-VN')}đ
-                                    </span>
-                                  </div>
+                                <div className="flex items-center justify-between text-xs pt-0.5 text-gray-600 dark:text-gray-400">
+                                  <span>{skuItem.quantity.toLocaleString('vi-VN')} cái × {skuItem.avgPrice.toLocaleString('vi-VN')}đ</span>
+                                  <span className="font-mono font-bold text-gray-900 dark:text-white">
+                                    {skuItem.totalAmount.toLocaleString('vi-VN')}đ
+                                  </span>
                                 </div>
                               </div>
                             );
@@ -1222,6 +1308,24 @@ export const PurchaseReportsPage: React.FC = () => {
                   </div>
                 );
               })
+            )}
+
+            {/* Mobile Pagination */}
+            {data?.bySupplier && data.bySupplier.length > 0 && (
+              <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+                <SystemPagination
+                  currentPage={page}
+                  totalPages={Math.max(1, Math.ceil(data.bySupplier.length / pageSize))}
+                  totalItems={data.bySupplier.length}
+                  itemsPerPage={pageSize}
+                  onPageChange={(p) => setPage(p)}
+                  onLimitChange={(l) => {
+                    setPageSize(l);
+                    setPage(1);
+                  }}
+                  className="border-t-0"
+                />
+              </div>
             )}
           </div>
         </div>
@@ -1251,7 +1355,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 ) : !data?.topProducts || data.topProducts.length === 0 ? (
                   <SystemTableEmpty colSpan={8} message="Không có sản phẩm nào được nhập trong khoảng thời gian này" />
                 ) : (
-                  data.topProducts.map((p, idx) => (
+                  paginatedProducts.map((p, idx) => (
                     <SystemTr key={`${p.sku}-${idx}`}>
                       <SystemTd className="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">
                         {p.sku}
@@ -1286,6 +1390,24 @@ export const PurchaseReportsPage: React.FC = () => {
                 )}
               </SystemTbody>
             </SystemTableWrapper>
+
+            {/* Desktop Pagination */}
+            {data?.topProducts && data.topProducts.length > 0 && (
+              <div className="border-t border-gray-200 dark:border-gray-800">
+                <SystemPagination
+                  currentPage={page}
+                  totalPages={Math.max(1, Math.ceil(data.topProducts.length / pageSize))}
+                  totalItems={data.topProducts.length}
+                  itemsPerPage={pageSize}
+                  onPageChange={(p) => setPage(p)}
+                  onLimitChange={(l) => {
+                    setPageSize(l);
+                    setPage(1);
+                  }}
+                  className="border-t-0"
+                />
+              </div>
+            )}
           </div>
 
           {/* Mobile Card View */}
@@ -1299,10 +1421,10 @@ export const PurchaseReportsPage: React.FC = () => {
             ) : !data?.topProducts || data.topProducts.length === 0 ? (
               <SystemMobileEmpty message="Không có sản phẩm nào được nhập trong khoảng thời gian này" />
             ) : (
-              data.topProducts.map((p, idx) => (
+              paginatedProducts.map((p, idx) => (
                 <div
                   key={`${p.sku}-${idx}`}
-                  className="bg-white dark:bg-[#14151a] p-3 rounded border border-gray-200 dark:border-gray-800 space-y-2 text-xs shadow-xs"
+                  className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2 text-xs shadow-none"
                 >
                   <div className="flex items-start justify-between gap-2 border-b border-gray-100 dark:border-gray-800/80 pb-1.5">
                     <div>
@@ -1348,6 +1470,24 @@ export const PurchaseReportsPage: React.FC = () => {
                 </div>
               ))
             )}
+
+            {/* Mobile Pagination */}
+            {data?.topProducts && data.topProducts.length > 0 && (
+              <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+                <SystemPagination
+                  currentPage={page}
+                  totalPages={Math.max(1, Math.ceil(data.topProducts.length / pageSize))}
+                  totalItems={data.topProducts.length}
+                  itemsPerPage={pageSize}
+                  onPageChange={(p) => setPage(p)}
+                  onLimitChange={(l) => {
+                    setPageSize(l);
+                    setPage(1);
+                  }}
+                  className="border-t-0"
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1377,7 +1517,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 ) : !data?.byShop || data.byShop.length === 0 ? (
                   <SystemTableEmpty colSpan={9} message="Không có số liệu nhập hàng cho cửa hàng đã chọn" />
                 ) : (
-                  data.byShop.map((s) => {
+                  paginatedShops.map((s) => {
                     const percent =
                       summary.netItemsAmount > 0
                         ? ((s.netAmount / summary.netItemsAmount) * 100).toFixed(1)
@@ -1425,6 +1565,24 @@ export const PurchaseReportsPage: React.FC = () => {
                 )}
               </SystemTbody>
             </SystemTableWrapper>
+
+            {/* Desktop Pagination */}
+            {data?.byShop && data.byShop.length > 0 && (
+              <div className="border-t border-gray-200 dark:border-gray-800">
+                <SystemPagination
+                  currentPage={page}
+                  totalPages={Math.max(1, Math.ceil(data.byShop.length / pageSize))}
+                  totalItems={data.byShop.length}
+                  itemsPerPage={pageSize}
+                  onPageChange={(p) => setPage(p)}
+                  onLimitChange={(l) => {
+                    setPageSize(l);
+                    setPage(1);
+                  }}
+                  className="border-t-0"
+                />
+              </div>
+            )}
           </div>
 
           {/* Mobile Card View */}
@@ -1438,7 +1596,7 @@ export const PurchaseReportsPage: React.FC = () => {
             ) : !data?.byShop || data.byShop.length === 0 ? (
               <SystemMobileEmpty message="Không có số liệu nhập hàng cho cửa hàng đã chọn" />
             ) : (
-              data.byShop.map((s) => {
+              paginatedShops.map((s) => {
                 const percent =
                   summary.netItemsAmount > 0
                     ? ((s.netAmount / summary.netItemsAmount) * 100).toFixed(1)
@@ -1446,7 +1604,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 return (
                   <div
                     key={s.shopId}
-                    className="bg-white dark:bg-[#14151a] p-3 rounded border border-gray-200 dark:border-gray-800 space-y-2.5 text-xs shadow-xs"
+                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2.5 text-xs shadow-none"
                   >
                     <div className="flex items-start justify-between gap-2 border-b border-gray-100 dark:border-gray-800/80 pb-2">
                       <div>
@@ -1509,6 +1667,24 @@ export const PurchaseReportsPage: React.FC = () => {
                 );
               })
             )}
+
+            {/* Mobile Pagination */}
+            {data?.byShop && data.byShop.length > 0 && (
+              <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+                <SystemPagination
+                  currentPage={page}
+                  totalPages={Math.max(1, Math.ceil(data.byShop.length / pageSize))}
+                  totalItems={data.byShop.length}
+                  itemsPerPage={pageSize}
+                  onPageChange={(p) => setPage(p)}
+                  onLimitChange={(l) => {
+                    setPageSize(l);
+                    setPage(1);
+                  }}
+                  className="border-t-0"
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1539,7 +1715,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 ) : !data?.receipts || data.receipts.length === 0 ? (
                   <SystemTableEmpty colSpan={10} message="Không tìm thấy phiếu nhập nào phù hợp bộ lọc" />
                 ) : (
-                  data.receipts.map((r: any) => {
+                  paginatedReceipts.map((r: any) => {
                     const returnDed = Number(r.returnDeductionAmount || 0);
                     const netPayable = Math.max(0, Number(r.payableAmount || 0) - returnDed);
                     const netItems = Math.max(0, Number(r.totalItemsAmount || 0) - returnDed);
@@ -1600,6 +1776,24 @@ export const PurchaseReportsPage: React.FC = () => {
                 )}
               </SystemTbody>
             </SystemTableWrapper>
+
+            {/* Desktop Pagination */}
+            {data?.receipts && data.receipts.length > 0 && (
+              <div className="border-t border-gray-200 dark:border-gray-800">
+                <SystemPagination
+                  currentPage={page}
+                  totalPages={Math.max(1, Math.ceil(data.receipts.length / pageSize))}
+                  totalItems={data.receipts.length}
+                  itemsPerPage={pageSize}
+                  onPageChange={(p) => setPage(p)}
+                  onLimitChange={(l) => {
+                    setPageSize(l);
+                    setPage(1);
+                  }}
+                  className="border-t-0"
+                />
+              </div>
+            )}
           </div>
 
           {/* Mobile Card View */}
@@ -1613,13 +1807,13 @@ export const PurchaseReportsPage: React.FC = () => {
             ) : !data?.receipts || data.receipts.length === 0 ? (
               <SystemMobileEmpty message="Không tìm thấy phiếu nhập nào phù hợp bộ lọc" />
             ) : (
-              data.receipts.map((r: any) => {
+              paginatedReceipts.map((r: any) => {
                 const returnDed = Number(r.returnDeductionAmount || 0);
                 const netPayable = Math.max(0, Number(r.payableAmount || 0) - returnDed);
                 return (
                   <div
                     key={r.id}
-                    className="bg-white dark:bg-[#14151a] p-3 rounded border border-gray-200 dark:border-gray-800 space-y-2 text-xs shadow-xs"
+                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2 text-xs shadow-none"
                   >
                     <div className="flex items-start justify-between gap-2 border-b border-gray-100 dark:border-gray-800/80 pb-1.5">
                       <div>
@@ -1675,6 +1869,24 @@ export const PurchaseReportsPage: React.FC = () => {
                   </div>
                 );
               })
+            )}
+
+            {/* Mobile Pagination */}
+            {data?.receipts && data.receipts.length > 0 && (
+              <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+                <SystemPagination
+                  currentPage={page}
+                  totalPages={Math.max(1, Math.ceil(data.receipts.length / pageSize))}
+                  totalItems={data.receipts.length}
+                  itemsPerPage={pageSize}
+                  onPageChange={(p) => setPage(p)}
+                  onLimitChange={(l) => {
+                    setPageSize(l);
+                    setPage(1);
+                  }}
+                  className="border-t-0"
+                />
+              </div>
             )}
           </div>
         </div>

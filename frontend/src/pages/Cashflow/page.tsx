@@ -830,7 +830,9 @@ export const CashflowPage: React.FC = () => {
                   <tr>
                     <th className="py-3 px-4">Mã phiếu / Ngày</th>
                     <th className="py-3 px-4">Khoản mục</th>
+                    <th className="py-3 px-4">Tiền trước GD</th>
                     <th className="py-3 px-4">Số tiền</th>
+                    <th className="py-3 px-4">Tiền sau GD</th>
                     <th className="py-3 px-4">Tài khoản</th>
                     <th className="py-3 px-4">Đối tượng / Ghi chú</th>
                     <th className="py-3 px-4">Trạng thái</th>
@@ -840,7 +842,7 @@ export const CashflowPage: React.FC = () => {
                 <tbody className="divide-y divide-gray-100 dark:divide-[#22283a]/60 text-gray-700 dark:text-gray-300">
                   {recentList.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-gray-500">
+                      <td colSpan={9} className="py-8 text-center text-gray-500">
                         Chưa có phát sinh giao dịch nào gần đây.
                       </td>
                     </tr>
@@ -857,6 +859,11 @@ export const CashflowPage: React.FC = () => {
                         <td className="py-3 px-4 font-medium text-gray-800 dark:text-gray-200">
                           {tx.category?.name || '---'}
                         </td>
+                        <td className="py-3 px-4 text-xs font-mono text-gray-500 whitespace-nowrap">
+                          {tx.balanceBefore !== undefined && tx.balanceBefore !== null
+                            ? `${Number(tx.balanceBefore).toLocaleString('vi-VN')} đ`
+                            : '---'}
+                        </td>
                         <td className="py-3 px-4 whitespace-nowrap">
                           <span
                             className={`font-semibold ${
@@ -868,6 +875,11 @@ export const CashflowPage: React.FC = () => {
                             {tx.type === 'INCOME' || tx.type === 'CAPITAL_IN' ? '+' : '-'}
                             {Number(tx.amount || 0).toLocaleString('vi-VN')} đ
                           </span>
+                        </td>
+                        <td className="py-3 px-4 text-xs font-mono font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                          {tx.balanceAfter !== undefined && tx.balanceAfter !== null
+                            ? `${Number(tx.balanceAfter).toLocaleString('vi-VN')} đ`
+                            : '---'}
                         </td>
                         <td className="py-3 px-4 text-gray-600 dark:text-gray-300">
                           {tx.fromAccount?.name || tx.toAccount?.name || (tx.paymentMethod === 'DEBT_OFFSET' ? 'Cấn trừ nợ NCC' : '---')}
@@ -1044,7 +1056,9 @@ export const CashflowPage: React.FC = () => {
                   <SystemTh>Mã phiếu</SystemTh>
                   <SystemTh>Ngày</SystemTh>
                   <SystemTh>Khoản mục</SystemTh>
+                  <SystemTh>Tiền trước GD</SystemTh>
                   <SystemTh>Số tiền</SystemTh>
+                  <SystemTh>Tiền sau GD</SystemTh>
                   <SystemTh>Tài khoản tiền</SystemTh>
                   <SystemTh>Người trả / nhận</SystemTh>
                   <SystemTh>Người thực hiện</SystemTh>
@@ -1055,12 +1069,12 @@ export const CashflowPage: React.FC = () => {
               </SystemThead>
               <SystemTbody>
                 {txLoading ? (
-                  <SystemTableSkeleton rows={8} cols={11} />
+                  <SystemTableSkeleton rows={8} cols={13} />
                 ) : transactions.length === 0 ? (
                   <SystemTableEmpty
                     title="Không có giao dịch nào"
                     description="Không tìm thấy bản ghi thu chi nào phù hợp với bộ lọc hiện tại."
-                    colSpan={11}
+                    colSpan={13}
                   />
                 ) : (
                   transactions.map((tx, index) => {
@@ -1090,6 +1104,11 @@ export const CashflowPage: React.FC = () => {
                         </div>
                         {tx.note && <div className="text-[11px] text-gray-400 max-w-xs truncate">{tx.note}</div>}
                       </SystemTd>
+                      <SystemTd className="text-xs text-gray-500 font-mono whitespace-nowrap">
+                        {tx.balanceBefore !== undefined && tx.balanceBefore !== null
+                          ? `${Number(tx.balanceBefore).toLocaleString('vi-VN')}đ`
+                          : '---'}
+                      </SystemTd>
                       <SystemTd className="whitespace-nowrap">
                         <span
                           className={`font-semibold text-xs sm:text-sm ${
@@ -1103,6 +1122,11 @@ export const CashflowPage: React.FC = () => {
                           {tx.type === 'INCOME' ? '+' : tx.type === 'EXPENSE' ? '−' : ''}
                           {Number(tx.amount).toLocaleString('vi-VN')}đ
                         </span>
+                      </SystemTd>
+                      <SystemTd className="text-xs font-semibold text-gray-900 dark:text-white font-mono whitespace-nowrap">
+                        {tx.balanceAfter !== undefined && tx.balanceAfter !== null
+                          ? `${Number(tx.balanceAfter).toLocaleString('vi-VN')}đ`
+                          : '---'}
                       </SystemTd>
                       <SystemTd className="text-xs text-gray-600 dark:text-gray-300">
                         {tx.fromAccount?.name || tx.toAccount?.name || (tx.paymentMethod === 'DEBT_OFFSET' ? 'Cấn trừ nợ NCC' : 'Tiền cá nhân chi hộ')}
@@ -1265,6 +1289,29 @@ export const CashflowPage: React.FC = () => {
                     {tx.note && (
                       <div className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 italic">
                         {tx.note}
+                      </div>
+                    )}
+
+                    {/* Balance Before & After progression */}
+                    {(tx.balanceBefore !== undefined || tx.balanceAfter !== undefined) && (
+                      <div className="flex items-center justify-between text-[11px] py-1.5 px-2.5 rounded bg-gray-50 dark:bg-[#14151a] border border-gray-100 dark:border-gray-800">
+                        <div className="min-w-0">
+                          <span className="text-[10px] text-gray-400 block">Tiền trước GD:</span>
+                          <span className="font-mono text-gray-600 dark:text-gray-300 font-medium">
+                            {tx.balanceBefore !== undefined && tx.balanceBefore !== null
+                              ? `${Number(tx.balanceBefore).toLocaleString('vi-VN')}đ`
+                              : '---'}
+                          </span>
+                        </div>
+                        <ArrowRight size={12} className="text-gray-400 shrink-0 mx-1" />
+                        <div className="text-right min-w-0">
+                          <span className="text-[10px] text-gray-400 block">Tiền sau GD:</span>
+                          <span className="font-mono font-bold text-gray-900 dark:text-white">
+                            {tx.balanceAfter !== undefined && tx.balanceAfter !== null
+                              ? `${Number(tx.balanceAfter).toLocaleString('vi-VN')}đ`
+                              : '---'}
+                          </span>
+                        </div>
                       </div>
                     )}
 

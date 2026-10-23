@@ -532,6 +532,19 @@ export const PurchaseReceiptsPage: React.FC = () => {
     }
   };
 
+  const handleOpenDetailModal = async (receipt: PurchaseReceiptModel) => {
+    setSelectedReceiptDetail(receipt);
+    setIsDetailModalOpen(true);
+    try {
+      const full = await purchaseReceiptsApi.findOne(receipt.id);
+      if (full) {
+        setSelectedReceiptDetail(full);
+      }
+    } catch {
+      // keep initial receipt
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300 max-w-full overflow-x-hidden min-w-0">
       {/* Top Header */}
@@ -855,10 +868,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                 return (
                   <SystemTr
                     key={r.id}
-                    onClick={() => {
-                      setSelectedReceiptDetail(r);
-                      setIsDetailModalOpen(true);
-                    }}
+                    onClick={() => handleOpenDetailModal(r)}
                     className="cursor-pointer"
                   >
                     <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
@@ -1129,11 +1139,8 @@ export const PurchaseReceiptsPage: React.FC = () => {
             return (
               <div
                 key={r.id}
-                onClick={() => {
-                  setSelectedReceiptDetail(r);
-                  setIsDetailModalOpen(true);
-                }}
-                className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs cursor-pointer active:scale-[0.99] transition-all max-w-full overflow-hidden"
+                onClick={() => handleOpenDetailModal(r)}
+                className="p-3.5 rounded-[4px] bg-white dark:bg-[#14151a] border border-gray-200/80 dark:border-white/[0.08] space-y-2.5 shadow-none cursor-pointer active:scale-[0.99] transition-all max-w-full overflow-hidden"
               >
                 {/* Header: Receipt code, Datetime & status badge */}
                 <div className="flex items-start justify-between gap-2 min-w-0">
@@ -1178,8 +1185,8 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Financial 3-column stats */}
-                <div className="grid grid-cols-3 gap-2 p-2 rounded bg-gray-50 dark:bg-[#1a1e28] border border-gray-100 dark:border-gray-800/60 text-center">
+                {/* Financial 3-column stats - Flat without nested card */}
+                <div className="grid grid-cols-3 gap-2 py-2 border-t border-dashed border-gray-100 dark:border-gray-800/80 text-center text-xs">
                   <div>
                     <div className="text-[10px] text-gray-400">Hàng thực nhận</div>
                     <div className="font-mono font-medium text-xs text-gray-900 dark:text-white mt-0.5">
@@ -1254,10 +1261,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedReceiptDetail(r);
-                      setIsDetailModalOpen(true);
-                    }}
+                    onClick={() => handleOpenDetailModal(r)}
                     className="px-2.5 py-1 text-xs rounded border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1 font-medium cursor-pointer"
                   >
                     <Eye size={12} />
@@ -2189,147 +2193,251 @@ export const PurchaseReceiptsPage: React.FC = () => {
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         title={`Chi tiết: ${selectedReceiptDetail?.receiptCode || ''}`}
-        subtitle={`Nhập lúc: ${formatDateTime(selectedReceiptDetail?.receiptDate || selectedReceiptDetail?.createdAt)} • Hàng thực nhận • Công nợ`}
+        subtitle={
+          <span className="truncate block max-w-full">
+            {`Nhập lúc: ${formatDateTime(selectedReceiptDetail?.receiptDate || selectedReceiptDetail?.createdAt)} • Hàng thực nhận • Công nợ`}
+          </span>
+        }
         icon={FileText}
         size="2xl"
       >
-        {selectedReceiptDetail && (
-          <>
-            <ModalBody className="space-y-4">
-              {/* Top 3 axes info */}
-              <div className="grid grid-cols-3 gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded text-xs">
-                <div>
-                  <span className="text-gray-400 flex items-center gap-1 mb-1">
-                    <Boxes size={12} className="text-blue-500" />
-                    <span>1. Hàng Thực Nhận</span>
-                  </span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white font-mono">
-                    {Number(selectedReceiptDetail.totalItemsAmount).toLocaleString('vi-VN')}đ
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-400 flex items-center gap-1 mb-1">
-                    <Receipt size={12} className="text-indigo-500" />
-                    <span>2. Công Nợ Phải Trả</span>
-                  </span>
-                  <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 font-mono">
-                    {Number(selectedReceiptDetail.payableAmount).toLocaleString('vi-VN')}đ
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-400 flex items-center gap-1 mb-1">
-                    <CheckCircle2 size={12} className="text-emerald-500" />
-                    <span>3. Đã Thanh Toán</span>
-                  </span>
-                  <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                    {Number(selectedReceiptDetail.paidAmount).toLocaleString('vi-VN')}đ
-                  </span>
-                </div>
-              </div>
+        {selectedReceiptDetail && (() => {
+          const debtBefore =
+            selectedReceiptDetail.supplierDebtBefore ??
+            Number(selectedReceiptDetail.supplier?.closingDebt || 0) -
+              Number(selectedReceiptDetail.payableAmount || 0) +
+              Number(selectedReceiptDetail.paidAmount || 0);
+          const debtAfter =
+            selectedReceiptDetail.supplierDebtAfter ??
+            debtBefore +
+              Number(selectedReceiptDetail.payableAmount || 0) -
+              Number(selectedReceiptDetail.paidAmount || 0);
 
-              {/* Items */}
-              <div className="border border-gray-200 dark:border-gray-800 rounded overflow-hidden text-xs">
-                <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                  <Boxes size={13} className="text-[#5865f2]" />
-                  <span>Sản phẩm trong phiếu nhập</span>
+          return (
+            <>
+              <ModalBody className="space-y-3.5 sm:space-y-4">
+                {/* Top 3 axes info - Responsive no wrap */}
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 p-2.5 sm:p-3 bg-gray-50 dark:bg-gray-900/80 rounded border border-gray-200/60 dark:border-gray-800 text-xs">
+                  <div className="min-w-0">
+                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1 mb-1 text-[10px] sm:text-xs font-medium min-w-0 truncate">
+                      <Boxes size={12} className="text-blue-500 shrink-0" />
+                      <span className="truncate">
+                        <span className="sm:hidden">1. Thực nhận</span>
+                        <span className="hidden sm:inline">1. Hàng Thực Nhận</span>
+                      </span>
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white font-mono truncate block">
+                      {Number(selectedReceiptDetail.totalItemsAmount).toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1 mb-1 text-[10px] sm:text-xs font-medium min-w-0 truncate">
+                      <Receipt size={12} className="text-indigo-500 shrink-0" />
+                      <span className="truncate">
+                        <span className="sm:hidden">2. Nợ phải trả</span>
+                        <span className="hidden sm:inline">2. Công Nợ Phải Trả</span>
+                      </span>
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold text-indigo-600 dark:text-indigo-400 font-mono truncate block">
+                      {Number(selectedReceiptDetail.payableAmount).toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1 mb-1 text-[10px] sm:text-xs font-medium min-w-0 truncate">
+                      <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
+                      <span className="truncate">
+                        <span className="sm:hidden">3. Đã trả</span>
+                        <span className="hidden sm:inline">3. Đã Thanh Toán</span>
+                      </span>
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono truncate block">
+                      {Number(selectedReceiptDetail.paidAmount).toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
                 </div>
-                <div className="p-3 divide-y divide-gray-100 dark:divide-gray-800">
-                  {selectedReceiptDetail.items?.map((it) => (
-                    <div key={it.id} className="py-2 flex justify-between items-center">
-                      <div>
-                        <div className="font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
-                          <Package size={13} className="text-gray-400" />
-                          <span>{it.productName} {it.variationName ? `(${it.variationName})` : ''}</span>
-                        </div>
-                        <div className="text-[11px] text-gray-400 font-mono ml-4">SKU: {it.sku}</div>
-                      </div>
-                      <div className="text-right">
+
+                {/* Lịch sử công nợ trước & sau phiếu nhập này */}
+                <div className="border border-indigo-100 dark:border-indigo-900/40 rounded overflow-hidden text-xs bg-indigo-50/20 dark:bg-indigo-950/20">
+                  <div className="bg-indigo-50/70 dark:bg-indigo-950/50 px-3 py-1.5 font-semibold text-indigo-900 dark:text-indigo-300 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Building2 size={13} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+                      <span>Lịch sử tiền công nợ NCC trước & sau giao dịch này</span>
+                    </span>
+                    <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">
+                      NCC: <b className="text-gray-800 dark:text-gray-200">{selectedReceiptDetail.supplier?.name}</b>
+                    </span>
+                  </div>
+                  <div className="p-2.5 sm:p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                    <div className="p-2 rounded bg-white dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800">
+                      <span className="text-[10px] text-gray-400 block">Nợ trước khi nhập:</span>
+                      <span className="font-mono font-bold text-xs sm:text-sm text-gray-800 dark:text-gray-200 block mt-0.5">
+                        {debtBefore.toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                    <div className="p-2 rounded bg-white dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800">
+                      <span className="text-[10px] text-gray-400 block">Phát sinh từ phiếu:</span>
+                      <span className="font-mono font-bold text-xs sm:text-sm text-rose-600 dark:text-rose-400 block mt-0.5">
+                        +{Number(selectedReceiptDetail.payableAmount).toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                    <div className="p-2 rounded bg-white dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800">
+                      <span className="text-[10px] text-gray-400 block">Đã trả / cấn trừ:</span>
+                      <span className="font-mono font-bold text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 block mt-0.5">
+                        -{Number(selectedReceiptDetail.paidAmount).toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                    <div className="p-2 rounded bg-white dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800">
+                      <span className="text-[10px] text-gray-400 block">Nợ sau giao dịch:</span>
+                      <span className="font-mono font-bold text-xs sm:text-sm text-indigo-600 dark:text-indigo-400 block mt-0.5">
+                        {debtAfter.toLocaleString('vi-VN')}đ
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Items */}
+                <div className="border border-gray-200 dark:border-gray-800 rounded overflow-hidden text-xs">
+                  <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                    <Boxes size={13} className="text-[#5865f2] shrink-0" />
+                    <span>Sản phẩm trong phiếu nhập ({selectedReceiptDetail.items?.length || 0})</span>
+                  </div>
+                  <div className="p-3 divide-y divide-gray-100 dark:divide-gray-800">
+                    {selectedReceiptDetail.items?.map((it) => (
+                      <div key={it.id} className="py-2 flex justify-between items-center">
                         <div>
-                          {it.receivedQuantity} cái x {Number(it.unitPrice).toLocaleString('vi-VN')}đ
+                          <div className="font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
+                            <Package size={13} className="text-gray-400 shrink-0" />
+                            <span>
+                              {it.productName} {it.variationName ? `(${it.variationName})` : ''}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-gray-400 font-mono ml-4">SKU: {it.sku}</div>
                         </div>
-                        <div className="font-semibold font-mono text-gray-900 dark:text-white">
-                          {Number(it.subtotal).toLocaleString('vi-VN')}đ
+                        <div className="text-right">
+                          <div>
+                            {it.receivedQuantity} cái x {Number(it.unitPrice).toLocaleString('vi-VN')}đ
+                          </div>
+                          <div className="font-semibold font-mono text-gray-900 dark:text-white">
+                            {Number(it.subtotal).toLocaleString('vi-VN')}đ
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Payment allocations history */}
-              <div className="border border-gray-200 dark:border-gray-800 rounded overflow-hidden text-xs">
-                <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 font-semibold text-gray-700 dark:text-gray-300 flex justify-between items-center">
-                  <span className="flex items-center gap-1.5">
-                    <Clock size={13} className="text-[#5865f2]" />
-                    <span>Lịch sử các đợt thanh toán cho phiếu này</span>
-                  </span>
-                  <span className="text-emerald-600 font-bold flex items-center gap-1">
-                    <CreditCard size={12} />
-                    <span>Còn nợ: {Number(selectedReceiptDetail.remainingAmount).toLocaleString('vi-VN')}đ</span>
-                  </span>
-                </div>
-                <div className="p-3">
-                  {selectedReceiptDetail.paymentAllocations && selectedReceiptDetail.paymentAllocations.length > 0 ? (
-                    <div className="space-y-2">
-                      {selectedReceiptDetail.paymentAllocations.map((alloc) => (
-                        <div key={alloc.id} className="p-2 bg-gray-50 dark:bg-gray-900 rounded flex justify-between items-center">
-                          <div>
-                            <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
-                              <DollarSign size={12} className="text-emerald-500" />
-                              <span>{alloc.payment?.paymentCode} • {alloc.payment?.payerName} chi</span>
+                {/* Payment allocations history */}
+                <div className="border border-gray-200 dark:border-gray-800 rounded overflow-hidden text-xs">
+                  <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 font-semibold text-gray-700 dark:text-gray-300 flex justify-between items-center">
+                    <span className="flex items-center gap-1.5">
+                      <Clock size={13} className="text-[#5865f2] shrink-0" />
+                      <span>Lịch sử các đợt thanh toán cho phiếu này</span>
+                    </span>
+                    <span className="text-emerald-600 font-bold flex items-center gap-1">
+                      <CreditCard size={12} className="shrink-0" />
+                      <span>Còn nợ: {Number(selectedReceiptDetail.remainingAmount).toLocaleString('vi-VN')}đ</span>
+                    </span>
+                  </div>
+                  <div className="p-3">
+                    {selectedReceiptDetail.paymentAllocations && selectedReceiptDetail.paymentAllocations.length > 0 ? (
+                      <div className="space-y-2">
+                        {selectedReceiptDetail.paymentAllocations.map((alloc) => {
+                          const fundSourceLabel =
+                            alloc.payment?.fundSource === 'PERSONAL_FUND'
+                              ? 'Tiền cá nhân chi hộ'
+                              : alloc.payment?.fundSource === 'BANK_ACCOUNT'
+                              ? 'Tài khoản ngân hàng'
+                              : 'Quỹ tiền mặt';
+                          const cashTx = alloc.cashTransaction;
+                          return (
+                            <div
+                              key={alloc.id}
+                              className="p-2.5 bg-gray-50 dark:bg-gray-900/80 rounded border border-gray-100 dark:border-gray-800 space-y-1"
+                            >
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
+                                    <DollarSign size={12} className="text-emerald-500 shrink-0" />
+                                    <span>
+                                      {alloc.payment?.paymentCode} • {alloc.payment?.payerName} chi
+                                    </span>
+                                  </div>
+                                  <div className="text-[11px] text-gray-400 ml-4">
+                                    Nguồn: {fundSourceLabel} •{' '}
+                                    {alloc.payment?.paymentDate
+                                      ? new Date(alloc.payment.paymentDate).toLocaleDateString('vi-VN')
+                                      : ''}
+                                  </div>
+                                </div>
+                                <div className="font-bold text-emerald-600 font-mono text-xs sm:text-sm">
+                                  +{Number(alloc.allocatedAmount).toLocaleString('vi-VN')}đ
+                                </div>
+                              </div>
+                              {cashTx && cashTx.balanceBefore !== undefined && (
+                                <div className="ml-4 pt-1 border-t border-dashed border-gray-200 dark:border-gray-800 flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400 font-mono">
+                                  <span>Tiền quỹ trước chi: {Number(cashTx.balanceBefore).toLocaleString('vi-VN')}đ</span>
+                                  <span>Chi: -{Number(alloc.allocatedAmount).toLocaleString('vi-VN')}đ</span>
+                                  <span>Sau chi: {Number(cashTx.balanceAfter ?? (cashTx.balanceBefore - Number(alloc.allocatedAmount))).toLocaleString('vi-VN')}đ</span>
+                                </div>
+                              )}
                             </div>
-                            <div className="text-[11px] text-gray-400 ml-4">
-                              Nguồn: {alloc.payment?.fundSource === 'PERSONAL_FUND' ? 'Tiền cá nhân chi hộ' : alloc.payment?.fundSource === 'BANK_ACCOUNT' ? 'Tài khoản ngân hàng' : 'Quỹ tiền mặt'} • {alloc.payment?.paymentDate ? new Date(alloc.payment.paymentDate).toLocaleDateString('vi-VN') : ''}
-                            </div>
-                          </div>
-                          <div className="font-bold text-emerald-600 font-mono">
-                            +{Number(alloc.allocatedAmount).toLocaleString('vi-VN')}đ
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-400 italic">Chưa có khoản thanh toán nào cho phiếu này.</p>
-                  )}
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-gray-400 italic">Chưa có khoản thanh toán nào cho phiếu này.</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </ModalBody>
-            <ModalFooter className="flex items-center justify-between w-full">
-              <ModalButton
-                type="button"
-                variant="danger"
-                onClick={() => {
-                  const receipt = selectedReceiptDetail;
-                  setIsDetailModalOpen(false);
-                  handleDeleteReceipt(receipt.id, receipt.receiptCode);
-                }}
-                className="gap-1.5"
-              >
-                <Trash2 size={14} />
-                <span>Hủy phiếu nhập</span>
-              </ModalButton>
-              <div className="flex items-center gap-2">
+              </ModalBody>
+              <ModalFooter className="flex items-center justify-between gap-1.5 sm:gap-2.5 w-full">
                 <ModalButton
                   type="button"
-                  variant="outline"
+                  variant="danger"
                   onClick={() => {
-                    const rc = selectedReceiptDetail;
+                    const receipt = selectedReceiptDetail;
                     setIsDetailModalOpen(false);
-                    handleOpenEditModal(rc);
+                    handleDeleteReceipt(receipt.id, receipt.receiptCode);
                   }}
-                  className="gap-1.5 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                  className="gap-1.5 px-2.5 sm:px-3 text-xs sm:text-sm whitespace-nowrap shrink-0"
                 >
-                  <Pencil size={14} />
-                  <span>Sửa phiếu nhập</span>
+                  <Trash2 size={13} className="shrink-0" />
+                  <span className="whitespace-nowrap">
+                    <span className="sm:hidden">Hủy phiếu</span>
+                    <span className="hidden sm:inline">Hủy phiếu nhập</span>
+                  </span>
                 </ModalButton>
-                <ModalButton type="button" variant="secondary" onClick={() => setIsDetailModalOpen(false)} className="gap-1.5">
-                  <X size={14} />
-                  <span>Đóng</span>
-                </ModalButton>
-              </div>
-            </ModalFooter>
-          </>
-        )}
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <ModalButton
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const rc = selectedReceiptDetail;
+                      setIsDetailModalOpen(false);
+                      handleOpenEditModal(rc);
+                    }}
+                    className="gap-1.5 px-2.5 sm:px-3 text-xs sm:text-sm whitespace-nowrap shrink-0 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                  >
+                    <Pencil size={13} className="shrink-0" />
+                    <span className="whitespace-nowrap">
+                      <span className="sm:hidden">Sửa phiếu</span>
+                      <span className="hidden sm:inline">Sửa phiếu nhập</span>
+                    </span>
+                  </ModalButton>
+                  <ModalButton
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setIsDetailModalOpen(false)}
+                    className="gap-1.5 px-2.5 sm:px-3 text-xs sm:text-sm whitespace-nowrap shrink-0"
+                  >
+                    <X size={13} className="shrink-0" />
+                    <span className="whitespace-nowrap">Đóng</span>
+                  </ModalButton>
+                </div>
+              </ModalFooter>
+            </>
+          );
+        })()}
       </Modal>
 
       {/* MODAL 3: NHANH THANH TOÁN PHIẾU NÀY */}

@@ -1846,6 +1846,11 @@ export const SupplierDebtsPage: React.FC = () => {
                       TypeIcon = Receipt;
                     }
 
+                    const debtBefore =
+                      tx.balanceBefore !== undefined
+                        ? tx.balanceBefore
+                        : tx.runningBalance - (tx.increaseDebt - tx.decreaseDebt);
+
                     return (
                       <div
                         key={idx}
@@ -1917,21 +1922,29 @@ export const SupplierDebtsPage: React.FC = () => {
                           </div>
                         )}
 
-                        {/* Footer: Running Balance */}
+                        {/* Footer: Balance Before & Running Balance */}
                         <div className="pt-2 border-t border-gray-100 dark:border-white/[0.06] flex items-center justify-between text-xs">
-                          <span className="text-gray-500 dark:text-gray-400 text-[11px]">Dư nợ sau GD:</span>
-                          <span
-                            className={cn(
-                              'font-mono font-bold text-xs',
-                              tx.runningBalance > 0
-                                ? 'text-rose-600 dark:text-rose-400'
-                                : tx.runningBalance < 0
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-gray-600 dark:text-gray-400'
-                            )}
-                          >
-                            {tx.runningBalance.toLocaleString('vi-VN')}đ
-                          </span>
+                          <div>
+                            <span className="text-gray-400 text-[10px] block">Nợ trước GD:</span>
+                            <span className="font-mono text-[11px] text-gray-600 dark:text-gray-400 font-medium">
+                              {debtBefore.toLocaleString('vi-VN')}đ
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-gray-400 text-[10px] block">Dư nợ sau GD:</span>
+                            <span
+                              className={cn(
+                                'font-mono font-bold text-xs',
+                                tx.runningBalance > 0
+                                  ? 'text-rose-600 dark:text-rose-400'
+                                  : tx.runningBalance < 0
+                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  : 'text-gray-600 dark:text-gray-400'
+                              )}
+                            >
+                              {tx.runningBalance.toLocaleString('vi-VN')}đ
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1944,44 +1957,54 @@ export const SupplierDebtsPage: React.FC = () => {
                 <table className="w-full text-left min-w-[960px]">
                   <thead className="bg-gray-100 dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300">
                     <tr>
-                      <th className="p-2.5 w-28 min-w-[110px] whitespace-nowrap">Thời Gian</th>
-                      <th className="p-2.5 w-48 min-w-[170px] whitespace-nowrap">Loại & Mã Giao Dịch</th>
-                      <th className="p-2.5 min-w-[280px] whitespace-nowrap">Nội Dung Nghiệp Vụ</th>
-                      <th className="p-2.5 w-36 min-w-[140px] text-right text-rose-600 dark:text-rose-400 whitespace-nowrap">Phát Sinh Nợ (+)</th>
-                      <th className="p-2.5 w-36 min-w-[140px] text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap">Giảm Nợ (-)</th>
-                      <th className="p-2.5 w-40 min-w-[150px] text-right font-bold whitespace-nowrap">Số Dư Lũy Kế</th>
+                      <th className="p-2.5 w-28 min-w-[100px] whitespace-nowrap">Thời Gian</th>
+                      <th className="p-2.5 w-44 min-w-[150px] whitespace-nowrap">Mã Giao Dịch</th>
+                      <th className="p-2.5 min-w-[240px] whitespace-nowrap">Nội Dung Nghiệp Vụ</th>
+                      <th className="p-2.5 w-32 min-w-[125px] text-right text-gray-500 whitespace-nowrap">Dư Nợ Trước GD</th>
+                      <th className="p-2.5 w-32 min-w-[125px] text-right text-rose-600 dark:text-rose-400 whitespace-nowrap">Phát Sinh Nợ (+)</th>
+                      <th className="p-2.5 w-32 min-w-[125px] text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap">Giảm Nợ (-)</th>
+                      <th className="p-2.5 w-36 min-w-[140px] text-right font-bold whitespace-nowrap">Dư Nợ Sau GD</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-mono">
                     {statementData.transactions.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="p-8 text-center text-gray-400 font-sans">
+                        <td colSpan={7} className="p-8 text-center text-gray-400 font-sans">
                           Chưa có giao dịch nào với nhà cung cấp này
                         </td>
                       </tr>
                     ) : (
-                      statementData.transactions.map((tx, idx) => (
-                        <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                          <td className="p-2.5 text-gray-500 font-sans whitespace-nowrap">
-                            {new Date(tx.date).toLocaleDateString('vi-VN')}
-                          </td>
-                          <td className="p-2.5 font-bold whitespace-nowrap">
-                            {tx.code}
-                          </td>
-                          <td className="p-2.5 font-sans text-gray-800 dark:text-gray-200">
-                            {tx.description}
-                          </td>
-                          <td className="p-2.5 text-right text-rose-600 dark:text-rose-400 whitespace-nowrap font-medium">
-                            {tx.increaseDebt > 0 ? `+${tx.increaseDebt.toLocaleString('vi-VN')}đ` : '-'}
-                          </td>
-                          <td className="p-2.5 text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap font-medium">
-                            {tx.decreaseDebt > 0 ? `-${tx.decreaseDebt.toLocaleString('vi-VN')}đ` : '-'}
-                          </td>
-                          <td className={`p-2.5 text-right font-bold whitespace-nowrap ${tx.runningBalance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                            {tx.runningBalance.toLocaleString('vi-VN')}đ
-                          </td>
-                        </tr>
-                      ))
+                      statementData.transactions.map((tx, idx) => {
+                        const debtBefore =
+                          tx.balanceBefore !== undefined
+                            ? tx.balanceBefore
+                            : tx.runningBalance - (tx.increaseDebt - tx.decreaseDebt);
+                        return (
+                          <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                            <td className="p-2.5 text-gray-500 font-sans whitespace-nowrap">
+                              {new Date(tx.date).toLocaleDateString('vi-VN')}
+                            </td>
+                            <td className="p-2.5 font-bold whitespace-nowrap">
+                              {tx.code}
+                            </td>
+                            <td className="p-2.5 font-sans text-gray-800 dark:text-gray-200">
+                              {tx.description}
+                            </td>
+                            <td className="p-2.5 text-right text-gray-500 dark:text-gray-400 whitespace-nowrap font-medium">
+                              {debtBefore.toLocaleString('vi-VN')}đ
+                            </td>
+                            <td className="p-2.5 text-right text-rose-600 dark:text-rose-400 whitespace-nowrap font-medium">
+                              {tx.increaseDebt > 0 ? `+${tx.increaseDebt.toLocaleString('vi-VN')}đ` : '-'}
+                            </td>
+                            <td className="p-2.5 text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap font-medium">
+                              {tx.decreaseDebt > 0 ? `-${tx.decreaseDebt.toLocaleString('vi-VN')}đ` : '-'}
+                            </td>
+                            <td className={`p-2.5 text-right font-bold whitespace-nowrap ${tx.runningBalance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                              {tx.runningBalance.toLocaleString('vi-VN')}đ
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

@@ -40,6 +40,7 @@ export interface StatementTransaction {
   payerOrCreator?: string;
   fundSource?: string;
   referenceId: string;
+  balanceBefore?: number;
   runningBalance: number;
 }
 
