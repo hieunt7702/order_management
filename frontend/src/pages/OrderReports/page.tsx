@@ -972,15 +972,15 @@ export const OrderReportsPage: React.FC = () => {
                   </div>
 
                   {/* Summary row */}
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-gray-200 dark:border-gray-700/60 text-center">
-                    <div className="p-2 rounded bg-white dark:bg-[#131720]">
-                      <span className="text-[10px] text-gray-400 block">Số hàng trước nhập</span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 sm:gap-2 pt-2 border-t border-gray-200 dark:border-gray-700/60 text-center">
+                    <div className="p-2 rounded bg-white dark:bg-[#131720] border border-gray-100 dark:border-gray-800">
+                      <span className="text-[10px] text-gray-400 block truncate">Số hàng trước nhập</span>
                       <span className="font-mono text-xs font-bold text-gray-800 dark:text-gray-200">
                         {(detailData.stockBefore ?? 0).toLocaleString('vi-VN')} {detailData.variant.unit}
                       </span>
                     </div>
-                    <div className="p-2 rounded bg-white dark:bg-[#131720]">
-                      <span className="text-[10px] text-gray-400 block">Thực nhập kho</span>
+                    <div className="p-2 rounded bg-white dark:bg-[#131720] border border-gray-100 dark:border-gray-800">
+                      <span className="text-[10px] text-gray-400 block truncate">Thực nhập kho</span>
                       <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
                         {Math.max(
                           0,
@@ -990,14 +990,14 @@ export const OrderReportsPage: React.FC = () => {
                         {detailData.variant.unit}
                       </span>
                       {detailData.purchaseReturns && detailData.purchaseReturns.length > 0 ? (
-                        <span className="text-[9px] text-amber-600 dark:text-amber-400 block font-medium">
-                          (Nhập: {detailData.receipts.reduce((s, r) => s + r.receivedQuantity, 0)} • Trả NCC:{' '}
+                        <span className="text-[9px] text-amber-600 dark:text-amber-400 block font-medium truncate">
+                          (Nhập: {detailData.receipts.reduce((s, r) => s + r.receivedQuantity, 0)} • Trả:{' '}
                           {detailData.purchaseReturns.reduce((s, pr) => s + pr.quantity, 0)})
                         </span>
                       ) : null}
                     </div>
-                    <div className="p-2 rounded bg-white dark:bg-[#131720]">
-                      <span className="text-[10px] text-gray-400 block">Thực xuất bán (Đơn)</span>
+                    <div className="p-2 rounded bg-white dark:bg-[#131720] border border-gray-100 dark:border-gray-800">
+                      <span className="text-[10px] text-gray-400 block truncate">Thực xuất bán (Đơn)</span>
                       <span className="font-mono text-xs font-bold text-[#5865f2] dark:text-indigo-400">
                         {Math.max(
                           0,
@@ -1007,20 +1007,20 @@ export const OrderReportsPage: React.FC = () => {
                         {detailData.variant.unit}
                       </span>
                       {detailData.orderReturns && detailData.orderReturns.length > 0 ? (
-                        <span className="text-[9px] text-emerald-600 dark:text-emerald-400 block font-medium">
+                        <span className="text-[9px] text-emerald-600 dark:text-emerald-400 block font-medium truncate">
                           (Đơn: {detailData.orders.reduce((s, o) => s + o.quantity, 0)} • Hoàn:{' '}
                           {detailData.orderReturns.reduce((s, or) => s + or.sellableQuantity, 0)})
                         </span>
                       ) : null}
                     </div>
-                    <div className="p-2 rounded bg-white dark:bg-[#131720]">
-                      <span className="text-[10px] text-gray-400 block">Tồn kho thực tế</span>
+                    <div className="p-2 rounded bg-white dark:bg-[#131720] border border-gray-100 dark:border-gray-800">
+                      <span className="text-[10px] text-gray-400 block truncate">Tồn kho thực tế</span>
                       <span className="font-mono text-xs font-bold text-gray-900 dark:text-white">
                         {detailData.inventoryBalances.reduce((s, b) => s + b.onHand, 0)} {detailData.variant.unit}
                       </span>
                     </div>
-                    <div className="p-2 rounded bg-white dark:bg-[#131720]">
-                      <span className="text-[10px] text-gray-400 block">Tồn khả dụng</span>
+                    <div className="col-span-2 sm:col-span-1 p-2 rounded bg-white dark:bg-[#131720] border border-gray-100 dark:border-gray-800">
+                      <span className="text-[10px] text-gray-400 block truncate">Tồn khả dụng</span>
                       <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">
                         {detailData.inventoryBalances.reduce((s, b) => s + b.available, 0)} {detailData.variant.unit}
                       </span>
@@ -1117,62 +1117,119 @@ export const OrderReportsPage: React.FC = () => {
                         Chưa có đơn hàng nào xuất bán biến thể này trong kỳ đối soát.
                       </div>
                     ) : (
-                      <div className="overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-gray-50 dark:bg-[#1a1b23] text-gray-500 font-semibold border-b border-gray-200 dark:border-gray-800">
-                            <tr>
-                              <th className="p-2.5">Mã đơn hàng</th>
-                              <th className="p-2.5">Mã vận đơn</th>
-                              <th className="p-2.5">Shop bán</th>
-                              <th className="p-2.5">Ngày đặt</th>
-                              <th className="p-2.5 text-center">Số lượng</th>
-                              <th className="p-2.5 text-right">Đơn giá</th>
-                              <th className="p-2.5 text-center">Trạng thái sàn</th>
-                              <th className="p-2.5 text-center">Xuất kho</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {detailData.orders.map((o) => (
-                              <tr key={o.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
-                                <td className="p-2.5 font-mono font-bold text-gray-900 dark:text-white">
-                                  {o.internalOrderCode || o.externalOrderId}
-                                </td>
-                                <td className="p-2.5 font-mono text-gray-600 dark:text-gray-400">
-                                  {o.trackingCode || '—'}
-                                </td>
-                                <td className="p-2.5 text-gray-800 dark:text-gray-200">
-                                  {o.shopName}
-                                </td>
-                                <td className="p-2.5 text-gray-500">
-                                  {o.orderDate ? new Date(o.orderDate).toLocaleDateString('vi-VN') : '—'}
-                                </td>
-                                <td className="p-2.5 text-center font-mono font-bold text-[#5865f2] dark:text-indigo-400">
-                                  {o.quantity}
-                                </td>
-                                <td className="p-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
-                                  {o.discountedPrice.toLocaleString('vi-VN')}đ
-                                </td>
-                                <td className="p-2.5 text-center">
-                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                                    {o.platformStatus}
-                                  </span>
-                                </td>
-                                <td className="p-2.5 text-center">
-                                  <span
-                                    className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                                      o.fulfillmentStatus === 'DISPATCHED'
-                                        ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-                                        : 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
-                                    }`}
-                                  >
-                                    {o.fulfillmentStatus === 'DISPATCHED' ? 'Đã quét xuất' : 'Chờ xuất'}
-                                  </span>
-                                </td>
+                      <>
+                        {/* Desktop Table View */}
+                        <div className="hidden sm:block overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-gray-50 dark:bg-[#1a1b23] text-gray-500 font-semibold border-b border-gray-200 dark:border-gray-800">
+                              <tr>
+                                <th className="p-2.5">Mã đơn hàng</th>
+                                <th className="p-2.5">Mã vận đơn</th>
+                                <th className="p-2.5">Shop bán</th>
+                                <th className="p-2.5">Ngày đặt</th>
+                                <th className="p-2.5 text-center">Số lượng</th>
+                                <th className="p-2.5 text-right">Đơn giá</th>
+                                <th className="p-2.5 text-center">Trạng thái sàn</th>
+                                <th className="p-2.5 text-center">Xuất kho</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                              {detailData.orders.map((o) => (
+                                <tr key={o.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                                  <td className="p-2.5 font-mono font-bold text-gray-900 dark:text-white">
+                                    {o.internalOrderCode || o.externalOrderId}
+                                  </td>
+                                  <td className="p-2.5 font-mono text-gray-600 dark:text-gray-400">
+                                    {o.trackingCode || '—'}
+                                  </td>
+                                  <td className="p-2.5 text-gray-800 dark:text-gray-200">
+                                    {o.shopName}
+                                  </td>
+                                  <td className="p-2.5 text-gray-500">
+                                    {o.orderDate ? new Date(o.orderDate).toLocaleDateString('vi-VN') : '—'}
+                                  </td>
+                                  <td className="p-2.5 text-center font-mono font-bold text-[#5865f2] dark:text-indigo-400">
+                                    {o.quantity}
+                                  </td>
+                                  <td className="p-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
+                                    {o.discountedPrice.toLocaleString('vi-VN')}đ
+                                  </td>
+                                  <td className="p-2.5 text-center">
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                      {o.platformStatus}
+                                    </span>
+                                  </td>
+                                  <td className="p-2.5 text-center">
+                                    <span
+                                      className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                        o.fulfillmentStatus === 'DISPATCHED'
+                                          ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                          : 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
+                                      }`}
+                                    >
+                                      {o.fulfillmentStatus === 'DISPATCHED' ? 'Đã quét xuất' : 'Chờ xuất'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="sm:hidden space-y-2">
+                          {detailData.orders.map((o) => (
+                            <div
+                              key={o.id}
+                              className="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1b23] space-y-2 shadow-xs"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-mono font-bold text-xs text-gray-900 dark:text-white truncate">
+                                    {o.internalOrderCode || o.externalOrderId}
+                                  </div>
+                                  <div className="text-[11px] text-gray-500 truncate mt-0.5">
+                                    Shop: <span className="font-medium text-gray-700 dark:text-gray-300">{o.shopName}</span>
+                                  </div>
+                                </div>
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 shrink-0">
+                                  {o.platformStatus}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center justify-between text-xs text-gray-500 py-1 border-y border-gray-100 dark:border-gray-800/80">
+                                <span className="font-mono text-[11px] text-gray-600 dark:text-gray-400">
+                                  Vận đơn: {o.trackingCode || '—'}
+                                </span>
+                                <span className="text-[11px]">
+                                  {o.orderDate ? new Date(o.orderDate).toLocaleDateString('vi-VN') : '—'}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-bold text-[#5865f2] dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded font-mono">
+                                    x{o.quantity}
+                                  </span>
+                                  <span className="text-xs font-mono text-gray-700 dark:text-gray-300 font-medium">
+                                    {o.discountedPrice.toLocaleString('vi-VN')}đ
+                                  </span>
+                                </div>
+
+                                <span
+                                  className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                    o.fulfillmentStatus === 'DISPATCHED'
+                                      ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                      : 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
+                                  }`}
+                                >
+                                  {o.fulfillmentStatus === 'DISPATCHED' ? 'Đã quét xuất' : 'Chờ xuất'}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -1185,68 +1242,137 @@ export const OrderReportsPage: React.FC = () => {
                         Chưa có phiếu nhập kho nào cho sản phẩm này trong kỳ đối soát.
                       </div>
                     ) : (
-                      <div className="overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-gray-50 dark:bg-[#1a1b23] text-gray-500 font-semibold border-b border-gray-200 dark:border-gray-800">
-                            <tr>
-                              <th className="p-2.5">Mã phiếu nhập</th>
-                              <th className="p-2.5">Nhà cung cấp</th>
-                              <th className="p-2.5">Kho nhận</th>
-                              <th className="p-2.5">Ngày nhập</th>
-                              <th className="p-2.5 text-center font-bold text-gray-700 dark:text-gray-300">Số hàng trước nhập</th>
-                              <th className="p-2.5 text-center font-bold text-emerald-600 dark:text-emerald-400">SL thực nhận (+)</th>
-                              <th className="p-2.5 text-center font-bold text-indigo-600 dark:text-indigo-400">Tồn sau nhập (=)</th>
-                              <th className="p-2.5 text-right">Đơn giá nhập</th>
-                              <th className="p-2.5 text-right">Thành tiền</th>
-                              <th className="p-2.5 text-center">Thanh toán</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {detailData.receipts.map((r) => (
-                              <tr key={r.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
-                                <td className="p-2.5 font-mono font-bold text-[#5865f2] dark:text-indigo-400">
-                                  {r.receiptCode}
-                                </td>
-                                <td className="p-2.5 text-gray-800 dark:text-gray-200">
-                                  {r.supplierName}
-                                </td>
-                                <td className="p-2.5 text-gray-600 dark:text-gray-400">
-                                  {r.warehouseName}
-                                </td>
-                                <td className="p-2.5 text-gray-500 whitespace-nowrap">
-                                  {r.receiptDate ? new Date(r.receiptDate).toLocaleDateString('vi-VN') : '—'}
-                                </td>
-                                <td className="p-2.5 text-center font-mono font-bold text-gray-800 dark:text-gray-200">
-                                  <span className="px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                                    {(r.stockBefore ?? 0).toLocaleString('vi-VN')}
-                                  </span>
-                                </td>
-                                <td className="p-2.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                  <span className="px-2 py-0.5 rounded text-xs bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40">
-                                    +{r.receivedQuantity.toLocaleString('vi-VN')}
-                                  </span>
-                                </td>
-                                <td className="p-2.5 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                                  <span className="px-2 py-0.5 rounded text-xs bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40">
-                                    ={(r.stockAfter ?? r.receivedQuantity).toLocaleString('vi-VN')}
-                                  </span>
-                                </td>
-                                <td className="p-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
-                                  {r.unitPrice.toLocaleString('vi-VN')}đ
-                                </td>
-                                <td className="p-2.5 text-right font-mono font-semibold text-gray-900 dark:text-white">
-                                  {r.subtotal.toLocaleString('vi-VN')}đ
-                                </td>
-                                <td className="p-2.5 text-center">
-                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                      <>
+                        {/* Desktop Table View */}
+                        <div className="hidden sm:block overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-gray-50 dark:bg-[#1a1b23] text-gray-500 font-semibold border-b border-gray-200 dark:border-gray-800">
+                              <tr>
+                                <th className="p-2.5">Mã phiếu nhập</th>
+                                <th className="p-2.5">Nhà cung cấp</th>
+                                <th className="p-2.5">Kho nhận</th>
+                                <th className="p-2.5">Ngày nhập</th>
+                                <th className="p-2.5 text-center font-bold text-gray-700 dark:text-gray-300">Số hàng trước nhập</th>
+                                <th className="p-2.5 text-center font-bold text-emerald-600 dark:text-emerald-400">SL thực nhận (+)</th>
+                                <th className="p-2.5 text-center font-bold text-indigo-600 dark:text-indigo-400">Tồn sau nhập (=)</th>
+                                <th className="p-2.5 text-right">Đơn giá nhập</th>
+                                <th className="p-2.5 text-right">Thành tiền</th>
+                                <th className="p-2.5 text-center">Thanh toán</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                              {detailData.receipts.map((r) => (
+                                <tr key={r.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                                  <td className="p-2.5 font-mono font-bold text-[#5865f2] dark:text-indigo-400">
+                                    {r.receiptCode}
+                                  </td>
+                                  <td className="p-2.5 text-gray-800 dark:text-gray-200">
+                                    {r.supplierName}
+                                  </td>
+                                  <td className="p-2.5 text-gray-600 dark:text-gray-400">
+                                    {r.warehouseName}
+                                  </td>
+                                  <td className="p-2.5 text-gray-500 whitespace-nowrap">
+                                    {r.receiptDate ? new Date(r.receiptDate).toLocaleDateString('vi-VN') : '—'}
+                                  </td>
+                                  <td className="p-2.5 text-center font-mono font-bold text-gray-800 dark:text-gray-200">
+                                    <span className="px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                      {(r.stockBefore ?? 0).toLocaleString('vi-VN')}
+                                    </span>
+                                  </td>
+                                  <td className="p-2.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                    <span className="px-2 py-0.5 rounded text-xs bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40">
+                                      +{r.receivedQuantity.toLocaleString('vi-VN')}
+                                    </span>
+                                  </td>
+                                  <td className="p-2.5 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                    <span className="px-2 py-0.5 rounded text-xs bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40">
+                                      ={(r.stockAfter ?? r.receivedQuantity).toLocaleString('vi-VN')}
+                                    </span>
+                                  </td>
+                                  <td className="p-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
+                                    {r.unitPrice.toLocaleString('vi-VN')}đ
+                                  </td>
+                                  <td className="p-2.5 text-right font-mono font-semibold text-gray-900 dark:text-white">
+                                    {r.subtotal.toLocaleString('vi-VN')}đ
+                                  </td>
+                                  <td className="p-2.5 text-center">
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                                      {r.paymentStatus}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="sm:hidden space-y-2">
+                          {detailData.receipts.map((r) => (
+                            <div
+                              key={r.id}
+                              className="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1b23] space-y-2.5 shadow-xs"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-mono font-bold text-xs text-[#5865f2] dark:text-indigo-400 truncate">
+                                    {r.receiptCode}
+                                  </div>
+                                  <div className="text-[11px] text-gray-500 truncate mt-0.5">
+                                    NCC: <span className="font-medium text-gray-700 dark:text-gray-300">{r.supplierName}</span>
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 block">
                                     {r.paymentStatus}
                                   </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                                  <span className="text-[10px] text-gray-400 mt-0.5 block">
+                                    {r.receiptDate ? new Date(r.receiptDate).toLocaleDateString('vi-VN') : '—'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* 3-Step Stock Movement Pill */}
+                              <div className="grid grid-cols-3 gap-1.5 p-2 rounded bg-gray-50 dark:bg-[#131720] border border-gray-100 dark:border-gray-800 text-center">
+                                <div>
+                                  <span className="text-[10px] text-gray-400 block truncate">Trước nhập</span>
+                                  <span className="font-mono text-xs font-bold text-gray-800 dark:text-gray-200">
+                                    {(r.stockBefore ?? 0).toLocaleString('vi-VN')}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-[10px] text-gray-400 block truncate">Thực nhận (+)</span>
+                                  <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                    +{r.receivedQuantity.toLocaleString('vi-VN')}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-[10px] text-gray-400 block truncate">Tồn sau nhập</span>
+                                  <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                                    ={(r.stockAfter ?? r.receivedQuantity).toLocaleString('vi-VN')}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Warehouse & Price Info */}
+                              <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-100 dark:border-gray-800/80">
+                                <span className="text-gray-500 text-[11px] truncate">
+                                  Kho: <span className="text-gray-700 dark:text-gray-300 font-medium">{r.warehouseName}</span>
+                                </span>
+                                <div className="text-right shrink-0">
+                                  <span className="font-mono font-bold text-gray-900 dark:text-white">
+                                    {r.subtotal.toLocaleString('vi-VN')}đ
+                                  </span>
+                                  <span className="text-[10px] text-gray-400 block">
+                                    ({r.unitPrice.toLocaleString('vi-VN')}đ/{detailData.variant.unit})
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -1259,52 +1385,105 @@ export const OrderReportsPage: React.FC = () => {
                         Chưa có phiếu xuất trả hàng nhà cung cấp nào cho sản phẩm này trong kỳ đối soát.
                       </div>
                     ) : (
-                      <div className="overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-gray-50 dark:bg-[#1a1b23] text-gray-500 font-semibold border-b border-gray-200 dark:border-gray-800">
-                            <tr>
-                              <th className="p-2.5">Mã phiếu trả</th>
-                              <th className="p-2.5">Nhà cung cấp</th>
-                              <th className="p-2.5">Phiếu nhập gốc</th>
-                              <th className="p-2.5">Ngày xuất trả</th>
-                              <th className="p-2.5 text-center">SL xuất trả</th>
-                              <th className="p-2.5 text-right">Đơn giá hoàn</th>
-                              <th className="p-2.5 text-right">Giảm trừ nợ</th>
-                              <th className="p-2.5">Lý do / Ghi chú</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {detailData.purchaseReturns.map((pr) => (
-                              <tr key={pr.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
-                                <td className="p-2.5 font-mono font-bold text-amber-600 dark:text-amber-400">
-                                  {pr.returnCode}
-                                </td>
-                                <td className="p-2.5 text-gray-800 dark:text-gray-200">
-                                  {pr.supplierName}
-                                </td>
-                                <td className="p-2.5 font-mono text-gray-500">
-                                  {pr.receiptCode || '—'}
-                                </td>
-                                <td className="p-2.5 text-gray-500">
-                                  {pr.returnDate ? new Date(pr.returnDate).toLocaleDateString('vi-VN') : '—'}
-                                </td>
-                                <td className="p-2.5 text-center font-mono font-bold text-amber-600 dark:text-amber-400">
-                                  -{pr.quantity}
-                                </td>
-                                <td className="p-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
-                                  {pr.unitPrice.toLocaleString('vi-VN')}đ
-                                </td>
-                                <td className="p-2.5 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                                  {pr.debtOffsetAmount.toLocaleString('vi-VN')}đ
-                                </td>
-                                <td className="p-2.5 text-gray-600 dark:text-gray-400 max-w-xs truncate">
-                                  {pr.reason || '—'}
-                                </td>
+                      <>
+                        {/* Desktop Table View */}
+                        <div className="hidden sm:block overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-gray-50 dark:bg-[#1a1b23] text-gray-500 font-semibold border-b border-gray-200 dark:border-gray-800">
+                              <tr>
+                                <th className="p-2.5">Mã phiếu trả</th>
+                                <th className="p-2.5">Nhà cung cấp</th>
+                                <th className="p-2.5">Phiếu nhập gốc</th>
+                                <th className="p-2.5">Ngày xuất trả</th>
+                                <th className="p-2.5 text-center">SL xuất trả</th>
+                                <th className="p-2.5 text-right">Đơn giá hoàn</th>
+                                <th className="p-2.5 text-right">Giảm trừ nợ</th>
+                                <th className="p-2.5">Lý do / Ghi chú</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                              {detailData.purchaseReturns.map((pr) => (
+                                <tr key={pr.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                                  <td className="p-2.5 font-mono font-bold text-amber-600 dark:text-amber-400">
+                                    {pr.returnCode}
+                                  </td>
+                                  <td className="p-2.5 text-gray-800 dark:text-gray-200">
+                                    {pr.supplierName}
+                                  </td>
+                                  <td className="p-2.5 font-mono text-gray-500">
+                                    {pr.receiptCode || '—'}
+                                  </td>
+                                  <td className="p-2.5 text-gray-500">
+                                    {pr.returnDate ? new Date(pr.returnDate).toLocaleDateString('vi-VN') : '—'}
+                                  </td>
+                                  <td className="p-2.5 text-center font-mono font-bold text-amber-600 dark:text-amber-400">
+                                    -{pr.quantity}
+                                  </td>
+                                  <td className="p-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
+                                    {pr.unitPrice.toLocaleString('vi-VN')}đ
+                                  </td>
+                                  <td className="p-2.5 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                                    {pr.debtOffsetAmount.toLocaleString('vi-VN')}đ
+                                  </td>
+                                  <td className="p-2.5 text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                                    {pr.reason || '—'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="sm:hidden space-y-2">
+                          {detailData.purchaseReturns.map((pr) => (
+                            <div
+                              key={pr.id}
+                              className="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1b23] space-y-2 shadow-xs"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <div className="font-mono font-bold text-xs text-amber-600 dark:text-amber-400">
+                                    {pr.returnCode}
+                                  </div>
+                                  <div className="text-[11px] text-gray-500 truncate mt-0.5">
+                                    NCC: <span className="font-medium text-gray-700 dark:text-gray-300">{pr.supplierName}</span>
+                                  </div>
+                                </div>
+                                <span className="text-[11px] text-gray-400 shrink-0">
+                                  {pr.returnDate ? new Date(pr.returnDate).toLocaleDateString('vi-VN') : '—'}
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-3 gap-1.5 p-2 rounded bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/40 dark:border-amber-900/30 text-center">
+                                <div>
+                                  <span className="text-[10px] text-gray-500 block">SL trả</span>
+                                  <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400">
+                                    -{pr.quantity}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-[10px] text-gray-500 block">Đơn giá hoàn</span>
+                                  <span className="font-mono text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    {pr.unitPrice.toLocaleString('vi-VN')}đ
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-[10px] text-gray-500 block">Giảm trừ nợ</span>
+                                  <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                    {pr.debtOffsetAmount.toLocaleString('vi-VN')}đ
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-100 dark:border-gray-800/80">
+                                <span>Phiếu gốc: <span className="font-mono text-gray-700 dark:text-gray-300">{pr.receiptCode || '—'}</span></span>
+                                {pr.reason && <span className="italic text-gray-400 truncate max-w-[150px]">{pr.reason}</span>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -1317,52 +1496,106 @@ export const OrderReportsPage: React.FC = () => {
                         Chưa có đơn hàng khách hoàn nào được kiểm tra nhập kho cho sản phẩm này.
                       </div>
                     ) : (
-                      <div className="overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-gray-50 dark:bg-[#1a1b23] text-gray-500 font-semibold border-b border-gray-200 dark:border-gray-800">
-                            <tr>
-                              <th className="p-2.5">Mã phiếu hoàn</th>
-                              <th className="p-2.5">Mã đơn hàng</th>
-                              <th className="p-2.5">Mã vận đơn</th>
-                              <th className="p-2.5">Gian hàng</th>
-                              <th className="p-2.5">Ngày nhận</th>
-                              <th className="p-2.5 text-center">Bán lại được</th>
-                              <th className="p-2.5 text-center">Hàng lỗi/hỏng</th>
-                              <th className="p-2.5">Lý do hoàn</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {detailData.orderReturns.map((or) => (
-                              <tr key={or.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
-                                <td className="p-2.5 font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                  {or.returnCode}
-                                </td>
-                                <td className="p-2.5 font-mono text-gray-900 dark:text-white">
-                                  {or.orderCode || '—'}
-                                </td>
-                                <td className="p-2.5 font-mono text-gray-500">
-                                  {or.trackingCode || '—'}
-                                </td>
-                                <td className="p-2.5 text-gray-800 dark:text-gray-200">
-                                  {or.shopName}
-                                </td>
-                                <td className="p-2.5 text-gray-500">
-                                  {or.receivedDate ? new Date(or.receivedDate).toLocaleDateString('vi-VN') : '—'}
-                                </td>
-                                <td className="p-2.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                  +{or.sellableQuantity}
-                                </td>
-                                <td className="p-2.5 text-center font-mono font-bold text-rose-500">
-                                  {or.damagedQuantity > 0 ? `+${or.damagedQuantity}` : '0'}
-                                </td>
-                                <td className="p-2.5 text-gray-600 dark:text-gray-400 max-w-xs truncate">
-                                  {or.reason || '—'}
-                                </td>
+                      <>
+                        {/* Desktop Table View */}
+                        <div className="hidden sm:block overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-gray-50 dark:bg-[#1a1b23] text-gray-500 font-semibold border-b border-gray-200 dark:border-gray-800">
+                              <tr>
+                                <th className="p-2.5">Mã phiếu hoàn</th>
+                                <th className="p-2.5">Mã đơn hàng</th>
+                                <th className="p-2.5">Mã vận đơn</th>
+                                <th className="p-2.5">Gian hàng</th>
+                                <th className="p-2.5">Ngày nhận</th>
+                                <th className="p-2.5 text-center">Bán lại được</th>
+                                <th className="p-2.5 text-center">Hàng lỗi/hỏng</th>
+                                <th className="p-2.5">Lý do hoàn</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                              {detailData.orderReturns.map((or) => (
+                                <tr key={or.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                                  <td className="p-2.5 font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                    {or.returnCode}
+                                  </td>
+                                  <td className="p-2.5 font-mono text-gray-900 dark:text-white">
+                                    {or.orderCode || '—'}
+                                  </td>
+                                  <td className="p-2.5 font-mono text-gray-500">
+                                    {or.trackingCode || '—'}
+                                  </td>
+                                  <td className="p-2.5 text-gray-800 dark:text-gray-200">
+                                    {or.shopName}
+                                  </td>
+                                  <td className="p-2.5 text-gray-500">
+                                    {or.receivedDate ? new Date(or.receivedDate).toLocaleDateString('vi-VN') : '—'}
+                                  </td>
+                                  <td className="p-2.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                    +{or.sellableQuantity}
+                                  </td>
+                                  <td className="p-2.5 text-center font-mono font-bold text-rose-500">
+                                    {or.damagedQuantity > 0 ? `+${or.damagedQuantity}` : '0'}
+                                  </td>
+                                  <td className="p-2.5 text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                                    {or.reason || '—'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="sm:hidden space-y-2">
+                          {detailData.orderReturns.map((or) => (
+                            <div
+                              key={or.id}
+                              className="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1b23] space-y-2 shadow-xs"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <div className="font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                                    {or.returnCode}
+                                  </div>
+                                  <div className="text-[11px] text-gray-500 truncate mt-0.5">
+                                    Shop: <span className="font-medium text-gray-700 dark:text-gray-300">{or.shopName}</span>
+                                  </div>
+                                </div>
+                                <span className="text-[11px] text-gray-400 shrink-0">
+                                  {or.receivedDate ? new Date(or.receivedDate).toLocaleDateString('vi-VN') : '—'}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center justify-between text-xs py-1 border-y border-gray-100 dark:border-gray-800">
+                                <span className="font-mono text-[11px] text-gray-700 dark:text-gray-300">
+                                  Đơn: {or.orderCode || '—'}
+                                </span>
+                                <span className="font-mono text-[11px] text-gray-500">
+                                  VĐ: {or.trackingCode || '—'}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center justify-between text-xs">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
+                                    Bán lại: +{or.sellableQuantity}
+                                  </span>
+                                  {or.damagedQuantity > 0 && (
+                                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/40">
+                                      Lỗi: +{or.damagedQuantity}
+                                    </span>
+                                  )}
+                                </div>
+                                {or.reason && (
+                                  <span className="text-[11px] text-gray-400 italic truncate max-w-[140px]">
+                                    {or.reason}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -1370,7 +1603,8 @@ export const OrderReportsPage: React.FC = () => {
                 {/* Tab 5: Warehouse balances */}
                 {detailActiveTab === 'WAREHOUSES' && (
                   <div className="space-y-2">
-                    <div className="overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
+                    {/* Desktop Table View */}
+                    <div className="hidden sm:block overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
                       <table className="w-full text-left text-xs">
                         <thead className="bg-gray-50 dark:bg-[#1a1b23] text-gray-500 font-semibold border-b border-gray-200 dark:border-gray-800">
                           <tr>
@@ -1407,6 +1641,52 @@ export const OrderReportsPage: React.FC = () => {
                           ))}
                         </tbody>
                       </table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="sm:hidden space-y-2">
+                      {detailData.inventoryBalances.map((b) => (
+                        <div
+                          key={b.warehouseId}
+                          className="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1b23] space-y-2 shadow-xs"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="font-semibold text-xs text-gray-900 dark:text-white">
+                              {b.warehouseName}
+                            </div>
+                            <span className="font-mono text-[11px] text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                              {b.warehouseCode}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-1.5 py-2 border-t border-gray-100 dark:border-gray-800 text-center">
+                            <div>
+                              <span className="text-[10px] text-gray-400 block truncate">Tồn thực tế</span>
+                              <span className="font-mono text-xs font-bold text-gray-900 dark:text-white">
+                                {b.onHand.toLocaleString('vi-VN')}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-gray-400 block truncate">Đang giữ</span>
+                              <span className="font-mono text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                {b.reserved.toLocaleString('vi-VN')}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-gray-400 block truncate">Khả dụng</span>
+                              <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                {b.available.toLocaleString('vi-VN')}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-gray-400 block truncate">Hàng lỗi</span>
+                              <span className="font-mono text-xs font-medium text-rose-500">
+                                {b.damaged.toLocaleString('vi-VN')}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
