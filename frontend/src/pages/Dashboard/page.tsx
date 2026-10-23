@@ -925,32 +925,35 @@ export const DashboardPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <div>
             <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-              <span>Tổng quan Tiền nong & Xuất nhập hàng</span>
+              <span className="sm:hidden">Tiền nong & Xuất nhập</span>
+              <span className="hidden sm:inline">Tổng quan Tiền nong & Xuất nhập hàng</span>
             </h2>
             <p className="text-[11px] text-gray-400">
-              Tổng hợp số tiền nhập hàng, tiền đi hàng, công nợ NCC và đối soát sàn
+              <span className="sm:hidden">Tiền nhập, tiền xuất, công nợ NCC và đối soát sàn</span>
+              <span className="hidden sm:inline">Tổng hợp số tiền nhập hàng, tiền đi hàng, công nợ NCC và đối soát sàn</span>
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1 sm:mt-0">
             <button
               onClick={() => navigate('/purchase-reports')}
-              className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+              className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer shrink-0"
             >
               <Receipt size={13} />
-              <span>Báo cáo nhập hàng</span>
+              <span className="sm:hidden">Báo cáo nhập</span>
+              <span className="hidden sm:inline">Báo cáo nhập hàng</span>
             </button>
-            <span className="text-gray-300 dark:text-gray-700">•</span>
+            <span className="text-gray-300 dark:text-gray-700 hidden sm:inline">•</span>
             <button
               onClick={() => navigate('/suppliers')}
-              className="text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+              className="text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer shrink-0"
             >
               <Building2 size={13} />
               <span>Công nợ NCC</span>
             </button>
-            <span className="text-gray-300 dark:text-gray-700">•</span>
+            <span className="text-gray-300 dark:text-gray-700 hidden sm:inline">•</span>
             <button
               onClick={() => navigate('/order-reports')}
-              className="text-[11px] font-medium text-[#5865f2] dark:text-[#7b85f5] hover:underline flex items-center gap-1 cursor-pointer"
+              className="text-[11px] font-medium text-[#5865f2] dark:text-[#7b85f5] hover:underline flex items-center gap-1 cursor-pointer shrink-0"
             >
               <FileText size={13} />
               <span>Đối soát đơn</span>
@@ -1086,81 +1089,88 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Dải tổng quan Xuất - Nhập - Tồn kho hệ thống */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-0.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5 pt-0.5">
           {/* SL Xuất bán */}
           <div
             onClick={() => navigate('/order-reports')}
-            className="p-2.5 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800/80 shadow-xs cursor-pointer hover:border-indigo-400 transition-colors flex items-center justify-between"
+            className="p-2 sm:p-2.5 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800/80 shadow-xs cursor-pointer hover:border-indigo-400 transition-colors flex items-center justify-between gap-1.5"
           >
-            <div className="flex items-center gap-2 text-indigo-500">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-indigo-500 min-w-0">
               <PackageCheck size={16} className="shrink-0" />
-              <div>
-                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block leading-tight">
-                  Xuất bán trong kỳ
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-medium text-gray-500 dark:text-gray-400 block leading-tight truncate">
+                  <span className="sm:hidden">Xuất bán</span>
+                  <span className="hidden sm:inline">Xuất bán trong kỳ</span>
                 </span>
-                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate block">
                   {isLoading ? '...' : `${data?.outbound?.totalExportedQuantity ?? 0} cái`}
                 </span>
               </div>
             </div>
-            <span className="text-[11px] text-gray-400">{data?.outbound?.totalOrders ?? 0} đơn</span>
+            <span className="text-[10px] sm:text-[11px] text-gray-400 shrink-0 text-right">{data?.outbound?.totalOrders ?? 0} đơn</span>
           </div>
 
           {/* SL Thực nhập */}
           <div
             onClick={() => navigate('/purchase-reports')}
-            className="p-2.5 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800/80 shadow-xs cursor-pointer hover:border-emerald-400 transition-colors flex items-center justify-between"
+            className="p-2 sm:p-2.5 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800/80 shadow-xs cursor-pointer hover:border-emerald-400 transition-colors flex items-center justify-between gap-1.5"
           >
-            <div className="flex items-center gap-2 text-emerald-500">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-emerald-500 min-w-0">
               <Package size={16} className="shrink-0" />
-              <div>
-                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block leading-tight">
-                  Nhập kho thực tế
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-medium text-gray-500 dark:text-gray-400 block leading-tight truncate">
+                  <span className="sm:hidden">Nhập kho</span>
+                  <span className="hidden sm:inline">Nhập kho thực tế</span>
                 </span>
-                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate block">
                   {isLoading ? '...' : `${data?.purchases?.totalImportedQuantity ?? 0} cái`}
                 </span>
               </div>
             </div>
-            <span className="text-[11px] text-gray-400">{data?.purchases?.totalReceipts ?? 0} phiếu</span>
+            <span className="text-[10px] sm:text-[11px] text-gray-400 shrink-0 text-right">{data?.purchases?.totalReceipts ?? 0} phiếu</span>
           </div>
 
           {/* Tồn kho thực tế On-hand */}
           <div
             onClick={() => navigate('/inventory')}
-            className="p-2.5 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800/80 shadow-xs cursor-pointer hover:border-sky-400 transition-colors flex items-center justify-between"
+            className="p-2 sm:p-2.5 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800/80 shadow-xs cursor-pointer hover:border-sky-400 transition-colors flex items-center justify-between gap-1.5"
           >
-            <div className="flex items-center gap-2 text-sky-500">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-sky-500 min-w-0">
               <Boxes size={16} className="shrink-0" />
-              <div>
-                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block leading-tight">
-                  Tồn kho thực tế (On-hand)
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-medium text-gray-500 dark:text-gray-400 block leading-tight truncate">
+                  <span className="sm:hidden">Tồn thực tế</span>
+                  <span className="hidden sm:inline">Tồn thực tế (On-hand)</span>
                 </span>
-                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate block">
                   {isLoading ? '...' : `${data?.inventoryAlerts?.totalOnHand ?? 0} cái`}
                 </span>
               </div>
             </div>
-            <span className="text-[11px] text-gray-400">Khả dụng: {data?.inventoryAlerts?.totalAvailable ?? 0}</span>
+            <span className="text-[10px] sm:text-[11px] text-gray-400 shrink-0 text-right">
+              <span className="sm:hidden">{data?.inventoryAlerts?.totalAvailable ?? 0}</span>
+              <span className="hidden sm:inline">Khả dụng: {data?.inventoryAlerts?.totalAvailable ?? 0}</span>
+            </span>
           </div>
 
           {/* Tồn dưới định mức */}
           <div
             onClick={() => navigate('/inventory')}
-            className="p-2.5 rounded bg-white dark:bg-[#181b22] border border-amber-200/80 dark:border-amber-900/40 shadow-xs cursor-pointer hover:border-amber-400 transition-colors flex items-center justify-between"
+            className="p-2 sm:p-2.5 rounded bg-white dark:bg-[#181b22] border border-amber-200/80 dark:border-amber-900/40 shadow-xs cursor-pointer hover:border-amber-400 transition-colors flex items-center justify-between gap-1.5"
           >
-            <div className="flex items-center gap-2 text-amber-500">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-amber-500 min-w-0">
               <AlertTriangle size={16} className="shrink-0" />
-              <div>
-                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block leading-tight">
-                  Tồn kho dưới định mức
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-medium text-gray-500 dark:text-gray-400 block leading-tight truncate">
+                  <span className="sm:hidden">Tồn thấp</span>
+                  <span className="hidden sm:inline">Tồn kho dưới định mức</span>
                 </span>
-                <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                <span className="text-xs sm:text-sm font-bold text-amber-600 dark:text-amber-400 truncate block">
                   {isLoading ? '...' : `${data?.inventoryAlerts?.lowStockVariantsCount ?? 0} SKU`}
                 </span>
               </div>
             </div>
-            <span className="text-[10px] text-amber-500 font-medium">Cảnh báo</span>
+            <span className="text-[10px] text-amber-500 font-medium shrink-0 text-right">Cảnh báo</span>
           </div>
         </div>
       </div>
@@ -1220,26 +1230,37 @@ export const DashboardPage: React.FC = () => {
 
         return (
           <Card>
-            <CardHeader className="py-3 px-4 border-b border-gray-200 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Package className="text-[#5865f2]" size={16} />
-                    <span>Danh mục Sản phẩm Hệ thống & Hiệu suất Xuất - Nhập</span>
+            <CardHeader className="py-3 px-3 sm:px-4 border-b border-gray-200 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <CardTitle className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    <Package className="text-[#5865f2] shrink-0" size={16} />
+                    <span className="sm:hidden truncate">Sản phẩm & Hiệu suất</span>
+                    <span className="hidden sm:inline truncate">Danh mục Sản phẩm Hệ thống & Hiệu suất Xuất - Nhập</span>
                   </CardTitle>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-[#5865f2] dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
-                    {hasSystemProducts ? `${sorted.length} sản phẩm hệ thống` : `${data?.topSellingItems?.length || 0} sản phẩm sàn`}
+                  <span className="px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-semibold bg-indigo-50 text-[#5865f2] dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40 shrink-0 whitespace-nowrap">
+                    {hasSystemProducts ? (
+                      <>
+                        <span className="sm:hidden">{sorted.length} SKU hệ thống</span>
+                        <span className="hidden sm:inline">{sorted.length} sản phẩm hệ thống</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="sm:hidden">{data?.topSellingItems?.length || 0} SKU sàn</span>
+                        <span className="hidden sm:inline">{data?.topSellingItems?.length || 0} sản phẩm sàn</span>
+                      </>
+                    )}
                   </span>
                 </div>
-                <p className="text-[11px] text-gray-400 mt-0.5">
+                <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1 sm:line-clamp-none">
                   Theo dõi số lượng xuất bán, tiền đi hàng, số lượng nhập kho, tiền nhập và tồn kho thực tế theo từng SKU sản phẩm của hệ thống
                 </p>
               </div>
 
               {/* Controls: Search, Sort & Action links */}
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
                 {/* Search Input */}
-                <div className="relative min-w-[200px]">
+                <div className="relative w-full sm:w-[200px] md:w-[220px] flex-1 min-w-0">
                   <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
@@ -1259,10 +1280,10 @@ export const DashboardPage: React.FC = () => {
                 </div>
 
                 {/* Sort selector */}
-                <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#1a1b23] p-0.5 rounded border border-gray-200 dark:border-gray-700 text-[11px]">
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#1a1b23] p-0.5 rounded border border-gray-200 dark:border-gray-700 text-[11px] overflow-x-auto scrollbar-none max-w-full">
                   <button
                     onClick={() => setProductSortBy('sold')}
-                    className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                    className={`px-2 py-0.5 rounded font-medium transition-colors shrink-0 whitespace-nowrap ${
                       productSortBy === 'sold'
                         ? 'bg-white dark:bg-[#202533] text-[#5865f2] dark:text-indigo-300 shadow-2xs'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
@@ -1272,7 +1293,7 @@ export const DashboardPage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setProductSortBy('imported')}
-                    className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                    className={`px-2 py-0.5 rounded font-medium transition-colors shrink-0 whitespace-nowrap ${
                       productSortBy === 'imported'
                         ? 'bg-white dark:bg-[#202533] text-emerald-600 dark:text-emerald-400 shadow-2xs'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
@@ -1282,7 +1303,7 @@ export const DashboardPage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setProductSortBy('onHand')}
-                    className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                    className={`px-2 py-0.5 rounded font-medium transition-colors shrink-0 whitespace-nowrap ${
                       productSortBy === 'onHand'
                         ? 'bg-white dark:bg-[#202533] text-sky-600 dark:text-sky-400 shadow-2xs'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
@@ -1292,7 +1313,7 @@ export const DashboardPage: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setProductSortBy('lowStock')}
-                    className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                    className={`px-2 py-0.5 rounded font-medium transition-colors shrink-0 whitespace-nowrap ${
                       productSortBy === 'lowStock'
                         ? 'bg-white dark:bg-[#202533] text-amber-600 dark:text-amber-400 shadow-2xs'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
@@ -1307,7 +1328,7 @@ export const DashboardPage: React.FC = () => {
                   size="sm"
                   variant="outline"
                   onClick={() => navigate('/order-reports')}
-                  className="h-7 text-xs px-2 gap-1"
+                  className="h-7 text-xs px-2 gap-1 shrink-0 whitespace-nowrap hidden sm:flex"
                 >
                   <span>Báo cáo đối soát</span>
                   <ExternalLink size={12} />

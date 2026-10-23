@@ -52,18 +52,18 @@ export const StatusChart: React.FC<StatusChartProps> = ({ metrics, isLoading }) 
   };
 
   return (
-    <Card className="bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 rounded p-4 h-full flex flex-col shadow-xs">
-      <div className="mb-4">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-          <PieChartIcon size={16} className="text-emerald-500" />
+    <Card className="bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 rounded p-3 sm:p-4 h-full flex flex-col shadow-xs">
+      <div className="mb-3 sm:mb-4">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2">
+          <PieChartIcon size={16} className="text-emerald-500 shrink-0" />
           <span>Tỷ lệ trạng thái đơn hàng</span>
         </h3>
-        <p className="text-[11px] text-gray-400 mt-0.5">
+        <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1 sm:line-clamp-none">
           Cơ cấu phân bổ đơn theo trạng thái xử lý Shopee
         </p>
       </div>
 
-      <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-4 min-h-[260px]">
+      <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 min-h-[220px] sm:min-h-[260px]">
         {isLoading ? (
           <div className="text-xs text-gray-400 animate-pulse">Đang tải tỷ lệ...</div>
         ) : total === 0 ? (

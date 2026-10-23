@@ -73,24 +73,25 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ data, isLoading }) =
     data.some((d) => d.revenue > 0 || (d.purchaseAmount || 0) > 0 || (d.orderCount || 0) > 0);
 
   return (
-    <Card className="bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 rounded p-4 h-full flex flex-col shadow-xs">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+    <Card className="bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800 rounded p-3 sm:p-4 h-full flex flex-col shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 sm:mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <TrendingUp size={16} className="text-[#5865f2]" />
-            <span>Xu hướng Tiền đi hàng & Nhập kho</span>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2">
+            <TrendingUp size={16} className="text-[#5865f2] shrink-0" />
+            <span className="sm:hidden">Xu hướng Tiền hàng & Nhập kho</span>
+            <span className="hidden sm:inline">Xu hướng Tiền đi hàng & Nhập kho</span>
           </h3>
-          <p className="text-[11px] text-gray-400 mt-0.5">
+          <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1 sm:line-clamp-none">
             Diễn biến giá trị xuất bán và chi phí nhập hàng theo ngày
           </p>
         </div>
 
         {/* View mode toggle */}
-        <div className="flex items-center bg-gray-100 dark:bg-[#12141a] p-0.5 rounded border border-gray-200 dark:border-gray-800 text-[11px]">
+        <div className="flex items-center self-start sm:self-auto bg-gray-100 dark:bg-[#12141a] p-0.5 rounded border border-gray-200 dark:border-gray-800 text-[11px] shrink-0">
           <button
             type="button"
             onClick={() => setViewMode('amount')}
-            className={`px-2.5 py-1 rounded font-medium transition-colors ${
+            className={`px-2 sm:px-2.5 py-1 rounded font-medium transition-colors ${
               viewMode === 'amount'
                 ? 'bg-white dark:bg-[#202533] text-[#5865f2] dark:text-indigo-300 shadow-2xs'
                 : 'text-gray-500 hover:text-gray-900 dark:text-gray-400'
@@ -101,13 +102,14 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ data, isLoading }) =
           <button
             type="button"
             onClick={() => setViewMode('count')}
-            className={`px-2.5 py-1 rounded font-medium transition-colors ${
+            className={`px-2 sm:px-2.5 py-1 rounded font-medium transition-colors ${
               viewMode === 'count'
                 ? 'bg-white dark:bg-[#202533] text-emerald-600 dark:text-emerald-400 shadow-2xs'
                 : 'text-gray-500 hover:text-gray-900 dark:text-gray-400'
             }`}
           >
-            Số lượng đơn/phiếu
+            <span className="sm:hidden">Số lượng</span>
+            <span className="hidden sm:inline">Số đơn/phiếu</span>
           </button>
         </div>
       </div>

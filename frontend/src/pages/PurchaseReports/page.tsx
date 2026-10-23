@@ -472,14 +472,14 @@ export const PurchaseReportsPage: React.FC = () => {
               <span className="hidden sm:inline truncate">Báo Cáo Nhập Hàng</span>
             </h1>
             {selectedShopId && selectedShopId !== 'ALL' && selectedShopId !== 'CENTRAL' ? (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-[#5865f2] dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 rounded-full text-[11px] sm:text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-[#5865f2] dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 shrink-0 whitespace-nowrap">
                 <Store size={12} />
                 <span>Shop: {shops.find((s) => s.id === selectedShopId)?.name || selectedShopId}</span>
               </span>
             ) : selectedShopId === 'CENTRAL' ? (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 rounded-full text-[11px] sm:text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shrink-0 whitespace-nowrap">
                 <Building2 size={12} />
-                <span>Kho chung / Chưa gán shop</span>
+                <span>Kho chung</span>
               </span>
             ) : null}
           </div>
@@ -753,62 +753,67 @@ export const PurchaseReportsPage: React.FC = () => {
       <div className="flex items-center gap-1 p-1 bg-gray-100/80 dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded w-full sm:w-fit shrink-0 max-w-full overflow-x-auto scrollbar-none">
         <button
           onClick={() => setActiveTab('DATES')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer border-0 shrink-0 whitespace-nowrap ${
             activeTab === 'DATES'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
           }`}
         >
-          <Calendar size={14} />
-          <span>Theo Ngày Nhập ({data?.byDate?.length || data?.dailyTrend?.length || 0})</span>
+          <Calendar size={14} className="shrink-0" />
+          <span className="sm:hidden">Theo Ngày ({data?.byDate?.length || data?.dailyTrend?.length || 0})</span>
+          <span className="hidden sm:inline">Theo Ngày Nhập ({data?.byDate?.length || data?.dailyTrend?.length || 0})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('SUPPLIERS')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer border-0 shrink-0 whitespace-nowrap ${
             activeTab === 'SUPPLIERS'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
           }`}
         >
-          <Building2 size={14} />
-          <span>Theo Nhà Cung Cấp ({data?.bySupplier?.length || 0})</span>
+          <Building2 size={14} className="shrink-0" />
+          <span className="sm:hidden">Theo NCC ({data?.bySupplier?.length || 0})</span>
+          <span className="hidden sm:inline">Theo Nhà Cung Cấp ({data?.bySupplier?.length || 0})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('PRODUCTS')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer border-0 shrink-0 whitespace-nowrap ${
             activeTab === 'PRODUCTS'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
           }`}
         >
-          <Boxes size={14} />
-          <span>Sản Phẩm & SKU Nhập ({data?.topProducts?.length || 0})</span>
+          <Boxes size={14} className="shrink-0" />
+          <span className="sm:hidden">Sản Phẩm ({data?.topProducts?.length || 0})</span>
+          <span className="hidden sm:inline">Sản Phẩm & SKU Nhập ({data?.topProducts?.length || 0})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('SHOPS')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer border-0 shrink-0 whitespace-nowrap ${
             activeTab === 'SHOPS'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
           }`}
         >
-          <Store size={14} />
-          <span>Theo Cửa Hàng (Shop) ({data?.byShop?.length || 0})</span>
+          <Store size={14} className="shrink-0" />
+          <span className="sm:hidden">Theo Shop ({data?.byShop?.length || 0})</span>
+          <span className="hidden sm:inline">Theo Cửa Hàng (Shop) ({data?.byShop?.length || 0})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('RECEIPTS')}
-          className={`px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-2 cursor-pointer border-0 shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer border-0 shrink-0 whitespace-nowrap ${
             activeTab === 'RECEIPTS'
               ? 'bg-[#5865f2] text-white font-medium shadow-xs'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-normal'
           }`}
         >
-          <Receipt size={14} />
-          <span>Phiếu Nhập Gần Đây ({data?.receipts?.length || 0})</span>
+          <Receipt size={14} className="shrink-0" />
+          <span className="sm:hidden">Phiếu Nhập ({data?.receipts?.length || 0})</span>
+          <span className="hidden sm:inline">Phiếu Nhập Gần Đây ({data?.receipts?.length || 0})</span>
         </button>
       </div>
 

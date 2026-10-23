@@ -290,17 +290,19 @@ export const OrderReportsPage: React.FC = () => {
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
               <TrendingUp size={20} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
-              <span className="truncate">Báo cáo đơn hàng & Đối soát Nhập - Xuất - Tồn</span>
+              <span className="sm:hidden truncate">Báo cáo đối soát đơn</span>
+              <span className="hidden sm:inline truncate">Báo cáo đơn hàng & Đối soát Nhập - Xuất - Tồn</span>
             </h1>
             {isFilteringSpecificShop ? (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-[#5865f2] dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 rounded-full text-[11px] sm:text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-[#5865f2] dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 shrink-0 whitespace-nowrap">
                 <Store size={12} />
                 <span>Shop: {currentShop?.name || selectedShopId}</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-normal bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 rounded-full text-[11px] sm:text-xs font-normal bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 shrink-0 whitespace-nowrap">
                 <Store size={12} />
-                <span>Tất cả Shop (Đổi ở Header)</span>
+                <span className="sm:hidden">Tất cả Shop</span>
+                <span className="hidden sm:inline">Tất cả Shop (Đổi ở Header)</span>
               </span>
             )}
           </div>
