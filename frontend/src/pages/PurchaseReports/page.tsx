@@ -65,7 +65,24 @@ export const PurchaseReportsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'DATES' | 'SUPPLIERS' | 'PRODUCTS' | 'SHOPS' | 'RECEIPTS'>('DATES');
   const [expandedSupplierIds, setExpandedSupplierIds] = useState<Record<string, boolean>>({});
+  const [expandedProductSkus, setExpandedProductSkus] = useState<Record<string, boolean>>({});
   const [showChart, setShowChart] = useState<boolean>(true);
+
+  const [expandedSupplierSkuKeys, setExpandedSupplierSkuKeys] = useState<Record<string, boolean>>({});
+
+  const toggleExpandProduct = (sku: string) => {
+    setExpandedProductSkus((prev) => ({
+      ...prev,
+      [sku]: !prev[sku],
+    }));
+  };
+
+  const toggleExpandSupplierSku = (key: string) => {
+    setExpandedSupplierSkuKeys((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
 
   // Filters
   const [selectedShopId, setSelectedShopId] = useState<string>('ALL');
@@ -1102,34 +1119,128 @@ export const PurchaseReportsPage: React.FC = () => {
                                           const skuRatio = s.totalAmount > 0
                                             ? ((skuItem.totalAmount / s.totalAmount) * 100).toFixed(1)
                                             : '0.0';
+                                          const skuKey = `${s.supplierId}-${skuItem.sku}-${sIdx}`;
+                                          const isSkuExpanded = Boolean(expandedSupplierSkuKeys[skuKey]);
+                                          const skuTxList = skuItem.transactions || [];
 
                                           return (
-                                            <tr key={`${s.supplierId}-${skuItem.sku}-${sIdx}`} className="hover:bg-indigo-50/20 dark:hover:bg-indigo-950/20">
-                                              <td className="py-2 px-2.5 font-mono font-semibold text-indigo-600 dark:text-indigo-400">
-                                                {skuItem.sku}
-                                              </td>
-                                              <td className="py-2 px-2.5 font-medium text-gray-900 dark:text-white max-w-[260px] truncate">
-                                                {skuItem.productName}
-                                              </td>
-                                              <td className="py-2 px-2.5 text-gray-500">
-                                                {skuItem.variationName || 'Mặc định'}
-                                              </td>
-                                              <td className="py-2 px-2.5 text-center text-gray-700 dark:text-gray-300">
-                                                {skuItem.receiptsCount}
-                                              </td>
-                                              <td className="py-2 px-2.5 text-center font-mono font-bold text-gray-900 dark:text-white">
-                                                {skuItem.quantity.toLocaleString('vi-VN')}
-                                              </td>
-                                              <td className="py-2 px-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
-                                                {skuItem.avgPrice.toLocaleString('vi-VN')}đ
-                                              </td>
-                                              <td className="py-2 px-2.5 text-right font-mono font-bold text-gray-900 dark:text-white">
-                                                {skuItem.totalAmount.toLocaleString('vi-VN')}đ
-                                              </td>
-                                              <td className="py-2 px-2.5 text-right text-gray-500 font-mono text-[11px]">
-                                                {skuRatio}%
-                                              </td>
-                                            </tr>
+                                            <React.Fragment key={skuKey}>
+                                              <tr
+                                                className="hover:bg-indigo-50/20 dark:hover:bg-indigo-950/20 cursor-pointer transition-colors"
+                                                onClick={() => toggleExpandSupplierSku(skuKey)}
+                                              >
+                                                <td className="py-2 px-2.5 font-mono font-semibold text-indigo-600 dark:text-indigo-400">
+                                                  <div className="flex items-center gap-1.5">
+                                                    <span className="text-gray-400">
+                                                      {isSkuExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                                                    </span>
+                                                    <span>{skuItem.sku}</span>
+                                                  </div>
+                                                </td>
+                                                <td className="py-2 px-2.5 font-medium text-gray-900 dark:text-white max-w-[260px] truncate">
+                                                  {skuItem.productName}
+                                                </td>
+                                                <td className="py-2 px-2.5 text-gray-500">
+                                                  {skuItem.variationName || 'Mặc định'}
+                                                </td>
+                                                <td className="py-2 px-2.5 text-center text-gray-700 dark:text-gray-300">
+                                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[11px]">
+                                                    {skuItem.receiptsCount} lần
+                                                  </span>
+                                                </td>
+                                                <td className="py-2 px-2.5 text-center font-mono font-bold text-gray-900 dark:text-white">
+                                                  {skuItem.quantity.toLocaleString('vi-VN')}
+                                                </td>
+                                                <td className="py-2 px-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
+                                                  {skuItem.avgPrice.toLocaleString('vi-VN')}đ
+                                                </td>
+                                                <td className="py-2 px-2.5 text-right font-mono font-bold text-gray-900 dark:text-white">
+                                                  {skuItem.totalAmount.toLocaleString('vi-VN')}đ
+                                                </td>
+                                                <td className="py-2 px-2.5 text-right text-gray-500 font-mono text-[11px]">
+                                                  {skuRatio}%
+                                                </td>
+                                              </tr>
+
+                                              {/* Nested transactions for this SKU under this supplier */}
+                                              {isSkuExpanded && (
+                                                <tr className="bg-gray-50/50 dark:bg-[#121318]">
+                                                  <td colSpan={8} className="p-2.5">
+                                                    <div className="rounded border border-indigo-200/50 dark:border-indigo-900/30 bg-white dark:bg-[#15171e] p-2.5 space-y-2">
+                                                      <div className="text-[11px] font-bold text-gray-800 dark:text-gray-200 flex items-center justify-between">
+                                                        <span>Lịch sử nhập SKU {skuItem.sku} từ NCC {s.supplierName} ({skuTxList.length} lần nhập):</span>
+                                                        <span className="text-gray-400 font-normal">Tồn trước nhập & SL thực nhập</span>
+                                                      </div>
+                                                      {skuTxList.length === 0 ? (
+                                                        <div className="text-center py-2 text-xs text-gray-400">
+                                                          Không có chi tiết lịch sử nhập hàng cho mã SKU này
+                                                        </div>
+                                                      ) : (
+                                                        <div className="overflow-x-auto">
+                                                          <table className="w-full text-left text-[11px]">
+                                                            <thead>
+                                                              <tr className="border-b border-gray-100 dark:border-gray-800 text-gray-400 bg-gray-50/60 dark:bg-gray-800/20">
+                                                                <th className="py-1 px-2">Mã phiếu</th>
+                                                                <th className="py-1 px-2">Ngày nhập</th>
+                                                                <th className="py-1 px-2">Kho hàng</th>
+                                                                <th className="py-1 px-2 text-center font-bold text-gray-700 dark:text-gray-300">Số hàng trước nhập</th>
+                                                                <th className="py-1 px-2 text-center font-bold text-emerald-600 dark:text-emerald-400">SL nhập (+)</th>
+                                                                <th className="py-1 px-2 text-center font-bold text-indigo-600 dark:text-indigo-400">Tồn sau nhập (=)</th>
+                                                                <th className="py-1 px-2 text-right">Đơn giá</th>
+                                                                <th className="py-1 px-2 text-right font-bold">Thành tiền</th>
+                                                                <th className="py-1 px-2 text-center">Trạng thái nợ</th>
+                                                              </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
+                                                              {skuTxList.map((tx, tIdx) => (
+                                                                <tr key={`${tx.receiptId}-${tIdx}`} className="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                                                                  <td className="py-1.5 px-2 font-mono font-semibold text-indigo-600 dark:text-indigo-400">
+                                                                    <Link to={`/suppliers?tab=RECEIPTS&search=${tx.receiptCode}`} className="hover:underline flex items-center gap-1">
+                                                                      <Receipt size={11} />
+                                                                      <span>{tx.receiptCode}</span>
+                                                                    </Link>
+                                                                  </td>
+                                                                  <td className="py-1.5 px-2 text-gray-600 dark:text-gray-400">{tx.receiptDate ? tx.receiptDate.slice(0, 10) : ''}</td>
+                                                                  <td className="py-1.5 px-2 text-gray-600 dark:text-gray-400">{tx.warehouseName}</td>
+                                                                  <td className="py-1.5 px-2 text-center font-mono font-bold text-gray-800 dark:text-gray-200">
+                                                                    <span className="px-1.5 py-0.2 rounded bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                                                      {tx.stockBefore.toLocaleString('vi-VN')}
+                                                                    </span>
+                                                                  </td>
+                                                                  <td className="py-1.5 px-2 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                                                    <span className="px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40">
+                                                                      +{tx.receivedQuantity.toLocaleString('vi-VN')}
+                                                                    </span>
+                                                                  </td>
+                                                                  <td className="py-1.5 px-2 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                                                    <span className="px-1.5 py-0.2 rounded bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40">
+                                                                      ={tx.stockAfter.toLocaleString('vi-VN')}
+                                                                    </span>
+                                                                  </td>
+                                                                  <td className="py-1.5 px-2 text-right font-mono">{tx.unitPrice.toLocaleString('vi-VN')}đ</td>
+                                                                  <td className="py-1.5 px-2 text-right font-mono font-bold">{tx.subtotal.toLocaleString('vi-VN')}đ</td>
+                                                                  <td className="py-1.5 px-2 text-center">
+                                                                    <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                                                                      tx.paymentStatus === 'PAID'
+                                                                        ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                                                        : tx.paymentStatus === 'PARTIALLY_PAID'
+                                                                          ? 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
+                                                                          : 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300'
+                                                                    }`}>
+                                                                      {tx.paymentStatus === 'PAID' ? 'Đã trả' : tx.paymentStatus === 'PARTIALLY_PAID' ? 'Trả 1 phần' : 'Chưa trả'}
+                                                                    </span>
+                                                                  </td>
+                                                                </tr>
+                                                              ))}
+                                                            </tbody>
+                                                          </table>
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </td>
+                                                </tr>
+                                              )}
+                                            </React.Fragment>
                                           );
                                         })}
                                       </tbody>
@@ -1271,10 +1382,14 @@ export const PurchaseReportsPage: React.FC = () => {
                             const skuRatio = s.totalAmount > 0
                               ? ((skuItem.totalAmount / s.totalAmount) * 100).toFixed(1)
                               : '0.0';
+                            const skuKey = `${s.supplierId}-${skuItem.sku}-${sIdx}`;
+                            const isSkuExpanded = Boolean(expandedSupplierSkuKeys[skuKey]);
+                            const skuTxList = skuItem.transactions || [];
+
                             return (
                               <div
-                                key={`${s.supplierId}-${skuItem.sku}-${sIdx}`}
-                                className="py-2 first:pt-1 last:pb-0 text-xs space-y-1"
+                                key={skuKey}
+                                className="py-2.5 first:pt-1 last:pb-0 text-xs space-y-1.5"
                               >
                                 <div className="flex items-start justify-between gap-1">
                                   <div className="flex items-center gap-1.5 min-w-0">
@@ -1299,6 +1414,45 @@ export const PurchaseReportsPage: React.FC = () => {
                                     {skuItem.totalAmount.toLocaleString('vi-VN')}đ
                                   </span>
                                 </div>
+
+                                {skuTxList.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleExpandSupplierSku(skuKey)}
+                                    className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-semibold pt-0.5 cursor-pointer"
+                                  >
+                                    <Receipt size={11} />
+                                    <span>{isSkuExpanded ? 'Thu gọn biến động' : `Xem biến động tồn ${skuTxList.length} lần nhập`}</span>
+                                    {isSkuExpanded ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+                                  </button>
+                                )}
+
+                                {isSkuExpanded && skuTxList.length > 0 && (
+                                  <div className="mt-1 pt-1 border-t border-gray-100 dark:border-gray-800 space-y-1.5">
+                                    {skuTxList.map((tx, tIdx) => (
+                                      <div key={tIdx} className="p-2 rounded bg-gray-50/80 dark:bg-gray-800/40 text-[10px] space-y-1">
+                                        <div className="flex justify-between items-center">
+                                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{tx.receiptCode}</span>
+                                          <span className="text-gray-400">{tx.receiptDate ? tx.receiptDate.slice(0, 10) : ''}</span>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-1 bg-white dark:bg-[#14151a] p-1.5 rounded border border-gray-100 dark:border-gray-800 text-[10px] text-center font-mono">
+                                          <div>
+                                            <span className="text-[9px] text-gray-400 block font-sans">Tồn trước</span>
+                                            <span className="font-bold text-gray-800 dark:text-gray-200">{tx.stockBefore}</span>
+                                          </div>
+                                          <div className="border-x border-gray-200 dark:border-gray-700/60">
+                                            <span className="text-[9px] text-emerald-600 dark:text-emerald-400 block font-sans">Nhập (+)</span>
+                                            <span className="font-bold text-emerald-600 dark:text-emerald-400">+{tx.receivedQuantity}</span>
+                                          </div>
+                                          <div>
+                                            <span className="text-[9px] text-indigo-600 dark:text-indigo-400 block font-sans">Tồn sau (=)</span>
+                                            <span className="font-bold text-[#5865f2] dark:text-indigo-400">{tx.stockAfter}</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             );
                           })
@@ -1339,6 +1493,7 @@ export const PurchaseReportsPage: React.FC = () => {
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
+                  <SystemTh className="w-[40px] text-center"></SystemTh>
                   <SystemTh className="w-[130px]">Mã SKU</SystemTh>
                   <SystemTh className="w-[260px]">Tên sản phẩm</SystemTh>
                   <SystemTh className="w-[140px]">Phân loại hàng</SystemTh>
@@ -1351,42 +1506,202 @@ export const PurchaseReportsPage: React.FC = () => {
               </SystemThead>
               <SystemTbody>
                 {isLoading ? (
-                  <SystemTableSkeleton rows={5} columns={8} />
+                  <SystemTableSkeleton rows={5} columns={9} />
                 ) : !data?.topProducts || data.topProducts.length === 0 ? (
-                  <SystemTableEmpty colSpan={8} message="Không có sản phẩm nào được nhập trong khoảng thời gian này" />
+                  <SystemTableEmpty colSpan={9} message="Không có sản phẩm nào được nhập trong khoảng thời gian này" />
                 ) : (
-                  paginatedProducts.map((p, idx) => (
-                    <SystemTr key={`${p.sku}-${idx}`}>
-                      <SystemTd className="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                        {p.sku}
-                      </SystemTd>
-                      <SystemTd className="font-medium text-gray-900 dark:text-white max-w-[260px] truncate">
-                        {p.productName}
-                      </SystemTd>
-                      <SystemTd className="text-xs text-gray-500 dark:text-gray-400">
-                        {p.variationName || 'Mặc định'}
-                      </SystemTd>
-                      <SystemTd className="text-xs text-gray-600 dark:text-gray-300 max-w-[200px] truncate">
-                        {p.suppliers && p.suppliers.length > 0 ? (
-                          p.suppliers.join(', ')
-                        ) : (
-                          <span className="text-gray-400">-</span>
+                  paginatedProducts.map((p, idx) => {
+                    const isExpanded = Boolean(expandedProductSkus[p.sku]);
+                    const txList = p.transactions || [];
+
+                    return (
+                      <React.Fragment key={`${p.sku}-${idx}`}>
+                        <SystemTr
+                          className="cursor-pointer hover:bg-gray-50/80 dark:hover:bg-[#1a1d26] transition-colors"
+                          onClick={() => toggleExpandProduct(p.sku)}
+                        >
+                          <SystemTd className="text-center">
+                            <button
+                              type="button"
+                              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors text-gray-500 cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleExpandProduct(p.sku);
+                              }}
+                              title={isExpanded ? 'Thu gọn lịch sử nhập' : 'Xem chi tiết các lần giao dịch nhập'}
+                            >
+                              {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                            </button>
+                          </SystemTd>
+                          <SystemTd className="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                            {p.sku}
+                          </SystemTd>
+                          <SystemTd className="font-medium text-gray-900 dark:text-white max-w-[260px] truncate">
+                            {p.productName}
+                          </SystemTd>
+                          <SystemTd className="text-xs text-gray-500 dark:text-gray-400">
+                            {p.variationName || 'Mặc định'}
+                          </SystemTd>
+                          <SystemTd className="text-xs text-gray-600 dark:text-gray-300 max-w-[200px] truncate">
+                            {p.suppliers && p.suppliers.length > 0 ? (
+                              p.suppliers.join(', ')
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </SystemTd>
+                          <SystemTd className="text-center font-semibold text-gray-700 dark:text-gray-300">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-xs">
+                              {p.receiptsCount} lần
+                            </span>
+                          </SystemTd>
+                          <SystemTd className="text-center font-mono font-bold text-gray-900 dark:text-white">
+                            {p.quantity.toLocaleString('vi-VN')}
+                          </SystemTd>
+                          <SystemTd className="text-right font-mono text-gray-700 dark:text-gray-300">
+                            {p.avgPrice.toLocaleString('vi-VN')}đ
+                          </SystemTd>
+                          <SystemTd className="text-right font-mono font-bold text-gray-900 dark:text-white">
+                            {p.totalAmount.toLocaleString('vi-VN')}đ
+                          </SystemTd>
+                        </SystemTr>
+
+                        {/* Nested Import Transactions Breakdown Row */}
+                        {isExpanded && (
+                          <SystemTr className="bg-gray-50/70 dark:bg-[#101115]">
+                            <SystemTd colSpan={9} className="p-3 sm:p-4">
+                              <div className="bg-white dark:bg-[#161820] rounded border border-indigo-200/60 dark:border-indigo-900/40 p-3.5 shadow-xs space-y-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 dark:border-gray-800 pb-2.5">
+                                  <div className="flex items-center gap-2">
+                                    <Boxes size={16} className="text-[#5865f2]" />
+                                    <div>
+                                      <span className="text-xs font-bold text-gray-900 dark:text-white">
+                                        Chi tiết từng lần nhập hàng & tồn kho: <span className="text-indigo-600 dark:text-indigo-400 font-mono">{p.sku}</span> - {p.productName}
+                                      </span>
+                                      <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                        Xem số hàng trước khi nhập, số lượng nhập và tồn sau khi nhập của từng phiếu
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2.5 text-xs font-mono">
+                                    <span className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                      Số lần nhập: <b>{p.receiptsCount}</b> lần
+                                    </span>
+                                    <span className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                      Tổng nhập: <b>{p.quantity.toLocaleString('vi-VN')}</b> cái
+                                    </span>
+                                    <span className="px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/40 text-[#5865f2] dark:text-indigo-300 font-bold">
+                                      Tổng tiền: {p.totalAmount.toLocaleString('vi-VN')}đ
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {txList.length === 0 ? (
+                                  <div className="text-center py-4 text-xs text-gray-400">
+                                    Không có chi tiết lịch sử nhập hàng cho sản phẩm này
+                                  </div>
+                                ) : (
+                                  <div className="overflow-x-auto rounded border border-gray-200/60 dark:border-gray-800">
+                                    <table className="w-full text-left text-xs border-collapse">
+                                      <thead>
+                                        <tr className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-[11px] uppercase tracking-wider bg-gray-50/80 dark:bg-gray-800/40">
+                                          <th className="py-2.5 px-3">Mã phiếu</th>
+                                          <th className="py-2.5 px-3">Ngày nhập</th>
+                                          <th className="py-2.5 px-3">Nhà cung cấp</th>
+                                          <th className="py-2.5 px-3">Kho nhập hàng</th>
+                                          <th className="py-2.5 px-3 text-center bg-gray-100/60 dark:bg-gray-800/60 font-bold text-gray-700 dark:text-gray-300">
+                                            Số hàng trước nhập
+                                          </th>
+                                          <th className="py-2.5 px-3 text-center bg-emerald-50/50 dark:bg-emerald-950/20 font-bold text-emerald-700 dark:text-emerald-300">
+                                            SL thực nhập (+)
+                                          </th>
+                                          <th className="py-2.5 px-3 text-center bg-indigo-50/50 dark:bg-indigo-950/20 font-bold text-[#5865f2] dark:text-indigo-300">
+                                            Tồn sau nhập (=)
+                                          </th>
+                                          <th className="py-2.5 px-3 text-right">Đơn giá nhập</th>
+                                          <th className="py-2.5 px-3 text-right font-bold">Thành tiền</th>
+                                          <th className="py-2.5 px-3 text-center">Trạng thái nợ</th>
+                                          <th className="py-2.5 px-3">Ghi chú</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800/80">
+                                        {txList.map((tx, tIdx) => (
+                                          <tr
+                                            key={`${tx.receiptId}-${tIdx}`}
+                                            className="hover:bg-indigo-50/20 dark:hover:bg-indigo-950/20 transition-colors"
+                                          >
+                                            <td className="py-2.5 px-3 font-mono font-semibold">
+                                              <Link
+                                                to={`/suppliers?tab=RECEIPTS&search=${tx.receiptCode}`}
+                                                className="text-[#5865f2] hover:underline flex items-center gap-1.5"
+                                                title="Mở chi tiết phiếu nhập kho"
+                                              >
+                                                <Receipt size={13} className="shrink-0" />
+                                                <span>{tx.receiptCode}</span>
+                                              </Link>
+                                            </td>
+                                            <td className="py-2.5 px-3 text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                              {tx.receiptDate ? tx.receiptDate.slice(0, 10) : 'N/A'}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-gray-800 dark:text-gray-200 max-w-[150px] truncate">
+                                              {tx.supplierName}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-gray-600 dark:text-gray-400 max-w-[130px] truncate">
+                                              {tx.warehouseName}
+                                            </td>
+                                            <td className="py-2.5 px-3 text-center bg-gray-100/30 dark:bg-gray-800/30 font-mono">
+                                              <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
+                                                {tx.stockBefore.toLocaleString('vi-VN')}
+                                              </span>
+                                            </td>
+                                            <td className="py-2.5 px-3 text-center bg-emerald-50/20 dark:bg-emerald-950/10 font-mono font-bold">
+                                              <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
+                                                +{tx.receivedQuantity.toLocaleString('vi-VN')}
+                                              </span>
+                                            </td>
+                                            <td className="py-2.5 px-3 text-center bg-indigo-50/20 dark:bg-indigo-950/10 font-mono font-bold">
+                                              <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
+                                                ={tx.stockAfter.toLocaleString('vi-VN')}
+                                              </span>
+                                            </td>
+                                            <td className="py-2.5 px-3 text-right font-mono text-gray-700 dark:text-gray-300">
+                                              {tx.unitPrice.toLocaleString('vi-VN')}đ
+                                            </td>
+                                            <td className="py-2.5 px-3 text-right font-mono font-bold text-gray-900 dark:text-white">
+                                              {tx.subtotal.toLocaleString('vi-VN')}đ
+                                            </td>
+                                            <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                                              <span
+                                                className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                                  tx.paymentStatus === 'PAID'
+                                                    ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                                    : tx.paymentStatus === 'PARTIALLY_PAID'
+                                                      ? 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
+                                                      : 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300'
+                                                }`}
+                                              >
+                                                {tx.paymentStatus === 'PAID'
+                                                  ? 'Đã trả'
+                                                  : tx.paymentStatus === 'PARTIALLY_PAID'
+                                                    ? 'Trả một phần'
+                                                    : 'Chưa trả'}
+                                              </span>
+                                            </td>
+                                            <td className="py-2.5 px-3 text-gray-500 text-[11px] max-w-[140px] truncate">
+                                              {tx.note || '-'}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            </SystemTd>
+                          </SystemTr>
                         )}
-                      </SystemTd>
-                      <SystemTd className="text-center font-semibold text-gray-700 dark:text-gray-300">
-                        {p.receiptsCount}
-                      </SystemTd>
-                      <SystemTd className="text-center font-mono font-bold text-gray-900 dark:text-white">
-                        {p.quantity.toLocaleString('vi-VN')}
-                      </SystemTd>
-                      <SystemTd className="text-right font-mono text-gray-700 dark:text-gray-300">
-                        {p.avgPrice.toLocaleString('vi-VN')}đ
-                      </SystemTd>
-                      <SystemTd className="text-right font-mono font-bold text-gray-900 dark:text-white">
-                        {p.totalAmount.toLocaleString('vi-VN')}đ
-                      </SystemTd>
-                    </SystemTr>
-                  ))
+                      </React.Fragment>
+                    );
+                  })
                 )}
               </SystemTbody>
             </SystemTableWrapper>
@@ -1421,54 +1736,153 @@ export const PurchaseReportsPage: React.FC = () => {
             ) : !data?.topProducts || data.topProducts.length === 0 ? (
               <SystemMobileEmpty message="Không có sản phẩm nào được nhập trong khoảng thời gian này" />
             ) : (
-              paginatedProducts.map((p, idx) => (
-                <div
-                  key={`${p.sku}-${idx}`}
-                  className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2 text-xs shadow-none"
-                >
-                  <div className="flex items-start justify-between gap-2 border-b border-gray-100 dark:border-gray-800/80 pb-1.5">
-                    <div>
-                      <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">
-                        {p.sku}
+              paginatedProducts.map((p, idx) => {
+                const isExpanded = Boolean(expandedProductSkus[p.sku]);
+                const txList = p.transactions || [];
+
+                return (
+                  <div
+                    key={`${p.sku}-${idx}`}
+                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2.5 text-xs shadow-none"
+                  >
+                    <div
+                      className="flex items-start justify-between gap-2 border-b border-gray-100 dark:border-gray-800/80 pb-2 cursor-pointer"
+                      onClick={() => toggleExpandProduct(p.sku)}
+                    >
+                      <div>
+                        <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">
+                          {p.sku}
+                        </span>
+                        <div className="font-medium text-gray-900 dark:text-white text-xs line-clamp-2 mt-0.5">
+                          {p.productName}
+                        </div>
+                      </div>
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 shrink-0">
+                        {p.receiptsCount} lần nhập
                       </span>
-                      <div className="font-medium text-gray-900 dark:text-white text-xs line-clamp-2 mt-0.5">
-                        {p.productName}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400">
+                      <span>Phân loại: <b className="text-gray-700 dark:text-gray-300">{p.variationName || 'Mặc định'}</b></span>
+                      {p.suppliers && p.suppliers.length > 0 && (
+                        <span>NCC: <b className="text-gray-700 dark:text-gray-300">{p.suppliers.join(', ')}</b></span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-800/80">
+                      <div>
+                        <span className="text-[10px] text-gray-400 block">Số lượng nhập:</span>
+                        <span className="font-mono font-bold text-gray-900 dark:text-white">
+                          {p.quantity.toLocaleString('vi-VN')}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 block">Đơn giá BQ:</span>
+                        <span className="font-mono text-gray-700 dark:text-gray-300">
+                          {p.avgPrice.toLocaleString('vi-VN')}đ
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-gray-400 block">Tổng tiền:</span>
+                        <span className="font-mono font-bold text-[#5865f2] dark:text-indigo-400">
+                          {p.totalAmount.toLocaleString('vi-VN')}đ
+                        </span>
                       </div>
                     </div>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 shrink-0">
-                      {p.receiptsCount} lần nhập
-                    </span>
-                  </div>
 
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400">
-                    <span>Phân loại: <b className="text-gray-700 dark:text-gray-300">{p.variationName || 'Mặc định'}</b></span>
-                    {p.suppliers && p.suppliers.length > 0 && (
-                      <span>NCC: <b className="text-gray-700 dark:text-gray-300">{p.suppliers.join(', ')}</b></span>
+                    {/* Toggle button for transaction history */}
+                    <button
+                      type="button"
+                      onClick={() => toggleExpandProduct(p.sku)}
+                      className="w-full mt-1 py-1.5 px-2 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/60 dark:hover:bg-gray-800 text-[11px] font-semibold text-[#5865f2] dark:text-indigo-400 rounded flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Receipt size={13} />
+                      <span>{isExpanded ? 'Thu gọn lịch sử nhập' : `Xem chi tiết ${txList.length || p.receiptsCount} lần giao dịch nhập`}</span>
+                      {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                    </button>
+
+                    {/* Expanded Transactions List on Mobile (flat divider layout, no nested card) */}
+                    {isExpanded && (
+                      <div className="pt-2 border-t border-gray-100 dark:border-gray-800/80 divide-y divide-dashed divide-gray-100 dark:divide-gray-800">
+                        {txList.length === 0 ? (
+                          <div className="text-center py-2 text-[11px] text-gray-400">
+                            Không có chi tiết lịch sử nhập cho sản phẩm này
+                          </div>
+                        ) : (
+                          txList.map((tx, tIdx) => (
+                            <div
+                              key={`${p.sku}-${tx.receiptId}-${tIdx}`}
+                              className="py-2.5 first:pt-1 last:pb-0 text-xs space-y-1.5"
+                            >
+                              <div className="flex items-center justify-between gap-1">
+                                <Link
+                                  to={`/suppliers?tab=RECEIPTS&search=${tx.receiptCode}`}
+                                  className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs flex items-center gap-1 hover:underline"
+                                >
+                                  <Receipt size={12} className="shrink-0" />
+                                  <span>{tx.receiptCode}</span>
+                                </Link>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] text-gray-400">
+                                    {tx.receiptDate ? tx.receiptDate.slice(0, 10) : ''}
+                                  </span>
+                                  <span
+                                    className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                                      tx.paymentStatus === 'PAID'
+                                        ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                        : tx.paymentStatus === 'PARTIALLY_PAID'
+                                          ? 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
+                                          : 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300'
+                                    }`}
+                                  >
+                                    {tx.paymentStatus === 'PAID' ? 'Đã trả' : tx.paymentStatus === 'PARTIALLY_PAID' ? 'Trả 1 phần' : 'Chưa trả'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-gray-500 dark:text-gray-400">
+                                <span>NCC: <b className="text-gray-700 dark:text-gray-300">{tx.supplierName}</b></span>
+                                <span>•</span>
+                                <span>Kho: <b className="text-gray-700 dark:text-gray-300">{tx.warehouseName}</b></span>
+                              </div>
+
+                              {/* Stock progression: Tồn trước -> Nhập -> Tồn sau */}
+                              <div className="grid grid-cols-3 gap-1 p-2 rounded bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 text-[11px]">
+                                <div className="text-center">
+                                  <span className="text-[10px] text-gray-400 block">Tồn trước nhập</span>
+                                  <span className="font-mono font-bold text-gray-800 dark:text-gray-200">
+                                    {tx.stockBefore.toLocaleString('vi-VN')}
+                                  </span>
+                                </div>
+                                <div className="text-center border-x border-gray-200 dark:border-gray-700/60">
+                                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-medium">SL nhập (+)</span>
+                                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                    +{tx.receivedQuantity.toLocaleString('vi-VN')}
+                                  </span>
+                                </div>
+                                <div className="text-center">
+                                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 block font-medium">Tồn sau nhập (=)</span>
+                                  <span className="font-mono font-bold text-[#5865f2] dark:text-indigo-400">
+                                    {tx.stockAfter.toLocaleString('vi-VN')}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between text-xs pt-0.5 text-gray-600 dark:text-gray-400">
+                                <span>Đơn giá: <b className="font-mono text-gray-800 dark:text-gray-200">{tx.unitPrice.toLocaleString('vi-VN')}đ</b></span>
+                                <span>Thành tiền: <b className="font-mono font-bold text-gray-900 dark:text-white">{tx.subtotal.toLocaleString('vi-VN')}đ</b></span>
+                              </div>
+                              {tx.note && (
+                                <div className="text-[10px] text-gray-400 italic">Ghi chú: {tx.note}</div>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
                     )}
                   </div>
-
-                  <div className="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-800/80">
-                    <div>
-                      <span className="text-[10px] text-gray-400 block">Số lượng nhập:</span>
-                      <span className="font-mono font-bold text-gray-900 dark:text-white">
-                        {p.quantity.toLocaleString('vi-VN')}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-gray-400 block">Đơn giá BQ:</span>
-                      <span className="font-mono text-gray-700 dark:text-gray-300">
-                        {p.avgPrice.toLocaleString('vi-VN')}đ
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[10px] text-gray-400 block">Tổng tiền:</span>
-                      <span className="font-mono font-bold text-[#5865f2] dark:text-indigo-400">
-                        {p.totalAmount.toLocaleString('vi-VN')}đ
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
 
             {/* Mobile Pagination */}

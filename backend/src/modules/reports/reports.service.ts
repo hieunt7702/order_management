@@ -3,6 +3,28 @@ import { PrismaService } from '../../database/prisma.service';
 import { DashboardFilterDto, PurchaseReportFilterDto } from './dto/report.dto';
 import { PlatformOrderStatus, VerificationStatus, Prisma } from '@prisma/client';
 
+export interface ProductImportTransaction {
+  receiptId: string;
+  receiptCode: string;
+  receiptDate: string;
+  supplierId?: string;
+  supplierName: string;
+  supplierCode?: string;
+  warehouseId?: string;
+  warehouseName: string;
+  shopId?: string | null;
+  shopName: string;
+  paymentStatus: string;
+  orderedQuantity: number;
+  receivedQuantity: number;
+  unitPrice: number;
+  subtotal: number;
+  stockBefore: number;
+  stockAfter: number;
+  note?: string | null;
+  createdAt: string;
+}
+
 @Injectable()
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -355,6 +377,126 @@ export class ReportsService {
     let totalReceivedQuantity = Number(itemsAgg._sum.receivedQuantity || 0);
     let totalDisputedQuantity = Number(itemsAgg._sum.disputedQuantity || 0);
 
+    // Query variant inventory balances and ledgers to compute exact stockBefore and stockAfter
+    const receiptVariantStockMap = new Map<string, { stockBefore: number; stockAfter: number }>();
+
+    try {
+      const variantIds = Array.from(
+        new Set(
+          receipts
+            .flatMap((r) => (r.items || []).map((it: any) => it.variantId))
+            .filter(Boolean),
+        ),
+      );
+
+      if (variantIds.length > 0) {
+        const [balances, ledgers] = await Promise.all([
+          this.prisma.inventoryBalance.findMany({
+            where: {
+              tenantId,
+              variantId: { in: variantIds },
+            },
+            select: {
+              warehouseId: true,
+              variantId: true,
+              onHand: true,
+            },
+          }),
+          this.prisma.inventoryLedger.findMany({
+            where: {
+              tenantId,
+              variantId: { in: variantIds },
+            },
+            orderBy: {
+              createdAt: 'asc',
+            },
+            select: {
+              id: true,
+              warehouseId: true,
+              variantId: true,
+              movementType: true,
+              deltaOnHand: true,
+              beforeOnHand: true,
+              afterOnHand: true,
+              referenceType: true,
+              referenceId: true,
+              createdAt: true,
+            },
+          }),
+        ]);
+
+        // Group ledgers by `${variantId}_${warehouseId}`
+        const ledgerGroup = new Map<string, typeof ledgers>();
+        for (const l of ledgers) {
+          const key = `${l.variantId}_${l.warehouseId}`;
+          const list = ledgerGroup.get(key) || [];
+          list.push(l);
+          ledgerGroup.set(key, list);
+        }
+
+        // Create balance lookup: `${variantId}_${warehouseId}` -> onHand
+        const balanceMap = new Map<string, number>();
+        for (const b of balances) {
+          balanceMap.set(`${b.variantId}_${b.warehouseId}`, Number(b.onHand || 0));
+        }
+
+        // Process each variant-warehouse history
+        for (const [key, vLedgers] of ledgerGroup.entries()) {
+          const currentOnHand = balanceMap.get(key) ?? 0;
+          const sumDelta = vLedgers.reduce((acc, l) => acc + (l.deltaOnHand || 0), 0);
+          const initialOnHand = Math.max(0, currentOnHand - sumDelta);
+
+          let runningStock = initialOnHand;
+          for (const l of vLedgers) {
+            let before = runningStock;
+            if (l.beforeOnHand !== null && l.beforeOnHand !== undefined) {
+              before = l.beforeOnHand;
+            }
+            let after = before + (l.deltaOnHand || 0);
+            if (l.afterOnHand !== null && l.afterOnHand !== undefined) {
+              after = l.afterOnHand;
+            }
+            runningStock = after;
+
+            if (l.referenceType === 'PURCHASE_RECEIPT' && l.referenceId) {
+              receiptVariantStockMap.set(`${l.referenceId}_${l.variantId}`, {
+                stockBefore: before,
+                stockAfter: after,
+              });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Lỗi tính tồn kho trước/sau phiếu nhập từ ledger:', err);
+    }
+
+    // Chronological cumulative fallback for any receipt items not matched in ledger
+    const chronologicalReceipts = [...receipts].sort((a, b) => {
+      const timeA = new Date(a.receiptDate || a.createdAt).getTime();
+      const timeB = new Date(b.receiptDate || b.createdAt).getTime();
+      return timeA - timeB;
+    });
+
+    const fallbackStockMap = new Map<string, number>();
+    for (const r of chronologicalReceipts) {
+      for (const item of r.items || []) {
+        const vKey = item.variantId || item.sku || item.productName;
+        const key = `${r.id}_${item.variantId}`;
+        const itQty = Number(item.receivedQuantity) || 0;
+        const prevFallback = fallbackStockMap.get(vKey) || 0;
+        const nextFallback = prevFallback + itQty;
+        fallbackStockMap.set(vKey, nextFallback);
+
+        if (!receiptVariantStockMap.has(key)) {
+          receiptVariantStockMap.set(key, {
+            stockBefore: prevFallback,
+            stockAfter: nextFallback,
+          });
+        }
+      }
+    }
+
     // 2. Daily Trend Breakdown
     const dailyMap = new Map<string, {
       date: string;
@@ -400,6 +542,7 @@ export class ReportsService {
         quantity: number;
         totalAmount: number;
         receiptsCount: number;
+        transactions: ProductImportTransaction[];
       }>;
     }>();
 
@@ -412,6 +555,7 @@ export class ReportsService {
       totalAmount: number;
       receiptsCount: number;
       suppliers: Set<string>;
+      transactions: ProductImportTransaction[];
     }>();
 
     let computedReceivedQty = 0;
@@ -501,7 +645,15 @@ export class ReportsService {
         paidAmount: 0,
         remainingAmount: 0,
         quantity: 0,
-        skuMap: new Map(),
+        skuMap: new Map<string, {
+          sku: string;
+          productName: string;
+          variationName: string | null;
+          quantity: number;
+          totalAmount: number;
+          receiptsCount: number;
+          transactions: ProductImportTransaction[];
+        }>(),
       };
       currentSupplier.count += 1;
       currentSupplier.totalAmount += itemsAmt;
@@ -526,12 +678,12 @@ export class ReportsService {
           totalAmount: 0,
           receiptsCount: 0,
           suppliers: new Set<string>(),
+          transactions: [] as ProductImportTransaction[],
         };
         currentItem.quantity += itQty;
         currentItem.totalAmount += itSubtotal;
         currentItem.receiptsCount += 1;
         currentItem.suppliers.add(supName);
-        skuMap.set(itemKey, currentItem);
 
         // Supplier-specific SKU
         const currentSupItem = currentSupplier.skuMap.get(itemKey) || {
@@ -541,10 +693,48 @@ export class ReportsService {
           quantity: 0,
           totalAmount: 0,
           receiptsCount: 0,
+          transactions: [] as ProductImportTransaction[],
         };
         currentSupItem.quantity += itQty;
         currentSupItem.totalAmount += itSubtotal;
         currentSupItem.receiptsCount += 1;
+
+        // Transaction detail with stockBefore and stockAfter
+        const txStock = receiptVariantStockMap.get(`${r.id}_${item.variantId}`) || {
+          stockBefore: 0,
+          stockAfter: itQty,
+        };
+
+        const txObj: ProductImportTransaction = {
+          receiptId: r.id,
+          receiptCode: r.receiptCode,
+          receiptDate: r.receiptDate
+            ? (r.receiptDate instanceof Date ? r.receiptDate.toISOString() : String(r.receiptDate))
+            : (r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt || '')),
+          supplierId: r.supplierId || undefined,
+          supplierName: supName,
+          supplierCode: supCode,
+          warehouseId: r.warehouseId || undefined,
+          warehouseName: r.warehouse?.name || 'Kho chính',
+          shopId: r.shopId || null,
+          shopName: sName,
+          paymentStatus: r.paymentStatus || 'UNPAID',
+          orderedQuantity: Number(item.orderedQuantity || 0),
+          receivedQuantity: itQty,
+          unitPrice: Number(item.unitPrice || 0),
+          subtotal: itSubtotal,
+          stockBefore: txStock.stockBefore,
+          stockAfter: txStock.stockAfter,
+          note: item.note || r.note || null,
+          createdAt: r.createdAt
+            ? (r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt))
+            : '',
+        };
+
+        currentItem.transactions.push(txObj);
+        currentSupItem.transactions.push(txObj);
+
+        skuMap.set(itemKey, currentItem);
         currentSupplier.skuMap.set(itemKey, currentSupItem);
       }
 
@@ -567,6 +757,11 @@ export class ReportsService {
         .map((it) => ({
           ...it,
           avgPrice: it.quantity > 0 ? Math.round(it.totalAmount / it.quantity) : 0,
+          transactions: it.transactions.sort((a, b) => {
+            const timeA = new Date(a.receiptDate || a.createdAt).getTime();
+            const timeB = new Date(b.receiptDate || b.createdAt).getTime();
+            return timeB - timeA;
+          }),
         }))
         .sort((a, b) => b.totalAmount - a.totalAmount);
 
@@ -596,6 +791,11 @@ export class ReportsService {
         receiptsCount: it.receiptsCount,
         suppliers: Array.from(it.suppliers),
         avgPrice: it.quantity > 0 ? Math.round(it.totalAmount / it.quantity) : 0,
+        transactions: it.transactions.sort((a, b) => {
+          const timeA = new Date(a.receiptDate || a.createdAt).getTime();
+          const timeB = new Date(b.receiptDate || b.createdAt).getTime();
+          return timeB - timeA;
+        }),
       }))
       .sort((a, b) => b.totalAmount - a.totalAmount);
 

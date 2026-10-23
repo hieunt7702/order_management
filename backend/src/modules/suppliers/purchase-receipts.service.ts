@@ -160,6 +160,19 @@ export class PurchaseReceiptsService {
       // B. Cộng tồn kho onHand và ghi bút toán Sổ cái InventoryLedger bất biến
       for (const item of itemsData) {
         if (item.receivedQuantity > 0) {
+          // Lấy tồn kho trước khi nhập
+          const existingBalance = await tx.inventoryBalance.findUnique({
+            where: {
+              tenantId_warehouseId_variantId: {
+                tenantId,
+                warehouseId: dto.warehouseId,
+                variantId: item.variantId,
+              },
+            },
+          });
+          const prevOnHand = existingBalance ? Number(existingBalance.onHand || 0) : 0;
+          const nextOnHand = prevOnHand + item.receivedQuantity;
+
           // Upsert InventoryBalance
           await tx.inventoryBalance.upsert({
             where: {
@@ -181,7 +194,7 @@ export class PurchaseReceiptsService {
             },
           });
 
-          // Ghi InventoryLedger (RECEIVE)
+          // Ghi InventoryLedger (RECEIVE) với beforeOnHand và afterOnHand
           await tx.inventoryLedger.create({
             data: {
               tenantId,
@@ -190,6 +203,9 @@ export class PurchaseReceiptsService {
               movementType: InventoryMovementType.RECEIVE,
               deltaOnHand: item.receivedQuantity,
               deltaReserved: 0,
+              beforeOnHand: prevOnHand,
+              afterOnHand: nextOnHand,
+              voucherCode: receiptCode,
               referenceType: 'PURCHASE_RECEIPT',
               referenceId: receipt.id,
               performedByUserId: userId,

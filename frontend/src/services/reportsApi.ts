@@ -19,6 +19,28 @@ export interface PurchaseReportFilterParams {
   limit?: number;
 }
 
+export interface ProductImportTransaction {
+  receiptId: string;
+  receiptCode: string;
+  receiptDate: string;
+  supplierId?: string;
+  supplierName: string;
+  supplierCode?: string;
+  warehouseId?: string;
+  warehouseName: string;
+  shopId?: string | null;
+  shopName: string;
+  paymentStatus: string;
+  orderedQuantity: number;
+  receivedQuantity: number;
+  unitPrice: number;
+  subtotal: number;
+  stockBefore: number;
+  stockAfter: number;
+  note?: string | null;
+  createdAt: string;
+}
+
 export interface PurchaseReportData {
   summary: {
     totalReceipts: number;
@@ -84,6 +106,7 @@ export interface PurchaseReportData {
       totalAmount: number;
       avgPrice: number;
       receiptsCount: number;
+      transactions?: ProductImportTransaction[];
     }>;
   }>;
   topProducts: Array<{
@@ -95,6 +118,7 @@ export interface PurchaseReportData {
     avgPrice: number;
     receiptsCount: number;
     suppliers?: string[];
+    transactions?: ProductImportTransaction[];
   }>;
   receipts: any[];
 }
