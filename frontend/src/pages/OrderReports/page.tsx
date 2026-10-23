@@ -535,19 +535,33 @@ export const OrderReportsPage: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded">
         {/* Desktop Table View (Hidden on mobile) */}
-        <div className="hidden sm:block flex-1 min-h-0 overflow-auto custom-scrollbar">
-          <SystemTableWrapper>
+        <div className="hidden sm:flex flex-1 flex-col min-h-0 overflow-hidden">
+          <SystemTableWrapper
+            tableClassName="w-full text-left border-collapse table-fixed min-w-[1200px]"
+            className="flex-1 flex flex-col min-h-0 border-0 rounded-none shadow-none"
+          >
+            <colgroup>
+              <col style={{ width: '52px' }} />
+              <col style={{ width: '28%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '15%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '80px' }} />
+            </colgroup>
             <SystemThead>
               <SystemTr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50/75 dark:bg-[#1a1b23]/50">
-                <SystemTh className="w-12 text-center">STT</SystemTh>
-                <SystemTh className="min-w-[240px]">Sản phẩm & SKU hệ thống</SystemTh>
-                <SystemTh className="w-28 text-right">Đã nhập kho</SystemTh>
-                <SystemTh className="w-28 text-right">Đơn hàng đi</SystemTh>
-                <SystemTh className="w-32 text-right">Tồn thực tế</SystemTh>
-                <SystemTh className="w-28 text-right">Tồn khả dụng</SystemTh>
-                <SystemTh className="w-36 text-center">Đối soát chênh lệch</SystemTh>
-                <SystemTh className="w-32 text-center">Tỷ lệ xuất / nhập</SystemTh>
-                <SystemTh className="w-24 text-center">Chi tiết</SystemTh>
+                <SystemTh align="center" className="text-center">STT</SystemTh>
+                <SystemTh align="left">Sản phẩm & SKU hệ thống</SystemTh>
+                <SystemTh align="right" className="text-right">Đã nhập kho</SystemTh>
+                <SystemTh align="right" className="text-right">Đơn hàng đi</SystemTh>
+                <SystemTh align="right" className="text-right">Tồn thực tế</SystemTh>
+                <SystemTh align="right" className="text-right">Tồn khả dụng</SystemTh>
+                <SystemTh align="center" className="text-center">Đối soát chênh lệch</SystemTh>
+                <SystemTh align="center" className="text-center">Tỷ lệ xuất / nhập</SystemTh>
+                <SystemTh align="center" className="text-center">Chi tiết</SystemTh>
               </SystemTr>
             </SystemThead>
 
@@ -572,15 +586,15 @@ export const OrderReportsPage: React.FC = () => {
                       className="hover:bg-gray-50/70 dark:hover:bg-[#1a1b23]/60 transition-colors"
                     >
                       {/* STT */}
-                      <SystemTd className="text-center text-xs text-gray-500 font-mono">
+                      <SystemTd align="center" className="text-center text-xs text-gray-500 font-mono">
                         {(currentPage - 1) * limit + index + 1}
                       </SystemTd>
 
                       {/* Product Name & Master Variant SKU */}
-                      <SystemTd>
+                      <SystemTd align="left">
                         <div className="flex flex-col min-w-0 py-1">
                           <span
-                            className="text-xs font-semibold text-gray-900 dark:text-white truncate"
+                            className="text-xs font-semibold text-gray-900 dark:text-white truncate block"
                             title={item.productName}
                           >
                             {item.productName}
@@ -590,11 +604,11 @@ export const OrderReportsPage: React.FC = () => {
                               {item.sku}
                             </span>
                             {item.variantName && item.variantName !== item.productName && (
-                              <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                              <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-[200px]" title={item.variantName}>
                                 • {item.variantName}
                               </span>
                             )}
-                            <span className="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-800 px-1 rounded">
+                            <span className="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-800 px-1 rounded shrink-0">
                               {item.unit}
                             </span>
                           </div>
@@ -602,7 +616,7 @@ export const OrderReportsPage: React.FC = () => {
                       </SystemTd>
 
                       {/* Nhập kho */}
-                      <SystemTd className="text-right">
+                      <SystemTd align="right" className="text-right">
                         <div className="flex flex-col items-end">
                           <span
                             className={`font-mono text-xs font-bold ${
@@ -617,13 +631,13 @@ export const OrderReportsPage: React.FC = () => {
                           </span>
                           {item.supplierReturnedQuantity && item.supplierReturnedQuantity > 0 ? (
                             <span
-                              className="text-[10px] text-amber-600 dark:text-amber-400 font-medium"
+                              className="text-[10px] text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap"
                               title={`Gốc: ${item.grossImportedQuantity} • Đã trả NCC: ${item.supplierReturnedQuantity}`}
                             >
                               Gốc +{item.grossImportedQuantity} • Trả -{item.supplierReturnedQuantity}
                             </span>
                           ) : (
-                            <span className="text-[10px] text-gray-400">
+                            <span className="text-[10px] text-gray-400 whitespace-nowrap">
                               {item.receiptsCount} phiếu nhập
                             </span>
                           )}
@@ -631,7 +645,7 @@ export const OrderReportsPage: React.FC = () => {
                       </SystemTd>
 
                       {/* Đơn hàng đi (Xuất bán) */}
-                      <SystemTd className="text-right">
+                      <SystemTd align="right" className="text-right">
                         <div className="flex flex-col items-end">
                           <span
                             className={`font-mono text-xs font-bold ${
@@ -646,13 +660,13 @@ export const OrderReportsPage: React.FC = () => {
                           </span>
                           {item.customerReturnedQuantity && item.customerReturnedQuantity > 0 ? (
                             <span
-                              className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium"
+                              className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium whitespace-nowrap"
                               title={`Đơn: ${item.grossExportedQuantity} • Khách hoàn: ${item.customerReturnedQuantity}`}
                             >
                               Đơn {item.grossExportedQuantity} • Hoàn -{item.customerReturnedQuantity}
                             </span>
                           ) : (
-                            <span className="text-[10px] text-gray-400">
+                            <span className="text-[10px] text-gray-400 whitespace-nowrap">
                               {item.ordersCount} đơn hàng
                             </span>
                           )}
@@ -660,7 +674,7 @@ export const OrderReportsPage: React.FC = () => {
                       </SystemTd>
 
                       {/* Tồn thực tế */}
-                      <SystemTd className="text-right">
+                      <SystemTd align="right" className="text-right">
                         <div className="flex flex-col items-end">
                           <span
                             className={`font-mono text-xs font-bold ${
@@ -672,7 +686,7 @@ export const OrderReportsPage: React.FC = () => {
                             {item.onHand.toLocaleString('vi-VN')}
                           </span>
                           {item.reserved > 0 && (
-                            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono">
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono whitespace-nowrap">
                               (giữ {item.reserved})
                             </span>
                           )}
@@ -680,37 +694,37 @@ export const OrderReportsPage: React.FC = () => {
                       </SystemTd>
 
                       {/* Tồn khả dụng */}
-                      <SystemTd className="text-right font-mono text-xs font-semibold text-gray-800 dark:text-gray-200">
+                      <SystemTd align="right" className="text-right font-mono text-xs font-semibold text-gray-800 dark:text-gray-200">
                         {item.available.toLocaleString('vi-VN')}
                       </SystemTd>
 
                       {/* Đối soát chênh lệch */}
-                      <SystemTd className="text-center">
+                      <SystemTd align="center" className="text-center">
                         <div className="inline-flex flex-col items-center">
                           {isBalanced && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 whitespace-nowrap">
                               <CheckCircle2 size={11} /> Khớp (0)
                             </span>
                           )}
                           {isSurplus && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 whitespace-nowrap">
                               <AlertTriangle size={11} /> Thừa (+{item.discrepancy})
                             </span>
                           )}
                           {isDeficit && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 whitespace-nowrap">
                               <AlertCircle size={11} /> Thiếu ({item.discrepancy})
                             </span>
                           )}
-                          <span className="text-[10px] text-gray-400 mt-0.5 font-mono">
+                          <span className="text-[10px] text-gray-400 mt-0.5 font-mono whitespace-nowrap">
                             Lý thuyết: {item.calculatedStock}
                           </span>
                         </div>
                       </SystemTd>
 
                       {/* Tỷ lệ xuất / nhập */}
-                      <SystemTd className="text-center">
-                        <div className="flex flex-col items-center w-24 mx-auto">
+                      <SystemTd align="center" className="text-center">
+                        <div className="flex flex-col items-center w-28 mx-auto">
                           <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 font-mono">
                             {item.fulfillmentRatePercent}%
                           </span>
@@ -730,11 +744,11 @@ export const OrderReportsPage: React.FC = () => {
                       </SystemTd>
 
                       {/* Nút Xem chi tiết */}
-                      <SystemTd className="text-center">
+                      <SystemTd align="center" className="text-center">
                         <button
                           type="button"
                           onClick={() => handleOpenDetail(item.variantId)}
-                          className="px-2.5 py-1 text-xs font-medium text-[#5865f2] dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded transition-colors cursor-pointer border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800"
+                          className="px-2.5 py-1 text-xs font-medium text-[#5865f2] dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded transition-colors cursor-pointer border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 whitespace-nowrap"
                         >
                           Chi tiết
                         </button>
