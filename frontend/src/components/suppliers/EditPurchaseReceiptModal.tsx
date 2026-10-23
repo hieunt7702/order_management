@@ -371,9 +371,9 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
             {/* Header info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3 sm:p-3.5 bg-gray-50/70 dark:bg-gray-900/50 rounded border border-gray-200/80 dark:border-gray-800">
               <div>
-                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 mb-1.5">
-                  <Building2 size={13} className="text-[#5865f2] shrink-0" />
-                  <span>Nhà cung cấp</span>
+                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 inline-flex items-center gap-1.5 leading-none mb-1.5">
+                  <Building2 size={13} className="text-[#5865f2] shrink-0 -translate-y-[0.5px]" />
+                  <span className="leading-none">Nhà cung cấp</span>
                 </label>
                 {hasPaidOrReturn ? (
                   <div className="space-y-1">
@@ -405,9 +405,9 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 mb-1.5">
-                  <Warehouse size={13} className="text-[#5865f2] shrink-0" />
-                  <span>Kho nhập hàng *</span>
+                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 inline-flex items-center gap-1.5 leading-none mb-1.5">
+                  <Warehouse size={13} className="text-[#5865f2] shrink-0 -translate-y-[0.5px]" />
+                  <span className="leading-none">Kho nhập hàng *</span>
                 </label>
                 <Select
                   value={form.warehouseId}
@@ -424,9 +424,9 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 mb-1.5">
-                  <Store size={13} className="text-gray-400 shrink-0" />
-                  <span>Shop sở hữu (Tùy chọn)</span>
+                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 inline-flex items-center gap-1.5 leading-none mb-1.5">
+                  <Store size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                  <span className="leading-none">Shop sở hữu (Tùy chọn)</span>
                 </label>
                 <Select
                   value={form.shopId || ''}
@@ -446,9 +446,9 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 mb-1.5">
-                  <FileText size={13} className="text-[#5865f2] shrink-0" />
-                  <span>Mã phiếu nhập</span>
+                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 inline-flex items-center gap-1.5 leading-none mb-1.5">
+                  <FileText size={13} className="text-[#5865f2] shrink-0 -translate-y-[0.5px]" />
+                  <span className="leading-none">Mã phiếu nhập</span>
                 </label>
                 <input
                   type="text"
@@ -460,9 +460,9 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 mb-1.5">
-                  <Calendar size={13} className="text-gray-400 shrink-0" />
-                  <span>Ngày nhập hàng</span>
+                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 inline-flex items-center gap-1.5 leading-none mb-1.5">
+                  <Calendar size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                  <span className="leading-none">Ngày nhập hàng</span>
                 </label>
                 <input
                   type="date"
@@ -473,9 +473,9 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5 mb-1.5">
-                  <Clock size={13} className="text-gray-400 shrink-0" />
-                  <span>Hạn thanh toán nợ</span>
+                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 inline-flex items-center gap-1.5 leading-none mb-1.5">
+                  <Clock size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                  <span className="leading-none">Hạn thanh toán nợ</span>
                 </label>
                 <input
                   type="date"
@@ -489,9 +489,9 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
             {/* Items Section */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide flex items-center gap-1.5">
-                  <Boxes size={14} className="text-[#5865f2]" />
-                  <span>Danh sách sản phẩm & đơn giá nhập (Đồng bộ tồn kho & giá vốn)</span>
+                <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide inline-flex items-center gap-1.5 leading-none">
+                  <Boxes size={14} className="text-[#5865f2] shrink-0 -translate-y-[0.5px]" />
+                  <span className="leading-none">Danh sách sản phẩm & đơn giá nhập (Đồng bộ tồn kho & giá vốn)</span>
                 </span>
                 <Button
                   type="button"
@@ -510,46 +510,46 @@ export const EditPurchaseReceiptModal: React.FC<EditPurchaseReceiptModalProps> =
                 <table className="w-full text-left text-xs">
                   <thead className="bg-gray-100 dark:bg-gray-800/80 text-gray-600 dark:text-gray-300">
                     <tr>
-                      <th className="py-2 px-3 w-[26%]">
-                        <div className="flex items-center gap-1">
-                          <Package size={12} className="text-gray-400" />
-                          <span>Biến Thể / SKU *</span>
+                      <th className="py-2 px-3 w-[26%] align-middle">
+                        <div className="inline-flex items-center gap-1 leading-none">
+                          <Package size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                          <span className="leading-none">Biến Thể / SKU *</span>
                         </div>
                       </th>
-                      <th className="py-2 px-2 text-center w-[12%]">
-                        <div className="flex items-center justify-center gap-1" title="Số lượng tồn kho thực tế hiện tại">
-                          <Boxes size={12} className="text-blue-500" />
-                          <span>Tồn Hiện Tại</span>
+                      <th className="py-2 px-2 text-center w-[12%] align-middle">
+                        <div className="inline-flex items-center justify-center gap-1 leading-none" title="Số lượng tồn kho thực tế hiện tại">
+                          <Boxes size={13} className="text-blue-500 shrink-0 -translate-y-[0.5px]" />
+                          <span className="leading-none">Tồn Hiện Tại</span>
                         </div>
                       </th>
-                      <th className="py-2 px-2 text-center w-[10%]">
-                        <span>SL Đặt</span>
+                      <th className="py-2 px-2 text-center w-[10%] align-middle">
+                        <span className="leading-none">SL Đặt</span>
                       </th>
-                      <th className="py-2 px-2 text-center w-[11%]">
-                        <div className="flex items-center justify-center gap-1">
-                          <CheckCircle2 size={12} className="text-indigo-500" />
-                          <span>SL Thực Nhận</span>
+                      <th className="py-2 px-2 text-center w-[11%] align-middle">
+                        <div className="inline-flex items-center justify-center gap-1 leading-none">
+                          <CheckCircle2 size={13} className="text-indigo-500 shrink-0 -translate-y-[0.5px]" />
+                          <span className="leading-none">SL Thực Nhận</span>
                         </div>
                       </th>
-                      <th className="py-2 px-2 text-center w-[10%]">
-                        <div className="flex items-center justify-center gap-1">
-                          <AlertCircle size={12} className="text-rose-500" />
-                          <span>Lỗi/Thiếu</span>
+                      <th className="py-2 px-2 text-center w-[10%] align-middle">
+                        <div className="inline-flex items-center justify-center gap-1 leading-none">
+                          <AlertCircle size={13} className="text-rose-500 shrink-0 -translate-y-[0.5px]" />
+                          <span className="leading-none">Lỗi/Thiếu</span>
                         </div>
                       </th>
-                      <th className="py-2 px-3 text-right w-[15%]">
-                        <div className="flex items-center justify-end gap-1 text-amber-600 dark:text-amber-400 font-bold">
-                          <DollarSign size={12} />
-                          <span>Đơn Giá Nhập (đ) *</span>
+                      <th className="py-2 px-3 text-right w-[15%] align-middle">
+                        <div className="inline-flex items-center justify-end gap-1 text-amber-600 dark:text-amber-400 font-bold leading-none">
+                          <DollarSign size={13} className="shrink-0 -translate-y-[0.5px]" />
+                          <span className="leading-none">Đơn Giá Nhập (đ) *</span>
                         </div>
                       </th>
-                      <th className="py-2 px-3 text-right w-[12%]">
-                        <div className="flex items-center justify-end gap-1">
-                          <Receipt size={12} className="text-gray-400" />
-                          <span>Thành Tiền</span>
+                      <th className="py-2 px-3 text-right w-[12%] align-middle">
+                        <div className="inline-flex items-center justify-end gap-1 leading-none">
+                          <Receipt size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                          <span className="leading-none">Thành Tiền</span>
                         </div>
                       </th>
-                      <th className="py-2 px-2 text-center w-[4%]"></th>
+                      <th className="py-2 px-2 text-center w-[4%] align-middle"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800">

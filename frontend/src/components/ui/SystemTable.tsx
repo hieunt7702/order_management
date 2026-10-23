@@ -230,7 +230,7 @@ export const SystemTh: React.FC<SystemThProps> = ({
     colSpan={colSpan}
     style={style}
     className={cn(
-      'px-4 py-3 font-medium text-gray-500 dark:text-gray-400 text-xs border-l border-gray-200 dark:border-gray-800 uppercase tracking-wide first:border-l-0 whitespace-nowrap',
+      'px-4 py-3 font-medium text-gray-500 dark:text-gray-400 text-xs border-l border-gray-200 dark:border-gray-800 uppercase tracking-wide first:border-l-0 whitespace-nowrap align-middle',
       align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left',
       className,
     )}

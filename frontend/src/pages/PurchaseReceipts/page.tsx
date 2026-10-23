@@ -119,6 +119,15 @@ export const PurchaseReceiptsPage: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [editingReceipt, setEditingReceipt] = useState<PurchaseReceiptModel | null>(null);
 
+  // Receipt Items Modal (Xem danh sách hàng nhập)
+  const [selectedReceiptForItems, setSelectedReceiptForItems] = useState<PurchaseReceiptModel | null>(null);
+  const [isReceiptItemsModalOpen, setIsReceiptItemsModalOpen] = useState<boolean>(false);
+
+  const handleOpenReceiptItemsModal = (receipt: PurchaseReceiptModel) => {
+    setSelectedReceiptForItems(receipt);
+    setIsReceiptItemsModalOpen(true);
+  };
+
   // Quick Create Supplier Modal
   const [isQuickSupplierModalOpen, setIsQuickSupplierModalOpen] = useState<boolean>(false);
   const [quickSupplierInitialName, setQuickSupplierInitialName] = useState<string>('');
@@ -779,63 +788,63 @@ export const PurchaseReceiptsPage: React.FC = () => {
           <SystemThead>
             <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
             <SystemTh className="w-44">
-              <div className="flex items-center gap-1.5">
-                <FileText size={12} className="text-gray-400 shrink-0" />
-                <span>Mã Phiếu & Ngày</span>
+              <div className="inline-flex items-center gap-1.5 leading-none">
+                <FileText size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                <span className="leading-none">Mã Phiếu & Ngày</span>
               </div>
             </SystemTh>
             <SystemTh className="w-52">
-              <div className="flex items-center gap-1.5">
-                <Building2 size={12} className="text-gray-400 shrink-0" />
-                <span>Nhà Cung Cấp</span>
+              <div className="inline-flex items-center gap-1.5 leading-none">
+                <Building2 size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                <span className="leading-none">Nhà Cung Cấp</span>
               </div>
             </SystemTh>
             <SystemTh className="w-40">
-              <div className="flex items-center gap-1.5">
-                <Warehouse size={12} className="text-gray-400 shrink-0" />
-                <span>Kho Nhập</span>
+              <div className="inline-flex items-center gap-1.5 leading-none">
+                <Warehouse size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                <span className="leading-none">Kho Nhập</span>
               </div>
             </SystemTh>
-            <SystemTh className="w-36 text-right">
-              <div className="flex items-center justify-end gap-1.5">
-                <Boxes size={12} className="text-gray-400 shrink-0" />
-                <span>Hàng Thực Nhận</span>
+            <SystemTh className="w-64 min-w-[220px]">
+              <div className="inline-flex items-center gap-1.5 leading-none">
+                <Boxes size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                <span className="leading-none">Hàng Thực Nhận</span>
               </div>
             </SystemTh>
-            <SystemTh className="w-36 text-right">
-              <div className="flex items-center justify-end gap-1.5">
-                <Receipt size={12} className="text-gray-400 shrink-0" />
-                <span>Tổng Tiền Hàng</span>
+            <SystemTh className="w-36 text-right" align="right">
+              <div className="inline-flex items-center justify-end gap-1.5 leading-none">
+                <Receipt size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                <span className="leading-none">Tổng Tiền Hàng</span>
               </div>
             </SystemTh>
-            <SystemTh className="w-36 text-right">
-              <div className="flex items-center justify-end gap-1.5">
-                <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-                <span>Đã Trả / Cấn Trừ</span>
+            <SystemTh className="w-36 text-right" align="right">
+              <div className="inline-flex items-center justify-end gap-1.5 leading-none">
+                <CheckCircle2 size={13} className="text-emerald-500 shrink-0 -translate-y-[0.5px]" />
+                <span className="leading-none">Đã Trả / Cấn Trừ</span>
               </div>
             </SystemTh>
-            <SystemTh className="w-32 text-right">
-              <div className="flex items-center justify-end gap-1.5">
-                <AlertCircle size={12} className="text-rose-500 shrink-0" />
-                <span>Còn Nợ NCC</span>
+            <SystemTh className="w-32 text-right" align="right">
+              <div className="inline-flex items-center justify-end gap-1.5 leading-none">
+                <AlertCircle size={13} className="text-rose-500 shrink-0 -translate-y-[0.5px]" />
+                <span className="leading-none">Còn Nợ NCC</span>
               </div>
             </SystemTh>
-            <SystemTh className="w-28 text-center">
-              <div className="flex items-center justify-center gap-1.5">
-                <Clock size={12} className="text-gray-400 shrink-0" />
-                <span>Hạn Nợ</span>
+            <SystemTh className="w-28 text-center" align="center">
+              <div className="inline-flex items-center justify-center gap-1.5 leading-none">
+                <Clock size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                <span className="leading-none">Hạn Nợ</span>
               </div>
             </SystemTh>
-            <SystemTh className="w-32 text-center">
-              <div className="flex items-center justify-center gap-1.5">
-                <ShieldCheck size={12} className="text-gray-400 shrink-0" />
-                <span>Trạng Thái</span>
+            <SystemTh className="w-32 text-center" align="center">
+              <div className="inline-flex items-center justify-center gap-1.5 leading-none">
+                <ShieldCheck size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                <span className="leading-none">Trạng Thái</span>
               </div>
             </SystemTh>
-            <SystemTh className="w-16 text-center">
-              <div className="flex items-center justify-center gap-1.5">
-                <SlidersHorizontal size={12} className="text-gray-400 shrink-0" />
-                <span>Thao Tác</span>
+            <SystemTh className="w-16 text-center" align="center">
+              <div className="inline-flex items-center justify-center gap-1.5 leading-none">
+                <SlidersHorizontal size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                <span className="leading-none">Thao Tác</span>
               </div>
             </SystemTh>
           </SystemThead>
@@ -907,19 +916,53 @@ export const PurchaseReceiptsPage: React.FC = () => {
                       )}
                     </SystemTd>
 
-                    {/* Hàng thực nhận */}
-                    <SystemTd className="text-right font-medium text-gray-800 dark:text-gray-200">
-                      {Number(r.returnDeductionAmount) > 0 ? (
-                        <div>
-                          <div className="font-semibold text-gray-900 dark:text-white">
-                            {Math.max(0, Number(r.totalItemsAmount) - Number(r.returnDeductionAmount)).toLocaleString('vi-VN')}đ
+                    {/* Hàng thực nhận: Hiển thị 1 sản phẩm nhập, nếu > 1 thêm +n, click mở danh sách hàng */}
+                    <SystemTd
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenReceiptItemsModal(r);
+                      }}
+                      className="cursor-pointer group hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 transition-colors"
+                      title={
+                        r.items && r.items.length > 0
+                          ? `Bấm để xem danh sách ${r.items.length} sản phẩm nhập`
+                          : 'Bấm để xem danh sách hàng nhập'
+                      }
+                    >
+                      {r.items && r.items.length > 0 ? (
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-medium text-xs text-gray-900 dark:text-white truncate max-w-[170px] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                              {r.items[0].productName}
+                              {r.items[0].variationName ? ` (${r.items[0].variationName})` : ''}
+                            </span>
+                            {r.items.length > 1 && (
+                              <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80 shrink-0 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/60 transition-colors">
+                                +{r.items.length - 1}
+                              </span>
+                            )}
                           </div>
-                          <div className="text-[10px] text-orange-500 font-normal mt-0.5">
-                            Đã trừ trả: -{Number(r.returnDeductionAmount).toLocaleString('vi-VN')}đ
+                          <div className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400 min-w-0">
+                            <span className="font-mono text-gray-600 dark:text-gray-300 truncate max-w-[110px]">
+                              {r.items[0].sku || 'SKU N/A'}
+                            </span>
+                            <span>•</span>
+                            <span className="font-semibold text-gray-800 dark:text-gray-200">
+                              SL: {Number(r.items[0].receivedQuantity || 0).toLocaleString('vi-VN')}
+                            </span>
+                            {r.items.length > 1 && (
+                              <span className="text-[10px] text-gray-400">
+                                (Tổng {r.items.reduce((s, it) => s + Number(it.receivedQuantity || 0), 0).toLocaleString('vi-VN')})
+                              </span>
+                            )}
                           </div>
                         </div>
                       ) : (
-                        <div>{Number(r.totalItemsAmount).toLocaleString('vi-VN')}đ</div>
+                        <div className="text-xs text-gray-400 italic">
+                          {Number(r.totalItemsAmount) > 0
+                            ? `${Number(r.totalItemsAmount).toLocaleString('vi-VN')}đ`
+                            : 'Không có sản phẩm'}
+                        </div>
                       )}
                     </SystemTd>
 
@@ -1184,6 +1227,33 @@ export const PurchaseReceiptsPage: React.FC = () => {
                     <span className="truncate">{r.warehouse?.name || 'Kho chính'}</span>
                   </div>
                 </div>
+
+                {/* Product preview line with +n (Clickable to open receipt items modal) */}
+                {r.items && r.items.length > 0 && (
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenReceiptItemsModal(r);
+                    }}
+                    className="p-2 rounded bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2 text-xs cursor-pointer active:bg-gray-100 dark:active:bg-gray-800 transition-colors"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Boxes size={13} className="text-indigo-500 shrink-0" />
+                      <span className="font-medium text-gray-800 dark:text-gray-200 truncate">
+                        {r.items[0].productName}
+                        {r.items[0].variationName ? ` (${r.items[0].variationName})` : ''}
+                      </span>
+                      {r.items.length > 1 && (
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 shrink-0">
+                          +{r.items.length - 1}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] font-mono text-gray-500 shrink-0">
+                      SL: {r.items.reduce((sum: number, it: any) => sum + Number(it.receivedQuantity || 0), 0).toLocaleString('vi-VN')}
+                    </span>
+                  </div>
+                )}
 
                 {/* Financial 3-column stats - Flat without nested card */}
                 <div className="grid grid-cols-3 gap-2 py-2 border-t border-dashed border-gray-100 dark:border-gray-800/80 text-center text-xs">
@@ -2641,6 +2711,205 @@ export const PurchaseReceiptsPage: React.FC = () => {
           }
         }}
       />
+
+      {/* Modal xem danh sách hàng thực nhận của phiếu nhập */}
+      <Modal
+        isOpen={isReceiptItemsModalOpen}
+        onClose={() => {
+          setIsReceiptItemsModalOpen(false);
+          setSelectedReceiptForItems(null);
+        }}
+        title={`Danh sách hàng thực nhận: ${selectedReceiptForItems?.receiptCode || ''}`}
+        icon={Boxes}
+        size="2xl"
+      >
+        {selectedReceiptForItems && (() => {
+          const items = selectedReceiptForItems.items || [];
+          const totalQty = items.reduce((sum, it) => sum + Number(it.receivedQuantity || 0), 0);
+          const totalDisputed = items.reduce((sum, it) => sum + Number(it.disputedQuantity || 0), 0);
+          const totalAmount = Number(selectedReceiptForItems.totalItemsAmount || 0);
+          const returnDed = Number(selectedReceiptForItems.returnDeductionAmount || 0);
+
+          return (
+            <>
+              <ModalBody className="space-y-3.5 p-3 sm:p-5">
+                {/* Header Summary Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="p-2.5 rounded bg-gray-50 dark:bg-gray-900/60 border border-gray-200/60 dark:border-gray-800">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">Nhà cung cấp:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white truncate block mt-0.5" title={selectedReceiptForItems.supplier?.name}>
+                      {selectedReceiptForItems.supplier?.name || 'N/A'}
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-mono">
+                      {selectedReceiptForItems.supplier?.code}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded bg-gray-50 dark:bg-gray-900/60 border border-gray-200/60 dark:border-gray-800">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">Kho nhận & Ngày:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white truncate block mt-0.5">
+                      {selectedReceiptForItems.warehouse?.name || 'Kho chính'}
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-mono">
+                      {formatDateTime(selectedReceiptForItems.receiptDate || selectedReceiptForItems.createdAt)}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50">
+                    <span className="text-[10px] text-indigo-600 dark:text-indigo-400 block font-medium">Tổng thực nhận:</span>
+                    <span className="font-bold text-sm text-indigo-700 dark:text-indigo-300 font-mono block mt-0.5">
+                      {totalQty.toLocaleString('vi-VN')} <span className="text-[11px] font-normal">sản phẩm</span>
+                    </span>
+                    <span className="text-[10px] text-indigo-500 dark:text-indigo-400">
+                      {items.length} mã SKU
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/50">
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-medium">Tổng tiền hàng:</span>
+                    <span className="font-bold text-sm text-emerald-700 dark:text-emerald-300 font-mono block mt-0.5">
+                      {totalAmount.toLocaleString('vi-VN')}đ
+                    </span>
+                    {returnDed > 0 ? (
+                      <span className="text-[10px] text-orange-600 dark:text-orange-400">
+                        Đã trừ trả: -{returnDed.toLocaleString('vi-VN')}đ
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                        {selectedReceiptForItems.paymentStatus === 'PAID' ? 'Đã thanh toán đủ' : 'Chưa trả hết'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Products Table */}
+                <div className="border border-gray-200 dark:border-gray-800 rounded overflow-hidden">
+                  <div className="bg-gray-100 dark:bg-gray-800/80 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Package size={13} className="text-[#5865f2] shrink-0" />
+                      <span>Chi tiết các mặt hàng ({items.length})</span>
+                    </div>
+                    {totalDisputed > 0 && (
+                      <span className="text-[10px] font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 px-2 py-0.5 rounded">
+                        Có {totalDisputed} hàng lỗi/thiếu
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="overflow-x-auto max-h-[420px] custom-scrollbar">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-gray-50/80 dark:bg-[#1a1b23] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
+                        <tr>
+                          <th className="py-2 px-3 text-center w-10 text-gray-500 font-medium">#</th>
+                          <th className="py-2 px-3 w-32 text-gray-500 font-medium">Mã SKU</th>
+                          <th className="py-2 px-3 text-gray-500 font-medium">Sản phẩm & Phân loại</th>
+                          <th className="py-2 px-3 text-center w-24 text-gray-500 font-medium">SL Nhận</th>
+                          <th className="py-2 px-3 text-right w-28 text-gray-500 font-medium">Đơn giá</th>
+                          <th className="py-2 px-3 text-right w-32 text-gray-500 font-medium">Thành tiền</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {items.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-8 text-center text-gray-400 italic">
+                              Phiếu này không có dữ liệu sản phẩm chi tiết.
+                            </td>
+                          </tr>
+                        ) : (
+                          items.map((it, idx) => (
+                            <tr key={it.id || idx} className="hover:bg-gray-50 dark:hover:bg-gray-900/40 transition-colors">
+                              <td className="py-2.5 px-3 text-center font-mono text-gray-400 text-[11px]">
+                                {idx + 1}
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <span className="font-mono font-medium text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded border border-indigo-200/50 dark:border-indigo-800/50 select-all">
+                                  {it.sku || 'N/A'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  {it.productName}
+                                </div>
+                                {it.variationName && (
+                                  <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                    Phân loại: <span className="text-gray-700 dark:text-gray-300 font-medium">{it.variationName}</span>
+                                  </div>
+                                )}
+                                {it.note && (
+                                  <div className="text-[10px] text-gray-400 italic mt-0.5">
+                                    Ghi chú: {it.note}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-mono">
+                                  {Number(it.receivedQuantity || 0).toLocaleString('vi-VN')}
+                                </span>
+                                {Number(it.disputedQuantity || 0) > 0 && (
+                                  <div className="text-[10px] text-rose-500 mt-0.5">
+                                    Lỗi: {it.disputedQuantity}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono text-gray-700 dark:text-gray-300">
+                                {Number(it.unitPrice || 0).toLocaleString('vi-VN')}đ
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono font-semibold text-gray-900 dark:text-white">
+                                {Number(it.subtotal || 0).toLocaleString('vi-VN')}đ
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                      {items.length > 0 && (
+                        <tfoot className="bg-gray-50 dark:bg-gray-900/60 border-t border-gray-200 dark:border-gray-800 font-semibold text-xs">
+                          <tr>
+                            <td colSpan={3} className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">
+                              Tổng cộng:
+                            </td>
+                            <td className="py-2 px-3 text-center font-mono font-bold text-blue-600 dark:text-blue-400">
+                              {totalQty.toLocaleString('vi-VN')}
+                            </td>
+                            <td></td>
+                            <td className="py-2 px-3 text-right font-mono font-bold text-gray-900 dark:text-white">
+                              {totalAmount.toLocaleString('vi-VN')}đ
+                            </td>
+                          </tr>
+                        </tfoot>
+                      )}
+                    </table>
+                  </div>
+                </div>
+              </ModalBody>
+              <ModalFooter className="flex items-center justify-between gap-2 w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const r = selectedReceiptForItems;
+                    setIsReceiptItemsModalOpen(false);
+                    setSelectedReceiptForItems(null);
+                    if (r) handleOpenDetailModal(r);
+                  }}
+                  className="gap-1.5 text-xs text-[#5865f2] border-[#5865f2]/40 hover:bg-[#5865f2]/10"
+                >
+                  <FileText size={14} />
+                  <span>Xem chi tiết công nợ & thanh toán</span>
+                </Button>
+                <ModalButton
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setIsReceiptItemsModalOpen(false);
+                    setSelectedReceiptForItems(null);
+                  }}
+                  className="text-xs px-4"
+                >
+                  Đóng
+                </ModalButton>
+              </ModalFooter>
+            </>
+          );
+        })()}
+      </Modal>
     </div>
   );
 };

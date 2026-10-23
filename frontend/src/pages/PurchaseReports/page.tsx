@@ -21,6 +21,8 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
+  Package,
+  FileText,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -41,6 +43,7 @@ import { SystemDatePicker } from '../../components/ui/SystemDatePicker';
 import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
+import { Modal, ModalBody, ModalFooter, ModalButton } from '../../components/ui/Modal';
 import {
   SystemFilter,
   SystemFilterSearch,
@@ -67,6 +70,10 @@ export const PurchaseReportsPage: React.FC = () => {
   const [expandedSupplierIds, setExpandedSupplierIds] = useState<Record<string, boolean>>({});
   const [expandedProductSkus, setExpandedProductSkus] = useState<Record<string, boolean>>({});
   const [showChart, setShowChart] = useState<boolean>(true);
+
+  // Receipt items modal
+  const [selectedReceiptForItems, setSelectedReceiptForItems] = useState<any | null>(null);
+  const [isReceiptItemsModalOpen, setIsReceiptItemsModalOpen] = useState<boolean>(false);
 
   const [expandedSupplierSkuKeys, setExpandedSupplierSkuKeys] = useState<Record<string, boolean>>({});
 
@@ -2111,16 +2118,66 @@ export const PurchaseReportsPage: React.FC = () => {
             <SystemTableWrapper>
               <SystemThead>
                 <SystemTr>
-                  <SystemTh className="w-[130px]">Mã phiếu</SystemTh>
-                  <SystemTh className="w-[110px]">Ngày nhập</SystemTh>
-                  <SystemTh className="w-[150px]">Cửa hàng</SystemTh>
-                  <SystemTh className="w-[180px]">Nhà cung cấp</SystemTh>
-                  <SystemTh className="w-[90px] text-center">Số SKU</SystemTh>
-                  <SystemTh className="w-[140px] text-right">Hàng thực nhận</SystemTh>
-                  <SystemTh className="w-[160px] text-right">Tổng tiền hàng (Net)</SystemTh>
-                  <SystemTh className="w-[130px] text-right">Đã thanh toán</SystemTh>
-                  <SystemTh className="w-[130px] text-right">Còn nợ NCC</SystemTh>
-                  <SystemTh className="w-[130px] text-center">Trạng thái nợ</SystemTh>
+                  <SystemTh className="w-[130px]">
+                    <div className="inline-flex items-center gap-1.5 leading-none">
+                      <FileText size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                      <span className="leading-none">Mã phiếu</span>
+                    </div>
+                  </SystemTh>
+                  <SystemTh className="w-[110px]">
+                    <div className="inline-flex items-center gap-1.5 leading-none">
+                      <Calendar size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                      <span className="leading-none">Ngày nhập</span>
+                    </div>
+                  </SystemTh>
+                  <SystemTh className="w-[140px]">
+                    <div className="inline-flex items-center gap-1.5 leading-none">
+                      <Store size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                      <span className="leading-none">Cửa hàng</span>
+                    </div>
+                  </SystemTh>
+                  <SystemTh className="w-[170px]">
+                    <div className="inline-flex items-center gap-1.5 leading-none">
+                      <Building2 size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                      <span className="leading-none">Nhà cung cấp</span>
+                    </div>
+                  </SystemTh>
+                  <SystemTh className="w-[85px] text-center" align="center">
+                    <div className="inline-flex items-center justify-center gap-1.5 leading-none">
+                      <Package size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                      <span className="leading-none">Số SKU</span>
+                    </div>
+                  </SystemTh>
+                  <SystemTh className="w-[230px]">
+                    <div className="inline-flex items-center gap-1.5 leading-none">
+                      <Boxes size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                      <span className="leading-none">Hàng thực nhận</span>
+                    </div>
+                  </SystemTh>
+                  <SystemTh className="w-[160px] text-right" align="right">
+                    <div className="inline-flex items-center justify-end gap-1.5 leading-none">
+                      <Receipt size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                      <span className="leading-none">Tổng tiền hàng (Net)</span>
+                    </div>
+                  </SystemTh>
+                  <SystemTh className="w-[130px] text-right" align="right">
+                    <div className="inline-flex items-center justify-end gap-1.5 leading-none">
+                      <CheckCircle2 size={13} className="text-emerald-500 shrink-0 -translate-y-[0.5px]" />
+                      <span className="leading-none">Đã thanh toán</span>
+                    </div>
+                  </SystemTh>
+                  <SystemTh className="w-[130px] text-right" align="right">
+                    <div className="inline-flex items-center justify-end gap-1.5 leading-none">
+                      <AlertCircle size={13} className="text-rose-500 shrink-0 -translate-y-[0.5px]" />
+                      <span className="leading-none">Còn nợ NCC</span>
+                    </div>
+                  </SystemTh>
+                  <SystemTh className="w-[130px] text-center" align="center">
+                    <div className="inline-flex items-center justify-center gap-1.5 leading-none">
+                      <Clock size={13} className="text-gray-400 shrink-0 -translate-y-[0.5px]" />
+                      <span className="leading-none">Trạng thái nợ</span>
+                    </div>
+                  </SystemTh>
                 </SystemTr>
               </SystemThead>
               <SystemTbody>
@@ -2150,11 +2207,56 @@ export const PurchaseReportsPage: React.FC = () => {
                         <SystemTd className="text-center font-semibold text-gray-700 dark:text-gray-300">
                           {r.items?.length || 0}
                         </SystemTd>
-                        <SystemTd className="text-right font-mono text-gray-800 dark:text-gray-200">
-                          {netItems.toLocaleString('vi-VN')}đ
-                          {returnDed > 0 && (
-                            <div className="text-[10px] text-orange-500 font-normal">
-                              - Trả: {returnDed.toLocaleString('vi-VN')}đ
+                        {/* Hàng thực nhận: Hiển thị 1 sản phẩm + +n badge, click xem chi tiết */}
+                        <SystemTd
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedReceiptForItems(r);
+                            setIsReceiptItemsModalOpen(true);
+                          }}
+                          className="cursor-pointer group hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 transition-colors"
+                          title={
+                            r.items && r.items.length > 0
+                              ? `Bấm để xem danh sách ${r.items.length} sản phẩm nhập`
+                              : 'Bấm để xem danh sách hàng nhập'
+                          }
+                        >
+                          {r.items && r.items.length > 0 ? (
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="font-medium text-xs text-gray-900 dark:text-white truncate max-w-[155px] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                  {r.items[0].productName}
+                                  {r.items[0].variationName ? ` (${r.items[0].variationName})` : ''}
+                                </span>
+                                {r.items.length > 1 && (
+                                  <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80 shrink-0 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/60 transition-colors">
+                                    +{r.items.length - 1}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400 min-w-0">
+                                <span className="font-mono text-gray-600 dark:text-gray-300 truncate max-w-[90px]">
+                                  {r.items[0].sku || 'SKU'}
+                                </span>
+                                <span>•</span>
+                                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                                  SL: {Number(r.items[0].receivedQuantity || 0).toLocaleString('vi-VN')}
+                                </span>
+                                {r.items.length > 1 && (
+                                  <span className="text-[10px] text-gray-400">
+                                    (Tổng {r.items.reduce((s: number, it: any) => s + Number(it.receivedQuantity || 0), 0).toLocaleString('vi-VN')})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-right font-mono text-gray-800 dark:text-gray-200">
+                              {netItems.toLocaleString('vi-VN')}đ
+                              {returnDed > 0 && (
+                                <div className="text-[10px] text-orange-500 font-normal">
+                                  - Trả: {returnDed.toLocaleString('vi-VN')}đ
+                                </div>
+                              )}
                             </div>
                           )}
                         </SystemTd>
@@ -2260,6 +2362,34 @@ export const PurchaseReportsPage: React.FC = () => {
                       <span>{r.shop?.name || 'Kho chung'}</span>
                     </div>
 
+                    {/* Product preview line with +n (Clickable to open receipt items modal) */}
+                    {r.items && r.items.length > 0 && (
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedReceiptForItems(r);
+                          setIsReceiptItemsModalOpen(true);
+                        }}
+                        className="p-2 rounded bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2 text-xs cursor-pointer active:bg-gray-100 dark:active:bg-gray-800 transition-colors"
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Boxes size={13} className="text-indigo-500 shrink-0" />
+                          <span className="font-medium text-gray-800 dark:text-gray-200 truncate">
+                            {r.items[0].productName}
+                            {r.items[0].variationName ? ` (${r.items[0].variationName})` : ''}
+                          </span>
+                          {r.items.length > 1 && (
+                            <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 shrink-0">
+                              +{r.items.length - 1}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] font-mono text-gray-500 shrink-0">
+                          SL: {r.items.reduce((sum: number, it: any) => sum + Number(it.receivedQuantity || 0), 0).toLocaleString('vi-VN')}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-800/80">
                       <div>
                         <span className="text-[10px] text-gray-400 block">Tiền Net:</span>
@@ -2305,6 +2435,190 @@ export const PurchaseReportsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal xem danh sách hàng thực nhận của phiếu nhập */}
+      <Modal
+        isOpen={isReceiptItemsModalOpen}
+        onClose={() => {
+          setIsReceiptItemsModalOpen(false);
+          setSelectedReceiptForItems(null);
+        }}
+        title={`Danh sách hàng thực nhận: ${selectedReceiptForItems?.receiptCode || ''}`}
+        icon={Boxes}
+        size="2xl"
+      >
+        {selectedReceiptForItems && (() => {
+          const items = selectedReceiptForItems.items || [];
+          const totalQty = items.reduce((sum: number, it: any) => sum + Number(it.receivedQuantity || 0), 0);
+          const totalDisputed = items.reduce((sum: number, it: any) => sum + Number(it.disputedQuantity || 0), 0);
+          const totalAmount = Number(selectedReceiptForItems.totalItemsAmount || 0);
+          const returnDed = Number(selectedReceiptForItems.returnDeductionAmount || 0);
+
+          return (
+            <>
+              <ModalBody className="space-y-3.5 p-3 sm:p-5">
+                {/* Header Summary Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="p-2.5 rounded bg-gray-50 dark:bg-gray-900/60 border border-gray-200/60 dark:border-gray-800">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">Nhà cung cấp:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white truncate block mt-0.5" title={selectedReceiptForItems.supplier?.name}>
+                      {selectedReceiptForItems.supplier?.name || 'N/A'}
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-mono">
+                      {selectedReceiptForItems.supplier?.code}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded bg-gray-50 dark:bg-gray-900/60 border border-gray-200/60 dark:border-gray-800">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">Kho nhận & Ngày:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white truncate block mt-0.5">
+                      {selectedReceiptForItems.warehouse?.name || selectedReceiptForItems.shop?.name || 'Kho chính'}
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-mono">
+                      {new Date(selectedReceiptForItems.receiptDate).toLocaleDateString('vi-VN')}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50">
+                    <span className="text-[10px] text-indigo-600 dark:text-indigo-400 block font-medium">Tổng thực nhận:</span>
+                    <span className="font-bold text-sm text-indigo-700 dark:text-indigo-300 font-mono block mt-0.5">
+                      {totalQty.toLocaleString('vi-VN')} <span className="text-[11px] font-normal">sản phẩm</span>
+                    </span>
+                    <span className="text-[10px] text-indigo-500 dark:text-indigo-400">
+                      {items.length} mã SKU
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/50">
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-medium">Tổng tiền hàng:</span>
+                    <span className="font-bold text-sm text-emerald-700 dark:text-emerald-300 font-mono block mt-0.5">
+                      {totalAmount.toLocaleString('vi-VN')}đ
+                    </span>
+                    {returnDed > 0 ? (
+                      <span className="text-[10px] text-orange-600 dark:text-orange-400">
+                        Đã trừ trả: -{returnDed.toLocaleString('vi-VN')}đ
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                        {selectedReceiptForItems.paymentStatus === 'PAID' ? 'Đã thanh toán đủ' : 'Chưa trả hết'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Products Table */}
+                <div className="border border-gray-200 dark:border-gray-800 rounded overflow-hidden">
+                  <div className="bg-gray-100 dark:bg-gray-800/80 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Package size={13} className="text-[#5865f2] shrink-0" />
+                      <span>Chi tiết các mặt hàng ({items.length})</span>
+                    </div>
+                    {totalDisputed > 0 && (
+                      <span className="text-[10px] font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 px-2 py-0.5 rounded">
+                        Có {totalDisputed} hàng lỗi/thiếu
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="overflow-x-auto max-h-[420px] custom-scrollbar">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-gray-50/80 dark:bg-[#1a1b23] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
+                        <tr>
+                          <th className="py-2 px-3 text-center w-10 text-gray-500 font-medium">#</th>
+                          <th className="py-2 px-3 w-32 text-gray-500 font-medium">Mã SKU</th>
+                          <th className="py-2 px-3 text-gray-500 font-medium">Sản phẩm & Phân loại</th>
+                          <th className="py-2 px-3 text-center w-24 text-gray-500 font-medium">SL Nhận</th>
+                          <th className="py-2 px-3 text-right w-28 text-gray-500 font-medium">Đơn giá</th>
+                          <th className="py-2 px-3 text-right w-32 text-gray-500 font-medium">Thành tiền</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {items.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-8 text-center text-gray-400 italic">
+                              Phiếu này không có dữ liệu sản phẩm chi tiết.
+                            </td>
+                          </tr>
+                        ) : (
+                          items.map((it: any, idx: number) => (
+                            <tr key={it.id || idx} className="hover:bg-gray-50 dark:hover:bg-gray-900/40 transition-colors">
+                              <td className="py-2.5 px-3 text-center font-mono text-gray-400 text-[11px]">
+                                {idx + 1}
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <span className="font-mono font-medium text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded border border-indigo-200/50 dark:border-indigo-800/50 select-all">
+                                  {it.sku || 'N/A'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3">
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  {it.productName}
+                                </div>
+                                {it.variationName && (
+                                  <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                    Phân loại: <span className="text-gray-700 dark:text-gray-300 font-medium">{it.variationName}</span>
+                                  </div>
+                                )}
+                                {it.note && (
+                                  <div className="text-[10px] text-gray-400 italic mt-0.5">
+                                    Ghi chú: {it.note}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-mono">
+                                  {Number(it.receivedQuantity || 0).toLocaleString('vi-VN')}
+                                </span>
+                                {Number(it.disputedQuantity || 0) > 0 && (
+                                  <div className="text-[10px] text-rose-500 mt-0.5">
+                                    Lỗi: {it.disputedQuantity}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono text-gray-700 dark:text-gray-300">
+                                {Number(it.unitPrice || 0).toLocaleString('vi-VN')}đ
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-mono font-semibold text-gray-900 dark:text-white">
+                                {Number(it.subtotal || 0).toLocaleString('vi-VN')}đ
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                      {items.length > 0 && (
+                        <tfoot className="bg-gray-50 dark:bg-gray-900/60 border-t border-gray-200 dark:border-gray-800 font-semibold text-xs">
+                          <tr>
+                            <td colSpan={3} className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">
+                              Tổng cộng:
+                            </td>
+                            <td className="py-2 px-3 text-center font-mono font-bold text-blue-600 dark:text-blue-400">
+                              {totalQty.toLocaleString('vi-VN')}
+                            </td>
+                            <td></td>
+                            <td className="py-2 px-3 text-right font-mono font-bold text-gray-900 dark:text-white">
+                              {totalAmount.toLocaleString('vi-VN')}đ
+                            </td>
+                          </tr>
+                        </tfoot>
+                      )}
+                    </table>
+                  </div>
+                </div>
+              </ModalBody>
+              <ModalFooter className="flex items-center justify-end gap-2 w-full">
+                <ModalButton
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setIsReceiptItemsModalOpen(false);
+                    setSelectedReceiptForItems(null);
+                  }}
+                  className="text-xs px-4"
+                >
+                  Đóng
+                </ModalButton>
+              </ModalFooter>
+            </>
+          );
+        })()}
+      </Modal>
     </div>
   );
 };
