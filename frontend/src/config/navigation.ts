@@ -16,6 +16,7 @@ import {
   Users,
   Settings,
   TrendingUp,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -51,6 +52,17 @@ export const navigationGroups: NavGroup[] = [
         icon: FileText,
         description: 'Tra cứu mã vận đơn, trạng thái sàn Shopee và kiểm tra xuất kho',
         colorScheme: 'blue',
+      },
+      {
+        id: 'order-reports',
+        name: 'Báo cáo đơn hàng',
+        shortName: 'Báo cáo đơn',
+        href: '/order-reports',
+        icon: FileSpreadsheet,
+        description: 'Đối soát số lượng đơn hàng đi với hàng nhập kho & tồn kho theo SKU hệ thống',
+        badge: 'ĐỐI SOÁT',
+        highlight: true,
+        colorScheme: 'indigo',
       },
       {
         id: 'scan',

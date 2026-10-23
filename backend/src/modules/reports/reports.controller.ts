@@ -1,7 +1,7 @@
-import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Query, Param, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
-import { DashboardFilterDto, PurchaseReportFilterDto } from './dto/report.dto';
+import { DashboardFilterDto, PurchaseReportFilterDto, OrderReconciliationReportFilterDto } from './dto/report.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TenantGuard } from '../../common/guards/tenant.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -55,6 +55,47 @@ export class ReportsController {
   ) {
     const allowedShopIds = (req as any).allowedShopIds;
     return this.reportsService.getPurchaseReport(tenantId, allowedShopIds, filter);
+  }
+
+  @Get('order-reconciliation')
+  @Roles(
+    MembershipRole.OWNER,
+    MembershipRole.ADMIN,
+    MembershipRole.ACCOUNTANT,
+    MembershipRole.WAREHOUSE,
+    MembershipRole.VIEWER,
+  )
+  @ApiOperation({
+    summary: 'Báo cáo đối soát đơn hàng: so khớp số lượng đơn hàng đi vs số lượng sản phẩm nhập kho theo sản phẩm hệ thống',
+  })
+  async getOrderReconciliationReport(
+    @CurrentTenantId() tenantId: string,
+    @Req() req: Request,
+    @Query() filter: OrderReconciliationReportFilterDto,
+  ) {
+    const allowedShopIds = (req as any).allowedShopIds;
+    return this.reportsService.getOrderReconciliationReport(tenantId, allowedShopIds, filter);
+  }
+
+  @Get('order-reconciliation/:variantId/transactions')
+  @Roles(
+    MembershipRole.OWNER,
+    MembershipRole.ADMIN,
+    MembershipRole.ACCOUNTANT,
+    MembershipRole.WAREHOUSE,
+    MembershipRole.VIEWER,
+  )
+  @ApiOperation({
+    summary: 'Chi tiết các lần nhập kho và đơn hàng xuất đi của 1 sản phẩm / SKU hệ thống',
+  })
+  async getOrderReconciliationTransactions(
+    @CurrentTenantId() tenantId: string,
+    @Req() req: Request,
+    @Param('variantId') variantId: string,
+    @Query() filter: OrderReconciliationReportFilterDto,
+  ) {
+    const allowedShopIds = (req as any).allowedShopIds;
+    return this.reportsService.getOrderReconciliationTransactions(tenantId, allowedShopIds, variantId, filter);
   }
 }
 

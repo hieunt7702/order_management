@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { DashboardFilterDto, PurchaseReportFilterDto } from './dto/report.dto';
-import { PlatformOrderStatus, VerificationStatus, Prisma } from '@prisma/client';
+import { DashboardFilterDto, PurchaseReportFilterDto, OrderReconciliationReportFilterDto } from './dto/report.dto';
+import { PlatformOrderStatus, VerificationStatus, ProductStatus, Prisma } from '@prisma/client';
 
 export interface ProductImportTransaction {
   receiptId: string;
@@ -818,6 +818,511 @@ export class ReportsService {
       bySupplier,
       topProducts,
       receipts: receipts.slice(0, 100), // First 100 recent receipts for table view
+    };
+  }
+
+  async getOrderReconciliationReport(
+    tenantId: string,
+    allowedShopIds: string[] | null,
+    filter: OrderReconciliationReportFilterDto,
+  ) {
+    const start = filter.startDate || filter.fromDate;
+    const end = filter.endDate || filter.toDate;
+    const page = Math.max(1, Number(filter.page) || 1);
+    const limit = Math.max(1, Math.min(1000, Number(filter.limit) || 20));
+
+    // 1. Where clause for PurchaseReceiptItems (Số lượng đã nhập kho)
+    const receiptWhere: Prisma.PurchaseReceiptWhereInput = {
+      tenantId,
+      ...(filter.warehouseId && filter.warehouseId !== 'ALL' ? { warehouseId: filter.warehouseId } : {}),
+    };
+    if (filter.shopId && filter.shopId !== 'ALL') {
+      if (filter.shopId === 'CENTRAL' || filter.shopId === 'NONE') {
+        receiptWhere.shopId = null;
+      } else {
+        receiptWhere.shopId = filter.shopId;
+      }
+    }
+    if (start || end) {
+      receiptWhere.receiptDate = {};
+      if (start) {
+        const startDateObj = new Date(start);
+        startDateObj.setHours(0, 0, 0, 0);
+        receiptWhere.receiptDate.gte = startDateObj;
+      }
+      if (end) {
+        const endDateObj = new Date(end);
+        if (end.length <= 10) endDateObj.setHours(23, 59, 59, 999);
+        receiptWhere.receiptDate.lte = endDateObj;
+      }
+    }
+
+    const receiptAggregations = await this.prisma.purchaseReceiptItem.groupBy({
+      by: ['variantId'],
+      where: {
+        tenantId,
+        receipt: receiptWhere,
+      },
+      _sum: {
+        receivedQuantity: true,
+        orderedQuantity: true,
+        subtotal: true,
+      },
+      _count: {
+        receiptId: true,
+      },
+    });
+
+    const receiptMap = new Map<string, { receivedQty: number; orderedQty: number; totalAmount: number; receiptsCount: number }>();
+    receiptAggregations.forEach((ra) => {
+      receiptMap.set(ra.variantId, {
+        receivedQty: ra._sum.receivedQuantity || 0,
+        orderedQty: ra._sum.orderedQuantity || 0,
+        totalAmount: Number(ra._sum.subtotal || 0),
+        receiptsCount: ra._count.receiptId || 0,
+      });
+    });
+
+    // 2. Where clause for OrderItems (Số lượng đơn hàng đi / đã bán)
+    const orderWhere: Prisma.OrderWhereInput = {
+      tenantId,
+      platformStatus: {
+        notIn: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
+      },
+      NOT: {
+        AND: [{ isVirtual: true }, { isRealGoods: false }],
+      },
+    };
+    if (filter.shopId && filter.shopId !== 'ALL') {
+      orderWhere.shopId = filter.shopId;
+    } else if (allowedShopIds && allowedShopIds.length > 0) {
+      orderWhere.shopId = { in: allowedShopIds };
+    }
+    if (start || end) {
+      orderWhere.orderDate = {};
+      if (start) {
+        const startDateObj = new Date(start);
+        startDateObj.setHours(0, 0, 0, 0);
+        orderWhere.orderDate.gte = startDateObj;
+      }
+      if (end) {
+        const endDateObj = new Date(end);
+        if (end.length <= 10) endDateObj.setHours(23, 59, 59, 999);
+        orderWhere.orderDate.lte = endDateObj;
+      }
+    }
+
+    const orderItemAggregations = await this.prisma.orderItem.groupBy({
+      by: ['variantId'],
+      where: {
+        tenantId,
+        variantId: { not: null },
+        order: orderWhere,
+      },
+      _sum: {
+        quantity: true,
+      },
+      _count: {
+        orderId: true,
+      },
+    });
+
+    const orderMap = new Map<string, { quantity: number; ordersCount: number }>();
+    orderItemAggregations.forEach((oa) => {
+      if (oa.variantId) {
+        orderMap.set(oa.variantId, {
+          quantity: oa._sum.quantity || 0,
+          ordersCount: oa._count.orderId || 0,
+        });
+      }
+    });
+
+    // Handle any unmapped order items with null variantId via listing mappings
+    const unmappedOrderItems = await this.prisma.orderItem.findMany({
+      where: {
+        tenantId,
+        variantId: null,
+        order: orderWhere,
+        externalSku: { not: null },
+      },
+      select: {
+        externalSku: true,
+        quantity: true,
+        order: { select: { shopId: true } },
+      },
+    });
+
+    if (unmappedOrderItems.length > 0) {
+      const listingMappings = await this.prisma.listingMapping.findMany({
+        where: {
+          tenantId,
+          status: 'ACTIVE',
+        },
+        select: {
+          shopId: true,
+          sellerSku: true,
+          variantId: true,
+        },
+      });
+
+      const lmMap = new Map<string, string>();
+      listingMappings.forEach((lm) => {
+        lmMap.set(`${lm.shopId}:${lm.sellerSku.toLowerCase()}`, lm.variantId);
+        lmMap.set(lm.sellerSku.toLowerCase(), lm.variantId);
+      });
+
+      for (const uoi of unmappedOrderItems) {
+        if (!uoi.externalSku) continue;
+        const key = `${uoi.order.shopId}:${uoi.externalSku.toLowerCase()}`;
+        const matchedVariantId = lmMap.get(key) || lmMap.get(uoi.externalSku.toLowerCase());
+        if (matchedVariantId) {
+          const cur = orderMap.get(matchedVariantId) || { quantity: 0, ordersCount: 0 };
+          cur.quantity += uoi.quantity || 1;
+          cur.ordersCount += 1;
+          orderMap.set(matchedVariantId, cur);
+        }
+      }
+    }
+
+    // 3. Query all System Product Variants for the tenant
+    const search = filter.search?.trim();
+    const variantWhere: Prisma.ProductVariantWhereInput = {
+      tenantId,
+      status: ProductStatus.ACTIVE,
+      ...(search
+        ? {
+            OR: [
+              { sku: { contains: search, mode: 'insensitive' } },
+              { name: { contains: search, mode: 'insensitive' } },
+              { barcode: { contains: search, mode: 'insensitive' } },
+              { product: { name: { contains: search, mode: 'insensitive' } } },
+            ],
+          }
+        : {}),
+    };
+
+    const variants = await this.prisma.productVariant.findMany({
+      where: variantWhere,
+      include: {
+        product: {
+          select: { id: true, code: true, name: true },
+        },
+        inventoryBalances: {
+          where: {
+            tenantId,
+            ...(filter.warehouseId && filter.warehouseId !== 'ALL' ? { warehouseId: filter.warehouseId } : {}),
+          },
+          select: {
+            warehouseId: true,
+            onHand: true,
+            reserved: true,
+            damaged: true,
+          },
+        },
+      },
+      orderBy: [
+        { product: { name: 'asc' } },
+        { sku: 'asc' },
+      ],
+    });
+
+    // 4. Combine and calculate metrics per variant
+    let totalImportedQuantity = 0;
+    let totalExportedQuantity = 0;
+    let totalOnHand = 0;
+    let totalReserved = 0;
+    let totalAvailable = 0;
+    let balancedCount = 0;
+    let discrepancyCount = 0;
+    let surplusCount = 0;
+    let deficitCount = 0;
+    let outOfStockCount = 0;
+
+    const allItems = variants.map((v) => {
+      const rData = receiptMap.get(v.id) || { receivedQty: 0, orderedQty: 0, totalAmount: 0, receiptsCount: 0 };
+      const oData = orderMap.get(v.id) || { quantity: 0, ordersCount: 0 };
+
+      const onHand = v.inventoryBalances.reduce((acc, b) => acc + (b.onHand || 0), 0);
+      const reserved = v.inventoryBalances.reduce((acc, b) => acc + (b.reserved || 0), 0);
+      const available = Math.max(0, onHand - reserved);
+      const damaged = v.inventoryBalances.reduce((acc, b) => acc + (b.damaged || 0), 0);
+
+      const importedQty = rData.receivedQty;
+      const exportedQty = oData.quantity;
+      const calculatedStock = importedQty - exportedQty;
+      const discrepancy = onHand - calculatedStock;
+
+      totalImportedQuantity += importedQty;
+      totalExportedQuantity += exportedQty;
+      totalOnHand += onHand;
+      totalReserved += reserved;
+      totalAvailable += available;
+
+      let reconciliationStatus: 'BALANCED' | 'SURPLUS' | 'DEFICIT' = 'BALANCED';
+      if (discrepancy === 0) {
+        reconciliationStatus = 'BALANCED';
+        balancedCount++;
+      } else if (discrepancy > 0) {
+        reconciliationStatus = 'SURPLUS';
+        discrepancyCount++;
+        surplusCount++;
+      } else {
+        reconciliationStatus = 'DEFICIT';
+        discrepancyCount++;
+        deficitCount++;
+      }
+
+      if (onHand <= 0) {
+        outOfStockCount++;
+      }
+
+      return {
+        variantId: v.id,
+        productId: v.product?.id,
+        productName: v.product?.name || 'Chưa đặt tên',
+        productCode: v.product?.code,
+        sku: v.sku,
+        variantName: v.name,
+        barcode: v.barcode,
+        unit: v.unit,
+        costPrice: Number(v.costPrice || 0),
+        sellingPrice: Number(v.sellingPrice || 0),
+        importedQuantity: importedQty,
+        importedAmount: rData.totalAmount,
+        receiptsCount: rData.receiptsCount,
+        exportedQuantity: exportedQty,
+        ordersCount: oData.ordersCount,
+        onHand,
+        reserved,
+        available,
+        damaged,
+        calculatedStock,
+        discrepancy,
+        reconciliationStatus,
+        fulfillmentRatePercent:
+          importedQty > 0 ? Math.min(100, Math.round((exportedQty / importedQty) * 100)) : (exportedQty > 0 ? 100 : 0),
+      };
+    });
+
+    // 5. Filter by reconciliationStatus if provided
+    let filteredItems = allItems;
+    if (filter.reconciliationStatus && filter.reconciliationStatus !== 'ALL') {
+      if (filter.reconciliationStatus === 'OUT_OF_STOCK') {
+        filteredItems = allItems.filter((it) => it.onHand <= 0);
+      } else {
+        filteredItems = allItems.filter((it) => it.reconciliationStatus === filter.reconciliationStatus);
+      }
+    }
+
+    // 6. Pagination
+    const totalItems = filteredItems.length;
+    const totalPages = Math.ceil(totalItems / limit) || 1;
+    const paginatedItems = filteredItems.slice((page - 1) * limit, page * limit);
+
+    return {
+      summary: {
+        totalVariants: variants.length,
+        totalImportedQuantity,
+        totalExportedQuantity,
+        totalOnHand,
+        totalReserved,
+        totalAvailable,
+        balancedCount,
+        discrepancyCount,
+        surplusCount,
+        deficitCount,
+        outOfStockCount,
+      },
+      items: paginatedItems,
+      pagination: {
+        page,
+        limit,
+        totalItems,
+        totalPages,
+      },
+    };
+  }
+
+  async getOrderReconciliationTransactions(
+    tenantId: string,
+    allowedShopIds: string[] | null,
+    variantId: string,
+    filter: OrderReconciliationReportFilterDto,
+  ) {
+    const start = filter.startDate || filter.fromDate;
+    const end = filter.endDate || filter.toDate;
+
+    const variant = await this.prisma.productVariant.findFirst({
+      where: { id: variantId, tenantId },
+      include: {
+        product: { select: { id: true, code: true, name: true } },
+        inventoryBalances: {
+          where: { tenantId },
+          include: { warehouse: { select: { id: true, name: true, code: true } } },
+        },
+      },
+    });
+
+    if (!variant) {
+      return null;
+    }
+
+    // Outgoing orders
+    const orderWhere: Prisma.OrderWhereInput = {
+      tenantId,
+      platformStatus: {
+        notIn: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
+      },
+      NOT: {
+        AND: [{ isVirtual: true }, { isRealGoods: false }],
+      },
+    };
+    if (filter.shopId && filter.shopId !== 'ALL') {
+      orderWhere.shopId = filter.shopId;
+    } else if (allowedShopIds && allowedShopIds.length > 0) {
+      orderWhere.shopId = { in: allowedShopIds };
+    }
+    if (start || end) {
+      orderWhere.orderDate = {};
+      if (start) {
+        const s = new Date(start);
+        s.setHours(0, 0, 0, 0);
+        orderWhere.orderDate.gte = s;
+      }
+      if (end) {
+        const e = new Date(end);
+        if (end.length <= 10) e.setHours(23, 59, 59, 999);
+        orderWhere.orderDate.lte = e;
+      }
+    }
+
+    const orderItems = await this.prisma.orderItem.findMany({
+      where: {
+        tenantId,
+        variantId,
+        order: orderWhere,
+      },
+      include: {
+        order: {
+          select: {
+            id: true,
+            internalOrderCode: true,
+            externalOrderId: true,
+            trackingCode: true,
+            orderDate: true,
+            platformStatus: true,
+            fulfillmentStatus: true,
+            verificationStatus: true,
+            recipientName: true,
+            shop: { select: { id: true, name: true, code: true } },
+          },
+        },
+      },
+      orderBy: {
+        order: { orderDate: 'desc' },
+      },
+      take: 100,
+    });
+
+    // Inbound receipts
+    const receiptWhere: Prisma.PurchaseReceiptWhereInput = {
+      tenantId,
+      ...(filter.warehouseId && filter.warehouseId !== 'ALL' ? { warehouseId: filter.warehouseId } : {}),
+    };
+    if (filter.shopId && filter.shopId !== 'ALL') {
+      if (filter.shopId === 'CENTRAL' || filter.shopId === 'NONE') {
+        receiptWhere.shopId = null;
+      } else {
+        receiptWhere.shopId = filter.shopId;
+      }
+    }
+    if (start || end) {
+      receiptWhere.receiptDate = {};
+      if (start) {
+        const s = new Date(start);
+        s.setHours(0, 0, 0, 0);
+        receiptWhere.receiptDate.gte = s;
+      }
+      if (end) {
+        const e = new Date(end);
+        if (end.length <= 10) e.setHours(23, 59, 59, 999);
+        receiptWhere.receiptDate.lte = e;
+      }
+    }
+
+    const receiptItems = await this.prisma.purchaseReceiptItem.findMany({
+      where: {
+        tenantId,
+        variantId,
+        receipt: receiptWhere,
+      },
+      include: {
+        receipt: {
+          select: {
+            id: true,
+            receiptCode: true,
+            receiptDate: true,
+            paymentStatus: true,
+            supplier: { select: { id: true, name: true, code: true } },
+            warehouse: { select: { id: true, name: true, code: true } },
+            shop: { select: { id: true, name: true, code: true } },
+          },
+        },
+      },
+      orderBy: {
+        receipt: { receiptDate: 'desc' },
+      },
+      take: 100,
+    });
+
+    return {
+      variant: {
+        id: variant.id,
+        sku: variant.sku,
+        barcode: variant.barcode,
+        name: variant.name,
+        unit: variant.unit,
+        costPrice: Number(variant.costPrice || 0),
+        sellingPrice: Number(variant.sellingPrice || 0),
+        product: variant.product,
+      },
+      inventoryBalances: variant.inventoryBalances.map((b) => ({
+        warehouseId: b.warehouseId,
+        warehouseName: b.warehouse.name,
+        warehouseCode: b.warehouse.code,
+        onHand: b.onHand,
+        reserved: b.reserved,
+        available: Math.max(0, b.onHand - b.reserved),
+        damaged: b.damaged,
+      })),
+      orders: orderItems.map((oi) => ({
+        id: oi.order.id,
+        internalOrderCode: oi.order.internalOrderCode,
+        externalOrderId: oi.order.externalOrderId,
+        trackingCode: oi.order.trackingCode,
+        orderDate: oi.order.orderDate,
+        platformStatus: oi.order.platformStatus,
+        fulfillmentStatus: oi.order.fulfillmentStatus,
+        verificationStatus: oi.order.verificationStatus,
+        recipientName: oi.order.recipientName,
+        shopName: oi.order.shop?.name || 'N/A',
+        quantity: oi.quantity,
+        originalPrice: Number(oi.originalPrice || 0),
+        discountedPrice: Number(oi.discountedPrice || 0),
+      })),
+      receipts: receiptItems.map((ri) => ({
+        id: ri.receipt.id,
+        receiptCode: ri.receipt.receiptCode,
+        receiptDate: ri.receipt.receiptDate,
+        supplierName: ri.receipt.supplier?.name || 'N/A',
+        warehouseName: ri.receipt.warehouse?.name || 'Kho chung',
+        shopName: ri.receipt.shop?.name || 'Kho chung',
+        orderedQuantity: ri.orderedQuantity,
+        receivedQuantity: ri.receivedQuantity,
+        unitPrice: Number(ri.unitPrice || 0),
+        subtotal: Number(ri.subtotal || 0),
+        paymentStatus: ri.receipt.paymentStatus,
+      })),
     };
   }
 }

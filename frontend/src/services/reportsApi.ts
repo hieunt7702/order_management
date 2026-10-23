@@ -156,7 +156,120 @@ export const reportsApi = {
 
     return computePurchaseReportFromReceipts(receipts);
   },
+
+  getOrderReconciliationReport: async (params: any = {}): Promise<OrderReconciliationReportData> => {
+    return api.get(`/reports/order-reconciliation${buildQuery(params)}`);
+  },
+
+  getOrderReconciliationTransactions: async (variantId: string, params: any = {}): Promise<OrderReconciliationTransactionsData> => {
+    return api.get(`/reports/order-reconciliation/${variantId}/transactions${buildQuery(params)}`);
+  },
 };
+
+export interface OrderReconciliationItem {
+  variantId: string;
+  productId?: string;
+  productName: string;
+  productCode?: string;
+  sku: string;
+  variantName: string;
+  barcode?: string;
+  unit: string;
+  costPrice: number;
+  sellingPrice: number;
+  importedQuantity: number;
+  importedAmount: number;
+  receiptsCount: number;
+  exportedQuantity: number;
+  ordersCount: number;
+  onHand: number;
+  reserved: number;
+  available: number;
+  damaged: number;
+  calculatedStock: number;
+  discrepancy: number;
+  reconciliationStatus: 'BALANCED' | 'SURPLUS' | 'DEFICIT';
+  fulfillmentRatePercent: number;
+}
+
+export interface OrderReconciliationSummary {
+  totalVariants: number;
+  totalImportedQuantity: number;
+  totalExportedQuantity: number;
+  totalOnHand: number;
+  totalReserved: number;
+  totalAvailable: number;
+  balancedCount: number;
+  discrepancyCount: number;
+  surplusCount: number;
+  deficitCount: number;
+  outOfStockCount: number;
+}
+
+export interface OrderReconciliationReportData {
+  summary: OrderReconciliationSummary;
+  items: OrderReconciliationItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface OrderReconciliationTransactionsData {
+  variant: {
+    id: string;
+    sku: string;
+    barcode?: string;
+    name: string;
+    unit: string;
+    costPrice: number;
+    sellingPrice: number;
+    product?: {
+      id: string;
+      code: string;
+      name: string;
+    };
+  };
+  inventoryBalances: Array<{
+    warehouseId: string;
+    warehouseName: string;
+    warehouseCode: string;
+    onHand: number;
+    reserved: number;
+    available: number;
+    damaged: number;
+  }>;
+  orders: Array<{
+    id: string;
+    internalOrderCode: string;
+    externalOrderId: string;
+    trackingCode?: string;
+    orderDate?: string;
+    platformStatus: string;
+    fulfillmentStatus: string;
+    verificationStatus: string;
+    recipientName?: string;
+    shopName: string;
+    quantity: number;
+    originalPrice: number;
+    discountedPrice: number;
+  }>;
+  receipts: Array<{
+    id: string;
+    receiptCode: string;
+    receiptDate: string;
+    supplierName: string;
+    warehouseName: string;
+    shopName: string;
+    orderedQuantity: number;
+    receivedQuantity: number;
+    unitPrice: number;
+    subtotal: number;
+    paymentStatus: string;
+  }>;
+}
 
 function computePurchaseReportFromReceipts(receipts: any[]): PurchaseReportData {
   let totalReceipts = receipts.length;

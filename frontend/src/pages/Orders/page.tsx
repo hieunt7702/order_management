@@ -25,6 +25,7 @@ import {
   Calculator,
   Copy,
   Search,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { ordersApi } from '../../services/ordersApi';
 import { productsApi } from '../../services/productsApi';
@@ -1060,6 +1061,14 @@ export const OrdersPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <Link
+            to="/order-reports"
+            className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#181b22] text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-xs no-underline"
+            title="Báo cáo đối soát xuất đơn & nhập kho theo SKU hệ thống"
+          >
+            <FileSpreadsheet size={14} className="text-[#5865f2]" />
+            <span>Đối soát đơn & kho</span>
+          </Link>
           <Button
             size="sm"
             variant="outline"

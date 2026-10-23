@@ -16,6 +16,7 @@ import { InventoryPage } from './pages/Inventory/page';
 import { SettlementsPage } from './pages/Settlements/page';
 import { PurchaseReceiptsPage } from './pages/PurchaseReceipts/page';
 import { PurchaseReportsPage } from './pages/PurchaseReports/page';
+import { OrderReportsPage } from './pages/OrderReports/page';
 import { SuppliersPage } from './pages/Suppliers/page';
 import { SupplierDebtsPage } from './pages/SupplierDebts/page';
 import { OrderReturnsPage } from './pages/OrderReturns/page';
@@ -85,6 +86,7 @@ function App() {
           <Route path="/order-returns" element={<OrderReturnsPage />} />
           <Route path="/purchase-receipts" element={<PurchaseReceiptsPage />} />
           <Route path="/purchase-reports" element={<PurchaseReportsPage />} />
+          <Route path="/order-reports" element={<OrderReportsPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
           <Route path="/supplier-debts" element={<SupplierDebtsPage />} />
           <Route path="/cashflow" element={<CashflowPage />} />
