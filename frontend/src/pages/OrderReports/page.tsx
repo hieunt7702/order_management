@@ -26,6 +26,7 @@ import {
   ArrowRight,
   BarChart3,
   Percent,
+  CircleDollarSign,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
@@ -59,10 +60,12 @@ import { Button } from '../../components/ui/Button';
 import { toast } from '../../components/ui/Toast';
 
 export const OrderReportsPage: React.FC = () => {
-  const { shops, warehouses } = useWorkspaceStore();
+  const { shops, warehouses, selectedShopId } = useWorkspaceStore();
 
-  // Filters state
-  const [selectedShopId, setSelectedShopId] = useState<string>('ALL');
+  const currentShop = shops.find((s) => s.id === selectedShopId);
+  const isFilteringSpecificShop = Boolean(selectedShopId && selectedShopId !== 'ALL');
+
+  // Filters state (Shop filter is controlled from Top Header)
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [datePreset, setDatePreset] = useState<string>('ALL');
@@ -80,6 +83,8 @@ export const OrderReportsPage: React.FC = () => {
     totalVariants: 0,
     totalImportedQuantity: 0,
     totalExportedQuantity: 0,
+    totalExportedAmount: 0,
+    totalOrdersCount: 0,
     totalOnHand: 0,
     totalReserved: 0,
     totalAvailable: 0,
@@ -106,7 +111,7 @@ export const OrderReportsPage: React.FC = () => {
     setIsLoading(true);
     try {
       const res = await reportsApi.getOrderReconciliationReport({
-        shopId: selectedShopId !== 'ALL' ? selectedShopId : undefined,
+        shopId: selectedShopId && selectedShopId !== 'ALL' ? selectedShopId : undefined,
         warehouseId: selectedWarehouseId !== 'ALL' ? selectedWarehouseId : undefined,
         reconciliationStatus: selectedStatus !== 'ALL' ? selectedStatus : undefined,
         startDate: startDate || undefined,
@@ -178,7 +183,6 @@ export const OrderReportsPage: React.FC = () => {
 
   // Reset all filters
   const handleResetFilters = () => {
-    setSelectedShopId('ALL');
     setSelectedWarehouseId('ALL');
     setSelectedStatus('ALL');
     setDatePreset('ALL');
@@ -195,7 +199,7 @@ export const OrderReportsPage: React.FC = () => {
     setIsLoadingDetail(true);
     try {
       const data = await reportsApi.getOrderReconciliationTransactions(variantId, {
-        shopId: selectedShopId !== 'ALL' ? selectedShopId : undefined,
+        shopId: selectedShopId && selectedShopId !== 'ALL' ? selectedShopId : undefined,
         warehouseId: selectedWarehouseId !== 'ALL' ? selectedWarehouseId : undefined,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
@@ -215,7 +219,7 @@ export const OrderReportsPage: React.FC = () => {
       toast.info('Đang chuẩn bị file Excel...');
       // Load all items without pagination
       const fullRes = await reportsApi.getOrderReconciliationReport({
-        shopId: selectedShopId !== 'ALL' ? selectedShopId : undefined,
+        shopId: selectedShopId && selectedShopId !== 'ALL' ? selectedShopId : undefined,
         warehouseId: selectedWarehouseId !== 'ALL' ? selectedWarehouseId : undefined,
         reconciliationStatus: selectedStatus !== 'ALL' ? selectedStatus : undefined,
         startDate: startDate || undefined,
@@ -249,6 +253,7 @@ export const OrderReportsPage: React.FC = () => {
         'Tổng xuất đơn hàng gốc': item.grossExportedQuantity || item.exportedQuantity,
         'Khách hoàn về kho': item.customerReturnedQuantity || 0,
         'Thực xuất bán (Net)': item.exportedQuantity,
+        'Tổng tiền đơn đi (VNĐ)': item.exportedAmount || 0,
         'Số đơn hàng': item.ordersCount,
         'Tồn kho thực tế (On-hand)': item.onHand,
         'Đang giữ cho đơn (Reserved)': item.reserved,
@@ -282,12 +287,25 @@ export const OrderReportsPage: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
         <div className="min-w-0 flex-1">
-          <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
-            <TrendingUp size={20} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
-            <span className="truncate">Báo cáo đơn hàng & Đối soát Nhập - Xuất - Tồn</span>
-          </h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+              <TrendingUp size={20} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
+              <span className="truncate">Báo cáo đơn hàng & Đối soát Nhập - Xuất - Tồn</span>
+            </h1>
+            {isFilteringSpecificShop ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-[#5865f2] dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                <Store size={12} />
+                <span>Shop: {currentShop?.name || selectedShopId}</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-normal bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                <Store size={12} />
+                <span>Tất cả Shop (Đổi ở Header)</span>
+              </span>
+            )}
+          </div>
           <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
-            So khớp số lượng đơn hàng đi so với số lượng sản phẩm nhập kho, kiểm tra dư tồn theo sản phẩm hệ thống nội bộ
+            So khớp số lượng đơn hàng đi và tổng doanh số xuất bán theo từng shop từ Header, kiểm tra số liệu hệ thống
           </p>
         </div>
 
@@ -349,18 +367,18 @@ export const OrderReportsPage: React.FC = () => {
 
         <SystemMetricPairCard
           leftItem={{
-            title: 'Tồn kho thực tế (On-hand)',
-            value: `${summary.totalOnHand.toLocaleString('vi-VN')}`,
-            subtitle: `Đang có trong các kho hàng`,
-            icon: Warehouse,
-            colorScheme: 'blue',
+            title: isFilteringSpecificShop ? `Tiền đơn đã đi (${currentShop?.name || 'Shop'})` : 'Tổng tiền đơn hàng đi',
+            value: `${(summary.totalExportedAmount || 0).toLocaleString('vi-VN')} đ`,
+            subtitle: isFilteringSpecificShop ? `Tổng doanh số xuất của shop` : `Tổng giá trị các đơn xuất bán`,
+            icon: CircleDollarSign,
+            colorScheme: 'green',
           }}
           rightItem={{
-            title: 'Tồn khả dụng (Available)',
-            value: `${summary.totalAvailable.toLocaleString('vi-VN')}`,
-            subtitle: `Giữ đơn: ${summary.totalReserved.toLocaleString('vi-VN')}`,
-            icon: Boxes,
-            colorScheme: 'blue',
+            title: 'Tổng số đơn hàng đi',
+            value: `${(summary.totalOrdersCount || 0).toLocaleString('vi-VN')} đơn`,
+            subtitle: `Sản phẩm đã xuất: ${(summary.totalExportedQuantity || 0).toLocaleString('vi-VN')}`,
+            icon: ShoppingBag,
+            colorScheme: 'indigo',
           }}
         />
 
@@ -445,30 +463,8 @@ export const OrderReportsPage: React.FC = () => {
             />
           </div>
 
-          {/* Shop Filter */}
-          <div className="col-span-1 sm:w-48">
-            <Select
-              value={selectedShopId}
-              onChange={(val) => {
-                setSelectedShopId(String(val));
-                setCurrentPage(1);
-              }}
-              options={[
-                { value: 'ALL', label: 'Tất cả cửa hàng (Shop)', icon: Store },
-                ...shops.map((s) => ({
-                  value: s.id,
-                  label: s.name,
-                  icon: Store,
-                })),
-              ]}
-              size="sm"
-              className="w-full"
-              menuWidth="w-56"
-            />
-          </div>
-
           {/* Warehouse Filter */}
-          <div className="col-span-1 sm:w-48">
+          <div className="col-span-1 sm:w-56">
             <Select
               value={selectedWarehouseId}
               onChange={(val) => {
@@ -524,8 +520,7 @@ export const OrderReportsPage: React.FC = () => {
           </div>
 
           {/* Reset Filters */}
-          {(selectedShopId !== 'ALL' ||
-            selectedWarehouseId !== 'ALL' ||
+          {(selectedWarehouseId !== 'ALL' ||
             selectedStatus !== 'ALL' ||
             datePreset !== 'ALL' ||
             startDate ||
@@ -548,13 +543,12 @@ export const OrderReportsPage: React.FC = () => {
           >
             <colgroup>
               <col style={{ width: '48px' }} />
-              <col style={{ width: '24%' }} />
+              <col style={{ width: '25%' }} />
               <col style={{ width: '10%' }} />
               <col style={{ width: '10%' }} />
               <col style={{ width: '10%' }} />
-              <col style={{ width: '9%' }} />
-              <col style={{ width: '9%' }} />
               <col style={{ width: '14%' }} />
+              <col style={{ width: '12%' }} />
               <col style={{ width: '10%' }} />
               <col style={{ width: '70px' }} />
             </colgroup>
@@ -567,8 +561,9 @@ export const OrderReportsPage: React.FC = () => {
                 </SystemTh>
                 <SystemTh align="right" className="text-right">Đã nhập kho</SystemTh>
                 <SystemTh align="right" className="text-right">Đơn hàng đi</SystemTh>
-                <SystemTh align="right" className="text-right">Tồn thực tế</SystemTh>
-                <SystemTh align="right" className="text-right">Tồn khả dụng</SystemTh>
+                <SystemTh align="right" className="text-right">
+                  {isFilteringSpecificShop ? `Tiền đơn đi (${currentShop?.name || 'Shop'})` : 'Tổng tiền đơn đi'}
+                </SystemTh>
                 <SystemTh align="center" className="text-center">Đối soát chênh lệch</SystemTh>
                 <SystemTh align="center" className="text-center">Tỷ lệ xuất / nhập</SystemTh>
                 <SystemTh align="center" className="text-center">Chi tiết</SystemTh>
@@ -577,12 +572,12 @@ export const OrderReportsPage: React.FC = () => {
 
             <SystemTbody>
               {isLoading ? (
-                <SystemTableSkeleton rows={8} cols={10} />
+                <SystemTableSkeleton rows={8} cols={9} />
               ) : items.length === 0 ? (
                 <SystemTableEmpty
-                  colSpan={10}
+                  colSpan={9}
                   title="Không tìm thấy sản phẩm đối soát"
-                  description="Hãy thử thay đổi bộ lọc ngày, cửa hàng hoặc từ khóa tìm kiếm SKU."
+                  description="Hãy thử thay đổi bộ lọc ngày, kho hàng hoặc từ khóa tìm kiếm SKU."
                 />
               ) : (
                 items.map((item, index) => {
@@ -690,29 +685,18 @@ export const OrderReportsPage: React.FC = () => {
                         </div>
                       </SystemTd>
 
-                      {/* Tồn thực tế */}
+                      {/* Tổng tiền đơn đi (theo shop) */}
                       <SystemTd align="right" className="text-right">
                         <div className="flex flex-col items-end">
-                          <span
-                            className={`font-mono text-xs font-bold ${
-                              item.onHand > 0
-                                ? 'text-gray-900 dark:text-white'
-                                : 'text-red-500 font-semibold'
-                            }`}
-                          >
-                            {item.onHand.toLocaleString('vi-VN')}
+                          <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                            {(item.exportedAmount || 0).toLocaleString('vi-VN')} đ
                           </span>
-                          {item.reserved > 0 && (
-                            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono whitespace-nowrap">
-                              (giữ {item.reserved})
-                            </span>
-                          )}
+                          <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                            {item.exportedQuantity > 0 && item.exportedAmount
+                              ? `~${Math.round(item.exportedAmount / item.exportedQuantity).toLocaleString('vi-VN')} đ/sp`
+                              : '0 đ'}
+                          </span>
                         </div>
-                      </SystemTd>
-
-                      {/* Tồn khả dụng */}
-                      <SystemTd align="right" className="text-right font-mono text-xs font-semibold text-gray-800 dark:text-gray-200">
-                        {item.available.toLocaleString('vi-VN')}
                       </SystemTd>
 
                       {/* Đối soát chênh lệch */}
@@ -878,15 +862,13 @@ export const OrderReportsPage: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <span className="text-[10px] text-gray-500 block truncate">Tồn kho</span>
-                    <span className="text-xs font-bold font-mono text-gray-900 dark:text-white">
-                      {item.onHand}
+                    <span className="text-[10px] text-gray-500 block truncate">Tiền đơn đi</span>
+                    <span className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400 block truncate">
+                      {(item.exportedAmount || 0).toLocaleString('vi-VN')} đ
                     </span>
-                    {item.reserved > 0 && (
-                      <span className="text-[9px] text-amber-500 block font-mono truncate">
-                        (giữ {item.reserved})
-                      </span>
-                    )}
+                    <span className="text-[9px] text-gray-400 block font-mono truncate">
+                      {item.ordersCount} đơn
+                    </span>
                   </div>
                 </div>
 

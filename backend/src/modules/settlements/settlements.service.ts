@@ -15,12 +15,22 @@ export class SettlementsService {
     private readonly auditService: AuditService,
   ) {}
 
-  async findAll(tenantId: string, page = 1, limit = 50, shopId?: string) {
+  async findAll(tenantId: string, page = 1, limit = 50, shopId?: string, allowedShopIds?: string[] | null) {
     const skip = (page - 1) * limit;
     const where: any = {
       tenantId,
-      ...(shopId ? { shopId } : {}),
+      ...(shopId && shopId !== 'ALL' ? { shopId } : {}),
     };
+
+    if (allowedShopIds) {
+      if (shopId && shopId !== 'ALL') {
+        if (!allowedShopIds.includes(shopId)) {
+          return { items: [], total: 0, page, limit };
+        }
+      } else {
+        where.shopId = { in: allowedShopIds };
+      }
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.settlement.findMany({

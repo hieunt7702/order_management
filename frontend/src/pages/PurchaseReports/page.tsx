@@ -36,6 +36,7 @@ import {
   Bar,
 } from 'recharts';
 import * as XLSX from 'xlsx';
+import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { reportsApi, PurchaseReportData } from '../../services/reportsApi';
 import { shopsApi } from '../../services/shopsApi';
 import { suppliersApi } from '../../services/suppliersApi';
@@ -91,8 +92,9 @@ export const PurchaseReportsPage: React.FC = () => {
     }));
   };
 
-  // Filters
-  const [selectedShopId, setSelectedShopId] = useState<string>('ALL');
+  // Filters & Workspace Header Sync
+  const { selectedShopId: headerSelectedShopId, shops: workspaceShops } = useWorkspaceStore();
+  const [selectedShopId, setSelectedShopId] = useState<string>(headerSelectedShopId || 'ALL');
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('ALL');
   const [datePreset, setDatePreset] = useState<string>('ALL');
   const [startDate, setStartDate] = useState<string>('');
@@ -102,6 +104,19 @@ export const PurchaseReportsPage: React.FC = () => {
   // Dropdown options
   const [shops, setShops] = useState<Array<{ id: string; name: string; code?: string }>>([]);
   const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string; code?: string }>>([]);
+
+  // Auto-sync shop selection when user switches shop in AppHeader
+  useEffect(() => {
+    if (headerSelectedShopId !== undefined) {
+      setSelectedShopId(headerSelectedShopId);
+    }
+  }, [headerSelectedShopId]);
+
+  useEffect(() => {
+    if (workspaceShops && workspaceShops.length > 0 && shops.length === 0) {
+      setShops(workspaceShops);
+    }
+  }, [workspaceShops, shops.length]);
 
   const toggleExpandSupplier = (supId: string) => {
     setExpandedSupplierIds((prev) => ({
@@ -450,13 +465,26 @@ export const PurchaseReportsPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0 flex-1">
-          <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
-            <PackagePlus size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
-            <span className="sm:hidden truncate">Báo cáo nhập</span>
-            <span className="hidden sm:inline truncate">Báo Cáo Nhập Hàng</span>
-          </h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-sm sm:text-xl font-medium text-gray-900 dark:text-white flex items-center gap-1.5 sm:gap-2 truncate">
+              <PackagePlus size={18} className="text-[#5865f2] shrink-0 sm:w-5 sm:h-5" />
+              <span className="sm:hidden truncate">Báo cáo nhập</span>
+              <span className="hidden sm:inline truncate">Báo Cáo Nhập Hàng</span>
+            </h1>
+            {selectedShopId && selectedShopId !== 'ALL' && selectedShopId !== 'CENTRAL' ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-[#5865f2] dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                <Store size={12} />
+                <span>Shop: {shops.find((s) => s.id === selectedShopId)?.name || selectedShopId}</span>
+              </span>
+            ) : selectedShopId === 'CENTRAL' ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                <Building2 size={12} />
+                <span>Kho chung / Chưa gán shop</span>
+              </span>
+            ) : null}
+          </div>
           <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
-            Tổng hợp dữ liệu nhập kho theo từng cửa hàng, nhà cung cấp, phân bổ chi phí & xu hướng nhập hàng
+            Tổng hợp dữ liệu nhập kho theo từng cửa hàng từ Header, nhà cung cấp, phân bổ chi phí & xu hướng nhập hàng
           </p>
         </div>
 

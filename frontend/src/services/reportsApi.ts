@@ -8,6 +8,112 @@ export interface ReportQueryParams {
   [key: string]: any;
 }
 
+export interface DashboardSystemProduct {
+  variantId: string;
+  productId: string;
+  productName: string;
+  productCode?: string;
+  variantName?: string;
+  sku: string;
+  unit: string;
+  costPrice: number;
+  sellingPrice: number;
+  soldQuantity: number;
+  exportedAmount: number;
+  importedQuantity: number;
+  importedAmount: number;
+  onHand: number;
+  reserved: number;
+  available: number;
+  lowStockThreshold: number;
+  isLowStock: boolean;
+  isOutOfStock: boolean;
+}
+
+export interface DashboardTimelinePoint {
+  date: string;
+  fullDate: string;
+  revenue: number;
+  orderCount: number;
+  purchaseAmount: number;
+  receiptCount: number;
+}
+
+export interface DashboardData {
+  timeline?: DashboardTimelinePoint[];
+  financials: {
+    gmv: number;
+    completedRevenue: number;
+    completedCogs: number;
+    estimatedGrossProfit: number;
+    actualSettled: number;
+    totalPlatformFees: number;
+    currency: string;
+  };
+  orderStats: {
+    totalOrders: number;
+    readyToShip: number;
+    shipped: number;
+    delivering: number;
+    completed: number;
+    completedOnly: number;
+    toConfirmReceive: number;
+    cancelled: number;
+    returned: number;
+    statusMap: Record<string, number>;
+  };
+  fulfillmentStats: {
+    totalPackages: number;
+    verifiedPackages: number;
+    verificationRatePercent: number;
+    notVerifiedOrders: number;
+    partiallyVerifiedOrders: number;
+    verifiedOrders: number;
+  };
+  inventoryAlerts: {
+    lowStockVariantsCount: number;
+    totalOnHand?: number;
+    totalReserved?: number;
+    totalAvailable?: number;
+  };
+  purchases?: {
+    totalPurchaseAmount: number;
+    netPurchaseAmount: number;
+    totalReturnDeductionAmount: number;
+    totalImportedQuantity: number;
+    totalReceipts: number;
+    inPeriodPayable: number;
+    inPeriodPaid: number;
+    inPeriodRemaining: number;
+  };
+  supplierDebt?: {
+    totalRemainingDebt: number;
+    totalPayableDebt: number;
+    totalPaidDebt: number;
+    unpaidReceiptsCount: number;
+    suppliersWithDebtCount: number;
+  };
+  outbound?: {
+    totalExportedAmount: number;
+    totalOrders: number;
+    totalExportedQuantity: number;
+  };
+  systemProducts?: DashboardSystemProduct[];
+  topSellingItems: Array<{
+    productName: string;
+    sku: string;
+    variantName?: string;
+    unit?: string;
+    totalQuantitySold: number;
+    exportedAmount?: number;
+    importedQuantity?: number;
+    onHand?: number;
+  }>;
+  filterMeta?: {
+    activePlatformStatuses: string[];
+  };
+}
+
 export interface PurchaseReportFilterParams {
   shopId?: string;
   supplierId?: string;
@@ -141,7 +247,7 @@ export interface PurchaseReportData {
 }
 
 export const reportsApi = {
-  getDashboard: (params: ReportQueryParams = {}) => {
+  getDashboard: (params: ReportQueryParams = {}): Promise<DashboardData> => {
     return api.get(`/reports/dashboard${buildQuery(params)}`);
   },
   getPurchaseReport: async (params: PurchaseReportFilterParams = {}): Promise<PurchaseReportData> => {
@@ -204,6 +310,7 @@ export interface OrderReconciliationItem {
   grossExportedQuantity?: number;
   customerReturnedQuantity?: number;
   exportedQuantity: number;
+  exportedAmount?: number;
   ordersCount: number;
   orderReturnsCount?: number;
   onHand: number;
@@ -225,6 +332,8 @@ export interface OrderReconciliationSummary {
   totalGrossExported?: number;
   totalCustomerReturned?: number;
   totalExportedQuantity: number;
+  totalExportedAmount?: number;
+  totalOrdersCount?: number;
   totalOnHand: number;
   totalReserved: number;
   totalAvailable: number;

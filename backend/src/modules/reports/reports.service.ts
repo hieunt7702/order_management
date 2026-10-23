@@ -48,7 +48,7 @@ export class ReportsService {
     if (allowedShopIds) {
       if (filter.shopId && !allowedShopIds.includes(filter.shopId)) {
         whereOrderBase.shopId = '00000000-0000-0000-0000-000000000000'; // empty match
-      } else {
+      } else if (!filter.shopId || filter.shopId === 'ALL') {
         whereOrderBase.shopId = { in: allowedShopIds };
       }
     }
@@ -136,8 +136,11 @@ export class ReportsService {
 
     // Actual settled amount
     const whereSettlement: any = { tenantId };
-    if (filter.shopId) whereSettlement.shopId = filter.shopId;
-    if (allowedShopIds) whereSettlement.shopId = { in: allowedShopIds };
+    if (filter.shopId && filter.shopId !== 'ALL') {
+      whereSettlement.shopId = filter.shopId;
+    } else if (allowedShopIds) {
+      whereSettlement.shopId = { in: allowedShopIds };
+    }
 
     const settledAgg = await this.prisma.settlement.aggregate({
       where: whereSettlement,
@@ -158,38 +161,404 @@ export class ReportsService {
       Number(settledAgg._sum.serviceFee || 0) +
       Number(settledAgg._sum.transactionFee || 0);
 
-    // 4. Low stock SKU count
-    const balances = await this.prisma.inventoryBalance.findMany({
-      where: { tenantId },
-      include: {
-        variant: { select: { lowStockThreshold: true } },
-      },
-    });
+    // 4. Outbound quantity aggregation
+    let totalExportedQuantity = 0;
+    if (this.prisma.orderItem && typeof (this.prisma.orderItem as any).aggregate === 'function') {
+      const totalExportedItemsAgg = await this.prisma.orderItem.aggregate({
+        where: {
+          tenantId,
+          order: whereOrder,
+        },
+        _sum: {
+          quantity: true,
+        },
+      });
+      totalExportedQuantity = totalExportedItemsAgg._sum.quantity || 0;
+    }
+
+    // 5. Inbound Purchase Receipts & In-period purchases
+    let totalPurchaseAmount = 0;
+    let totalReturnDeductionAmount = 0;
+    let netPurchaseAmount = 0;
+    let inPeriodPayable = 0;
+    let inPeriodPaid = 0;
+    let inPeriodRemaining = 0;
+    let totalImportedQuantity = 0;
+    let totalReceipts = 0;
+
+    let totalRemainingDebt = 0;
+    let totalPayableDebt = 0;
+    let totalPaidDebt = 0;
+    let unpaidReceiptsCount = 0;
+    let suppliersWithDebtCount = 0;
+
+    const whereReceipt: Prisma.PurchaseReceiptWhereInput = { tenantId };
+    if (this.prisma.purchaseReceipt && typeof (this.prisma.purchaseReceipt as any).aggregate === 'function') {
+      if (filter.shopId && filter.shopId !== 'ALL') {
+        if (filter.shopId === 'CENTRAL' || filter.shopId === 'NONE') {
+          whereReceipt.shopId = null;
+        } else if (allowedShopIds && allowedShopIds.length > 0) {
+          whereReceipt.OR = allowedShopIds.includes(filter.shopId)
+            ? [{ shopId: filter.shopId }, { shopId: null }]
+            : [{ shopId: '__FORBIDDEN__' }];
+        } else {
+          whereReceipt.OR = [{ shopId: filter.shopId }, { shopId: null }];
+        }
+      } else if (allowedShopIds && allowedShopIds.length > 0) {
+        whereReceipt.OR = [{ shopId: { in: allowedShopIds } }, { shopId: null }];
+      }
+      if (start || end) {
+        whereReceipt.receiptDate = {};
+        if (start) whereReceipt.receiptDate.gte = new Date(start);
+        if (end) {
+          const endDateObj = new Date(end);
+          if (end.length <= 10) endDateObj.setHours(23, 59, 59, 999);
+          whereReceipt.receiptDate.lte = endDateObj;
+        }
+      }
+
+      const [receiptsFinancialAgg, receiptItemsQtyAgg] = await Promise.all([
+        this.prisma.purchaseReceipt.aggregate({
+          where: whereReceipt,
+          _sum: {
+            totalItemsAmount: true,
+            payableAmount: true,
+            paidAmount: true,
+            remainingAmount: true,
+            returnDeductionAmount: true,
+          },
+          _count: {
+            id: true,
+          },
+        }),
+        this.prisma.purchaseReceiptItem && typeof (this.prisma.purchaseReceiptItem as any).aggregate === 'function'
+          ? this.prisma.purchaseReceiptItem.aggregate({
+              where: {
+                tenantId,
+                receipt: whereReceipt,
+              },
+              _sum: {
+                receivedQuantity: true,
+              },
+            })
+          : Promise.resolve({ _sum: { receivedQuantity: 0 } }),
+      ]);
+
+      totalPurchaseAmount = Number(receiptsFinancialAgg._sum.totalItemsAmount || 0);
+      totalReturnDeductionAmount = Number(receiptsFinancialAgg._sum.returnDeductionAmount || 0);
+      netPurchaseAmount = Math.max(0, totalPurchaseAmount - totalReturnDeductionAmount);
+      inPeriodPayable = Number(receiptsFinancialAgg._sum.payableAmount || 0);
+      inPeriodPaid = Number(receiptsFinancialAgg._sum.paidAmount || 0);
+      inPeriodRemaining = Number(receiptsFinancialAgg._sum.remainingAmount || 0);
+      totalImportedQuantity = receiptItemsQtyAgg._sum.receivedQuantity || 0;
+      totalReceipts = receiptsFinancialAgg._count.id || 0;
+
+      // 6. Cumulative Supplier Debt (Công nợ NCC còn tồn đọng)
+      const whereSupplierDebt: Prisma.PurchaseReceiptWhereInput = {
+        tenantId,
+        ...(whereReceipt.shopId ? { shopId: whereReceipt.shopId } : whereReceipt.OR ? { OR: whereReceipt.OR } : {}),
+        remainingAmount: { gt: 0 },
+      };
+
+      const [outstandingDebtAgg, unpaidCount, suppliersWithDebtGroup] = await Promise.all([
+        this.prisma.purchaseReceipt.aggregate({
+          where: whereSupplierDebt,
+          _sum: {
+            remainingAmount: true,
+            payableAmount: true,
+            paidAmount: true,
+          },
+        }),
+        this.prisma.purchaseReceipt.count({
+          where: whereSupplierDebt,
+        }),
+        this.prisma.purchaseReceipt.groupBy({
+          by: ['supplierId'],
+          where: whereSupplierDebt,
+        }),
+      ]);
+
+      totalRemainingDebt = Number(outstandingDebtAgg._sum.remainingAmount || 0);
+      totalPayableDebt = Number(outstandingDebtAgg._sum.payableAmount || 0);
+      totalPaidDebt = Number(outstandingDebtAgg._sum.paidAmount || 0);
+      unpaidReceiptsCount = unpaidCount;
+      suppliersWithDebtCount = suppliersWithDebtGroup.length;
+    }
+
+    // 7. Inventory Balances and Low stock count
+    let balances: any[] = [];
+    if (this.prisma.inventoryBalance && typeof this.prisma.inventoryBalance.findMany === 'function') {
+      balances = await this.prisma.inventoryBalance.findMany({
+        where: { tenantId },
+        include: {
+          variant: { select: { lowStockThreshold: true } },
+        },
+      });
+    }
     const lowStockCount = balances.filter(
-      (b) => b.onHand - b.reserved <= b.variant.lowStockThreshold,
+      (b) => b.variant && b.onHand - b.reserved <= b.variant.lowStockThreshold,
     ).length;
 
-    // 5. Top 10 Best Selling Items (strictly filtered by whereOrder)
-    const topItems = await this.prisma.orderItem.groupBy({
-      by: ['productName', 'externalSku'],
-      where: {
-        order: whereOrder,
-      },
-      _sum: { quantity: true },
-      orderBy: {
-        _sum: { quantity: 'desc' },
-      },
-      take: 10,
-    });
+    let totalOnHand = 0;
+    let totalReserved = 0;
+    let totalAvailable = 0;
+    if (this.prisma.inventoryBalance && typeof (this.prisma.inventoryBalance as any).aggregate === 'function') {
+      const totalInventoryAgg = await this.prisma.inventoryBalance.aggregate({
+        where: { tenantId },
+        _sum: {
+          onHand: true,
+          reserved: true,
+        },
+      });
+      totalOnHand = Number(totalInventoryAgg._sum.onHand || 0);
+      totalReserved = Number(totalInventoryAgg._sum.reserved || 0);
+      totalAvailable = Math.max(0, totalOnHand - totalReserved);
+    } else {
+      totalOnHand = balances.reduce((s, b) => s + (b.onHand || 0), 0);
+      totalReserved = balances.reduce((s, b) => s + (b.reserved || 0), 0);
+      totalAvailable = Math.max(0, totalOnHand - totalReserved);
+    }
 
-    const totalPackages = await this.prisma.package.count({
-      where: { order: whereOrder },
-    });
-    const verifiedPackages = await this.prisma.package.count({
-      where: { order: whereOrder, status: 'DISPATCHED' },
-    });
+    // 8. Top Best Selling Items (strictly filtered by whereOrder)
+    let topItems: any[] = [];
+    if (this.prisma.orderItem && typeof this.prisma.orderItem.groupBy === 'function') {
+      topItems = await (this.prisma.orderItem.groupBy as any)({
+        by: ['productName', 'externalSku'],
+        where: {
+          order: whereOrder,
+        },
+        _sum: { quantity: true },
+        orderBy: {
+          _sum: { quantity: 'desc' },
+        },
+        take: 10,
+      });
+    }
+
+    // 9. System Products Breakdown (View theo sản phẩm hệ thống nội bộ)
+    let systemProducts: any[] = [];
+    if (this.prisma.productVariant && typeof this.prisma.productVariant.findMany === 'function' && typeof this.prisma.orderItem.findMany === 'function') {
+      const orderItems = await this.prisma.orderItem.findMany({
+        where: {
+          tenantId,
+          order: whereOrder,
+        },
+        select: {
+          variantId: true,
+          externalSku: true,
+          quantity: true,
+          discountedPrice: true,
+          originalPrice: true,
+          order: { select: { shopId: true } },
+        },
+      });
+
+      const unmappedOrderItems = orderItems.filter((oi) => !oi.variantId && oi.externalSku);
+      const listingMap = new Map<string, string>();
+      if (unmappedOrderItems.length > 0 && this.prisma.listingMapping) {
+        const mappings = await this.prisma.listingMapping.findMany({
+          where: { tenantId, status: 'ACTIVE' },
+          select: { shopId: true, sellerSku: true, variantId: true },
+        });
+        mappings.forEach((m) => {
+          listingMap.set(`${m.shopId}:${m.sellerSku.toLowerCase()}`, m.variantId);
+          listingMap.set(m.sellerSku.toLowerCase(), m.variantId);
+        });
+      }
+
+      const soldMap = new Map<string, { soldQty: number; exportedAmount: number }>();
+      for (const oi of orderItems) {
+        let vId = oi.variantId;
+        if (!vId && oi.externalSku) {
+          vId =
+            listingMap.get(`${oi.order.shopId}:${oi.externalSku.toLowerCase()}`) ||
+            listingMap.get(oi.externalSku.toLowerCase()) ||
+            null;
+        }
+        if (vId) {
+          const cur = soldMap.get(vId) || { soldQty: 0, exportedAmount: 0 };
+          const qty = oi.quantity || 1;
+          const price = Number(oi.discountedPrice || oi.originalPrice || 0);
+          cur.soldQty += qty;
+          cur.exportedAmount += price * qty;
+          soldMap.set(vId, cur);
+        }
+      }
+
+      const importedMap = new Map<string, { importedQty: number; importedAmount: number }>();
+      if (this.prisma.purchaseReceiptItem && typeof this.prisma.purchaseReceiptItem.groupBy === 'function') {
+        const receiptItemsAgg = await this.prisma.purchaseReceiptItem.groupBy({
+          by: ['variantId'],
+          where: {
+            tenantId,
+            receipt: whereReceipt,
+          },
+          _sum: {
+            receivedQuantity: true,
+            subtotal: true,
+          },
+        });
+        for (const ri of receiptItemsAgg) {
+          importedMap.set(ri.variantId, {
+            importedQty: ri._sum.receivedQuantity || 0,
+            importedAmount: Number(ri._sum.subtotal || 0),
+          });
+        }
+      }
+
+      const activeVariantIds = Array.from(new Set([...soldMap.keys(), ...importedMap.keys()]));
+      const variantWhere: Prisma.ProductVariantWhereInput = {
+        tenantId,
+        status: ProductStatus.ACTIVE,
+      };
+      if (activeVariantIds.length > 0) {
+        variantWhere.id = { in: activeVariantIds };
+      }
+
+      const variants = await this.prisma.productVariant.findMany({
+        where: variantWhere,
+        include: {
+          product: { select: { id: true, code: true, name: true } },
+          inventoryBalances: {
+            where: { tenantId },
+            select: { onHand: true, reserved: true },
+          },
+        },
+        take: activeVariantIds.length > 0 ? undefined : 25,
+      });
+
+      systemProducts = variants.map((v) => {
+        const sData = soldMap.get(v.id) || { soldQty: 0, exportedAmount: 0 };
+        const iData = importedMap.get(v.id) || { importedQty: 0, importedAmount: 0 };
+        const onHand = v.inventoryBalances.reduce((s, b) => s + (b.onHand || 0), 0);
+        const reserved = v.inventoryBalances.reduce((s, b) => s + (b.reserved || 0), 0);
+        const available = Math.max(0, onHand - reserved);
+
+        return {
+          variantId: v.id,
+          productId: v.product?.id,
+          productName: v.product?.name || v.name,
+          productCode: v.product?.code,
+          variantName: v.name,
+          sku: v.sku,
+          unit: v.unit,
+          costPrice: Number(v.costPrice || 0),
+          sellingPrice: Number(v.sellingPrice || 0),
+          soldQuantity: sData.soldQty,
+          exportedAmount: Math.round(sData.exportedAmount || sData.soldQty * Number(v.sellingPrice || 0)),
+          importedQuantity: iData.importedQty,
+          importedAmount: Math.round(iData.importedAmount),
+          onHand,
+          reserved,
+          available,
+          lowStockThreshold: v.lowStockThreshold,
+          isLowStock: onHand <= v.lowStockThreshold,
+          isOutOfStock: onHand <= 0,
+        };
+      });
+
+      systemProducts.sort((a, b) => {
+        if (b.soldQuantity !== a.soldQuantity) return b.soldQuantity - a.soldQuantity;
+        if (b.importedQuantity !== a.importedQuantity) return b.importedQuantity - a.importedQuantity;
+        return b.onHand - a.onHand;
+      });
+    }
+
+    let totalPackages = 0;
+    let verifiedPackages = 0;
+    if (this.prisma.package && typeof this.prisma.package.count === 'function') {
+      totalPackages = await this.prisma.package.count({
+        where: { order: whereOrder },
+      });
+      verifiedPackages = await this.prisma.package.count({
+        where: { order: whereOrder, status: 'DISPATCHED' },
+      });
+    }
+
+    // Timeline calculation for Line Chart (Xu hướng Doanh thu & Tiền nhập hàng theo ngày)
+    const timelineMap = new Map<string, { date: string; fullDate: string; revenue: number; orderCount: number; purchaseAmount: number; receiptCount: number }>();
+
+    if (this.prisma.order && typeof (this.prisma.order as any).findMany === 'function') {
+      const timelineOrders = await this.prisma.order.findMany({
+        where: whereOrder,
+        select: {
+          orderDate: true,
+          createdAt: true,
+          totalAmount: true,
+        },
+        orderBy: { createdAt: 'asc' },
+        take: 2000,
+      });
+
+      for (const o of timelineOrders) {
+        const d = o.orderDate || o.createdAt;
+        if (!d) continue;
+        const dObj = new Date(d);
+        const yyyy = dObj.getFullYear();
+        const mm = String(dObj.getMonth() + 1).padStart(2, '0');
+        const dd = String(dObj.getDate()).padStart(2, '0');
+        const key = `${yyyy}-${mm}-${dd}`;
+        const shortDate = `${dd}/${mm}`;
+
+        const entry = timelineMap.get(key) || {
+          date: shortDate,
+          fullDate: key,
+          revenue: 0,
+          orderCount: 0,
+          purchaseAmount: 0,
+          receiptCount: 0,
+        };
+        entry.revenue += Number(o.totalAmount || 0);
+        entry.orderCount += 1;
+        timelineMap.set(key, entry);
+      }
+    }
+
+    if (this.prisma.purchaseReceipt && typeof (this.prisma.purchaseReceipt as any).findMany === 'function') {
+      const timelineReceipts = await this.prisma.purchaseReceipt.findMany({
+        where: whereReceipt,
+        select: {
+          receiptDate: true,
+          createdAt: true,
+          payableAmount: true,
+          totalItemsAmount: true,
+          returnDeductionAmount: true,
+        },
+        orderBy: { createdAt: 'asc' },
+        take: 1000,
+      });
+
+      for (const r of timelineReceipts) {
+        const d = r.receiptDate || r.createdAt;
+        if (!d) continue;
+        const dObj = new Date(d);
+        const yyyy = dObj.getFullYear();
+        const mm = String(dObj.getMonth() + 1).padStart(2, '0');
+        const dd = String(dObj.getDate()).padStart(2, '0');
+        const key = `${yyyy}-${mm}-${dd}`;
+        const shortDate = `${dd}/${mm}`;
+
+        const entry = timelineMap.get(key) || {
+          date: shortDate,
+          fullDate: key,
+          revenue: 0,
+          orderCount: 0,
+          purchaseAmount: 0,
+          receiptCount: 0,
+        };
+        const netAmt = Math.max(0, Number(r.payableAmount || r.totalItemsAmount || 0) - Number(r.returnDeductionAmount || 0));
+        entry.purchaseAmount += netAmt;
+        entry.receiptCount += 1;
+        timelineMap.set(key, entry);
+      }
+    }
+
+    const timeline = Array.from(timelineMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map((entry) => entry[1]);
 
     return {
+      timeline,
       financials: {
         gmv,
         completedRevenue,
@@ -222,12 +591,50 @@ export class ReportsService {
       },
       inventoryAlerts: {
         lowStockVariantsCount: lowStockCount,
+        totalOnHand,
+        totalReserved,
+        totalAvailable,
       },
-      topSellingItems: topItems.map((ti) => ({
-        productName: ti.productName,
-        sku: ti.externalSku,
-        totalQuantitySold: ti._sum.quantity || 0,
-      })),
+      purchases: {
+        totalPurchaseAmount,
+        netPurchaseAmount,
+        totalReturnDeductionAmount,
+        totalImportedQuantity,
+        totalReceipts,
+        inPeriodPayable,
+        inPeriodPaid,
+        inPeriodRemaining,
+      },
+      supplierDebt: {
+        totalRemainingDebt,
+        totalPayableDebt,
+        totalPaidDebt,
+        unpaidReceiptsCount,
+        suppliersWithDebtCount,
+      },
+      outbound: {
+        totalExportedAmount: gmv,
+        totalOrders,
+        totalExportedQuantity,
+      },
+      systemProducts: systemProducts.slice(0, 30),
+      topSellingItems:
+        systemProducts.length > 0
+          ? systemProducts.slice(0, 10).map((sp) => ({
+              productName: sp.productName,
+              sku: sp.sku,
+              variantName: sp.variantName,
+              unit: sp.unit,
+              totalQuantitySold: sp.soldQuantity,
+              exportedAmount: sp.exportedAmount,
+              importedQuantity: sp.importedQuantity,
+              onHand: sp.onHand,
+            }))
+          : topItems.map((ti) => ({
+              productName: ti.productName,
+              sku: ti.externalSku,
+              totalQuantitySold: ti._sum.quantity || 0,
+            })),
       filterMeta: {
         activePlatformStatuses: activeStatuses,
       },
@@ -1098,9 +1505,26 @@ export class ReportsService {
     if (filter.shopId && filter.shopId !== 'ALL') {
       if (filter.shopId === 'CENTRAL' || filter.shopId === 'NONE') {
         receiptWhere.shopId = null;
+      } else if (allowedShopIds && allowedShopIds.length > 0) {
+        if (allowedShopIds.includes(filter.shopId)) {
+          receiptWhere.OR = [
+            { shopId: filter.shopId },
+            { shopId: null },
+          ];
+        } else {
+          receiptWhere.shopId = '__FORBIDDEN__';
+        }
       } else {
-        receiptWhere.shopId = filter.shopId;
+        receiptWhere.OR = [
+          { shopId: filter.shopId },
+          { shopId: null },
+        ];
       }
+    } else if (allowedShopIds && allowedShopIds.length > 0) {
+      receiptWhere.OR = [
+        { shopId: { in: allowedShopIds } },
+        { shopId: null },
+      ];
     }
     if (start || end) {
       receiptWhere.receiptDate = {};
@@ -1153,12 +1577,29 @@ export class ReportsService {
           { receipt: { shopId: null } },
           { receiptId: null },
         ];
+      } else if (allowedShopIds && allowedShopIds.length > 0) {
+        if (allowedShopIds.includes(filter.shopId)) {
+          returnWhere.OR = [
+            { receipt: { shopId: filter.shopId } },
+            { receipt: { shopId: null } },
+            { receiptId: null },
+          ];
+        } else {
+          returnWhere.receipt = { shopId: '__FORBIDDEN__' };
+        }
       } else {
         returnWhere.OR = [
           { receipt: { shopId: filter.shopId } },
+          { receipt: { shopId: null } },
           { receiptId: null },
         ];
       }
+    } else if (allowedShopIds && allowedShopIds.length > 0) {
+      returnWhere.OR = [
+        { receipt: { shopId: { in: allowedShopIds } } },
+        { receipt: { shopId: null } },
+        { receiptId: null },
+      ];
     }
     if (filter.warehouseId && filter.warehouseId !== 'ALL') {
       returnWhere.OR = [
@@ -1214,10 +1655,16 @@ export class ReportsService {
         AND: [{ isVirtual: true }, { isRealGoods: false }],
       },
     };
-    if (filter.shopId && filter.shopId !== 'ALL') {
+    if (allowedShopIds && allowedShopIds.length > 0) {
+      if (filter.shopId && filter.shopId !== 'ALL') {
+        orderWhere.shopId = allowedShopIds.includes(filter.shopId)
+          ? filter.shopId
+          : '__FORBIDDEN__';
+      } else {
+        orderWhere.shopId = { in: allowedShopIds };
+      }
+    } else if (filter.shopId && filter.shopId !== 'ALL') {
       orderWhere.shopId = filter.shopId;
-    } else if (allowedShopIds && allowedShopIds.length > 0) {
-      orderWhere.shopId = { in: allowedShopIds };
     }
     if (start || end) {
       orderWhere.orderDate = {};
@@ -1233,28 +1680,40 @@ export class ReportsService {
       }
     }
 
-    const orderItemAggregations = await this.prisma.orderItem.groupBy({
-      by: ['variantId'],
+    const orderItems = await this.prisma.orderItem.findMany({
       where: {
         tenantId,
         variantId: { not: null },
         order: orderWhere,
       },
-      _sum: {
+      select: {
+        variantId: true,
         quantity: true,
-      },
-      _count: {
+        rawQuantity: true,
+        discountedPrice: true,
+        originalPrice: true,
         orderId: true,
       },
     });
 
-    const orderMap = new Map<string, { quantity: number; ordersCount: number }>();
-    orderItemAggregations.forEach((oa) => {
-      if (oa.variantId) {
-        orderMap.set(oa.variantId, {
-          quantity: oa._sum.quantity || 0,
-          ordersCount: oa._count.orderId || 0,
-        });
+    const orderMap = new Map<string, { quantity: number; ordersCount: number; totalAmount: number; orderIds: Set<string> }>();
+    const allScopeOrderIds = new Set<string>();
+    let totalScopeExportedAmount = 0;
+
+    orderItems.forEach((oi) => {
+      if (oi.variantId) {
+        const cur = orderMap.get(oi.variantId) || { quantity: 0, ordersCount: 0, totalAmount: 0, orderIds: new Set<string>() };
+        const qty = oi.quantity || 1;
+        const price = Number(oi.discountedPrice || oi.originalPrice || 0);
+        const itemAmount = price * (oi.rawQuantity || qty);
+
+        cur.quantity += qty;
+        cur.totalAmount += itemAmount;
+        cur.orderIds.add(oi.orderId);
+        orderMap.set(oi.variantId, cur);
+
+        allScopeOrderIds.add(oi.orderId);
+        totalScopeExportedAmount += itemAmount;
       }
     });
 
@@ -1263,10 +1722,16 @@ export class ReportsService {
       tenantId,
       status: 'COMPLETED',
     };
-    if (filter.shopId && filter.shopId !== 'ALL') {
+    if (allowedShopIds && allowedShopIds.length > 0) {
+      if (filter.shopId && filter.shopId !== 'ALL') {
+        orderReturnWhere.shopId = allowedShopIds.includes(filter.shopId)
+          ? filter.shopId
+          : '__FORBIDDEN__';
+      } else {
+        orderReturnWhere.shopId = { in: allowedShopIds };
+      }
+    } else if (filter.shopId && filter.shopId !== 'ALL') {
       orderReturnWhere.shopId = filter.shopId;
-    } else if (allowedShopIds && allowedShopIds.length > 0) {
-      orderReturnWhere.shopId = { in: allowedShopIds };
     }
     if (filter.warehouseId && filter.warehouseId !== 'ALL') {
       orderReturnWhere.warehouseId = filter.warehouseId;
@@ -1321,6 +1786,10 @@ export class ReportsService {
       select: {
         externalSku: true,
         quantity: true,
+        rawQuantity: true,
+        discountedPrice: true,
+        originalPrice: true,
+        orderId: true,
         order: { select: { shopId: true } },
       },
     });
@@ -1349,10 +1818,18 @@ export class ReportsService {
         const key = `${uoi.order.shopId}:${uoi.externalSku.toLowerCase()}`;
         const matchedVariantId = lmMap.get(key) || lmMap.get(uoi.externalSku.toLowerCase());
         if (matchedVariantId) {
-          const cur = orderMap.get(matchedVariantId) || { quantity: 0, ordersCount: 0 };
-          cur.quantity += uoi.quantity || 1;
-          cur.ordersCount += 1;
+          const cur = orderMap.get(matchedVariantId) || { quantity: 0, ordersCount: 0, totalAmount: 0, orderIds: new Set<string>() };
+          const qty = uoi.quantity || 1;
+          const price = Number(uoi.discountedPrice || uoi.originalPrice || 0);
+          const itemAmount = price * (uoi.rawQuantity || qty);
+
+          cur.quantity += qty;
+          cur.totalAmount += itemAmount;
+          cur.orderIds.add(uoi.orderId);
           orderMap.set(matchedVariantId, cur);
+
+          allScopeOrderIds.add(uoi.orderId);
+          totalScopeExportedAmount += itemAmount;
         }
       }
     }
@@ -1589,7 +2066,7 @@ export class ReportsService {
     const allItems = variants.map((v) => {
       const rData = receiptMap.get(v.id) || { receivedQty: 0, orderedQty: 0, totalAmount: 0, receiptsCount: 0 };
       const prData = purchaseReturnMap.get(v.id) || { returnedQty: 0, totalAmount: 0, returnsCount: 0 };
-      const oData = orderMap.get(v.id) || { quantity: 0, ordersCount: 0 };
+      const oData = orderMap.get(v.id) || { quantity: 0, ordersCount: 0, totalAmount: 0, orderIds: new Set<string>() };
       const orData = orderReturnMap.get(v.id) || { sellableQty: 0, damagedQty: 0, returnsCount: 0 };
 
       const onHand = v.inventoryBalances.reduce((acc, b) => acc + (b.onHand || 0), 0);
@@ -1609,6 +2086,12 @@ export class ReportsService {
       const grossExportedQty = oData.quantity;
       const customerReturnedQty = orData.sellableQty;
       const exportedQty = Math.max(0, grossExportedQty - customerReturnedQty);
+
+      const ordersCount = oData.orderIds ? oData.orderIds.size : oData.ordersCount;
+      let exportedAmount = Math.round(oData.totalAmount || 0);
+      if (exportedAmount === 0 && oData.quantity > 0) {
+        exportedAmount = Math.round(Number(v.sellingPrice || 0) * oData.quantity);
+      }
 
       // Theoretical stock = Stock Before Import + Net Inbound - Net Outbound
       const calculatedStock = stockBefore + importedQty - exportedQty;
@@ -1664,7 +2147,8 @@ export class ReportsService {
         grossExportedQuantity: grossExportedQty,
         customerReturnedQuantity: customerReturnedQty,
         exportedQuantity: exportedQty,
-        ordersCount: oData.ordersCount,
+        exportedAmount,
+        ordersCount,
         orderReturnsCount: orData.returnsCount,
         onHand,
         reserved,
@@ -1703,6 +2187,8 @@ export class ReportsService {
         totalGrossExported,
         totalCustomerReturned,
         totalExportedQuantity,
+        totalExportedAmount: Math.round(totalScopeExportedAmount),
+        totalOrdersCount: allScopeOrderIds.size,
         totalOnHand,
         totalReserved,
         totalAvailable,
@@ -1756,10 +2242,16 @@ export class ReportsService {
         AND: [{ isVirtual: true }, { isRealGoods: false }],
       },
     };
-    if (filter.shopId && filter.shopId !== 'ALL') {
+    if (allowedShopIds && allowedShopIds.length > 0) {
+      if (filter.shopId && filter.shopId !== 'ALL') {
+        orderWhere.shopId = allowedShopIds.includes(filter.shopId)
+          ? filter.shopId
+          : '__FORBIDDEN__';
+      } else {
+        orderWhere.shopId = { in: allowedShopIds };
+      }
+    } else if (filter.shopId && filter.shopId !== 'ALL') {
       orderWhere.shopId = filter.shopId;
-    } else if (allowedShopIds && allowedShopIds.length > 0) {
-      orderWhere.shopId = { in: allowedShopIds };
     }
     if (start || end) {
       orderWhere.orderDate = {};
@@ -1811,9 +2303,26 @@ export class ReportsService {
     if (filter.shopId && filter.shopId !== 'ALL') {
       if (filter.shopId === 'CENTRAL' || filter.shopId === 'NONE') {
         receiptWhere.shopId = null;
+      } else if (allowedShopIds && allowedShopIds.length > 0) {
+        if (allowedShopIds.includes(filter.shopId)) {
+          receiptWhere.OR = [
+            { shopId: filter.shopId },
+            { shopId: null },
+          ];
+        } else {
+          receiptWhere.shopId = '__FORBIDDEN__';
+        }
       } else {
-        receiptWhere.shopId = filter.shopId;
+        receiptWhere.OR = [
+          { shopId: filter.shopId },
+          { shopId: null },
+        ];
       }
+    } else if (allowedShopIds && allowedShopIds.length > 0) {
+      receiptWhere.OR = [
+        { shopId: { in: allowedShopIds } },
+        { shopId: null },
+      ];
     }
     if (start || end) {
       receiptWhere.receiptDate = {};
@@ -1866,12 +2375,29 @@ export class ReportsService {
           { receipt: { shopId: null } },
           { receiptId: null },
         ];
+      } else if (allowedShopIds && allowedShopIds.length > 0) {
+        if (allowedShopIds.includes(filter.shopId)) {
+          returnWhere.OR = [
+            { receipt: { shopId: filter.shopId } },
+            { receipt: { shopId: null } },
+            { receiptId: null },
+          ];
+        } else {
+          returnWhere.receipt = { shopId: '__FORBIDDEN__' };
+        }
       } else {
         returnWhere.OR = [
           { receipt: { shopId: filter.shopId } },
+          { receipt: { shopId: null } },
           { receiptId: null },
         ];
       }
+    } else if (allowedShopIds && allowedShopIds.length > 0) {
+      returnWhere.OR = [
+        { receipt: { shopId: { in: allowedShopIds } } },
+        { receipt: { shopId: null } },
+        { receiptId: null },
+      ];
     }
     if (filter.warehouseId && filter.warehouseId !== 'ALL') {
       returnWhere.OR = [
@@ -1925,10 +2451,16 @@ export class ReportsService {
       tenantId,
       status: 'COMPLETED',
     };
-    if (filter.shopId && filter.shopId !== 'ALL') {
+    if (allowedShopIds && allowedShopIds.length > 0) {
+      if (filter.shopId && filter.shopId !== 'ALL') {
+        orderReturnWhere.shopId = allowedShopIds.includes(filter.shopId)
+          ? filter.shopId
+          : '__FORBIDDEN__';
+      } else {
+        orderReturnWhere.shopId = { in: allowedShopIds };
+      }
+    } else if (filter.shopId && filter.shopId !== 'ALL') {
       orderReturnWhere.shopId = filter.shopId;
-    } else if (allowedShopIds && allowedShopIds.length > 0) {
-      orderReturnWhere.shopId = { in: allowedShopIds };
     }
     if (filter.warehouseId && filter.warehouseId !== 'ALL') {
       orderReturnWhere.warehouseId = filter.warehouseId;

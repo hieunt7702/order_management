@@ -787,7 +787,7 @@ export class CashflowService {
     if (filter.type) andConditions.push({ type: filter.type as CashTransactionType });
     if (filter.categoryId) andConditions.push({ categoryId: filter.categoryId });
     if (filter.status) andConditions.push({ status: filter.status as CashTransactionStatus });
-    if (filter.shopId) andConditions.push({ shopId: filter.shopId });
+    if (filter.shopId && filter.shopId !== 'ALL') andConditions.push({ shopId: filter.shopId });
     if (filter.accountId) {
       andConditions.push({
         OR: [{ fromAccountId: filter.accountId }, { toAccountId: filter.accountId }],
@@ -1115,13 +1115,15 @@ export class CashflowService {
   ) {
     await this.ensureDefaults(tenantId);
 
+    const targetShopId = filter?.shopId && filter.shopId !== 'ALL' ? filter.shopId : undefined;
+
     // 1. Số dư tất cả tài khoản
     const accounts = await this.prisma.cashAccount.findMany({
       where: {
         tenantId,
         isActive: true,
-        ...(filter?.shopId && {
-          OR: [{ shopId: filter.shopId }, { shopId: null }],
+        ...(targetShopId && {
+          OR: [{ shopId: targetShopId }, { shopId: null }],
         }),
       },
       orderBy: [{ type: 'asc' }, { name: 'asc' }],
@@ -1152,8 +1154,8 @@ export class CashflowService {
       tenantId,
       status: CashTransactionStatus.CONFIRMED,
       ...(hasDate && { transactionDate: dateRange }),
-      ...(filter?.shopId && {
-        OR: [{ shopId: filter.shopId }, { isCommonExpense: true }],
+      ...(targetShopId && {
+        OR: [{ shopId: targetShopId }, { isCommonExpense: true }],
       }),
     };
 
@@ -1183,7 +1185,7 @@ export class CashflowService {
     const pendingReconciliations = await this.prisma.orderReconciliationRecord.aggregate({
       where: {
         tenantId,
-        ...(filter?.shopId && { shopId: filter.shopId }),
+        ...(targetShopId && { shopId: targetShopId }),
         order: {
           platformStatus: {
             notIn: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
@@ -1211,6 +1213,11 @@ export class CashflowService {
       where: { tenantId },
       include: {
         purchaseReceipts: {
+          ...(targetShopId && {
+            where: {
+              OR: [{ shopId: targetShopId }, { shopId: null }],
+            },
+          }),
           select: { payableAmount: true, remainingAmount: true },
         },
         purchaseReturns: {
@@ -1270,6 +1277,9 @@ export class CashflowService {
       where: {
         tenantId,
         paymentStatus: { in: ['UNPAID', 'PARTIALLY_PAID'] },
+        ...(targetShopId && {
+          OR: [{ shopId: targetShopId }, { shopId: null }],
+        }),
       },
     });
 

@@ -42,7 +42,13 @@ export class OrderReturnsService {
   }
 
   // DANH SÁCH CHỜ NHẬN HÀNG HOÀN (Return Processing Queue)
-  async getReturnQueue(tenantId: string, search?: string) {
+  async getReturnQueue(
+    tenantId: string,
+    search?: string,
+    shopId?: string,
+    warehouseId?: string,
+    allowedShopIds?: string[] | null,
+  ) {
     const where: Prisma.OrderWhereInput = {
       tenantId,
       OR: [
@@ -50,6 +56,22 @@ export class OrderReturnsService {
         { fulfillmentStatus: { in: [FulfillmentStatus.PARTIALLY_RETURN_RECEIVED, FulfillmentStatus.DISPATCHED] } },
       ],
     };
+
+    if (shopId && shopId !== 'ALL') {
+      where.shopId = shopId;
+    }
+
+    if (allowedShopIds) {
+      if (shopId && shopId !== 'ALL') {
+        if (!allowedShopIds.includes(shopId)) return [];
+      } else {
+        where.shopId = { in: allowedShopIds };
+      }
+    }
+
+    if (warehouseId && warehouseId !== 'ALL') {
+      where.shop = { defaultWarehouseId: warehouseId };
+    }
 
     if (search) {
       const q = search.trim();
@@ -451,13 +473,23 @@ export class OrderReturnsService {
   }
 
   // LẤY DANH SÁCH LỊCH SỬ CÁC PHIẾU NHẬP HOÀN
-  async findAll(tenantId: string, filter: OrderReturnFilterDto = {}) {
+  async findAll(tenantId: string, filter: OrderReturnFilterDto = {}, allowedShopIds?: string[] | null) {
     const where: Prisma.OrderReturnWhereInput = {
       tenantId,
       ...(filter.orderId ? { orderId: filter.orderId } : {}),
-      ...(filter.shopId ? { shopId: filter.shopId } : {}),
-      ...(filter.warehouseId ? { warehouseId: filter.warehouseId } : {}),
+      ...(filter.shopId && filter.shopId !== 'ALL' ? { shopId: filter.shopId } : {}),
+      ...(filter.warehouseId && filter.warehouseId !== 'ALL' ? { warehouseId: filter.warehouseId } : {}),
     };
+
+    if (allowedShopIds) {
+      if (filter.shopId && filter.shopId !== 'ALL') {
+        if (!allowedShopIds.includes(filter.shopId)) {
+          return { total: 0, items: [], page: 1, limit: 25, totalPages: 0 };
+        }
+      } else {
+        where.shopId = { in: allowedShopIds };
+      }
+    }
 
     if (filter.search) {
       const q = filter.search.trim();

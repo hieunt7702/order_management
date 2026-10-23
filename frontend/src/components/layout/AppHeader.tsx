@@ -81,7 +81,9 @@ export const AppHeader: React.FC = () => {
 
   const isWarehouseRelevantPage =
     location.pathname.startsWith('/inventory') ||
-    location.pathname.startsWith('/scan');
+    location.pathname.startsWith('/scan') ||
+    location.pathname.startsWith('/order-returns') ||
+    location.pathname.startsWith('/purchase-receipts');
 
   return (
     <header className="flex-shrink-0 bg-white dark:bg-[#14151a] border-b border-gray-200 dark:border-gray-800 px-3 sm:px-4 md:px-6 flex items-center justify-between z-20 transition-colors pt-[env(safe-area-inset-top,0px)] h-[calc(60px+env(safe-area-inset-top,0px))]">

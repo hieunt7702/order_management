@@ -23,11 +23,21 @@ import {
   Package,
   CheckCircle2,
   RotateCcw,
+  CreditCard,
+  PackageCheck,
+  Receipt,
+  Building2,
+  Search,
+  ArrowUpRight,
+  ArrowDownRight,
+  FileText,
+  ExternalLink,
 } from 'lucide-react';
 import { reportsApi } from '../../services/reportsApi';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { formatCurrency } from '../../utils';
 import { Button } from '../../components/ui/Button';
+import { Badge } from '../../components/ui/Badge';
 import { Checkbox } from '../../components/ui/Checkbox';
 import { Select } from '../../components/ui/Select';
 import { SystemDatePicker } from '../../components/ui/SystemDatePicker';
@@ -40,6 +50,8 @@ import {
   CardContent,
 } from '../../components/ui/Card';
 import { MobileFeatureHub } from '../../components/dashboard/MobileFeatureHub';
+import { RevenueChart } from '../../components/dashboard/RevenueChart';
+import { StatusChart } from '../../components/dashboard/StatusChart';
 
 const SHOPEE_STATUS_OPTIONS = [
   {
@@ -119,6 +131,10 @@ export const DashboardPage: React.FC = () => {
   // Multi-select Shopee Order Statuses
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState<boolean>(false);
+
+  // System Products Search & Sort
+  const [productSearch, setProductSearch] = useState<string>('');
+  const [productSortBy, setProductSortBy] = useState<'sold' | 'imported' | 'onHand' | 'lowStock'>('sold');
 
   // Mobile Tab: 'hub' (Menu Chức năng) is DEFAULT on mobile when at '/', 'dashboard' when at '/dashboard'
   const searchParams = new URLSearchParams(location.search);
@@ -904,198 +920,707 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Financial Metrics */}
-      <div>
-        <h2 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-          Tài chính & Doanh thu
-        </h2>
+      {/* 2. Dòng tiền & Xuất nhập hàng Overview */}
+      <div className="space-y-2.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+          <div>
+            <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+              <span>Tổng quan Tiền nong & Xuất nhập hàng</span>
+            </h2>
+            <p className="text-[11px] text-gray-400">
+              Tổng hợp số tiền nhập hàng, tiền đi hàng, công nợ NCC và đối soát sàn
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/purchase-reports')}
+              className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <Receipt size={13} />
+              <span>Báo cáo nhập hàng</span>
+            </button>
+            <span className="text-gray-300 dark:text-gray-700">•</span>
+            <button
+              onClick={() => navigate('/suppliers')}
+              className="text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <Building2 size={13} />
+              <span>Công nợ NCC</span>
+            </button>
+            <span className="text-gray-300 dark:text-gray-700">•</span>
+            <button
+              onClick={() => navigate('/order-reports')}
+              className="text-[11px] font-medium text-[#5865f2] dark:text-[#7b85f5] hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <FileText size={13} />
+              <span>Đối soát đơn</span>
+            </button>
+          </div>
+        </div>
 
+        {/* 4 Cards: Tiền đi hàng, Tiền nhập hàng, Công nợ NCC, Tiền thực nhận */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* GMV */}
-          <Card className="p-3.5">
+          {/* Card 1: Số tiền đi hàng (Tổng giá trị đơn xuất) */}
+          <Card
+            onClick={() => navigate('/order-reports')}
+            className="p-3.5 hover:border-indigo-400/80 transition-all cursor-pointer relative overflow-hidden group shadow-xs"
+          >
             <div className="flex items-center justify-between text-gray-500 mb-1.5">
-              <span className="text-xs font-medium">Tổng giá trị đơn (GMV)</span>
-              <div className="w-8 h-8 rounded-full bg-[#5865f2]/10 flex items-center justify-center text-[#5865f2]">
-                <Wallet size={15} />
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  Số tiền đi hàng
+                </span>
+                <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
+                  Xuất bán
+                </span>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform">
+                <Truck size={16} />
               </div>
             </div>
             <div className="text-xl font-bold text-gray-900 dark:text-white">
-              {isLoading ? '...' : `${formatCurrency(data?.financials?.gmv)} đ`}
+              {isLoading ? '...' : `${formatCurrency(data?.outbound?.totalExportedAmount ?? data?.financials?.gmv ?? 0)} đ`}
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">
-              {selectedStatuses.length > 0
-                ? `Lọc theo: ${selectedStatuses.map((s) => SHOPEE_STATUS_OPTIONS.find((x) => x.id === s)?.label).filter(Boolean).join(', ')}`
-                : 'Bao gồm toàn bộ đơn phát sinh trong kỳ'}
-            </p>
+            <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 mt-2 pt-2 border-t border-gray-100 dark:border-gray-800/60">
+              <span>
+                {isLoading ? '...' : `${data?.outbound?.totalOrders ?? data?.orderStats?.total ?? 0} đơn xuất`}
+              </span>
+              <span className="font-medium text-indigo-600 dark:text-indigo-400">
+                {isLoading ? '...' : `${data?.outbound?.totalExportedQuantity ?? 0} sp đã đi`}
+              </span>
+            </div>
           </Card>
 
-          {/* Doanh thu hoàn thành */}
-          <Card className="p-3.5">
+          {/* Card 2: Số tiền nhập hàng (Thực nhận NCC) */}
+          <Card
+            onClick={() => navigate('/purchase-reports')}
+            className="p-3.5 hover:border-emerald-400/80 transition-all cursor-pointer relative overflow-hidden group shadow-xs"
+          >
             <div className="flex items-center justify-between text-gray-500 mb-1.5">
-              <span className="text-xs font-medium">Doanh thu hoàn thành</span>
-              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                <TrendingUp size={15} />
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  Số tiền nhập hàng
+                </span>
+                <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
+                  Thực nhận
+                </span>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
+                <Receipt size={16} />
               </div>
             </div>
             <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-              {isLoading
-                ? '...'
-                : `${formatCurrency(data?.financials?.completedRevenue)} đ`}
+              {isLoading ? '...' : `${formatCurrency(data?.purchases?.netPurchaseAmount ?? data?.purchases?.totalPurchaseAmount ?? 0)} đ`}
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">
-              Đơn trạng thái COMPLETED trên sàn
-            </p>
+            <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 mt-2 pt-2 border-t border-gray-100 dark:border-gray-800/60">
+              <span>
+                {isLoading ? '...' : `${data?.purchases?.totalReceipts ?? 0} phiếu nhập`}
+              </span>
+              <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                {isLoading ? '...' : `${data?.purchases?.totalImportedQuantity ?? 0} sp nhập kho`}
+              </span>
+            </div>
           </Card>
 
-          {/* Lợi nhuận gộp ước tính */}
-          <Card className="p-3.5">
+          {/* Card 3: Công nợ Nhà Cung Cấp (NCC) */}
+          <Card
+            onClick={() => navigate('/suppliers')}
+            className="p-3.5 hover:border-amber-400/80 transition-all cursor-pointer relative overflow-hidden group shadow-xs"
+          >
             <div className="flex items-center justify-between text-gray-500 mb-1.5">
-              <span className="text-xs font-medium">
-                Lợi nhuận gộp ước tính
-              </span>
-              <div className="w-8 h-8 rounded-full bg-[#5865f2]/10 flex items-center justify-center text-[#5865f2]">
-                <DollarSign size={15} />
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  Công nợ NCC
+                </span>
+                <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
+                  Còn phải trả
+                </span>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-105 transition-transform">
+                <Building2 size={16} />
               </div>
             </div>
-            <div className="text-xl font-bold text-[#5865f2]">
-              {isLoading
-                ? '...'
-                : `${formatCurrency(data?.financials?.estimatedGrossProfit)} đ`}
+            <div className="text-xl font-bold text-amber-600 dark:text-amber-400">
+              {isLoading ? '...' : `${formatCurrency(data?.supplierDebt?.totalRemainingDebt ?? 0)} đ`}
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">
-              Giá bán - Giá vốn COGS snapshot (
-              {formatCurrency(data?.financials?.completedCogs)} đ)
-            </p>
+            <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 mt-2 pt-2 border-t border-gray-100 dark:border-gray-800/60">
+              <span>
+                Đã trả: {isLoading ? '...' : `${formatCurrency(data?.supplierDebt?.totalPaidDebt ?? 0)} đ`}
+              </span>
+              <span className="font-medium text-amber-600 dark:text-amber-400">
+                {isLoading ? '...' : `${data?.supplierDebt?.unpaidReceiptsCount ?? 0} phiếu (${data?.supplierDebt?.suppliersWithDebtCount ?? 0} NCC)`}
+              </span>
+            </div>
           </Card>
 
-          {/* Tiền thực nhận đã đối soát */}
-          <Card className="p-3.5">
+          {/* Card 4: Tiền thực nhận đối soát */}
+          <Card
+            onClick={() => navigate('/order-reports')}
+            className="p-3.5 hover:border-cyan-400/80 transition-all cursor-pointer relative overflow-hidden group shadow-xs"
+          >
             <div className="flex items-center justify-between text-gray-500 mb-1.5">
-              <span className="text-xs font-medium">Tiền thực nhận đối soát</span>
-              <div className="w-8 h-8 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-500">
-                <CheckCircle size={15} />
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  Thực nhận đối soát
+                </span>
+                <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-cyan-50 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300 border border-cyan-200/60 dark:border-cyan-800/40">
+                  Ví Shopee
+                </span>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-600 dark:text-cyan-400 group-hover:scale-105 transition-transform">
+                <DollarSign size={16} />
               </div>
             </div>
             <div className="text-xl font-bold text-cyan-600 dark:text-cyan-400">
-              {isLoading
-                ? '...'
-                : `${formatCurrency(data?.financials?.actualSettled)} đ`}
+              {isLoading ? '...' : `${formatCurrency(data?.financials?.actualSettled ?? 0)} đ`}
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">
-              Phí sàn đã khấu trừ:{' '}
-              {formatCurrency(data?.financials?.totalPlatformFees)} đ
-            </p>
+            <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 mt-2 pt-2 border-t border-gray-100 dark:border-gray-800/60">
+              <span>
+                LN gộp: {isLoading ? '...' : `${formatCurrency(data?.financials?.estimatedGrossProfit ?? 0)} đ`}
+              </span>
+              <span className="text-gray-400">
+                Phí: {isLoading ? '...' : `-${formatCurrency(data?.financials?.totalPlatformFees ?? 0)} đ`}
+              </span>
+            </div>
           </Card>
+        </div>
+
+        {/* Dải tổng quan Xuất - Nhập - Tồn kho hệ thống */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-0.5">
+          {/* SL Xuất bán */}
+          <div
+            onClick={() => navigate('/order-reports')}
+            className="p-2.5 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800/80 shadow-xs cursor-pointer hover:border-indigo-400 transition-colors flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2 text-indigo-500">
+              <PackageCheck size={16} className="shrink-0" />
+              <div>
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block leading-tight">
+                  Xuất bán trong kỳ
+                </span>
+                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                  {isLoading ? '...' : `${data?.outbound?.totalExportedQuantity ?? 0} cái`}
+                </span>
+              </div>
+            </div>
+            <span className="text-[11px] text-gray-400">{data?.outbound?.totalOrders ?? 0} đơn</span>
+          </div>
+
+          {/* SL Thực nhập */}
+          <div
+            onClick={() => navigate('/purchase-reports')}
+            className="p-2.5 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800/80 shadow-xs cursor-pointer hover:border-emerald-400 transition-colors flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2 text-emerald-500">
+              <Package size={16} className="shrink-0" />
+              <div>
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block leading-tight">
+                  Nhập kho thực tế
+                </span>
+                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                  {isLoading ? '...' : `${data?.purchases?.totalImportedQuantity ?? 0} cái`}
+                </span>
+              </div>
+            </div>
+            <span className="text-[11px] text-gray-400">{data?.purchases?.totalReceipts ?? 0} phiếu</span>
+          </div>
+
+          {/* Tồn kho thực tế On-hand */}
+          <div
+            onClick={() => navigate('/inventory')}
+            className="p-2.5 rounded bg-white dark:bg-[#181b22] border border-gray-200 dark:border-gray-800/80 shadow-xs cursor-pointer hover:border-sky-400 transition-colors flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2 text-sky-500">
+              <Boxes size={16} className="shrink-0" />
+              <div>
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block leading-tight">
+                  Tồn kho thực tế (On-hand)
+                </span>
+                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                  {isLoading ? '...' : `${data?.inventoryAlerts?.totalOnHand ?? 0} cái`}
+                </span>
+              </div>
+            </div>
+            <span className="text-[11px] text-gray-400">Khả dụng: {data?.inventoryAlerts?.totalAvailable ?? 0}</span>
+          </div>
+
+          {/* Tồn dưới định mức */}
+          <div
+            onClick={() => navigate('/inventory')}
+            className="p-2.5 rounded bg-white dark:bg-[#181b22] border border-amber-200/80 dark:border-amber-900/40 shadow-xs cursor-pointer hover:border-amber-400 transition-colors flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2 text-amber-500">
+              <AlertTriangle size={16} className="shrink-0" />
+              <div>
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 block leading-tight">
+                  Tồn kho dưới định mức
+                </span>
+                <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                  {isLoading ? '...' : `${data?.inventoryAlerts?.lowStockVariantsCount ?? 0} SKU`}
+                </span>
+              </div>
+            </div>
+            <span className="text-[10px] text-amber-500 font-medium">Cảnh báo</span>
+          </div>
         </div>
       </div>
 
-      {/* 3. Top Products Table */}
-      <Card>
-        <CardHeader className="py-2.5 px-4 border-b border-gray-200 dark:border-gray-800 flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-xs font-medium text-gray-900 dark:text-white">
-              Sản phẩm bán chạy trong kỳ
-            </CardTitle>
-            <p className="text-[11px] text-gray-400 mt-0.5">
-              Số lượng đã bán được tổng hợp theo các trạng thái Shopee đang chọn
-            </p>
-          </div>
-          {selectedStatuses.length > 0 && (
-            <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-[#5865f2]/10 text-[#5865f2] border border-[#5865f2]/30">
-              Lọc theo: {selectedStatuses.length} trạng thái
-            </span>
-          )}
-        </CardHeader>
+      {/* 3. Analytics Charts: Line Chart & Pie Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+        {/* Line Chart: Xu hướng Doanh thu & Nhập hàng (col-span-12 lg:col-span-8) */}
+        <div className="lg:col-span-8">
+          <RevenueChart data={data?.timeline || []} isLoading={isLoading} />
+        </div>
 
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="py-8 text-center text-xs text-gray-400">
-              Đang tải dữ liệu...
-            </div>
-          ) : !data?.topSellingItems || data.topSellingItems.length === 0 ? (
-            <div className="py-8 text-center text-xs text-gray-400">
-              Chưa có dữ liệu bán hàng trong kỳ này
-            </div>
-          ) : (
-            <>
-              {/* Mobile Compact List View (sm:hidden) */}
-              <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/60">
-                {data.topSellingItems.map((item: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className="p-3 flex items-center justify-between gap-2.5 hover:bg-gray-50/60 dark:hover:bg-[#1c212d] transition-colors"
+        {/* Pie Chart: Tỷ lệ Trạng thái Đơn hàng (col-span-12 lg:col-span-4) */}
+        <div className="lg:col-span-4">
+          <StatusChart
+            metrics={{
+              completedCount: data?.orderStats?.completed || 0,
+              deliveringCount: data?.orderStats?.shipped || data?.orderStats?.delivering || 0,
+              readyToShipCount: data?.orderStats?.readyToShip || 0,
+              cancelledCount: data?.orderStats?.cancelled || 0,
+              returnedCount: data?.orderStats?.returned || 0,
+            }}
+            isLoading={isLoading}
+          />
+        </div>
+      </div>
+
+      {/* 4. Danh mục Sản phẩm Hệ thống & Hiệu suất Xuất - Nhập */}
+      {(() => {
+        const rawProducts: any[] = data?.systemProducts || [];
+        const hasSystemProducts = rawProducts.length > 0;
+
+        // Filter by keyword
+        const filtered = rawProducts.filter((p: any) => {
+          if (!productSearch.trim()) return true;
+          const q = productSearch.toLowerCase().trim();
+          return (
+            (p.productName && p.productName.toLowerCase().includes(q)) ||
+            (p.sku && p.sku.toLowerCase().includes(q)) ||
+            (p.variantName && p.variantName.toLowerCase().includes(q))
+          );
+        });
+
+        // Sort
+        const sorted = [...filtered].sort((a: any, b: any) => {
+          if (productSortBy === 'imported') {
+            return (b.importedQuantity || 0) - (a.importedQuantity || 0);
+          }
+          if (productSortBy === 'onHand') {
+            return (b.onHand || 0) - (a.onHand || 0);
+          }
+          if (productSortBy === 'lowStock') {
+            return (a.onHand || 0) - (b.onHand || 0);
+          }
+          // Default: sold
+          return (b.soldQuantity || 0) - (a.soldQuantity || 0);
+        });
+
+        return (
+          <Card>
+            <CardHeader className="py-3 px-4 border-b border-gray-200 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Package className="text-[#5865f2]" size={16} />
+                    <span>Danh mục Sản phẩm Hệ thống & Hiệu suất Xuất - Nhập</span>
+                  </CardTitle>
+                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-[#5865f2] dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40">
+                    {hasSystemProducts ? `${sorted.length} sản phẩm hệ thống` : `${data?.topSellingItems?.length || 0} sản phẩm sàn`}
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  Theo dõi số lượng xuất bán, tiền đi hàng, số lượng nhập kho, tiền nhập và tồn kho thực tế theo từng SKU sản phẩm của hệ thống
+                </p>
+              </div>
+
+              {/* Controls: Search, Sort & Action links */}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Search Input */}
+                <div className="relative min-w-[200px]">
+                  <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    placeholder="Tìm tên sp, SKU, phân loại..."
+                    className="w-full pl-8 pr-7 py-1 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1b23] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
+                  />
+                  {productSearch && (
+                    <button
+                      onClick={() => setProductSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Sort selector */}
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-[#1a1b23] p-0.5 rounded border border-gray-200 dark:border-gray-700 text-[11px]">
+                  <button
+                    onClick={() => setProductSortBy('sold')}
+                    className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                      productSortBy === 'sold'
+                        ? 'bg-white dark:bg-[#202533] text-[#5865f2] dark:text-indigo-300 shadow-2xs'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                    }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <span
-                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                          idx === 0
-                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'
-                            : idx === 1
-                            ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                            : idx === 2
-                            ? 'bg-amber-800/15 text-amber-900 dark:bg-amber-950/60 dark:text-amber-400'
-                            : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-                        }`}
-                      >
-                        {idx + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
-                          {item.productName}
-                        </p>
-                        <p className="text-[11px] font-mono text-gray-400 truncate mt-0.5">
-                          {item.sku || 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-sm font-bold text-[#5865f2] dark:text-[#7b85f5]">
-                        {item.totalQuantitySold}
-                      </span>
-                      <span className="text-[10px] text-gray-400 block leading-tight">đã bán</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    Bán chạy
+                  </button>
+                  <button
+                    onClick={() => setProductSortBy('imported')}
+                    className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                      productSortBy === 'imported'
+                        ? 'bg-white dark:bg-[#202533] text-emerald-600 dark:text-emerald-400 shadow-2xs'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                    }`}
+                  >
+                    Nhập nhiều
+                  </button>
+                  <button
+                    onClick={() => setProductSortBy('onHand')}
+                    className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                      productSortBy === 'onHand'
+                        ? 'bg-white dark:bg-[#202533] text-sky-600 dark:text-sky-400 shadow-2xs'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                    }`}
+                  >
+                    Tồn nhiều
+                  </button>
+                  <button
+                    onClick={() => setProductSortBy('lowStock')}
+                    className={`px-2 py-0.5 rounded font-medium transition-colors ${
+                      productSortBy === 'lowStock'
+                        ? 'bg-white dark:bg-[#202533] text-amber-600 dark:text-amber-400 shadow-2xs'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                    }`}
+                  >
+                    Tồn thấp
+                  </button>
+                </div>
 
-              {/* Tablet & Desktop Table (hidden sm:block) */}
-              <div className="hidden sm:block overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-gray-50 dark:bg-[#1a1b23] border-b border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400">
-                    <tr>
-                      <th className="py-2.5 px-4 font-medium">Tên sản phẩm</th>
-                      <th className="py-2.5 px-4 font-medium border-l border-gray-200 dark:border-gray-800">
-                        SKU sàn
-                      </th>
-                      <th className="py-2.5 px-4 text-right font-medium border-l border-gray-200 dark:border-gray-800">
-                        Số lượng đã bán
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
-                    {data.topSellingItems.map((item: any, idx: number) => (
-                      <tr
-                        key={idx}
-                        className="hover:bg-gray-50/60 dark:hover:bg-[#1c212d] transition-colors"
-                      >
-                        <td className="py-2.5 px-4 font-medium text-gray-900 dark:text-white">
-                          {item.productName}
-                        </td>
-                        <td className="py-2.5 px-4 text-gray-500 dark:text-gray-400 font-mono text-[11px] border-l border-gray-200 dark:border-gray-800">
-                          {item.sku || 'N/A'}
-                        </td>
-                        <td className="py-2.5 px-4 text-right font-bold text-[#5865f2] border-l border-gray-200 dark:border-gray-800">
-                          {item.totalQuantitySold}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {/* Link to full Order Reports */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate('/order-reports')}
+                  className="h-7 text-xs px-2 gap-1"
+                >
+                  <span>Báo cáo đối soát</span>
+                  <ExternalLink size={12} />
+                </Button>
               </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              {isLoading ? (
+                <div className="py-12 text-center text-xs text-gray-400 flex flex-col items-center justify-center gap-2">
+                  <RefreshCw className="animate-spin text-[#5865f2]" size={18} />
+                  <span>Đang tải dữ liệu sản phẩm hệ thống...</span>
+                </div>
+              ) : !hasSystemProducts && (!data?.topSellingItems || data.topSellingItems.length === 0) ? (
+                <div className="py-12 text-center text-xs text-gray-400 flex flex-col items-center justify-center gap-2">
+                  <Package className="text-gray-300 dark:text-gray-600" size={28} />
+                  <span>Chưa có dữ liệu sản phẩm hoặc đơn hàng trong kỳ này</span>
+                </div>
+              ) : hasSystemProducts ? (
+                <>
+                  {/* Mobile Card List View (sm:hidden) */}
+                  <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/60 max-h-[600px] overflow-y-auto">
+                    {sorted.map((item: any, idx: number) => {
+                      const isOutOfStock = (item.onHand || 0) <= 0;
+                      const isLowStock = !isOutOfStock && (item.onHand || 0) <= 10;
+
+                      return (
+                        <div
+                          key={item.variantId || idx}
+                          className="p-3.5 space-y-2 hover:bg-gray-50/60 dark:hover:bg-[#1c212d] transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-2 min-w-0 flex-1">
+                              <span
+                                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 ${
+                                  idx === 0
+                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'
+                                    : idx === 1
+                                    ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                    : idx === 2
+                                    ? 'bg-amber-800/15 text-amber-900 dark:bg-amber-950/60 dark:text-amber-400'
+                                    : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                                }`}
+                              >
+                                {idx + 1}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-gray-900 dark:text-white leading-tight">
+                                  {item.productName}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                  {item.variantName && (
+                                    <span className="text-[11px] text-gray-600 dark:text-gray-300 font-medium">
+                                      {item.variantName}
+                                    </span>
+                                  )}
+                                  <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0">
+                                    {item.sku || 'N/A'}
+                                  </Badge>
+                                  {item.unit && (
+                                    <span className="text-[10px] text-gray-400">
+                                      ĐVT: {item.unit}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Stock Badge */}
+                            <div>
+                              {isOutOfStock ? (
+                                <Badge variant="destructive" className="text-[10px] px-1.5">
+                                  Hết hàng
+                                </Badge>
+                              ) : isLowStock ? (
+                                <Badge variant="warning" className="text-[10px] px-1.5">
+                                  Tồn thấp ({item.onHand})
+                                </Badge>
+                              ) : (
+                                <Badge variant="success" className="text-[10px] px-1.5">
+                                  Còn hàng ({item.onHand})
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 3 Metric Pills: Xuất bán, Nhập kho, Tồn kho */}
+                          <div className="grid grid-cols-3 gap-1.5 bg-gray-50/80 dark:bg-[#15171e] p-2 rounded border border-gray-100 dark:border-gray-800/60 text-center">
+                            <div>
+                              <span className="text-[10px] text-gray-400 block">Xuất bán</span>
+                              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                                {item.soldQuantity} {item.unit || 'cái'}
+                              </span>
+                              <span className="text-[10px] text-gray-500 dark:text-gray-400 block leading-tight">
+                                {formatCurrency(item.exportedAmount)} đ
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-gray-400 block">Nhập kho</span>
+                              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                {item.importedQuantity} {item.unit || 'cái'}
+                              </span>
+                              <span className="text-[10px] text-gray-500 dark:text-gray-400 block leading-tight">
+                                {formatCurrency(item.importedAmount)} đ
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-gray-400 block">Tồn thực tế</span>
+                              <span className="text-xs font-bold text-gray-900 dark:text-white">
+                                {item.onHand} {item.unit || 'cái'}
+                              </span>
+                              <span className="text-[10px] text-sky-500 block leading-tight">
+                                Khả dụng: {item.available}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Tablet & Desktop Table (hidden sm:block) */}
+                  <div className="hidden sm:block overflow-x-auto max-h-[650px] overflow-y-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-gray-50/90 dark:bg-[#1a1b23] sticky top-0 z-10 border-b border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 select-none">
+                        <tr>
+                          <th className="py-2.5 px-3 text-center w-10 font-medium">#</th>
+                          <th className="py-2.5 px-4 font-medium">Sản phẩm & Biến thể hệ thống</th>
+                          <th className="py-2.5 px-4 text-right font-medium border-l border-gray-200 dark:border-gray-800">
+                            Xuất đi (Bán hàng)
+                          </th>
+                          <th className="py-2.5 px-4 text-right font-medium border-l border-gray-200 dark:border-gray-800">
+                            Nhập kho
+                          </th>
+                          <th className="py-2.5 px-4 text-right font-medium border-l border-gray-200 dark:border-gray-800">
+                            Tồn kho thực tế (On-hand)
+                          </th>
+                          <th className="py-2.5 px-3 text-center font-medium border-l border-gray-200 dark:border-gray-800">
+                            Trạng thái
+                          </th>
+                          <th className="py-2.5 px-3 text-center font-medium border-l border-gray-200 dark:border-gray-800">
+                            Thao tác
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
+                        {sorted.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="py-8 text-center text-gray-400">
+                              Không tìm thấy sản phẩm phù hợp với từ khóa "{productSearch}"
+                            </td>
+                          </tr>
+                        ) : (
+                          sorted.map((item: any, idx: number) => {
+                            const isOutOfStock = (item.onHand || 0) <= 0;
+                            const isLowStock = !isOutOfStock && (item.onHand || 0) <= 10;
+
+                            return (
+                              <tr
+                                key={item.variantId || idx}
+                                className="hover:bg-gray-50/60 dark:hover:bg-[#1c212d] transition-colors"
+                              >
+                                {/* STT */}
+                                <td className="py-3 px-3 text-center font-medium text-gray-400">
+                                  <span
+                                    className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
+                                      idx === 0
+                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'
+                                        : idx === 1
+                                        ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                        : idx === 2
+                                        ? 'bg-amber-800/15 text-amber-900 dark:bg-amber-950/60 dark:text-amber-400'
+                                        : 'text-gray-400'
+                                    }`}
+                                  >
+                                    {idx + 1}
+                                  </span>
+                                </td>
+
+                                {/* Tên sản phẩm & SKU nội bộ */}
+                                <td className="py-3 px-4">
+                                  <div className="font-semibold text-gray-900 dark:text-white">
+                                    {item.productName}
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                    {item.variantName && (
+                                      <span className="text-[11px] text-gray-600 dark:text-gray-300 font-medium">
+                                        Phân loại: {item.variantName}
+                                      </span>
+                                    )}
+                                    <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0 bg-gray-50 dark:bg-gray-800/80">
+                                      SKU: {item.sku || 'N/A'}
+                                    </Badge>
+                                    {item.unit && (
+                                      <span className="text-[10px] text-gray-400">
+                                        ĐVT: {item.unit}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+
+                                {/* Xuất đi (Bán hàng) */}
+                                <td className="py-3 px-4 text-right border-l border-gray-200 dark:border-gray-800">
+                                  <div className="font-bold text-indigo-600 dark:text-indigo-400">
+                                    {item.soldQuantity} {item.unit || 'cái'}
+                                  </div>
+                                  <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                    {formatCurrency(item.exportedAmount)} đ
+                                  </div>
+                                </td>
+
+                                {/* Nhập kho */}
+                                <td className="py-3 px-4 text-right border-l border-gray-200 dark:border-gray-800">
+                                  <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                                    {item.importedQuantity} {item.unit || 'cái'}
+                                  </div>
+                                  <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                    {formatCurrency(item.importedAmount)} đ
+                                  </div>
+                                </td>
+
+                                {/* Tồn kho thực tế (On-hand) */}
+                                <td className="py-3 px-4 text-right border-l border-gray-200 dark:border-gray-800">
+                                  <div className="font-bold text-gray-900 dark:text-white">
+                                    {item.onHand} {item.unit || 'cái'}
+                                  </div>
+                                  <div className="text-[11px] text-gray-400 mt-0.5 flex items-center justify-end gap-1.5">
+                                    <span className="text-sky-500 font-medium">
+                                      Khả dụng: {item.available}
+                                    </span>
+                                    {item.reserved > 0 && (
+                                      <span className="text-gray-400">
+                                        (Tạm giữ: {item.reserved})
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+
+                                {/* Trạng thái tồn kho */}
+                                <td className="py-3 px-3 text-center border-l border-gray-200 dark:border-gray-800">
+                                  {isOutOfStock ? (
+                                    <Badge variant="destructive" className="text-[10px]">
+                                      Hết hàng
+                                    </Badge>
+                                  ) : isLowStock ? (
+                                    <Badge variant="warning" className="text-[10px]">
+                                      Tồn thấp
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="success" className="text-[10px]">
+                                      Còn hàng
+                                    </Badge>
+                                  )}
+                                </td>
+
+                                {/* Thao tác */}
+                                <td className="py-3 px-3 text-center border-l border-gray-200 dark:border-gray-800">
+                                  <button
+                                    onClick={() => navigate('/inventory')}
+                                    className="p-1 rounded text-gray-400 hover:text-[#5865f2] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                                    title="Xem chi tiết kho"
+                                  >
+                                    <Boxes size={14} />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : (
+                /* Fallback for old topSellingItems if systemProducts not populated */
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-gray-50 dark:bg-[#1a1b23] border-b border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400">
+                      <tr>
+                        <th className="py-2.5 px-4 font-medium">Tên sản phẩm</th>
+                        <th className="py-2.5 px-4 font-medium border-l border-gray-200 dark:border-gray-800">
+                          SKU sàn
+                        </th>
+                        <th className="py-2.5 px-4 text-right font-medium border-l border-gray-200 dark:border-gray-800">
+                          Số lượng đã bán
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
+                      {data.topSellingItems.map((item: any, idx: number) => (
+                        <tr
+                          key={idx}
+                          className="hover:bg-gray-50/60 dark:hover:bg-[#1c212d] transition-colors"
+                        >
+                          <td className="py-2.5 px-4 font-medium text-gray-900 dark:text-white">
+                            {item.productName}
+                          </td>
+                          <td className="py-2.5 px-4 text-gray-500 dark:text-gray-400 font-mono text-[11px] border-l border-gray-200 dark:border-gray-800">
+                            {item.sku || 'N/A'}
+                          </td>
+                          <td className="py-2.5 px-4 text-right font-bold text-[#5865f2] border-l border-gray-200 dark:border-gray-800">
+                            {item.totalQuantitySold}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
       </div>
     </div>
   );

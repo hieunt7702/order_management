@@ -6,8 +6,10 @@ import {
   Param,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { Request } from 'express';
 import { OrderReturnsService } from './order-returns.service';
 import {
   CreateOrderReturnDto,
@@ -43,11 +45,17 @@ export class OrderReturnsController {
     summary: 'Danh sách chờ nhận hàng hoàn (Đơn hàng Shopee báo hoàn cần kho quét nhận và kiểm tra)',
   })
   @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'shopId', required: false, type: String })
+  @ApiQuery({ name: 'warehouseId', required: false, type: String })
   async getReturnQueue(
     @CurrentTenantId() tenantId: string,
+    @Req() req: Request,
     @Query('search') search?: string,
+    @Query('shopId') shopId?: string,
+    @Query('warehouseId') warehouseId?: string,
   ) {
-    return this.orderReturnsService.getReturnQueue(tenantId, search);
+    const allowedShopIds = (req as any).allowedShopIds;
+    return this.orderReturnsService.getReturnQueue(tenantId, search, shopId, warehouseId, allowedShopIds);
   }
 
   @Post('inspect')
@@ -75,9 +83,11 @@ export class OrderReturnsController {
   @ApiOperation({ summary: 'Lịch sử các phiếu kiểm tra nhận hàng hoàn' })
   async findAll(
     @CurrentTenantId() tenantId: string,
+    @Req() req: Request,
     @Query() filter: OrderReturnFilterDto,
   ) {
-    return this.orderReturnsService.findAll(tenantId, filter);
+    const allowedShopIds = (req as any).allowedShopIds;
+    return this.orderReturnsService.findAll(tenantId, filter, allowedShopIds);
   }
 
   @Get(':id')

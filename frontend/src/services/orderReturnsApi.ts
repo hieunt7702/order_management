@@ -124,9 +124,12 @@ export interface OrderReturnsResponse {
 }
 
 export const orderReturnsApi = {
-  getReturnQueue: (search?: string) => {
-    const qs = search ? `?search=${encodeURIComponent(search)}` : '';
-    return api.get<ReturnQueueItem[]>(`/order-returns/queue${qs}`);
+  getReturnQueue: (params?: { search?: string; shopId?: string; warehouseId?: string } | string) => {
+    if (typeof params === 'string') {
+      const qs = params ? `?search=${encodeURIComponent(params)}` : '';
+      return api.get<ReturnQueueItem[]>(`/order-returns/queue${qs}`);
+    }
+    return api.get<ReturnQueueItem[]>(`/order-returns/queue${buildQuery(params)}`);
   },
 
   inspectAndReceive: (data: CreateOrderReturnPayload) => {

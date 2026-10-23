@@ -51,7 +51,7 @@ export class OrdersService {
 
     const where: any = {
       tenantId,
-      ...(filter.shopId ? { shopId: filter.shopId } : {}),
+      ...(filter.shopId && filter.shopId !== 'ALL' ? { shopId: filter.shopId } : {}),
       ...(filter.fulfillmentStatus ? { fulfillmentStatus: filter.fulfillmentStatus } : {}),
       ...(filter.verificationStatus ? { verificationStatus: filter.verificationStatus } : {}),
       ...(filter.financialStatus ? { financialStatus: filter.financialStatus } : {}),
@@ -108,7 +108,9 @@ export class OrdersService {
       if (filter.shopId && !allowedShopIds.includes(filter.shopId)) {
         return { items: [], total: 0, page, limit };
       }
-      where.shopId = { in: allowedShopIds };
+      if (!filter.shopId || filter.shopId === 'ALL') {
+        where.shopId = { in: allowedShopIds };
+      }
     }
 
     if (filter.isVirtual !== undefined && filter.isVirtual !== '' && filter.isVirtual !== 'ALL') {
@@ -184,9 +186,14 @@ export class OrdersService {
     const where: Prisma.OrderWhereInput = { tenantId };
 
     if (allowedShopIds && allowedShopIds.length > 0) {
-      where.shopId = { in: allowedShopIds };
-    }
-    if (filter.shopId && filter.shopId !== 'ALL') {
+      if (filter.shopId && filter.shopId !== 'ALL') {
+        where.shopId = allowedShopIds.includes(filter.shopId)
+          ? filter.shopId
+          : '__FORBIDDEN__';
+      } else {
+        where.shopId = { in: allowedShopIds };
+      }
+    } else if (filter.shopId && filter.shopId !== 'ALL') {
       where.shopId = filter.shopId;
     }
     if (filter.fromDate || filter.toDate) {
@@ -1608,10 +1615,16 @@ export class OrdersService {
       },
     };
 
-    if (query.shopId && query.shopId !== 'ALL') {
+    if (allowedShopIds && allowedShopIds.length > 0) {
+      if (query.shopId && query.shopId !== 'ALL') {
+        orderWhere.shopId = allowedShopIds.includes(query.shopId)
+          ? query.shopId
+          : '__FORBIDDEN__';
+      } else {
+        orderWhere.shopId = { in: allowedShopIds };
+      }
+    } else if (query.shopId && query.shopId !== 'ALL') {
       orderWhere.shopId = query.shopId;
-    } else if (allowedShopIds && allowedShopIds.length > 0) {
-      orderWhere.shopId = { in: allowedShopIds };
     }
 
     const orders = await this.prisma.order.findMany({

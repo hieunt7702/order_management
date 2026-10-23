@@ -48,7 +48,7 @@ import { SystemMetricPairCard } from '../../components/ui/SystemMetricCard';
 import { toast } from '../../components/ui/Toast';
 
 export const OrderReturnsPage: React.FC = () => {
-  const { warehouses, selectedWarehouseId } = useWorkspaceStore();
+  const { warehouses, selectedWarehouseId, selectedShopId } = useWorkspaceStore();
 
   const [activeTab, setActiveTab] = useState<'QUEUE' | 'HISTORY'>('QUEUE');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -73,7 +73,7 @@ export const OrderReturnsPage: React.FC = () => {
   // Inspection Form State
   const [inspectForm, setInspectForm] = useState<CreateOrderReturnPayload>({
     orderId: '',
-    warehouseId: selectedWarehouseId || (warehouses[0]?.id || ''),
+    warehouseId: selectedWarehouseId && selectedWarehouseId !== 'ALL' ? selectedWarehouseId : (warehouses[0]?.id || ''),
     trackingCode: '',
     receivedDate: new Date().toISOString().split('T')[0],
     inspectorName: 'Nhân viên kho',
@@ -91,12 +91,16 @@ export const OrderReturnsPage: React.FC = () => {
     } else {
       loadHistory();
     }
-  }, [activeTab]);
+  }, [activeTab, selectedShopId, selectedWarehouseId]);
 
   const loadReturnQueue = async (query = searchTerm) => {
     try {
       setIsLoading(true);
-      const res = await orderReturnsApi.getReturnQueue(query.trim() || undefined);
+      const res = await orderReturnsApi.getReturnQueue({
+        search: query.trim() || undefined,
+        shopId: selectedShopId && selectedShopId !== 'ALL' ? selectedShopId : undefined,
+        warehouseId: selectedWarehouseId && selectedWarehouseId !== 'ALL' ? selectedWarehouseId : undefined,
+      });
       const data = (res as any)?.data || res;
       setReturnQueue(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -113,6 +117,8 @@ export const OrderReturnsPage: React.FC = () => {
         page: historyPage,
         limit: historyLimit,
         search: searchTerm.trim() || undefined,
+        shopId: selectedShopId && selectedShopId !== 'ALL' ? selectedShopId : undefined,
+        warehouseId: selectedWarehouseId && selectedWarehouseId !== 'ALL' ? selectedWarehouseId : undefined,
       });
       const data = (res as any)?.data || res;
       if (data && data.data) {
