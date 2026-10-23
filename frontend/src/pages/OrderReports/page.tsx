@@ -97,7 +97,9 @@ export const OrderReportsPage: React.FC = () => {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [detailData, setDetailData] = useState<OrderReconciliationTransactionsData | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState<boolean>(false);
-  const [detailActiveTab, setDetailActiveTab] = useState<'ORDERS' | 'RECEIPTS' | 'WAREHOUSES'>('ORDERS');
+  const [detailActiveTab, setDetailActiveTab] = useState<
+    'ORDERS' | 'RECEIPTS' | 'PURCHASE_RETURNS' | 'ORDER_RETURNS' | 'WAREHOUSES'
+  >('ORDERS');
 
   // Load report data
   const loadReportData = useCallback(async () => {
@@ -238,10 +240,15 @@ export const OrderReportsPage: React.FC = () => {
         'Đơn vị tính': item.unit,
         'Giá vốn (VNĐ)': item.costPrice,
         'Giá bán (VNĐ)': item.sellingPrice,
-        'Số lượng đã nhập kho': item.importedQuantity,
+        'Tổng nhập gốc': item.grossImportedQuantity || item.importedQuantity,
+        'Đã trả hàng NCC': item.supplierReturnedQuantity || 0,
+        'Thực nhập kho (Net)': item.importedQuantity,
         'Tổng tiền nhập (VNĐ)': item.importedAmount,
         'Số phiếu nhập': item.receiptsCount,
-        'Số lượng đơn hàng đi': item.exportedQuantity,
+        'Số phiếu trả NCC': item.purchaseReturnsCount || 0,
+        'Tổng xuất đơn hàng gốc': item.grossExportedQuantity || item.exportedQuantity,
+        'Khách hoàn về kho': item.customerReturnedQuantity || 0,
+        'Thực xuất bán (Net)': item.exportedQuantity,
         'Số đơn hàng': item.ordersCount,
         'Tồn kho thực tế (On-hand)': item.onHand,
         'Đang giữ cho đơn (Reserved)': item.reserved,
@@ -313,16 +320,22 @@ export const OrderReportsPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 shrink-0">
         <SystemMetricPairCard
           leftItem={{
-            title: 'Sản phẩm đã nhập kho',
+            title: 'Sản phẩm thực nhập kho',
             value: `${summary.totalImportedQuantity.toLocaleString('vi-VN')}`,
-            subtitle: `Từ các phiếu nhập kho NCC`,
+            subtitle:
+              summary.totalSupplierReturned && summary.totalSupplierReturned > 0
+                ? `Đã trừ ${summary.totalSupplierReturned.toLocaleString('vi-VN')} hàng trả NCC`
+                : `Từ các phiếu nhập kho NCC`,
             icon: PackageCheck,
             colorScheme: 'green',
           }}
           rightItem={{
-            title: 'Đơn hàng đi (Đã bán)',
+            title: 'Sản phẩm xuất bán',
             value: `${summary.totalExportedQuantity.toLocaleString('vi-VN')}`,
-            subtitle: `Xuất qua các đơn Shopee`,
+            subtitle:
+              summary.totalCustomerReturned && summary.totalCustomerReturned > 0
+                ? `Đã trừ ${summary.totalCustomerReturned.toLocaleString('vi-VN')} khách hoàn`
+                : `Xuất qua các đơn hàng`,
             icon: ShoppingBag,
             colorScheme: 'indigo',
           }}
@@ -591,24 +604,58 @@ export const OrderReportsPage: React.FC = () => {
                       {/* Nhập kho */}
                       <SystemTd className="text-right">
                         <div className="flex flex-col items-end">
-                          <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                            +{item.importedQuantity.toLocaleString('vi-VN')}
+                          <span
+                            className={`font-mono text-xs font-bold ${
+                              item.importedQuantity > 0
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-gray-500 dark:text-gray-400'
+                            }`}
+                          >
+                            {item.importedQuantity > 0
+                              ? `+${item.importedQuantity.toLocaleString('vi-VN')}`
+                              : item.importedQuantity.toLocaleString('vi-VN')}
                           </span>
-                          <span className="text-[10px] text-gray-400">
-                            {item.receiptsCount} phiếu nhập
-                          </span>
+                          {item.supplierReturnedQuantity && item.supplierReturnedQuantity > 0 ? (
+                            <span
+                              className="text-[10px] text-amber-600 dark:text-amber-400 font-medium"
+                              title={`Gốc: ${item.grossImportedQuantity} • Đã trả NCC: ${item.supplierReturnedQuantity}`}
+                            >
+                              Gốc +{item.grossImportedQuantity} • Trả -{item.supplierReturnedQuantity}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-gray-400">
+                              {item.receiptsCount} phiếu nhập
+                            </span>
+                          )}
                         </div>
                       </SystemTd>
 
                       {/* Đơn hàng đi (Xuất bán) */}
                       <SystemTd className="text-right">
                         <div className="flex flex-col items-end">
-                          <span className="font-mono text-xs font-bold text-[#5865f2] dark:text-indigo-400">
-                            -{item.exportedQuantity.toLocaleString('vi-VN')}
+                          <span
+                            className={`font-mono text-xs font-bold ${
+                              item.exportedQuantity > 0
+                                ? 'text-[#5865f2] dark:text-indigo-400'
+                                : 'text-gray-500 dark:text-gray-400'
+                            }`}
+                          >
+                            {item.exportedQuantity > 0
+                              ? `-${item.exportedQuantity.toLocaleString('vi-VN')}`
+                              : item.exportedQuantity.toLocaleString('vi-VN')}
                           </span>
-                          <span className="text-[10px] text-gray-400">
-                            {item.ordersCount} đơn hàng
-                          </span>
+                          {item.customerReturnedQuantity && item.customerReturnedQuantity > 0 ? (
+                            <span
+                              className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium"
+                              title={`Đơn: ${item.grossExportedQuantity} • Khách hoàn: ${item.customerReturnedQuantity}`}
+                            >
+                              Đơn {item.grossExportedQuantity} • Hoàn -{item.customerReturnedQuantity}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-gray-400">
+                              {item.ordersCount} đơn hàng
+                            </span>
+                          )}
                         </div>
                       </SystemTd>
 
@@ -756,22 +803,53 @@ export const OrderReportsPage: React.FC = () => {
                 {/* 3 Metrics: Nhập - Bán - Tồn */}
                 <div className="grid grid-cols-3 gap-2 py-2 border-y border-gray-100 dark:border-gray-800 text-center">
                   <div>
-                    <span className="text-[10px] text-gray-500 block">Đã nhập</span>
-                    <span className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                      +{item.importedQuantity}
+                    <span className="text-[10px] text-gray-500 block">Thực nhập</span>
+                    <span
+                      className={`text-xs font-bold font-mono ${
+                        item.importedQuantity > 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-gray-500 dark:text-gray-400'
+                      }`}
+                    >
+                      {item.importedQuantity > 0 ? `+${item.importedQuantity}` : item.importedQuantity}
                     </span>
+                    {item.supplierReturnedQuantity && item.supplierReturnedQuantity > 0 ? (
+                      <span className="text-[9px] text-amber-600 dark:text-amber-400 block font-medium truncate">
+                        Trả NCC -{item.supplierReturnedQuantity}
+                      </span>
+                    ) : (
+                      <span className="text-[9px] text-gray-400 block">{item.receiptsCount} phiếu</span>
+                    )}
                   </div>
                   <div>
-                    <span className="text-[10px] text-gray-500 block">Đơn bán</span>
-                    <span className="text-xs font-bold font-mono text-[#5865f2] dark:text-indigo-400">
-                      -{item.exportedQuantity}
+                    <span className="text-[10px] text-gray-500 block">Thực bán</span>
+                    <span
+                      className={`text-xs font-bold font-mono ${
+                        item.exportedQuantity > 0
+                          ? 'text-[#5865f2] dark:text-indigo-400'
+                          : 'text-gray-500 dark:text-gray-400'
+                      }`}
+                    >
+                      {item.exportedQuantity > 0 ? `-${item.exportedQuantity}` : item.exportedQuantity}
                     </span>
+                    {item.customerReturnedQuantity && item.customerReturnedQuantity > 0 ? (
+                      <span className="text-[9px] text-emerald-600 dark:text-emerald-400 block font-medium truncate">
+                        Hoàn -{item.customerReturnedQuantity}
+                      </span>
+                    ) : (
+                      <span className="text-[9px] text-gray-400 block">{item.ordersCount} đơn</span>
+                    )}
                   </div>
                   <div>
                     <span className="text-[10px] text-gray-500 block">Tồn kho</span>
                     <span className="text-xs font-bold font-mono text-gray-900 dark:text-white">
                       {item.onHand}
                     </span>
+                    {item.reserved > 0 && (
+                      <span className="text-[9px] text-amber-500 block font-mono">
+                        (giữ {item.reserved})
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -859,16 +937,38 @@ export const OrderReportsPage: React.FC = () => {
                   {/* Summary row */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-gray-200 dark:border-gray-700/60 text-center">
                     <div className="p-2 rounded bg-white dark:bg-[#131720]">
-                      <span className="text-[10px] text-gray-400 block">Đã nhập kho</span>
+                      <span className="text-[10px] text-gray-400 block">Thực nhập kho</span>
                       <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                        {detailData.receipts.reduce((s, r) => s + r.receivedQuantity, 0)} {detailData.variant.unit}
+                        {Math.max(
+                          0,
+                          detailData.receipts.reduce((s, r) => s + r.receivedQuantity, 0) -
+                            (detailData.purchaseReturns?.reduce((s, pr) => s + pr.quantity, 0) || 0)
+                        )}{' '}
+                        {detailData.variant.unit}
                       </span>
+                      {detailData.purchaseReturns && detailData.purchaseReturns.length > 0 ? (
+                        <span className="text-[9px] text-amber-600 dark:text-amber-400 block font-medium">
+                          (Nhập: {detailData.receipts.reduce((s, r) => s + r.receivedQuantity, 0)} • Trả NCC:{' '}
+                          {detailData.purchaseReturns.reduce((s, pr) => s + pr.quantity, 0)})
+                        </span>
+                      ) : null}
                     </div>
                     <div className="p-2 rounded bg-white dark:bg-[#131720]">
-                      <span className="text-[10px] text-gray-400 block">Đã xuất bán (Đơn)</span>
+                      <span className="text-[10px] text-gray-400 block">Thực xuất bán (Đơn)</span>
                       <span className="font-mono text-xs font-bold text-[#5865f2] dark:text-indigo-400">
-                        {detailData.orders.reduce((s, o) => s + o.quantity, 0)} {detailData.variant.unit}
+                        {Math.max(
+                          0,
+                          detailData.orders.reduce((s, o) => s + o.quantity, 0) -
+                            (detailData.orderReturns?.reduce((s, or) => s + or.sellableQuantity, 0) || 0)
+                        )}{' '}
+                        {detailData.variant.unit}
                       </span>
+                      {detailData.orderReturns && detailData.orderReturns.length > 0 ? (
+                        <span className="text-[9px] text-emerald-600 dark:text-emerald-400 block font-medium">
+                          (Đơn: {detailData.orders.reduce((s, o) => s + o.quantity, 0)} • Hoàn:{' '}
+                          {detailData.orderReturns.reduce((s, or) => s + or.sellableQuantity, 0)})
+                        </span>
+                      ) : null}
                     </div>
                     <div className="p-2 rounded bg-white dark:bg-[#131720]">
                       <span className="text-[10px] text-gray-400 block">Tồn kho thực tế</span>
@@ -886,11 +986,11 @@ export const OrderReportsPage: React.FC = () => {
                 </div>
 
                 {/* Tabs selection */}
-                <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-800">
+                <div className="flex items-center gap-1.5 sm:gap-2 border-b border-gray-200 dark:border-gray-800 overflow-x-auto scrollbar-none pb-0.5">
                   <button
                     type="button"
                     onClick={() => setDetailActiveTab('ORDERS')}
-                    className={`pb-2 px-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+                    className={`pb-2 px-2.5 sm:px-3 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
                       detailActiveTab === 'ORDERS'
                         ? 'border-[#5865f2] text-[#5865f2] dark:text-indigo-400'
                         : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
@@ -902,7 +1002,7 @@ export const OrderReportsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setDetailActiveTab('RECEIPTS')}
-                    className={`pb-2 px-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+                    className={`pb-2 px-2.5 sm:px-3 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
                       detailActiveTab === 'RECEIPTS'
                         ? 'border-[#5865f2] text-[#5865f2] dark:text-indigo-400'
                         : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
@@ -913,8 +1013,50 @@ export const OrderReportsPage: React.FC = () => {
 
                   <button
                     type="button"
+                    onClick={() => setDetailActiveTab('PURCHASE_RETURNS')}
+                    className={`pb-2 px-2.5 sm:px-3 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      detailActiveTab === 'PURCHASE_RETURNS'
+                        ? 'border-amber-500 text-amber-600 dark:text-amber-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <span>Trả hàng NCC</span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                        (detailData.purchaseReturns?.length || 0) > 0
+                          ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                      }`}
+                    >
+                      {detailData.purchaseReturns?.length || 0}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setDetailActiveTab('ORDER_RETURNS')}
+                    className={`pb-2 px-2.5 sm:px-3 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      detailActiveTab === 'ORDER_RETURNS'
+                        ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <span>Khách hoàn</span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                        (detailData.orderReturns?.length || 0) > 0
+                          ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                      }`}
+                    >
+                      {detailData.orderReturns?.length || 0}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => setDetailActiveTab('WAREHOUSES')}
-                    className={`pb-2 px-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+                    className={`pb-2 px-2.5 sm:px-3 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
                       detailActiveTab === 'WAREHOUSES'
                         ? 'border-[#5865f2] text-[#5865f2] dark:text-indigo-400'
                         : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white'
@@ -1052,7 +1194,123 @@ export const OrderReportsPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Tab 3: Warehouse balances */}
+                {/* Tab 3: Purchase Returns to Supplier */}
+                {detailActiveTab === 'PURCHASE_RETURNS' && (
+                  <div className="space-y-2">
+                    {(!detailData.purchaseReturns || detailData.purchaseReturns.length === 0) ? (
+                      <div className="py-8 text-center text-xs text-gray-500">
+                        Chưa có phiếu xuất trả hàng nhà cung cấp nào cho sản phẩm này trong kỳ đối soát.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-gray-50 dark:bg-[#1a1b23] text-gray-500 font-semibold border-b border-gray-200 dark:border-gray-800">
+                            <tr>
+                              <th className="p-2.5">Mã phiếu trả</th>
+                              <th className="p-2.5">Nhà cung cấp</th>
+                              <th className="p-2.5">Phiếu nhập gốc</th>
+                              <th className="p-2.5">Ngày xuất trả</th>
+                              <th className="p-2.5 text-center">SL xuất trả</th>
+                              <th className="p-2.5 text-right">Đơn giá hoàn</th>
+                              <th className="p-2.5 text-right">Giảm trừ nợ</th>
+                              <th className="p-2.5">Lý do / Ghi chú</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                            {detailData.purchaseReturns.map((pr) => (
+                              <tr key={pr.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                                <td className="p-2.5 font-mono font-bold text-amber-600 dark:text-amber-400">
+                                  {pr.returnCode}
+                                </td>
+                                <td className="p-2.5 text-gray-800 dark:text-gray-200">
+                                  {pr.supplierName}
+                                </td>
+                                <td className="p-2.5 font-mono text-gray-500">
+                                  {pr.receiptCode || '—'}
+                                </td>
+                                <td className="p-2.5 text-gray-500">
+                                  {pr.returnDate ? new Date(pr.returnDate).toLocaleDateString('vi-VN') : '—'}
+                                </td>
+                                <td className="p-2.5 text-center font-mono font-bold text-amber-600 dark:text-amber-400">
+                                  -{pr.quantity}
+                                </td>
+                                <td className="p-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
+                                  {pr.unitPrice.toLocaleString('vi-VN')}đ
+                                </td>
+                                <td className="p-2.5 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                                  {pr.debtOffsetAmount.toLocaleString('vi-VN')}đ
+                                </td>
+                                <td className="p-2.5 text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                                  {pr.reason || '—'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab 4: Customer Order Returns */}
+                {detailActiveTab === 'ORDER_RETURNS' && (
+                  <div className="space-y-2">
+                    {(!detailData.orderReturns || detailData.orderReturns.length === 0) ? (
+                      <div className="py-8 text-center text-xs text-gray-500">
+                        Chưa có đơn hàng khách hoàn nào được kiểm tra nhập kho cho sản phẩm này.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-gray-50 dark:bg-[#1a1b23] text-gray-500 font-semibold border-b border-gray-200 dark:border-gray-800">
+                            <tr>
+                              <th className="p-2.5">Mã phiếu hoàn</th>
+                              <th className="p-2.5">Mã đơn hàng</th>
+                              <th className="p-2.5">Mã vận đơn</th>
+                              <th className="p-2.5">Gian hàng</th>
+                              <th className="p-2.5">Ngày nhận</th>
+                              <th className="p-2.5 text-center">Bán lại được</th>
+                              <th className="p-2.5 text-center">Hàng lỗi/hỏng</th>
+                              <th className="p-2.5">Lý do hoàn</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                            {detailData.orderReturns.map((or) => (
+                              <tr key={or.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                                <td className="p-2.5 font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                  {or.returnCode}
+                                </td>
+                                <td className="p-2.5 font-mono text-gray-900 dark:text-white">
+                                  {or.orderCode || '—'}
+                                </td>
+                                <td className="p-2.5 font-mono text-gray-500">
+                                  {or.trackingCode || '—'}
+                                </td>
+                                <td className="p-2.5 text-gray-800 dark:text-gray-200">
+                                  {or.shopName}
+                                </td>
+                                <td className="p-2.5 text-gray-500">
+                                  {or.receivedDate ? new Date(or.receivedDate).toLocaleDateString('vi-VN') : '—'}
+                                </td>
+                                <td className="p-2.5 text-center font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                  +{or.sellableQuantity}
+                                </td>
+                                <td className="p-2.5 text-center font-mono font-bold text-rose-500">
+                                  {or.damagedQuantity > 0 ? `+${or.damagedQuantity}` : '0'}
+                                </td>
+                                <td className="p-2.5 text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                                  {or.reason || '—'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab 5: Warehouse balances */}
                 {detailActiveTab === 'WAREHOUSES' && (
                   <div className="space-y-2">
                     <div className="overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">

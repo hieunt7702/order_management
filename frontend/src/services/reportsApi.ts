@@ -177,11 +177,17 @@ export interface OrderReconciliationItem {
   unit: string;
   costPrice: number;
   sellingPrice: number;
+  grossImportedQuantity?: number;
+  supplierReturnedQuantity?: number;
   importedQuantity: number;
   importedAmount: number;
   receiptsCount: number;
+  purchaseReturnsCount?: number;
+  grossExportedQuantity?: number;
+  customerReturnedQuantity?: number;
   exportedQuantity: number;
   ordersCount: number;
+  orderReturnsCount?: number;
   onHand: number;
   reserved: number;
   available: number;
@@ -194,7 +200,11 @@ export interface OrderReconciliationItem {
 
 export interface OrderReconciliationSummary {
   totalVariants: number;
+  totalGrossImported?: number;
+  totalSupplierReturned?: number;
   totalImportedQuantity: number;
+  totalGrossExported?: number;
+  totalCustomerReturned?: number;
   totalExportedQuantity: number;
   totalOnHand: number;
   totalReserved: number;
@@ -268,6 +278,29 @@ export interface OrderReconciliationTransactionsData {
     unitPrice: number;
     subtotal: number;
     paymentStatus: string;
+  }>;
+  purchaseReturns?: Array<{
+    id: string;
+    returnCode: string;
+    returnDate: string;
+    supplierName: string;
+    quantity: number;
+    unitPrice: number;
+    subtotal: number;
+    debtOffsetAmount: number;
+    reason: string;
+    receiptCode?: string | null;
+  }>;
+  orderReturns?: Array<{
+    id: string;
+    returnCode: string;
+    receivedDate: string;
+    orderCode: string;
+    trackingCode: string;
+    shopName: string;
+    sellableQuantity: number;
+    damagedQuantity: number;
+    reason: string;
   }>;
 }
 
