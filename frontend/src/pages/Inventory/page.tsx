@@ -14,6 +14,7 @@ import {
   ArrowUpRight,
   MoreHorizontal,
   Plus,
+  Minus,
   Package,
   PackagePlus,
   PackageX,
@@ -115,7 +116,8 @@ export const InventoryPage: React.FC = () => {
   const [adjustForm, setAdjustForm] = useState({
     warehouseId: selectedWarehouseId || '',
     variantId: '',
-    quantityChange: 0,
+    adjustType: 'INCREASE' as 'INCREASE' | 'DECREASE',
+    quantity: 1 as number | string,
     reason: 'INVENTORY_CHECK_DISCREPANCY',
     note: '',
   });
@@ -245,13 +247,14 @@ export const InventoryPage: React.FC = () => {
   // Submit Adjust Stock
   const handleAdjustSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!adjustForm.warehouseId || !adjustForm.variantId || adjustForm.quantityChange === 0) {
-      toast.warning('Vui lòng điền kho, biến thể và số lượng thay đổi khác 0');
+    const qty = parseInt(String(adjustForm.quantity), 10);
+    if (!adjustForm.warehouseId || !adjustForm.variantId || isNaN(qty) || qty <= 0) {
+      toast.warning('Vui lòng chọn kho, biến thể và nhập số lượng điều chỉnh lớn hơn 0');
       return;
     }
+    const delta = adjustForm.adjustType === 'INCREASE' ? qty : -qty;
     const idempotencyKey = `adj_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     try {
-      const delta = parseInt(String(adjustForm.quantityChange), 10);
       const reasonLabel = REASON_OPTIONS.find((r) => r.value === adjustForm.reason)?.label || adjustForm.reason;
       await inventoryApi.adjustStock(
         {
@@ -268,12 +271,17 @@ export const InventoryPage: React.FC = () => {
       setAdjustForm({
         warehouseId: selectedWarehouseId || '',
         variantId: '',
-        quantityChange: 0,
+        adjustType: 'INCREASE',
+        quantity: 1,
         reason: 'INVENTORY_CHECK_DISCREPANCY',
         note: '',
       });
       loadBalances();
-      toast.success('Điều chỉnh tồn kho thành công!');
+      toast.success(
+        delta > 0
+          ? `Đã tăng tồn kho +${qty} sản phẩm thành công!`
+          : `Đã giảm tồn kho -${qty} sản phẩm thành công!`
+      );
     } catch (err: any) {
       toast.error('Lỗi điều chỉnh tồn kho', err.message);
     }
@@ -297,9 +305,20 @@ export const InventoryPage: React.FC = () => {
   };
 
   const openAdjustForVariant = (variantId: string) => {
-    setAdjustForm((prev) => ({ ...prev, variantId }));
+    setAdjustForm((prev) => ({
+      ...prev,
+      variantId,
+      adjustType: 'INCREASE',
+      quantity: 1,
+    }));
     setIsAdjustModalOpen(true);
   };
+
+  const selectedAdjustBalance = balances.find(
+    (b) =>
+      b.warehouseId === adjustForm.warehouseId &&
+      (b.variantId === adjustForm.variantId || b.id === adjustForm.variantId)
+  );
 
   return (
     <div className="flex-1 flex flex-col min-h-fit md:min-h-0 space-y-3.5 animate-in fade-in duration-300">
@@ -1714,25 +1733,117 @@ export const InventoryPage: React.FC = () => {
                 />
               </div>
 
+              {/* Option Tăng / Giảm tồn kho */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Hình thức điều chỉnh *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAdjustForm({ ...adjustForm, adjustType: 'INCREASE' })}
+                    className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-md border text-xs font-semibold transition-all cursor-pointer select-none ${
+                      adjustForm.adjustType === 'INCREASE'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-700 dark:text-emerald-300 shadow-xs ring-1 ring-emerald-500/30'
+                        : 'bg-white dark:bg-[#131720] border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
+                  >
+                    <Plus className={`w-3.5 h-3.5 ${adjustForm.adjustType === 'INCREASE' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`} />
+                    <span>Tăng tồn kho (+)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAdjustForm({ ...adjustForm, adjustType: 'DECREASE' })}
+                    className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-md border text-xs font-semibold transition-all cursor-pointer select-none ${
+                      adjustForm.adjustType === 'DECREASE'
+                        ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-700 dark:text-rose-300 shadow-xs ring-1 ring-rose-500/30'
+                        : 'bg-white dark:bg-[#131720] border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
+                  >
+                    <Minus className={`w-3.5 h-3.5 ${adjustForm.adjustType === 'DECREASE' ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400'}`} />
+                    <span>Giảm tồn kho (-)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Ô nhập số lượng điều chỉnh */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  <span className="sm:hidden">Số lượng thay đổi (+ / -) *</span>
-                  <span className="hidden sm:inline">Số lượng thay đổi (+ để tăng, - để giảm) *</span>
+                  Số lượng điều chỉnh *
                 </label>
-                <input
-                  type="number"
-                  required
-                  value={adjustForm.quantityChange}
-                  onChange={(e) =>
-                    setAdjustForm({
-                      ...adjustForm,
-                      quantityChange: parseInt(e.target.value, 10) || 0,
-                    })
-                  }
-                  className="w-full px-3 py-2 text-xs bg-white dark:bg-[#131720] border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white font-mono font-bold focus:outline-none focus:border-[#5865f2]"
-                  placeholder="VD: -2 hoặc +5"
-                />
+                <div className="relative">
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    required
+                    value={adjustForm.quantity === '' ? '' : adjustForm.quantity}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === '') {
+                        setAdjustForm({ ...adjustForm, quantity: '' });
+                      } else {
+                        const val = Math.abs(parseInt(raw, 10)) || 0;
+                        setAdjustForm({ ...adjustForm, quantity: val });
+                      }
+                    }}
+                    className={`w-full pl-8 pr-16 py-2 text-xs bg-white dark:bg-[#131720] border rounded text-gray-900 dark:text-white font-mono font-bold focus:outline-none transition-colors ${
+                      adjustForm.adjustType === 'INCREASE'
+                        ? 'border-emerald-300 dark:border-emerald-800/80 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20'
+                        : 'border-rose-300 dark:border-rose-800/80 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20'
+                    }`}
+                    placeholder="Nhập số lượng (VD: 1, 5, 10...)"
+                  />
+                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none font-bold text-sm select-none">
+                    {adjustForm.adjustType === 'INCREASE' ? (
+                      <span className="text-emerald-600 dark:text-emerald-400">+</span>
+                    ) : (
+                      <span className="text-rose-600 dark:text-rose-400">-</span>
+                    )}
+                  </div>
+                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[11px] font-medium text-gray-400 dark:text-gray-500 select-none">
+                    sản phẩm
+                  </div>
+                </div>
               </div>
+
+              {/* Bảng tính nhẩm tồn kho trước & sau khi điều chỉnh */}
+              {selectedAdjustBalance && (
+                <div className="p-2.5 rounded-md bg-gray-50 dark:bg-[#131720] border border-gray-200/80 dark:border-gray-800 text-xs space-y-1">
+                  <div className="flex items-center justify-between text-gray-600 dark:text-gray-400">
+                    <span>Tồn kho hiện tại:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white font-mono">
+                      {(selectedAdjustBalance.onHand ?? 0).toLocaleString('vi-VN')}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Biến động điều chỉnh:</span>
+                    <span
+                      className={`font-bold font-mono ${
+                        adjustForm.adjustType === 'INCREASE'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-rose-600 dark:text-rose-400'
+                      }`}
+                    >
+                      {adjustForm.adjustType === 'INCREASE'
+                        ? `+${adjustForm.quantity || 0}`
+                        : `-${adjustForm.quantity || 0}`}
+                    </span>
+                  </div>
+                  <div className="border-t border-gray-200 dark:border-gray-700/60 pt-1 flex items-center justify-between font-semibold">
+                    <span className="text-gray-700 dark:text-gray-300">Tồn kho sau điều chỉnh:</span>
+                    <span className="font-bold text-gray-900 dark:text-white font-mono text-sm">
+                      {(
+                        (selectedAdjustBalance.onHand ?? 0) +
+                        (adjustForm.adjustType === 'INCREASE'
+                          ? Number(adjustForm.quantity) || 0
+                          : -(Number(adjustForm.quantity) || 0))
+                      ).toLocaleString('vi-VN')}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
@@ -1773,8 +1884,12 @@ export const InventoryPage: React.FC = () => {
                 Hủy
               </ModalButton>
               <ModalButton variant="primary" type="submit" className="flex-1 sm:flex-initial">
-                <span className="sm:hidden">Điều chỉnh</span>
-                <span className="hidden sm:inline">Xác nhận điều chỉnh</span>
+                <span className="sm:hidden">
+                  {adjustForm.adjustType === 'INCREASE' ? 'Tăng tồn' : 'Giảm tồn'}
+                </span>
+                <span className="hidden sm:inline">
+                  {adjustForm.adjustType === 'INCREASE' ? 'Xác nhận tăng tồn' : 'Xác nhận giảm tồn'}
+                </span>
               </ModalButton>
             </ModalFooter>
           </form>
