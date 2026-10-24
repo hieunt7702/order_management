@@ -347,7 +347,11 @@ export class ImportsService {
               // Physical handover already verified at local warehouse
               newFulfillmentStatus = FulfillmentStatus.DISPATCHED;
             } else {
-              if (newPlatformStatus === PlatformOrderStatus.CANCELLED) {
+              if (
+                newPlatformStatus === PlatformOrderStatus.CANCELLED ||
+                newPlatformStatus === PlatformOrderStatus.TO_RETURN ||
+                newPlatformStatus === PlatformOrderStatus.RETURN_REFUND
+              ) {
                 // If order was reserved, release stock back to available
                 if (existingOrder.fulfillmentStatus === FulfillmentStatus.RESERVED) {
                   const itemsToRelease = existingOrder.orderItems
@@ -427,12 +431,20 @@ export class ImportsService {
               }
             }
 
-            // Warning note if platform cancelled after physical dispatch
+            // Warning note if platform cancelled or returned after physical dispatch
             let updatedNote = existingOrder.note;
             if (isDispatched && newPlatformStatus === PlatformOrderStatus.CANCELLED) {
               const warning = `[CẢNH BÁO: Sàn báo hủy theo file import mới nhất sau khi kho đã quét xuất!]`;
               if (!updatedNote?.includes('CẢNH BÁO: Sàn báo hủy')) {
                 updatedNote = updatedNote ? `${updatedNote} | ${warning}` : warning;
+              }
+            } else if (
+              newPlatformStatus === PlatformOrderStatus.TO_RETURN ||
+              newPlatformStatus === PlatformOrderStatus.RETURN_REFUND
+            ) {
+              const returnNotice = `[CẬP NHẬT TỪ FILE IMPORT: Sàn báo trạng thái hoàn hàng (${parsed.rawStatus || 'RETURN'})]`;
+              if (!updatedNote?.includes('Sàn báo trạng thái hoàn hàng')) {
+                updatedNote = updatedNote ? `${updatedNote} | ${returnNotice}` : returnNotice;
               }
             }
 

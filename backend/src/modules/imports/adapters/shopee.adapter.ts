@@ -68,60 +68,150 @@ export interface ParsedShopeeOrder {
 }
 
 export class ShopeeAdapter {
-  static normalizePlatformStatus(rawStatus: string | undefined): PlatformOrderStatus {
-    if (!rawStatus) return PlatformOrderStatus.READY_TO_SHIP;
-    const s = rawStatus.trim().toLowerCase();
+  static normalizePlatformStatus(
+    rawStatus: string | undefined,
+    row?: Record<string, any>,
+  ): PlatformOrderStatus {
+    if (!rawStatus && !row) return PlatformOrderStatus.READY_TO_SHIP;
 
-    // 1. Completed
+    // 0. Extract any extra return indicators from row
+    let hasReturnCode = false;
+    let extraSignals = '';
+    if (row && typeof row === 'object') {
+      const returnCodeKeys = [
+        'Return Code',
+        'Mã Trả hàng',
+        'Mã hoàn hàng',
+        'Mã yêu cầu trả hàng',
+        'return_code',
+        'return_id',
+      ];
+      for (const k of returnCodeKeys) {
+        const val = row[k];
+        if (val !== undefined && val !== null && String(val).trim()) {
+          hasReturnCode = true;
+          extraSignals += ' return ' + String(val).trim().toLowerCase();
+        }
+      }
+
+      const candidateKeys = [
+        'Trạng thái Trả hàng/Hoàn tiền',
+        'Trạng thái trả hàng',
+        'Trạng thái hoàn tiền',
+        'Trạng thái yêu cầu trả hàng/hoàn tiền',
+        'return_refund_status',
+        'return_status',
+        'Trạng thái giao hàng',
+        'shipping_status',
+        'logistics_status',
+        'Lý do hủy',
+        'Lý do trả hàng',
+        'cancel_reason',
+        'return_reason',
+      ];
+      for (const k of candidateKeys) {
+        const val = row[k];
+        if (val !== undefined && val !== null && String(val).trim()) {
+          extraSignals += ' ' + String(val).trim().toLowerCase();
+        }
+      }
+    }
+
+    const s = `${rawStatus || ''} ${extraSignals}`.trim().toLowerCase();
+    if (!s) return PlatformOrderStatus.READY_TO_SHIP;
+
+    // Special Shopee buyer confirmed receipt clause check:
+    // Shopee string: "Người mua xác nhận đã nhận được hàng, tuy nhiên Người mua vẫn có thể gửi yêu cầu Trả hàng/Hoàn tiền tới ngày YYYY-MM-DD."
+    const isBuyerConfirmedReceiptWithReturnDeadline =
+      (s.includes('người mua xác nhận đã nhận được hàng') ||
+        s.includes('xác nhận đã nhận được hàng') ||
+        s.includes('đã nhận được hàng')) &&
+      s.includes('tuy nhiên');
+
+    // 1. Check Return / Refund FIRST (unless it's just the buyer confirmed receipt clause above)
+    if (!isBuyerConfirmedReceiptWithReturnDeadline) {
+      // 1a. Completed Refund / Completed Return
+      if (
+        s.includes('đã hoàn tiền') ||
+        s.includes('hoàn tiền thành công') ||
+        s.includes('đã trả hàng') ||
+        s.includes('refunded') ||
+        s.includes('trả hàng thành công') ||
+        s.includes('hoàn tất trả hàng') ||
+        s.includes('return_refund')
+      ) {
+        return PlatformOrderStatus.RETURN_REFUND;
+      }
+
+      // 1b. In-progress Return / Returning to seller / Return request
+      if (
+        hasReturnCode ||
+        s.includes('sent back to seller') ||
+        s.includes('order is being sent back to seller') ||
+        s.includes('return code') ||
+        s.includes('chuyển hoàn') ||
+        s.includes('đang chuyển hoàn') ||
+        s.includes('hàng chuyển hoàn') ||
+        s.includes('trả hàng') ||
+        s.includes('hoàn tiền') ||
+        s.includes('yêu cầu trả hàng') ||
+        s.includes('yêu cầu hoàn tiền') ||
+        s.includes('trả hàng/hoàn tiền') ||
+        s.includes('tra hang') ||
+        s.includes('hoan tien') ||
+        s.includes('to_return') ||
+        s.includes('đang hoàn') ||
+        s.includes('đang trả') ||
+        s.includes('khiếu nại') ||
+        s.includes('returning') ||
+        s.includes('returned') ||
+        s.includes('return')
+      ) {
+        return PlatformOrderStatus.TO_RETURN;
+      }
+    }
+
+    // 2. Completed
     if (s.includes('hoàn thành') || s === 'completed') {
       return PlatformOrderStatus.COMPLETED;
     }
 
-    // 2. Buyer confirmed receipt or Delivered
-    // Shopee string: "Người mua xác nhận đã nhận được hàng, tuy nhiên Người mua vẫn có thể gửi yêu cầu Trả hàng/Hoàn tiền tới ngày YYYY-MM-DD."
-    // Shopee string: "Đã giao"
-    // CRITICAL: Must be checked before return/refund check because the receipt message mentions "Trả hàng/Hoàn tiền"
+    // 3. Buyer confirmed receipt or Delivered (Delivered to buyer)
     if (
+      isBuyerConfirmedReceiptWithReturnDeadline ||
       s.includes('người mua xác nhận đã nhận được hàng') ||
       s.includes('xác nhận đã nhận được hàng') ||
       s.includes('đã nhận được hàng') ||
-      s.includes('đã giao') ||
+      s.includes('giao hàng thành công') ||
+      s.includes('đã giao thành công') ||
+      s.includes('đã giao hàng') ||
+      (s.includes('đã giao') &&
+        !s.includes('đã giao cho đvvc') &&
+        !s.includes('đã giao cho đơn vị vận chuyển')) ||
       s === 'delivered'
     ) {
       return PlatformOrderStatus.TO_CONFIRM_RECEIVE;
     }
 
-    // 3. Shipping / In transit
-    if (s.includes('đang giao') || s.includes('shipped') || s.includes('in_transit')) {
+    // 4. Shipping / In transit (including standard "Đã giao cho ĐVVC" when not a return)
+    if (
+      s.includes('đang giao') ||
+      s.includes('shipped') ||
+      s.includes('in_transit') ||
+      s.includes('đã giao cho đvvc') ||
+      s.includes('đã giao cho đơn vị vận chuyển')
+    ) {
       return PlatformOrderStatus.SHIPPED;
     }
 
-    // 4. Cancelled
+    // 5. Cancelled
     if (s.includes('đã hủy') || s.includes('cancelled') || s === 'canceled') {
       return PlatformOrderStatus.CANCELLED;
     }
 
-    // 5. In cancellation process / Cancellation requested
+    // 6. In cancellation process / Cancellation requested
     if (s.includes('chờ xác nhận hủy') || s.includes('yêu cầu hủy') || s.includes('in_cancel')) {
       return PlatformOrderStatus.IN_CANCEL;
-    }
-
-    // 6. Return / Refund (actual returns/refunds, checked after buyer receipt)
-    if (
-      s.includes('đã hoàn tiền') ||
-      s.includes('hoàn tiền thành công') ||
-      s.includes('đã trả hàng') ||
-      s.includes('refunded')
-    ) {
-      return PlatformOrderStatus.RETURN_REFUND;
-    }
-    if (
-      s.includes('trả hàng') ||
-      s.includes('hoàn tiền') ||
-      s.includes('return') ||
-      s.includes('khiếu nại')
-    ) {
-      return PlatformOrderStatus.TO_RETURN;
     }
 
     // 7. Delivery retry / Failed delivery attempt
@@ -273,10 +363,12 @@ export class ShopeeAdapter {
 
     for (const r of rows) {
       let order = ordersMap.get(r.orderCode);
+      const rowStatus = this.normalizePlatformStatus(r.orderStatus, r.raw);
+
       if (!order) {
         order = {
           externalOrderId: r.orderCode,
-          platformStatus: this.normalizePlatformStatus(r.orderStatus),
+          platformStatus: rowStatus,
           rawStatus: r.orderStatus || '',
           orderDate: this.parseDate(r.orderDate),
           paidAt: this.parseDate(r.paidAt),
@@ -298,6 +390,16 @@ export class ShopeeAdapter {
           },
         };
         ordersMap.set(r.orderCode, order);
+      } else {
+        // If a subsequent row contains return or cancellation signals, overwrite status
+        if (
+          rowStatus === PlatformOrderStatus.TO_RETURN ||
+          rowStatus === PlatformOrderStatus.RETURN_REFUND ||
+          rowStatus === PlatformOrderStatus.CANCELLED
+        ) {
+          order.platformStatus = rowStatus;
+          if (r.orderStatus) order.rawStatus = r.orderStatus;
+        }
       }
 
       // Add item

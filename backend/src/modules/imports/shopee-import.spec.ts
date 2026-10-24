@@ -79,6 +79,20 @@ describe('Scenarios 3, 4, 6, 7, 8, 20: Shopee Import Engine & Integrity Tests', 
       expect(ShopeeAdapter.normalizePlatformStatus('Yêu cầu Trả hàng/Hoàn tiền')).toBe(PlatformOrderStatus.TO_RETURN);
       expect(ShopeeAdapter.normalizePlatformStatus('Đã hoàn tiền')).toBe(PlatformOrderStatus.RETURN_REFUND);
       expect(ShopeeAdapter.normalizePlatformStatus('Chưa thanh toán')).toBe(PlatformOrderStatus.UNPAID);
+
+      // Shopee Return Code & Returning to seller status
+      expect(ShopeeAdapter.normalizePlatformStatus(
+        'Return Code:\nĐã giao cho ĐVVC\nOrder is being sent back to seller'
+      )).toBe(PlatformOrderStatus.TO_RETURN);
+      expect(ShopeeAdapter.normalizePlatformStatus(
+        'Đã giao cho ĐVVC - Order is being sent back to seller'
+      )).toBe(PlatformOrderStatus.TO_RETURN);
+      expect(ShopeeAdapter.normalizePlatformStatus('Đang chuyển hoàn về người bán')).toBe(PlatformOrderStatus.TO_RETURN);
+      expect(ShopeeAdapter.normalizePlatformStatus('Đã giao cho ĐVVC')).toBe(PlatformOrderStatus.SHIPPED);
+
+      // Multi-column return extraction from raw row
+      expect(ShopeeAdapter.normalizePlatformStatus('Đang giao', { 'Return Code': 'RET_20261024_01' })).toBe(PlatformOrderStatus.TO_RETURN);
+      expect(ShopeeAdapter.normalizePlatformStatus('Đang giao', { 'Trạng thái Trả hàng/Hoàn tiền': 'Đã hoàn tiền' })).toBe(PlatformOrderStatus.RETURN_REFUND);
     });
   });
 
