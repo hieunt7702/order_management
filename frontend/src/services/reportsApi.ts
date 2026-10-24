@@ -342,6 +342,14 @@ export interface OrderReconciliationSummary {
   surplusCount: number;
   deficitCount: number;
   outOfStockCount: number;
+  shopsSummary?: Array<{
+    shopId: string;
+    shopName: string;
+    shopCode: string;
+    ordersCount: number;
+    totalExportedAmount: number;
+    exportedQuantity?: number;
+  }>;
 }
 
 export interface OrderReconciliationReportData {

@@ -60,7 +60,7 @@ import { Button } from '../../components/ui/Button';
 import { toast } from '../../components/ui/Toast';
 
 export const OrderReportsPage: React.FC = () => {
-  const { shops, warehouses, selectedShopId } = useWorkspaceStore();
+  const { shops, warehouses, selectedShopId, setSelectedShopId } = useWorkspaceStore();
 
   const currentShop = shops.find((s) => s.id === selectedShopId);
   const isFilteringSpecificShop = Boolean(selectedShopId && selectedShopId !== 'ALL');
@@ -183,6 +183,7 @@ export const OrderReportsPage: React.FC = () => {
 
   // Reset all filters
   const handleResetFilters = () => {
+    setSelectedShopId('ALL');
     setSelectedWarehouseId('ALL');
     setSelectedStatus('ALL');
     setDatePreset('ALL');
@@ -253,7 +254,7 @@ export const OrderReportsPage: React.FC = () => {
         'Tổng xuất đơn hàng gốc': item.grossExportedQuantity || item.exportedQuantity,
         'Khách hoàn về kho': item.customerReturnedQuantity || 0,
         'Thực xuất bán (Net)': item.exportedQuantity,
-        'Tổng tiền đơn đi (VNĐ)': item.exportedAmount || 0,
+        [`Tiền hàng đi ${isFilteringSpecificShop ? `(${currentShop?.name || 'Shop'})` : '(Tổng)'} (VNĐ)`]: item.exportedAmount || 0,
         'Số đơn hàng': item.ordersCount,
         'Tồn kho thực tế (On-hand)': item.onHand,
         'Đang giữ cho đơn (Reserved)': item.reserved,
@@ -273,7 +274,8 @@ export const OrderReportsPage: React.FC = () => {
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'DoiSoatDonHang');
 
-      const fileName = `Bao_Cao_Doi_Soat_Don_Hang_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      const shopTag = isFilteringSpecificShop ? `_${currentShop?.code || 'Shop'}` : '';
+      const fileName = `Bao_Cao_Don_Hang${shopTag}_${new Date().toISOString().slice(0, 10)}.xlsx`;
       XLSX.writeFile(workbook, fileName);
       toast.success('Xuất file Excel thành công!');
     } catch (err: any) {
@@ -369,14 +371,16 @@ export const OrderReportsPage: React.FC = () => {
 
         <SystemMetricPairCard
           leftItem={{
-            title: isFilteringSpecificShop ? `Tiền đơn đã đi (${currentShop?.name || 'Shop'})` : 'Tổng tiền đơn hàng đi',
+            title: isFilteringSpecificShop ? `Tiền hàng đi: ${currentShop?.name || 'Shop'}` : 'Tổng tiền hàng đi (Tất cả shop)',
             value: `${(summary.totalExportedAmount || 0).toLocaleString('vi-VN')} đ`,
-            subtitle: isFilteringSpecificShop ? `Tổng doanh số xuất của shop` : `Tổng giá trị các đơn xuất bán`,
+            subtitle: isFilteringSpecificShop
+              ? `Doanh số xuất đi của ${currentShop?.name || 'shop'}`
+              : `Tổng giá trị hàng xuất của ${shops.length} shop`,
             icon: CircleDollarSign,
             colorScheme: 'green',
           }}
           rightItem={{
-            title: 'Tổng số đơn hàng đi',
+            title: isFilteringSpecificShop ? `Số đơn đi (${currentShop?.name || 'Shop'})` : 'Tổng số đơn hàng đi',
             value: `${(summary.totalOrdersCount || 0).toLocaleString('vi-VN')} đơn`,
             subtitle: `Sản phẩm đã xuất: ${(summary.totalExportedQuantity || 0).toLocaleString('vi-VN')}`,
             icon: ShoppingBag,
@@ -418,6 +422,61 @@ export const OrderReportsPage: React.FC = () => {
           }}
         />
       </div>
+
+      {/* Shop Outbound Value Quick Bar */}
+      {summary.shopsSummary && summary.shopsSummary.length > 0 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 px-1 bg-gray-50/70 dark:bg-[#14151a] rounded-lg border border-gray-200/80 dark:border-gray-800 shrink-0">
+          <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 shrink-0 flex items-center gap-1 mr-1">
+            <CircleDollarSign size={13} className="text-emerald-500" />
+            <span>Tiền hàng đi theo shop:</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedShopId('ALL');
+              setCurrentPage(1);
+            }}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs transition-all cursor-pointer border shrink-0 ${
+              selectedShopId === 'ALL'
+                ? 'bg-[#5865f2] text-white border-[#5865f2] font-semibold shadow-xs'
+                : 'bg-white dark:bg-[#1a1b23] border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#202430]'
+            }`}
+          >
+            <Store size={12} />
+            <span>Tất cả</span>
+            <span className={`font-mono text-[11px] font-bold ${selectedShopId === 'ALL' ? 'text-indigo-100' : 'text-emerald-600 dark:text-emerald-400'}`}>
+              {(summary.shopsSummary.reduce((sum, s) => sum + s.totalExportedAmount, 0)).toLocaleString('vi-VN')} đ
+            </span>
+          </button>
+          {summary.shopsSummary.map((s) => {
+            const isSelected = selectedShopId === s.shopId;
+            return (
+              <button
+                key={s.shopId}
+                type="button"
+                onClick={() => {
+                  setSelectedShopId(s.shopId);
+                  setCurrentPage(1);
+                }}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs whitespace-nowrap transition-all cursor-pointer border shrink-0 ${
+                  isSelected
+                    ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-xs'
+                    : 'bg-white dark:bg-[#1a1b23] border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#202430]'
+                }`}
+              >
+                <Store size={12} className={isSelected ? 'text-white' : 'text-gray-400'} />
+                <span>{s.shopName}:</span>
+                <span className={`font-mono font-bold ${isSelected ? 'text-emerald-100' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  {s.totalExportedAmount.toLocaleString('vi-VN')} đ
+                </span>
+                <span className={`text-[10px] ${isSelected ? 'text-emerald-200' : 'text-gray-400'}`}>
+                  ({s.ordersCount} đơn)
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Unified Filters Toolbar */}
       <SystemFilter className="p-2 sm:p-2.5 flex-col gap-2 shrink-0">
@@ -465,8 +524,32 @@ export const OrderReportsPage: React.FC = () => {
             />
           </div>
 
+          {/* Shop Filter */}
+          <div className="col-span-1 sm:w-48">
+            <Select
+              value={selectedShopId || 'ALL'}
+              onChange={(val) => {
+                setSelectedShopId(String(val));
+                setCurrentPage(1);
+              }}
+              options={[
+                { value: 'ALL', label: 'Tất cả Shop', icon: Store },
+                ...shops.map((s) => ({
+                  value: s.id,
+                  label: s.name,
+                  icon: Store,
+                })),
+              ]}
+              placeholder="Chọn shop..."
+              icon={Store}
+              size="sm"
+              className="w-full font-medium"
+              menuWidth="w-56"
+            />
+          </div>
+
           {/* Warehouse Filter */}
-          <div className="col-span-1 sm:w-56">
+          <div className="col-span-1 sm:w-48">
             <Select
               value={selectedWarehouseId}
               onChange={(val) => {
@@ -488,7 +571,7 @@ export const OrderReportsPage: React.FC = () => {
           </div>
 
           {/* Status Filter */}
-          <div className="col-span-1 sm:w-44">
+          <div className="col-span-1 sm:w-40">
             <Select
               value={selectedStatus}
               onChange={(val) => {
@@ -509,7 +592,7 @@ export const OrderReportsPage: React.FC = () => {
           </div>
 
           {/* Search SKU or Product Name */}
-          <div className="col-span-2 sm:flex-1 sm:min-w-[200px]">
+          <div className="col-span-2 sm:flex-1 sm:min-w-[180px]">
             <SystemFilterSearch
               value={searchTerm}
               onChange={(e) => {
@@ -522,7 +605,8 @@ export const OrderReportsPage: React.FC = () => {
           </div>
 
           {/* Reset Filters */}
-          {(selectedWarehouseId !== 'ALL' ||
+          {(selectedShopId !== 'ALL' ||
+            selectedWarehouseId !== 'ALL' ||
             selectedStatus !== 'ALL' ||
             datePreset !== 'ALL' ||
             startDate ||
@@ -564,7 +648,7 @@ export const OrderReportsPage: React.FC = () => {
                 <SystemTh align="right" className="text-right">Đã nhập kho</SystemTh>
                 <SystemTh align="right" className="text-right">Đơn hàng đi</SystemTh>
                 <SystemTh align="right" className="text-right">
-                  {isFilteringSpecificShop ? `Tiền đơn đi (${currentShop?.name || 'Shop'})` : 'Tổng tiền đơn đi'}
+                  {isFilteringSpecificShop ? `Tiền hàng đi (${currentShop?.name || 'Shop'})` : 'Tiền hàng đi (Tổng)'}
                 </SystemTh>
                 <SystemTh align="center" className="text-center">Đối soát chênh lệch</SystemTh>
                 <SystemTh align="center" className="text-center">Tỷ lệ xuất / nhập</SystemTh>
@@ -1102,6 +1186,21 @@ export const OrderReportsPage: React.FC = () => {
                       </div>
                     ) : (
                       <>
+                        {/* Outbound Value Summary for Variant */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-900/50 gap-1.5 text-xs">
+                          <span className="text-gray-700 dark:text-gray-300">
+                            Đơn hàng xuất: <strong className="text-gray-900 dark:text-white">{detailData.orders.length} đơn</strong>
+                            {' • '}Số lượng xuất: <strong className="text-[#5865f2] dark:text-indigo-400">{detailData.orders.reduce((s, o) => s + o.quantity, 0)} {detailData.variant.unit}</strong>
+                          </span>
+                          <span className="text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1">
+                            <CircleDollarSign size={14} className="text-emerald-500" />
+                            <span>Tổng tiền hàng đi:</span>
+                            <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                              {detailData.orders.reduce((s, o) => s + o.quantity * (o.discountedPrice || detailData.variant.sellingPrice || 0), 0).toLocaleString('vi-VN')} đ
+                            </span>
+                          </span>
+                        </div>
+
                         {/* Desktop Table View */}
                         <div className="hidden sm:block overflow-x-auto border border-gray-200 dark:border-gray-800 rounded">
                           <table className="w-full text-left text-xs">
@@ -1113,49 +1212,57 @@ export const OrderReportsPage: React.FC = () => {
                                 <th className="p-2.5">Ngày đặt</th>
                                 <th className="p-2.5 text-center">Số lượng</th>
                                 <th className="p-2.5 text-right">Đơn giá</th>
+                                <th className="p-2.5 text-right font-bold text-emerald-600 dark:text-emerald-400">Thành tiền</th>
                                 <th className="p-2.5 text-center">Trạng thái sàn</th>
                                 <th className="p-2.5 text-center">Xuất kho</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                              {detailData.orders.map((o) => (
-                                <tr key={o.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
-                                  <td className="p-2.5 font-mono font-bold text-gray-900 dark:text-white">
-                                    {o.internalOrderCode || o.externalOrderId}
-                                  </td>
-                                  <td className="p-2.5 font-mono text-gray-600 dark:text-gray-400">
-                                    {o.trackingCode || '—'}
-                                  </td>
-                                  <td className="p-2.5 text-gray-800 dark:text-gray-200">
-                                    {o.shopName}
-                                  </td>
-                                  <td className="p-2.5 text-gray-500">
-                                    {o.orderDate ? new Date(o.orderDate).toLocaleDateString('vi-VN') : '—'}
-                                  </td>
-                                  <td className="p-2.5 text-center font-mono font-bold text-[#5865f2] dark:text-indigo-400">
-                                    {o.quantity}
-                                  </td>
-                                  <td className="p-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
-                                    {o.discountedPrice.toLocaleString('vi-VN')}đ
-                                  </td>
-                                  <td className="p-2.5 text-center">
-                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                                      {o.platformStatus}
-                                    </span>
-                                  </td>
-                                  <td className="p-2.5 text-center">
-                                    <span
-                                      className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                                        o.fulfillmentStatus === 'DISPATCHED'
-                                          ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-                                          : 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
-                                      }`}
-                                    >
-                                      {o.fulfillmentStatus === 'DISPATCHED' ? 'Đã quét xuất' : 'Chờ xuất'}
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))}
+                              {detailData.orders.map((o) => {
+                                const unitPrice = o.discountedPrice || detailData.variant.sellingPrice || 0;
+                                const subtotal = o.quantity * unitPrice;
+                                return (
+                                  <tr key={o.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                                    <td className="p-2.5 font-mono font-bold text-gray-900 dark:text-white">
+                                      {o.internalOrderCode || o.externalOrderId}
+                                    </td>
+                                    <td className="p-2.5 font-mono text-gray-600 dark:text-gray-400">
+                                      {o.trackingCode || '—'}
+                                    </td>
+                                    <td className="p-2.5 text-gray-800 dark:text-gray-200 font-medium">
+                                      {o.shopName}
+                                    </td>
+                                    <td className="p-2.5 text-gray-500">
+                                      {o.orderDate ? new Date(o.orderDate).toLocaleDateString('vi-VN') : '—'}
+                                    </td>
+                                    <td className="p-2.5 text-center font-mono font-bold text-[#5865f2] dark:text-indigo-400">
+                                      {o.quantity}
+                                    </td>
+                                    <td className="p-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
+                                      {unitPrice.toLocaleString('vi-VN')}đ
+                                    </td>
+                                    <td className="p-2.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                      {subtotal.toLocaleString('vi-VN')}đ
+                                    </td>
+                                    <td className="p-2.5 text-center">
+                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                                        {o.platformStatus}
+                                      </span>
+                                    </td>
+                                    <td className="p-2.5 text-center">
+                                      <span
+                                        className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                          o.fulfillmentStatus === 'DISPATCHED'
+                                            ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                            : 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
+                                        }`}
+                                      >
+                                        {o.fulfillmentStatus === 'DISPATCHED' ? 'Đã quét xuất' : 'Chờ xuất'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
@@ -1191,12 +1298,15 @@ export const OrderReportsPage: React.FC = () => {
                               </div>
 
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="text-xs font-bold text-[#5865f2] dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded font-mono">
                                     x{o.quantity}
                                   </span>
                                   <span className="text-xs font-mono text-gray-700 dark:text-gray-300 font-medium">
-                                    {o.discountedPrice.toLocaleString('vi-VN')}đ
+                                    {(o.discountedPrice || detailData.variant.sellingPrice || 0).toLocaleString('vi-VN')}đ
+                                  </span>
+                                  <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                    = {(o.quantity * (o.discountedPrice || detailData.variant.sellingPrice || 0)).toLocaleString('vi-VN')}đ
                                   </span>
                                 </div>
 

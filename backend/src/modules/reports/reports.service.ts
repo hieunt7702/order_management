@@ -1680,6 +1680,58 @@ export class ReportsService {
       }
     }
 
+    // Query authoritative order GMV and count for the current scope
+    const orderGmvAgg = await this.prisma.order.aggregate({
+      where: orderWhere,
+      _sum: { totalAmount: true },
+      _count: { id: true },
+    });
+
+    // Query shop breakdown for outbound orders within the current scope and date range
+    const shopBreakdownWhere: Prisma.OrderWhereInput = {
+      tenantId,
+      platformStatus: {
+        notIn: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
+      },
+      NOT: {
+        AND: [{ isVirtual: true }, { isRealGoods: false }],
+      },
+    };
+    if (allowedShopIds && allowedShopIds.length > 0) {
+      shopBreakdownWhere.shopId = { in: allowedShopIds };
+    }
+    if (start || end) {
+      shopBreakdownWhere.orderDate = orderWhere.orderDate;
+    }
+
+    const [shopOrderGroups, tenantShops] = await Promise.all([
+      this.prisma.order.groupBy({
+        by: ['shopId'],
+        where: shopBreakdownWhere,
+        _sum: { totalAmount: true },
+        _count: { id: true },
+      }),
+      this.prisma.shop.findMany({
+        where: {
+          tenantId,
+          ...(allowedShopIds && allowedShopIds.length > 0 ? { id: { in: allowedShopIds } } : {}),
+        },
+        select: { id: true, name: true, code: true },
+      }),
+    ]);
+
+    const shopOrdersMap = new Map(shopOrderGroups.map((g) => [g.shopId, g]));
+    const shopsSummary = tenantShops.map((s) => {
+      const g = shopOrdersMap.get(s.id);
+      return {
+        shopId: s.id,
+        shopName: s.name,
+        shopCode: s.code,
+        ordersCount: g?._count.id || 0,
+        totalExportedAmount: Math.round(Number(g?._sum.totalAmount || 0)),
+      };
+    }).sort((a, b) => b.totalExportedAmount - a.totalExportedAmount);
+
     const orderItems = await this.prisma.orderItem.findMany({
       where: {
         tenantId,
@@ -2177,6 +2229,15 @@ export class ReportsService {
     const totalPages = Math.ceil(totalItems / limit) || 1;
     const paginatedItems = filteredItems.slice((page - 1) * limit, page * limit);
 
+    const sumItemsExportedAmount = allItems.reduce((acc, it) => acc + (it.exportedAmount || 0), 0);
+    const orderGmv = Number(orderGmvAgg._sum.totalAmount || 0);
+    const finalExportedAmount = Math.max(
+      Math.round(orderGmv),
+      Math.round(totalScopeExportedAmount),
+      sumItemsExportedAmount,
+    );
+    const totalOrdersCount = orderGmvAgg._count.id || allScopeOrderIds.size;
+
     return {
       summary: {
         totalVariants: variants.length,
@@ -2187,8 +2248,8 @@ export class ReportsService {
         totalGrossExported,
         totalCustomerReturned,
         totalExportedQuantity,
-        totalExportedAmount: Math.round(totalScopeExportedAmount),
-        totalOrdersCount: allScopeOrderIds.size,
+        totalExportedAmount: finalExportedAmount,
+        totalOrdersCount,
         totalOnHand,
         totalReserved,
         totalAvailable,
@@ -2197,6 +2258,7 @@ export class ReportsService {
         surplusCount,
         deficitCount,
         outOfStockCount,
+        shopsSummary,
       },
       items: paginatedItems,
       pagination: {
