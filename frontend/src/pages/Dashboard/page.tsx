@@ -1422,6 +1422,11 @@ export const DashboardPage: React.FC = () => {
                               <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
                                 {item.soldQuantity} {item.unit || 'cái'}
                               </span>
+                              {item.returnedQuantity > 0 && (
+                                <span className="text-[9px] text-emerald-600 dark:text-emerald-400 block font-medium">
+                                  Hoàn -{item.returnedQuantity}
+                                </span>
+                              )}
                               <span className="text-[10px] text-gray-500 dark:text-gray-400 block leading-tight">
                                 {formatCurrency(item.exportedAmount)} đ
                               </span>
@@ -1535,6 +1540,11 @@ export const DashboardPage: React.FC = () => {
                                   <div className="font-bold text-indigo-600 dark:text-indigo-400">
                                     {item.soldQuantity} {item.unit || 'cái'}
                                   </div>
+                                  {item.returnedQuantity > 0 && (
+                                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium whitespace-nowrap">
+                                      (Đơn {item.soldQuantity} • Hoàn -{item.returnedQuantity})
+                                    </div>
+                                  )}
                                   <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
                                     {formatCurrency(item.exportedAmount)} đ
                                   </div>

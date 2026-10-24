@@ -78,7 +78,15 @@ export class ReportsService {
       if (activeStatuses.length > 0) {
         whereOrder.platformStatus = { in: activeStatuses };
       }
+    } else {
+      whereOrder.platformStatus = {
+        notIn: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
+      };
     }
+
+    whereOrder.NOT = {
+      AND: [{ isVirtual: true }, { isRealGoods: false }],
+    };
 
     // 1. Order status counts (use whereOrderBase so user sees overall status numbers)
     const statusCounts = await this.prisma.order.groupBy({
@@ -347,6 +355,7 @@ export class ReportsService {
           variantId: true,
           externalSku: true,
           quantity: true,
+          rawQuantity: true,
           discountedPrice: true,
           originalPrice: true,
           order: { select: { shopId: true } },
@@ -378,9 +387,10 @@ export class ReportsService {
         if (vId) {
           const cur = soldMap.get(vId) || { soldQty: 0, exportedAmount: 0 };
           const qty = oi.quantity || 1;
+          const rawQty = oi.rawQuantity || qty;
           const price = Number(oi.discountedPrice || oi.originalPrice || 0);
           cur.soldQty += qty;
-          cur.exportedAmount += price * qty;
+          cur.exportedAmount += price * rawQty;
           soldMap.set(vId, cur);
         }
       }
@@ -406,7 +416,42 @@ export class ReportsService {
         }
       }
 
-      const activeVariantIds = Array.from(new Set([...soldMap.keys(), ...importedMap.keys()]));
+      const returnMap = new Map<string, number>();
+      if (this.prisma.orderReturnItem && typeof this.prisma.orderReturnItem.groupBy === 'function') {
+        const returnWhere: Prisma.OrderReturnWhereInput = {
+          tenantId,
+          status: 'COMPLETED',
+        };
+        if (filter.shopId && filter.shopId !== 'ALL') {
+          returnWhere.shopId = filter.shopId;
+        } else if (allowedShopIds && allowedShopIds.length > 0) {
+          returnWhere.shopId = { in: allowedShopIds };
+        }
+        if (start || end) {
+          returnWhere.receivedDate = {};
+          if (start) returnWhere.receivedDate.gte = new Date(start);
+          if (end) {
+            const endDateObj = new Date(end);
+            if (end.length <= 10) endDateObj.setHours(23, 59, 59, 999);
+            returnWhere.receivedDate.lte = endDateObj;
+          }
+        }
+        const returnAgg = await this.prisma.orderReturnItem.groupBy({
+          by: ['variantId'],
+          where: {
+            tenantId,
+            return: returnWhere,
+          },
+          _sum: {
+            sellableQuantity: true,
+          },
+        });
+        for (const ra of returnAgg) {
+          returnMap.set(ra.variantId, ra._sum.sellableQuantity || 0);
+        }
+      }
+
+      const activeVariantIds = Array.from(new Set([...soldMap.keys(), ...importedMap.keys(), ...returnMap.keys()]));
       const variantWhere: Prisma.ProductVariantWhereInput = {
         tenantId,
         status: ProductStatus.ACTIVE,
@@ -434,6 +479,8 @@ export class ReportsService {
         const reserved = v.inventoryBalances.reduce((s, b) => s + (b.reserved || 0), 0);
         const available = Math.max(0, onHand - reserved);
 
+        const returnedQty = returnMap.get(v.id) || 0;
+
         return {
           variantId: v.id,
           productId: v.product?.id,
@@ -445,6 +492,8 @@ export class ReportsService {
           costPrice: Number(v.costPrice || 0),
           sellingPrice: Number(v.sellingPrice || 0),
           soldQuantity: sData.soldQty,
+          returnedQuantity: returnedQty,
+          netSoldQuantity: Math.max(0, sData.soldQty - returnedQty),
           exportedAmount: Math.round(sData.exportedAmount || sData.soldQty * Number(v.sellingPrice || 0)),
           importedQuantity: iData.importedQty,
           importedAmount: Math.round(iData.importedAmount),
