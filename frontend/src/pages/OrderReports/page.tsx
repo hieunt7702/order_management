@@ -619,309 +619,334 @@ export const OrderReportsPage: React.FC = () => {
         </div>
       </SystemFilter>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 rounded">
-        {/* Desktop Table View (Hidden on mobile) */}
-        <div className="hidden sm:flex flex-1 flex-col min-h-0 overflow-hidden">
-          <SystemTableWrapper
-            tableClassName="w-full text-left border-collapse table-fixed min-w-[1200px]"
-            className="flex-1 flex flex-col min-h-0 border-0 rounded-none shadow-none"
-          >
-            <colgroup>
-              <col style={{ width: '48px' }} />
-              <col style={{ width: '25%' }} />
-              <col style={{ width: '10%' }} />
-              <col style={{ width: '10%' }} />
-              <col style={{ width: '10%' }} />
-              <col style={{ width: '14%' }} />
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '10%' }} />
-              <col style={{ width: '70px' }} />
-            </colgroup>
-            <SystemThead>
-              <SystemTr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50/75 dark:bg-[#1a1b23]/50">
-                <SystemTh align="center" className="text-center">STT</SystemTh>
-                <SystemTh align="left">Sản phẩm & SKU hệ thống</SystemTh>
-                <SystemTh align="center" className="text-center font-bold text-gray-700 dark:text-gray-300">
-                  Số hàng trước nhập
-                </SystemTh>
-                <SystemTh align="right" className="text-right">Đã nhập kho</SystemTh>
-                <SystemTh align="right" className="text-right">Đơn hàng đi</SystemTh>
-                <SystemTh align="right" className="text-right">
-                  {isFilteringSpecificShop ? `Tiền hàng đi (${currentShop?.name || 'Shop'})` : 'Tiền hàng đi (Tổng)'}
-                </SystemTh>
-                <SystemTh align="center" className="text-center">Đối soát chênh lệch</SystemTh>
-                <SystemTh align="center" className="text-center">Tỷ lệ xuất / nhập</SystemTh>
-                <SystemTh align="center" className="text-center">Chi tiết</SystemTh>
-              </SystemTr>
-            </SystemThead>
+      {/* Desktop Table View */}
+      <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
+        <SystemTableWrapper
+          tableClassName="w-full text-left border-collapse table-fixed min-w-[1200px]"
+          pagination={
+            <SystemPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={limit}
+              onPageChange={(page) => setCurrentPage(page)}
+              onLimitChange={(newLimit) => {
+                setLimit(newLimit);
+                setCurrentPage(1);
+              }}
+            />
+          }
+        >
+          <colgroup>
+            <col style={{ width: '48px' }} />
+            <col style={{ width: '25%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '70px' }} />
+          </colgroup>
+          <SystemThead>
+            <SystemTr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50/75 dark:bg-[#1a1b23]/50">
+              <SystemTh align="center" className="text-center">STT</SystemTh>
+              <SystemTh align="left">Sản phẩm & SKU hệ thống</SystemTh>
+              <SystemTh align="center" className="text-center font-bold text-gray-700 dark:text-gray-300">
+                Số hàng trước nhập
+              </SystemTh>
+              <SystemTh align="right" className="text-right">Đã nhập kho</SystemTh>
+              <SystemTh align="right" className="text-right">Đơn hàng đi</SystemTh>
+              <SystemTh align="right" className="text-right">
+                {isFilteringSpecificShop ? `Tiền hàng đi (${currentShop?.name || 'Shop'})` : 'Tiền hàng đi (Tổng)'}
+              </SystemTh>
+              <SystemTh align="center" className="text-center">Đối soát chênh lệch</SystemTh>
+              <SystemTh align="center" className="text-center">Tỷ lệ xuất / nhập</SystemTh>
+              <SystemTh align="center" className="text-center">Chi tiết</SystemTh>
+            </SystemTr>
+          </SystemThead>
 
-            <SystemTbody>
-              {isLoading ? (
-                <SystemTableSkeleton rows={8} cols={9} />
-              ) : items.length === 0 ? (
-                <SystemTableEmpty
-                  colSpan={9}
-                  title="Không tìm thấy sản phẩm đối soát"
-                  description="Hãy thử thay đổi bộ lọc ngày, kho hàng hoặc từ khóa tìm kiếm SKU."
-                />
-              ) : (
-                items.map((item, index) => {
-                  const isBalanced = item.reconciliationStatus === 'BALANCED';
-                  const isSurplus = item.reconciliationStatus === 'SURPLUS';
-                  const isDeficit = item.reconciliationStatus === 'DEFICIT';
+          <SystemTbody>
+            {isLoading ? (
+              <SystemTableSkeleton rows={8} cols={9} />
+            ) : items.length === 0 ? (
+              <SystemTableEmpty
+                colSpan={9}
+                title="Không tìm thấy sản phẩm đối soát"
+                description="Hãy thử thay đổi bộ lọc ngày, kho hàng hoặc từ khóa tìm kiếm SKU."
+              />
+            ) : (
+              items.map((item, index) => {
+                const isBalanced = item.reconciliationStatus === 'BALANCED';
+                const isSurplus = item.reconciliationStatus === 'SURPLUS';
+                const isDeficit = item.reconciliationStatus === 'DEFICIT';
 
-                  return (
-                    <SystemTr
-                      key={item.variantId}
-                      className="hover:bg-gray-50/70 dark:hover:bg-[#1a1b23]/60 transition-colors"
-                    >
-                      {/* STT */}
-                      <SystemTd align="center" className="text-center text-xs text-gray-500 font-mono">
-                        {(currentPage - 1) * limit + index + 1}
-                      </SystemTd>
+                return (
+                  <SystemTr
+                    key={item.variantId}
+                    className="hover:bg-gray-50/70 dark:hover:bg-[#1a1b23]/60 transition-colors cursor-pointer"
+                    onClick={() => handleOpenDetail(item.variantId)}
+                  >
+                    {/* STT */}
+                    <SystemTd align="center" className="text-center text-xs text-gray-500 font-mono">
+                      {(currentPage - 1) * limit + index + 1}
+                    </SystemTd>
 
-                      {/* Product Name & Master Variant SKU */}
-                      <SystemTd align="left">
-                        <div className="flex flex-col min-w-0 py-1">
-                          <span
-                            className="text-xs font-semibold text-gray-900 dark:text-white truncate block"
-                            title={item.productName}
-                          >
-                            {item.productName}
-                          </span>
-                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                            <span className="font-mono text-[11px] font-bold text-[#5865f2] dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded border border-indigo-200/60 dark:border-indigo-900/40">
-                              {item.sku}
-                            </span>
-                            {item.variantName && item.variantName !== item.productName && (
-                              <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-[200px]" title={item.variantName}>
-                                • {item.variantName}
-                              </span>
-                            )}
-                            <span className="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-800 px-1 rounded shrink-0">
-                              {item.unit}
-                            </span>
-                          </div>
-                        </div>
-                      </SystemTd>
-
-                      {/* Số hàng trước nhập */}
-                      <SystemTd align="center" className="text-center font-mono">
-                        <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
-                          {item.stockBefore.toLocaleString('vi-VN')}
-                        </span>
-                      </SystemTd>
-
-                      {/* Nhập kho */}
-                      <SystemTd align="right" className="text-right">
-                        <div className="flex flex-col items-end">
-                          <span
-                            className={`font-mono text-xs font-bold ${
-                              item.importedQuantity > 0
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-gray-500 dark:text-gray-400'
-                            }`}
-                          >
-                            {item.importedQuantity > 0
-                              ? `+${item.importedQuantity.toLocaleString('vi-VN')}`
-                              : item.importedQuantity.toLocaleString('vi-VN')}
-                          </span>
-                          {item.supplierReturnedQuantity && item.supplierReturnedQuantity > 0 ? (
-                            <span
-                              className="text-[10px] text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap"
-                              title={`Gốc: ${item.grossImportedQuantity} • Đã trả NCC: ${item.supplierReturnedQuantity}`}
-                            >
-                              Gốc +{item.grossImportedQuantity} • Trả -{item.supplierReturnedQuantity}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-gray-400 whitespace-nowrap">
-                              {item.receiptsCount} phiếu nhập
-                            </span>
-                          )}
-                        </div>
-                      </SystemTd>
-
-                      {/* Đơn hàng đi (Xuất bán) */}
-                      <SystemTd align="right" className="text-right">
-                        <div className="flex flex-col items-end">
-                          <span
-                            className={`font-mono text-xs font-bold ${
-                              item.exportedQuantity > 0
-                                ? 'text-[#5865f2] dark:text-indigo-400'
-                                : 'text-gray-500 dark:text-gray-400'
-                            }`}
-                          >
-                            {item.exportedQuantity > 0
-                              ? `-${item.exportedQuantity.toLocaleString('vi-VN')}`
-                              : item.exportedQuantity.toLocaleString('vi-VN')}
-                          </span>
-                          {item.customerReturnedQuantity && item.customerReturnedQuantity > 0 ? (
-                            <span
-                              className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium whitespace-nowrap"
-                              title={`Đơn: ${item.grossExportedQuantity} • Khách hoàn: ${item.customerReturnedQuantity}`}
-                            >
-                              Đơn {item.grossExportedQuantity} • Hoàn -{item.customerReturnedQuantity}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-gray-400 whitespace-nowrap">
-                              {item.ordersCount} đơn hàng
-                            </span>
-                          )}
-                        </div>
-                      </SystemTd>
-
-                      {/* Tổng tiền đơn đi (theo shop) */}
-                      <SystemTd align="right" className="text-right">
-                        <div className="flex flex-col items-end">
-                          <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                            {(item.exportedAmount || 0).toLocaleString('vi-VN')} đ
-                          </span>
-                          <span className="text-[10px] text-gray-400 whitespace-nowrap">
-                            {item.exportedQuantity > 0 && item.exportedAmount
-                              ? `~${Math.round(item.exportedAmount / item.exportedQuantity).toLocaleString('vi-VN')} đ/sp`
-                              : '0 đ'}
-                          </span>
-                        </div>
-                      </SystemTd>
-
-                      {/* Đối soát chênh lệch */}
-                      <SystemTd align="center" className="text-center">
-                        <div className="inline-flex flex-col items-center">
-                          {isBalanced && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 whitespace-nowrap">
-                              <CheckCircle2 size={11} /> Khớp (0)
-                            </span>
-                          )}
-                          {isSurplus && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 whitespace-nowrap">
-                              <AlertTriangle size={11} /> Thừa (+{item.discrepancy})
-                            </span>
-                          )}
-                          {isDeficit && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 whitespace-nowrap">
-                              <AlertCircle size={11} /> Thiếu ({item.discrepancy})
-                            </span>
-                          )}
-                          <span className="text-[10px] text-gray-400 mt-0.5 font-mono whitespace-nowrap">
-                            Lý thuyết: {item.calculatedStock}
-                          </span>
-                        </div>
-                      </SystemTd>
-
-                      {/* Tỷ lệ xuất / nhập */}
-                      <SystemTd align="center" className="text-center">
-                        <div className="flex flex-col items-center w-28 mx-auto">
-                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 font-mono">
-                            {item.fulfillmentRatePercent}%
-                          </span>
-                          <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden mt-1">
-                            <div
-                              className={`h-full rounded-full transition-all ${
-                                item.fulfillmentRatePercent >= 100
-                                  ? 'bg-rose-500'
-                                  : item.fulfillmentRatePercent >= 70
-                                  ? 'bg-amber-500'
-                                  : 'bg-[#5865f2]'
-                              }`}
-                              style={{ width: `${Math.min(100, item.fulfillmentRatePercent)}%` }}
-                            />
-                          </div>
-                        </div>
-                      </SystemTd>
-
-                      {/* Nút Xem chi tiết */}
-                      <SystemTd align="center" className="text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenDetail(item.variantId)}
-                          className="px-2.5 py-1 text-xs font-medium text-[#5865f2] dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded transition-colors cursor-pointer border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 whitespace-nowrap"
+                    {/* Product Name & Master Variant SKU */}
+                    <SystemTd align="left">
+                      <div className="flex flex-col min-w-0 py-1">
+                        <span
+                          className="text-xs font-semibold text-gray-900 dark:text-white truncate block hover:text-[#5865f2]"
+                          title={item.productName}
                         >
-                          Chi tiết
-                        </button>
-                      </SystemTd>
-                    </SystemTr>
-                  );
-                })
-              )}
-            </SystemTbody>
-          </SystemTableWrapper>
-        </div>
+                          {item.productName}
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span className="font-mono text-[11px] font-bold text-[#5865f2] dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded border border-indigo-200/60 dark:border-indigo-900/40">
+                            {item.sku}
+                          </span>
+                          {item.variantName && item.variantName !== item.productName && (
+                            <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-[200px]" title={item.variantName}>
+                              • {item.variantName}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-800 px-1 rounded shrink-0">
+                            {item.unit}
+                          </span>
+                        </div>
+                      </div>
+                    </SystemTd>
 
-        {/* Mobile List View (Cards view on small screens) */}
-        <div className="sm:hidden flex-1 min-h-0 overflow-y-auto p-2 space-y-2.5 custom-scrollbar">
-          {isLoading ? (
-            <div className="p-4 text-center text-xs text-gray-500 animate-pulse">
-              Đang tải danh sách đối soát...
-            </div>
-          ) : items.length === 0 ? (
-            <div className="p-6 text-center text-xs text-gray-500">
-              Không có dữ liệu đối soát phù hợp.
-            </div>
-          ) : (
-            items.map((item) => (
+                    {/* Số hàng trước nhập */}
+                    <SystemTd align="center" className="text-center font-mono">
+                      <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
+                        {item.stockBefore.toLocaleString('vi-VN')}
+                      </span>
+                    </SystemTd>
+
+                    {/* Nhập kho */}
+                    <SystemTd align="right" className="text-right">
+                      <div className="flex flex-col items-end">
+                        <span
+                          className={`font-mono text-xs font-bold ${
+                            item.importedQuantity > 0
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-gray-500 dark:text-gray-400'
+                          }`}
+                        >
+                          {item.importedQuantity > 0
+                            ? `+${item.importedQuantity.toLocaleString('vi-VN')}`
+                            : item.importedQuantity.toLocaleString('vi-VN')}
+                        </span>
+                        {item.supplierReturnedQuantity && item.supplierReturnedQuantity > 0 ? (
+                          <span
+                            className="text-[10px] text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap"
+                            title={`Gốc: ${item.grossImportedQuantity} • Đã trả NCC: ${item.supplierReturnedQuantity}`}
+                          >
+                            Gốc +{item.grossImportedQuantity} • Trả -{item.supplierReturnedQuantity}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                            {item.receiptsCount} phiếu nhập
+                          </span>
+                        )}
+                      </div>
+                    </SystemTd>
+
+                    {/* Đơn hàng đi (Xuất bán) */}
+                    <SystemTd align="right" className="text-right">
+                      <div className="flex flex-col items-end">
+                        <span
+                          className={`font-mono text-xs font-bold ${
+                            item.exportedQuantity > 0
+                              ? 'text-[#5865f2] dark:text-indigo-400'
+                              : 'text-gray-500 dark:text-gray-400'
+                          }`}
+                        >
+                          {item.exportedQuantity > 0
+                            ? `-${item.exportedQuantity.toLocaleString('vi-VN')}`
+                            : item.exportedQuantity.toLocaleString('vi-VN')}
+                        </span>
+                        {item.customerReturnedQuantity && item.customerReturnedQuantity > 0 ? (
+                          <span
+                            className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium whitespace-nowrap"
+                            title={`Đơn: ${item.grossExportedQuantity} • Khách hoàn: ${item.customerReturnedQuantity}`}
+                          >
+                            Đơn {item.grossExportedQuantity} • Hoàn -{item.customerReturnedQuantity}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                            {item.ordersCount} đơn hàng
+                          </span>
+                        )}
+                      </div>
+                    </SystemTd>
+
+                    {/* Tổng tiền đơn đi (theo shop) */}
+                    <SystemTd align="right" className="text-right">
+                      <div className="flex flex-col items-end">
+                        <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                          {(item.exportedAmount || 0).toLocaleString('vi-VN')} đ
+                        </span>
+                        <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                          {item.exportedQuantity > 0 && item.exportedAmount
+                            ? `~${Math.round(item.exportedAmount / item.exportedQuantity).toLocaleString('vi-VN')} đ/sp`
+                            : '0 đ'}
+                        </span>
+                      </div>
+                    </SystemTd>
+
+                    {/* Đối soát chênh lệch */}
+                    <SystemTd align="center" className="text-center">
+                      <div className="inline-flex flex-col items-center">
+                        {isBalanced && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 whitespace-nowrap">
+                            <CheckCircle2 size={11} /> Khớp (0)
+                          </span>
+                        )}
+                        {isSurplus && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 whitespace-nowrap">
+                            <AlertTriangle size={11} /> Thừa (+{item.discrepancy})
+                          </span>
+                        )}
+                        {isDeficit && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 whitespace-nowrap">
+                            <AlertCircle size={11} /> Thiếu ({item.discrepancy})
+                          </span>
+                        )}
+                        <span className="text-[10px] text-gray-400 mt-0.5 font-mono whitespace-nowrap">
+                          Lý thuyết: {item.calculatedStock}
+                        </span>
+                      </div>
+                    </SystemTd>
+
+                    {/* Tỷ lệ xuất / nhập */}
+                    <SystemTd align="center" className="text-center">
+                      <div className="flex flex-col items-center w-28 mx-auto">
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 font-mono">
+                          {item.fulfillmentRatePercent}%
+                        </span>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden mt-1">
+                          <div
+                            className={`h-full rounded-full transition-all ${
+                              item.fulfillmentRatePercent >= 100
+                                ? 'bg-rose-500'
+                                : item.fulfillmentRatePercent >= 70
+                                ? 'bg-amber-500'
+                                : 'bg-[#5865f2]'
+                            }`}
+                            style={{ width: `${Math.min(100, item.fulfillmentRatePercent)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </SystemTd>
+
+                    {/* Nút Xem chi tiết */}
+                    <SystemTd align="center" className="text-center" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenDetail(item.variantId)}
+                        className="px-2.5 py-1 text-xs font-medium text-[#5865f2] dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded transition-colors cursor-pointer border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 whitespace-nowrap"
+                      >
+                        Chi tiết
+                      </button>
+                    </SystemTd>
+                  </SystemTr>
+                );
+              })
+            )}
+          </SystemTbody>
+        </SystemTableWrapper>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-3">
+        {isLoading ? (
+          <div className="py-8 text-center text-xs text-gray-400 font-normal">
+            Đang tải dữ liệu đối soát...
+          </div>
+        ) : items.length === 0 ? (
+          <div className="py-8 text-center text-xs text-gray-400 font-normal">
+            Không tìm thấy sản phẩm đối soát nào
+          </div>
+        ) : (
+          items.map((item) => {
+            const isBalanced = item.reconciliationStatus === 'BALANCED';
+            const isSurplus = item.reconciliationStatus === 'SURPLUS';
+            const isDeficit = item.reconciliationStatus === 'DEFICIT';
+
+            return (
               <div
                 key={item.variantId}
-                className="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1b23] space-y-2 shadow-xs"
+                onClick={() => handleOpenDetail(item.variantId)}
+                className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2 cursor-pointer shadow-none card-border transition-colors hover:border-gray-300 dark:hover:border-white/[0.15]"
               >
-                {/* Header: Name, SKU, Status Badge */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-gray-900 dark:text-white line-clamp-2">
-                      {item.productName}
-                    </h4>
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                      <span className="font-mono text-[11px] font-bold text-[#5865f2] dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded">
-                        {item.sku}
+                {/* Header: SKU badge + Variant & Status badge */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                    <span className="font-mono font-bold text-xs text-[#5865f2] dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded border border-indigo-200/60 dark:border-indigo-900/40">
+                      {item.sku}
+                    </span>
+                    {item.variantName && item.variantName !== item.productName && (
+                      <span className="text-[11px] text-gray-400 truncate max-w-[150px]">
+                        {item.variantName}
                       </span>
-                      {item.variantName && item.variantName !== item.productName && (
-                        <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-                          {item.variantName}
-                        </span>
-                      )}
-                    </div>
+                    )}
+                    <span className="text-[10px] text-gray-400 bg-gray-100 dark:bg-gray-800 px-1 rounded shrink-0">
+                      {item.unit}
+                    </span>
                   </div>
 
-                  <div className="shrink-0">
-                    {item.reconciliationStatus === 'BALANCED' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300">
-                        <CheckCircle2 size={10} /> Khớp
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isBalanced && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <CheckCircle2 size={11} /> Khớp (0)
                       </span>
                     )}
-                    {item.reconciliationStatus === 'SURPLUS' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">
-                        <AlertTriangle size={10} /> Thừa (+{item.discrepancy})
+                    {isSurplus && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                        <AlertTriangle size={11} /> Thừa (+{item.discrepancy})
                       </span>
                     )}
-                    {item.reconciliationStatus === 'DEFICIT' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300">
-                        <AlertCircle size={10} /> Thiếu ({item.discrepancy})
+                    {isDeficit && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                        <AlertCircle size={11} /> Thiếu ({item.discrepancy})
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* 4 Metrics: Trước nhập - Nhập - Bán - Tồn */}
-                <div className="grid grid-cols-4 gap-1.5 py-2 border-y border-gray-100 dark:border-gray-800 text-center">
+                {/* Product Name & Outbound GMV */}
+                <div className="text-xs text-gray-500 flex items-center justify-between font-normal gap-2">
+                  <span className="truncate font-medium text-gray-900 dark:text-white" title={item.productName}>
+                    {item.productName}
+                  </span>
+                  <span className="font-medium text-xs text-emerald-600 dark:text-emerald-400 shrink-0">
+                    {(item.exportedAmount || 0).toLocaleString('vi-VN')} đ
+                  </span>
+                </div>
+
+                {/* Quantitative flow breakdown (dashed divider) */}
+                <div className="grid grid-cols-4 gap-1.5 py-1.5 border-t border-dashed border-gray-100 dark:border-gray-800 text-center text-xs">
                   <div>
-                    <span className="text-[10px] text-gray-500 block truncate">Trước nhập</span>
-                    <span className="text-xs font-bold font-mono text-gray-800 dark:text-gray-200">
+                    <span className="text-[10px] text-gray-400 block truncate">Trước nhập</span>
+                    <span className="font-mono font-medium text-gray-700 dark:text-gray-300">
                       {item.stockBefore.toLocaleString('vi-VN')}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-gray-500 block truncate">Thực nhập</span>
+                    <span className="text-[10px] text-gray-400 block truncate">Thực nhập</span>
                     <span
-                      className={`text-xs font-bold font-mono ${
+                      className={`font-mono font-bold ${
                         item.importedQuantity > 0
                           ? 'text-emerald-600 dark:text-emerald-400'
                           : 'text-gray-500 dark:text-gray-400'
                       }`}
                     >
-                      {item.importedQuantity > 0 ? `+${item.importedQuantity}` : item.importedQuantity}
+                      {item.importedQuantity > 0 ? `+${item.importedQuantity.toLocaleString('vi-VN')}` : item.importedQuantity.toLocaleString('vi-VN')}
                     </span>
                     {item.supplierReturnedQuantity && item.supplierReturnedQuantity > 0 ? (
-                      <span className="text-[9px] text-amber-600 dark:text-amber-400 block font-medium truncate">
+                      <span className="text-[9px] text-amber-600 dark:text-amber-400 block truncate">
                         Trả -{item.supplierReturnedQuantity}
                       </span>
                     ) : (
@@ -929,18 +954,18 @@ export const OrderReportsPage: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <span className="text-[10px] text-gray-500 block truncate">Thực bán</span>
+                    <span className="text-[10px] text-gray-400 block truncate">Đơn hàng đi</span>
                     <span
-                      className={`text-xs font-bold font-mono ${
+                      className={`font-mono font-bold ${
                         item.exportedQuantity > 0
                           ? 'text-[#5865f2] dark:text-indigo-400'
                           : 'text-gray-500 dark:text-gray-400'
                       }`}
                     >
-                      {item.exportedQuantity > 0 ? `-${item.exportedQuantity}` : item.exportedQuantity}
+                      {item.exportedQuantity > 0 ? `-${item.exportedQuantity.toLocaleString('vi-VN')}` : item.exportedQuantity.toLocaleString('vi-VN')}
                     </span>
                     {item.customerReturnedQuantity && item.customerReturnedQuantity > 0 ? (
-                      <span className="text-[9px] text-emerald-600 dark:text-emerald-400 block font-medium truncate">
+                      <span className="text-[9px] text-emerald-600 dark:text-emerald-400 block truncate">
                         Hoàn -{item.customerReturnedQuantity}
                       </span>
                     ) : (
@@ -948,42 +973,55 @@ export const OrderReportsPage: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <span className="text-[10px] text-gray-500 block truncate">Tiền đơn đi</span>
-                    <span className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400 block truncate">
-                      {(item.exportedAmount || 0).toLocaleString('vi-VN')} đ
-                    </span>
-                    <span className="text-[9px] text-gray-400 block font-mono truncate">
-                      {item.ordersCount} đơn
+                    <span className="text-[10px] text-gray-400 block truncate">Lý thuyết</span>
+                    <span className="font-mono font-bold text-gray-800 dark:text-gray-200">
+                      {item.calculatedStock.toLocaleString('vi-VN')}
                     </span>
                   </div>
                 </div>
 
-                {/* Footer action */}
-                <div className="flex items-center justify-between text-xs pt-1">
-                  <span className="text-[11px] text-gray-500">
-                    Tỷ lệ xuất: <span className="font-semibold text-gray-700 dark:text-gray-300">{item.fulfillmentRatePercent}%</span>
+                {/* Footer: Fulfillment rate & detail prompt */}
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-100 dark:border-gray-800 text-gray-400 font-normal">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-gray-500">Tỷ lệ xuất:</span>
+                    <span className="font-mono font-semibold text-xs text-gray-800 dark:text-gray-200">
+                      {item.fulfillmentRatePercent}%
+                    </span>
+                    <div className="w-14 bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden inline-block ml-0.5">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          item.fulfillmentRatePercent >= 100
+                            ? 'bg-rose-500'
+                            : item.fulfillmentRatePercent >= 70
+                            ? 'bg-amber-500'
+                            : 'bg-[#5865f2]'
+                        }`}
+                        style={{ width: `${Math.min(100, item.fulfillmentRatePercent)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <span className="text-xs font-medium text-[#5865f2] dark:text-indigo-400 inline-flex items-center gap-0.5">
+                    Chi tiết <ChevronRight size={13} />
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => handleOpenDetail(item.variantId)}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#5865f2] dark:text-indigo-400"
-                  >
-                    Xem chi tiết <ChevronRight size={13} />
-                  </button>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            );
+          })
+        )}
 
-        {/* Bottom-pinned Pagination Bar */}
-        <div className="p-2.5 sm:p-3 border-t border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-[#1a1b23]/30 shrink-0">
+        {/* Mobile Pagination */}
+        <div className="rounded-[4px] border border-gray-200/60 dark:border-white/[0.08] overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
           <SystemPagination
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={totalItems}
             itemsPerPage={limit}
             onPageChange={(page) => setCurrentPage(page)}
+            onLimitChange={(newLimit) => {
+              setLimit(newLimit);
+              setCurrentPage(1);
+            }}
+            className="border-t-0"
           />
         </div>
       </div>

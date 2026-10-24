@@ -819,10 +819,27 @@ export const PurchaseReportsPage: React.FC = () => {
 
       {/* Tab 1: THEO NGÀY NHẬP */}
       {activeTab === 'DATES' && (
-        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">
+        <>
           {/* Desktop Table */}
           <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
-            <SystemTableWrapper>
+            <SystemTableWrapper
+              pagination={
+                data?.byDate && data.byDate.length > 0 ? (
+                  <SystemPagination
+                    currentPage={page}
+                    totalPages={Math.max(1, Math.ceil(data.byDate.length / pageSize))}
+                    totalItems={data.byDate.length}
+                    itemsPerPage={pageSize}
+                    onPageChange={(p) => setPage(p)}
+                    onLimitChange={(l) => {
+                      setPageSize(l);
+                      setPage(1);
+                    }}
+                    className="border-t-0"
+                  />
+                ) : undefined
+              }
+            >
               <SystemThead>
                 <SystemTr>
                   <SystemTh className="w-[180px]">Ngày nhập hàng</SystemTh>
@@ -890,32 +907,14 @@ export const PurchaseReportsPage: React.FC = () => {
                 )}
               </SystemTbody>
             </SystemTableWrapper>
-
-            {/* Desktop Pagination */}
-            {data?.byDate && data.byDate.length > 0 && (
-              <div className="border-t border-gray-200 dark:border-gray-800">
-                <SystemPagination
-                  currentPage={page}
-                  totalPages={Math.max(1, Math.ceil(data.byDate.length / pageSize))}
-                  totalItems={data.byDate.length}
-                  itemsPerPage={pageSize}
-                  onPageChange={(p) => setPage(p)}
-                  onLimitChange={(l) => {
-                    setPageSize(l);
-                    setPage(1);
-                  }}
-                  className="border-t-0"
-                />
-              </div>
-            )}
           </div>
 
           {/* Mobile Card View */}
-          <div className="block md:hidden p-3 space-y-2.5">
+          <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-3">
             {isLoading ? (
               <div className="space-y-2.5">
                 {[1, 2, 3].map((n) => (
-                  <div key={n} className="h-28 rounded bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                  <div key={n} className="h-28 rounded-[4px] bg-gray-100 dark:bg-gray-800 animate-pulse" />
                 ))}
               </div>
             ) : !data?.byDate || data.byDate.length === 0 ? (
@@ -929,7 +928,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 return (
                   <div
                     key={d.date}
-                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2 shadow-none"
+                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2 shadow-none card-border"
                   >
                     <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80 pb-2">
                       <div>
@@ -995,7 +994,7 @@ export const PurchaseReportsPage: React.FC = () => {
 
             {/* Mobile Pagination */}
             {data?.byDate && data.byDate.length > 0 && (
-              <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+              <div className="rounded-[4px] border border-gray-200/60 dark:border-white/[0.08] overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
                 <SystemPagination
                   currentPage={page}
                   totalPages={Math.max(1, Math.ceil(data.byDate.length / pageSize))}
@@ -1011,15 +1010,32 @@ export const PurchaseReportsPage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </>
       )}
 
       {/* Tab 2: THEO NHÀ CUNG CẤP & CHI TIẾT TỪNG MÃ SKU */}
       {activeTab === 'SUPPLIERS' && (
-        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">
+        <>
           {/* Desktop Table View */}
           <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
-            <SystemTableWrapper>
+            <SystemTableWrapper
+              pagination={
+                data?.bySupplier && data.bySupplier.length > 0 ? (
+                  <SystemPagination
+                    currentPage={page}
+                    totalPages={Math.max(1, Math.ceil(data.bySupplier.length / pageSize))}
+                    totalItems={data.bySupplier.length}
+                    itemsPerPage={pageSize}
+                    onPageChange={(p) => setPage(p)}
+                    onLimitChange={(l) => {
+                      setPageSize(l);
+                      setPage(1);
+                    }}
+                    className="border-t-0"
+                  />
+                ) : undefined
+              }
+            >
               <SystemThead>
                 <SystemTr>
                   <SystemTh className="w-9 text-center"></SystemTh>
@@ -1341,32 +1357,14 @@ export const PurchaseReportsPage: React.FC = () => {
                 )}
               </SystemTbody>
             </SystemTableWrapper>
-
-            {/* Desktop Pagination */}
-            {data?.bySupplier && data.bySupplier.length > 0 && (
-              <div className="border-t border-gray-200 dark:border-gray-800">
-                <SystemPagination
-                  currentPage={page}
-                  totalPages={Math.max(1, Math.ceil(data.bySupplier.length / pageSize))}
-                  totalItems={data.bySupplier.length}
-                  itemsPerPage={pageSize}
-                  onPageChange={(p) => setPage(p)}
-                  onLimitChange={(l) => {
-                    setPageSize(l);
-                    setPage(1);
-                  }}
-                  className="border-t-0"
-                />
-              </div>
-            )}
           </div>
 
           {/* Mobile Card View */}
-          <div className="block md:hidden p-3 space-y-2.5">
+          <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-3">
             {isLoading ? (
               <div className="space-y-2.5">
                 {[1, 2, 3].map((n) => (
-                  <div key={n} className="h-32 rounded bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                  <div key={n} className="h-32 rounded-[4px] bg-gray-100 dark:bg-gray-800 animate-pulse" />
                 ))}
               </div>
             ) : !data?.bySupplier || data.bySupplier.length === 0 ? (
@@ -1383,7 +1381,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 return (
                   <div
                     key={s.supplierId}
-                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2.5 shadow-none"
+                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2.5 shadow-none card-border"
                   >
                     <div className="flex items-start justify-between gap-2 border-b border-gray-100 dark:border-gray-800/80 pb-2">
                       <div>
@@ -1550,7 +1548,7 @@ export const PurchaseReportsPage: React.FC = () => {
 
             {/* Mobile Pagination */}
             {data?.bySupplier && data.bySupplier.length > 0 && (
-              <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+              <div className="rounded-[4px] border border-gray-200/60 dark:border-white/[0.08] overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
                 <SystemPagination
                   currentPage={page}
                   totalPages={Math.max(1, Math.ceil(data.bySupplier.length / pageSize))}
@@ -1566,15 +1564,32 @@ export const PurchaseReportsPage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </>
       )}
 
       {/* Tab 3: TOP SẢN PHẨM & SKU */}
       {activeTab === 'PRODUCTS' && (
-        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">
+        <>
           {/* Desktop Table View */}
           <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
-            <SystemTableWrapper>
+            <SystemTableWrapper
+              pagination={
+                data?.topProducts && data.topProducts.length > 0 ? (
+                  <SystemPagination
+                    currentPage={page}
+                    totalPages={Math.max(1, Math.ceil(data.topProducts.length / pageSize))}
+                    totalItems={data.topProducts.length}
+                    itemsPerPage={pageSize}
+                    onPageChange={(p) => setPage(p)}
+                    onLimitChange={(l) => {
+                      setPageSize(l);
+                      setPage(1);
+                    }}
+                    className="border-t-0"
+                  />
+                ) : undefined
+              }
+            >
               <SystemThead>
                 <SystemTr>
                   <SystemTh className="w-[40px] text-center"></SystemTh>
@@ -1861,32 +1876,14 @@ export const PurchaseReportsPage: React.FC = () => {
                 )}
               </SystemTbody>
             </SystemTableWrapper>
-
-            {/* Desktop Pagination */}
-            {data?.topProducts && data.topProducts.length > 0 && (
-              <div className="border-t border-gray-200 dark:border-gray-800">
-                <SystemPagination
-                  currentPage={page}
-                  totalPages={Math.max(1, Math.ceil(data.topProducts.length / pageSize))}
-                  totalItems={data.topProducts.length}
-                  itemsPerPage={pageSize}
-                  onPageChange={(p) => setPage(p)}
-                  onLimitChange={(l) => {
-                    setPageSize(l);
-                    setPage(1);
-                  }}
-                  className="border-t-0"
-                />
-              </div>
-            )}
           </div>
 
           {/* Mobile Card View */}
-          <div className="block md:hidden p-3 space-y-2.5">
+          <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-3">
             {isLoading ? (
               <div className="space-y-2.5">
                 {[1, 2, 3].map((n) => (
-                  <div key={n} className="h-28 rounded bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                  <div key={n} className="h-28 rounded-[4px] bg-gray-100 dark:bg-gray-800 animate-pulse" />
                 ))}
               </div>
             ) : !data?.topProducts || data.topProducts.length === 0 ? (
@@ -1899,7 +1896,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 return (
                   <div
                     key={`${p.sku}-${idx}`}
-                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2.5 text-xs shadow-none"
+                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2.5 text-xs shadow-none card-border"
                   >
                     <div
                       className="flex items-start justify-between gap-2 border-b border-gray-100 dark:border-gray-800/80 pb-2 cursor-pointer"
@@ -2073,7 +2070,7 @@ export const PurchaseReportsPage: React.FC = () => {
 
             {/* Mobile Pagination */}
             {data?.topProducts && data.topProducts.length > 0 && (
-              <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+              <div className="rounded-[4px] border border-gray-200/60 dark:border-white/[0.08] overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
                 <SystemPagination
                   currentPage={page}
                   totalPages={Math.max(1, Math.ceil(data.topProducts.length / pageSize))}
@@ -2089,15 +2086,32 @@ export const PurchaseReportsPage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </>
       )}
 
       {/* Tab 4: THEO CỬA HÀNG */}
       {activeTab === 'SHOPS' && (
-        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">
+        <>
           {/* Desktop Table View */}
           <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
-            <SystemTableWrapper>
+            <SystemTableWrapper
+              pagination={
+                data?.byShop && data.byShop.length > 0 ? (
+                  <SystemPagination
+                    currentPage={page}
+                    totalPages={Math.max(1, Math.ceil(data.byShop.length / pageSize))}
+                    totalItems={data.byShop.length}
+                    itemsPerPage={pageSize}
+                    onPageChange={(p) => setPage(p)}
+                    onLimitChange={(l) => {
+                      setPageSize(l);
+                      setPage(1);
+                    }}
+                    className="border-t-0"
+                  />
+                ) : undefined
+              }
+            >
               <SystemThead>
                 <SystemTr>
                   <SystemTh className="w-[200px]">Cửa hàng / Gian hàng</SystemTh>
@@ -2165,32 +2179,14 @@ export const PurchaseReportsPage: React.FC = () => {
                 )}
               </SystemTbody>
             </SystemTableWrapper>
-
-            {/* Desktop Pagination */}
-            {data?.byShop && data.byShop.length > 0 && (
-              <div className="border-t border-gray-200 dark:border-gray-800">
-                <SystemPagination
-                  currentPage={page}
-                  totalPages={Math.max(1, Math.ceil(data.byShop.length / pageSize))}
-                  totalItems={data.byShop.length}
-                  itemsPerPage={pageSize}
-                  onPageChange={(p) => setPage(p)}
-                  onLimitChange={(l) => {
-                    setPageSize(l);
-                    setPage(1);
-                  }}
-                  className="border-t-0"
-                />
-              </div>
-            )}
           </div>
 
           {/* Mobile Card View */}
-          <div className="block md:hidden p-3 space-y-2.5">
+          <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-3">
             {isLoading ? (
               <div className="space-y-2.5">
                 {[1, 2, 3].map((n) => (
-                  <div key={n} className="h-28 rounded bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                  <div key={n} className="h-28 rounded-[4px] bg-gray-100 dark:bg-gray-800 animate-pulse" />
                 ))}
               </div>
             ) : !data?.byShop || data.byShop.length === 0 ? (
@@ -2204,7 +2200,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 return (
                   <div
                     key={s.shopId}
-                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2.5 text-xs shadow-none"
+                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2.5 text-xs shadow-none card-border"
                   >
                     <div className="flex items-start justify-between gap-2 border-b border-gray-100 dark:border-gray-800/80 pb-2">
                       <div>
@@ -2270,7 +2266,7 @@ export const PurchaseReportsPage: React.FC = () => {
 
             {/* Mobile Pagination */}
             {data?.byShop && data.byShop.length > 0 && (
-              <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+              <div className="rounded-[4px] border border-gray-200/60 dark:border-white/[0.08] overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
                 <SystemPagination
                   currentPage={page}
                   totalPages={Math.max(1, Math.ceil(data.byShop.length / pageSize))}
@@ -2286,15 +2282,32 @@ export const PurchaseReportsPage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </>
       )}
 
       {/* Tab 5: DANH SÁCH PHIẾU NHẬP GẦN ĐÂY */}
       {activeTab === 'RECEIPTS' && (
-        <div className="flex-1 flex flex-col min-h-fit md:min-h-0 md:overflow-hidden bg-white dark:bg-[#14151a] rounded border border-gray-200 dark:border-gray-800">
+        <>
           {/* Desktop Table View */}
           <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
-            <SystemTableWrapper>
+            <SystemTableWrapper
+              pagination={
+                data?.receipts && data.receipts.length > 0 ? (
+                  <SystemPagination
+                    currentPage={page}
+                    totalPages={Math.max(1, Math.ceil(data.receipts.length / pageSize))}
+                    totalItems={data.receipts.length}
+                    itemsPerPage={pageSize}
+                    onPageChange={(p) => setPage(p)}
+                    onLimitChange={(l) => {
+                      setPageSize(l);
+                      setPage(1);
+                    }}
+                    className="border-t-0"
+                  />
+                ) : undefined
+              }
+            >
               <SystemThead>
                 <SystemTr>
                   <SystemTh className="w-[130px]">
@@ -2471,32 +2484,14 @@ export const PurchaseReportsPage: React.FC = () => {
                 )}
               </SystemTbody>
             </SystemTableWrapper>
-
-            {/* Desktop Pagination */}
-            {data?.receipts && data.receipts.length > 0 && (
-              <div className="border-t border-gray-200 dark:border-gray-800">
-                <SystemPagination
-                  currentPage={page}
-                  totalPages={Math.max(1, Math.ceil(data.receipts.length / pageSize))}
-                  totalItems={data.receipts.length}
-                  itemsPerPage={pageSize}
-                  onPageChange={(p) => setPage(p)}
-                  onLimitChange={(l) => {
-                    setPageSize(l);
-                    setPage(1);
-                  }}
-                  className="border-t-0"
-                />
-              </div>
-            )}
           </div>
 
           {/* Mobile Card View */}
-          <div className="block md:hidden p-3 space-y-2.5">
+          <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-3">
             {isLoading ? (
               <div className="space-y-2.5">
                 {[1, 2, 3].map((n) => (
-                  <div key={n} className="h-28 rounded bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                  <div key={n} className="h-28 rounded-[4px] bg-gray-100 dark:bg-gray-800 animate-pulse" />
                 ))}
               </div>
             ) : !data?.receipts || data.receipts.length === 0 ? (
@@ -2508,7 +2503,7 @@ export const PurchaseReportsPage: React.FC = () => {
                 return (
                   <div
                     key={r.id}
-                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2 text-xs shadow-none"
+                    className="p-3.5 rounded-[4px] bg-white dark:bg-[#181b22] border border-gray-200/60 dark:border-white/[0.08] space-y-2 text-xs shadow-none card-border"
                   >
                     <div className="flex items-start justify-between gap-2 border-b border-gray-100 dark:border-gray-800/80 pb-1.5">
                       <div>
@@ -2596,7 +2591,7 @@ export const PurchaseReportsPage: React.FC = () => {
 
             {/* Mobile Pagination */}
             {data?.receipts && data.receipts.length > 0 && (
-              <div className="rounded border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+              <div className="rounded-[4px] border border-gray-200/60 dark:border-white/[0.08] overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
                 <SystemPagination
                   currentPage={page}
                   totalPages={Math.max(1, Math.ceil(data.receipts.length / pageSize))}
@@ -2612,7 +2607,7 @@ export const PurchaseReportsPage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </>
       )}
 
       {/* Modal xem danh sách hàng thực nhận của phiếu nhập */}
