@@ -374,8 +374,8 @@ export const OrderReportsPage: React.FC = () => {
             title: isFilteringSpecificShop ? `Tiền hàng đi: ${currentShop?.name || 'Shop'}` : 'Tổng tiền hàng đi (Tất cả shop)',
             value: `${(summary.totalExportedAmount || 0).toLocaleString('vi-VN')} đ`,
             subtitle: isFilteringSpecificShop
-              ? `Doanh số xuất đi của ${currentShop?.name || 'shop'}`
-              : `Tổng giá trị hàng xuất của ${shops.length} shop`,
+              ? `Tính theo giá hàng nhập của ${currentShop?.name || 'shop'}`
+              : `Tính theo giá hàng nhập (${(summary.totalExportedQuantity || 0).toLocaleString('vi-VN')} sp xuất)`,
             icon: CircleDollarSign,
             colorScheme: 'green',
           }}
@@ -658,7 +658,7 @@ export const OrderReportsPage: React.FC = () => {
               <SystemTh align="right" className="text-right">Đã nhập kho</SystemTh>
               <SystemTh align="right" className="text-right">Đơn hàng đi</SystemTh>
               <SystemTh align="right" className="text-right">
-                {isFilteringSpecificShop ? `Tiền hàng đi (${currentShop?.name || 'Shop'})` : 'Tiền hàng đi (Tổng)'}
+                {isFilteringSpecificShop ? `Tiền hàng đi (${currentShop?.name || 'Shop'})` : 'Tiền hàng đi (Giá nhập)'}
               </SystemTh>
               <SystemTh align="center" className="text-center">Đối soát chênh lệch</SystemTh>
               <SystemTh align="center" className="text-center">Tỷ lệ xuất / nhập</SystemTh>
@@ -782,7 +782,7 @@ export const OrderReportsPage: React.FC = () => {
                       </div>
                     </SystemTd>
 
-                    {/* Tổng tiền đơn đi (theo shop) */}
+                    {/* Tổng tiền đơn đi (theo giá hàng nhập) */}
                     <SystemTd align="right" className="text-right">
                       <div className="flex flex-col items-end">
                         <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
@@ -790,7 +790,7 @@ export const OrderReportsPage: React.FC = () => {
                         </span>
                         <span className="text-[10px] text-gray-400 whitespace-nowrap">
                           {item.exportedQuantity > 0 && item.exportedAmount
-                            ? `~${Math.round(item.exportedAmount / item.exportedQuantity).toLocaleString('vi-VN')} đ/sp`
+                            ? `~${Math.round(item.exportedAmount / item.exportedQuantity).toLocaleString('vi-VN')} đ/sp (giá nhập)`
                             : '0 đ'}
                         </span>
                       </div>
@@ -1232,9 +1232,13 @@ export const OrderReportsPage: React.FC = () => {
                           </span>
                           <span className="text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1">
                             <CircleDollarSign size={14} className="text-emerald-500" />
-                            <span>Tổng tiền hàng đi:</span>
+                            <span>Tổng tiền hàng đi (Giá nhập):</span>
                             <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                              {detailData.orders.reduce((s, o) => s + o.quantity * (o.discountedPrice || detailData.variant.sellingPrice || 0), 0).toLocaleString('vi-VN')} đ
+                              {(
+                                detailData.orders.reduce((s, o) => s + o.quantity, 0) *
+                                (detailData.variant.costPrice || 0)
+                              ).toLocaleString('vi-VN')}{' '}
+                              đ
                             </span>
                           </span>
                         </div>

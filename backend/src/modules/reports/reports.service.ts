@@ -494,7 +494,12 @@ export class ReportsService {
           soldQuantity: sData.soldQty,
           returnedQuantity: returnedQty,
           netSoldQuantity: Math.max(0, sData.soldQty - returnedQty),
-          exportedAmount: Math.round(sData.exportedAmount || sData.soldQty * Number(v.sellingPrice || 0)),
+          exportedAmount:
+            Number(v.costPrice || 0) > 0
+              ? Math.round(sData.soldQty * Number(v.costPrice))
+              : iData.importedQty > 0
+              ? Math.round(sData.soldQty * Math.round(iData.importedAmount / iData.importedQty))
+              : Math.round(sData.exportedAmount || sData.soldQty * Number(v.sellingPrice || 0)),
           importedQuantity: iData.importedQty,
           importedAmount: Math.round(iData.importedAmount),
           onHand,
@@ -662,7 +667,8 @@ export class ReportsService {
         suppliersWithDebtCount,
       },
       outbound: {
-        totalExportedAmount: gmv,
+        totalExportedAmount:
+          systemProducts.reduce((acc, sp) => acc + (sp.exportedAmount || 0), 0) || gmv,
         totalOrders,
         totalExportedQuantity,
       },
@@ -1770,16 +1776,6 @@ export class ReportsService {
     ]);
 
     const shopOrdersMap = new Map(shopOrderGroups.map((g) => [g.shopId, g]));
-    const shopsSummary = tenantShops.map((s) => {
-      const g = shopOrdersMap.get(s.id);
-      return {
-        shopId: s.id,
-        shopName: s.name,
-        shopCode: s.code,
-        ordersCount: g?._count.id || 0,
-        totalExportedAmount: Math.round(Number(g?._sum.totalAmount || 0)),
-      };
-    }).sort((a, b) => b.totalExportedAmount - a.totalExportedAmount);
 
     const orderItems = await this.prisma.orderItem.findMany({
       where: {
@@ -1794,6 +1790,7 @@ export class ReportsService {
         discountedPrice: true,
         originalPrice: true,
         orderId: true,
+        order: { select: { shopId: true } },
       },
     });
 
@@ -2189,9 +2186,21 @@ export class ReportsService {
       const exportedQty = Math.max(0, grossExportedQty - customerReturnedQty);
 
       const ordersCount = oData.orderIds ? oData.orderIds.size : oData.ordersCount;
-      let exportedAmount = Math.round(oData.totalAmount || 0);
-      if (exportedAmount === 0 && oData.quantity > 0) {
-        exportedAmount = Math.round(Number(v.sellingPrice || 0) * oData.quantity);
+
+      // Tính tiền hàng đi theo giá hàng nhập (costPrice), không theo đơn giá bán trên đơn hàng
+      const unitImportCost =
+        Number(v.costPrice || 0) > 0
+          ? Number(v.costPrice || 0)
+          : rData.receivedQty > 0
+          ? Math.round(rData.totalAmount / rData.receivedQty)
+          : 0;
+
+      let exportedAmount =
+        unitImportCost > 0
+          ? Math.round(exportedQty * unitImportCost)
+          : Math.round(oData.totalAmount || 0);
+      if (exportedAmount === 0 && exportedQty > 0 && Number(v.sellingPrice || 0) > 0) {
+        exportedAmount = Math.round(Number(v.sellingPrice || 0) * exportedQty);
       }
 
       // Theoretical stock = Stock Before Import + Net Inbound - Net Outbound
@@ -2279,13 +2288,36 @@ export class ReportsService {
     const paginatedItems = filteredItems.slice((page - 1) * limit, page * limit);
 
     const sumItemsExportedAmount = allItems.reduce((acc, it) => acc + (it.exportedAmount || 0), 0);
-    const orderGmv = Number(orderGmvAgg._sum.totalAmount || 0);
-    const finalExportedAmount = Math.max(
-      Math.round(orderGmv),
-      Math.round(totalScopeExportedAmount),
-      sumItemsExportedAmount,
-    );
+    const finalExportedAmount = sumItemsExportedAmount;
     const totalOrdersCount = orderGmvAgg._count.id || allScopeOrderIds.size;
+
+    const variantCostMap = new Map(variants.map((v) => [v.id, Number(v.costPrice || 0)]));
+    const shopExportedCostMap = new Map<string, number>();
+    for (const oi of orderItems) {
+      if (oi.variantId && oi.order?.shopId) {
+        const cost = (variantCostMap.get(oi.variantId) || 0) * (oi.quantity || 1);
+        shopExportedCostMap.set(
+          oi.order.shopId,
+          (shopExportedCostMap.get(oi.order.shopId) || 0) + cost,
+        );
+      }
+    }
+
+    const shopsSummary = tenantShops
+      .map((s) => {
+        const g = shopOrdersMap.get(s.id);
+        const costAmount = shopExportedCostMap.get(s.id);
+        return {
+          shopId: s.id,
+          shopName: s.name,
+          shopCode: s.code,
+          ordersCount: g?._count.id || 0,
+          totalExportedAmount: Math.round(
+            costAmount !== undefined ? costAmount : Number(g?._sum.totalAmount || 0),
+          ),
+        };
+      })
+      .sort((a, b) => b.totalExportedAmount - a.totalExportedAmount);
 
     return {
       summary: {
