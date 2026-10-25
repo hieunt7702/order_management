@@ -477,6 +477,7 @@ export class FulfillmentService {
             result: ScanResult.INVALID_ORDER_STATUS,
             message: cancelMessage,
             isCancelled: true,
+            isReturned: false,
             wasDispatched: true,
             autoRestocked: !isVirtualNoStock,
             restockedItemsCount: itemsToRestock.length,
@@ -534,7 +535,71 @@ export class FulfillmentService {
         result: ScanResult.INVALID_ORDER_STATUS,
         message: cancelMessage,
         isCancelled: true,
+        isReturned: false,
         wasDispatched: false,
+        autoRestocked: false,
+        orderId: order.externalOrderId || order.id,
+        internalOrderCode: order.internalOrderCode,
+        shopName: order.shop?.name,
+        carrierName: targetPackage.carrierName || order.shippingCarrier,
+        packageCode: targetPackage.packageCode,
+        packageId: targetPackage.id,
+        order: {
+          id: order.id,
+          externalOrderId: order.externalOrderId,
+          internalOrderCode: order.internalOrderCode,
+          trackingCode: order.trackingCode || targetPackage.trackingCode,
+          platformStatus: order.platformStatus,
+          fulfillmentStatus: order.fulfillmentStatus,
+          shop: order.shop,
+          isVirtual: order.isVirtual,
+          isRealGoods: order.isRealGoods,
+        },
+        package: {
+          id: targetPackage.id,
+          packageCode: targetPackage.packageCode,
+          trackingCode: targetPackage.trackingCode || order.trackingCode,
+          carrierName: targetPackage.carrierName || order.shippingCarrier,
+          status: targetPackage.status,
+          verifiedAt: targetPackage.verifiedAt,
+        },
+      };
+    }
+
+    // Check order conditions: ƯU TIÊN 1.2 - ĐƠN HÀNG CÓ YÊU CẦU TRẢ HÀNG / HOÀN TIỀN TRÊN SÀN (HOẶC ĐÃ TIẾP NHẬN HOÀN KHO)
+    const isOrderReturned =
+      order.platformStatus === PlatformOrderStatus.TO_RETURN ||
+      order.platformStatus === PlatformOrderStatus.RETURN_REFUND ||
+      order.fulfillmentStatus === FulfillmentStatus.RETURN_RECEIVED ||
+      order.fulfillmentStatus === FulfillmentStatus.PARTIALLY_RETURN_RECEIVED;
+
+    if (isOrderReturned) {
+      const returnMessage =
+        'Đơn hàng có yêu cầu Trả hàng / Hoàn tiền trên sàn Shopee, không thể xuất kho. Tuyệt đối giữ lại kiện hàng!';
+
+      await this.prisma.scanEvent.create({
+        data: {
+          tenantId,
+          shopId: order.shopId,
+          warehouseId,
+          orderId: order.id,
+          packageId: targetPackage.id,
+          rawCode,
+          normalizedCode,
+          scanResult: ScanResult.INVALID_ORDER_STATUS,
+          deviceId: dto.deviceId,
+          performedByUserId: userId,
+          idempotencyKey,
+          errorMessage: returnMessage,
+        },
+      });
+
+      return {
+        result: ScanResult.INVALID_ORDER_STATUS,
+        message: returnMessage,
+        isCancelled: false,
+        isReturned: true,
+        wasDispatched: targetPackage.status === PackageStatus.DISPATCHED,
         autoRestocked: false,
         orderId: order.externalOrderId || order.id,
         internalOrderCode: order.internalOrderCode,
@@ -1075,6 +1140,7 @@ export class FulfillmentService {
     let notFoundCount = 0;
     let cancelledCount = 0;
     let cancelledRestockedCount = 0;
+    let returnedCount = 0;
     let failedCount = 0;
 
     for (const code of rawCodes) {
@@ -1094,11 +1160,20 @@ export class FulfillmentService {
           res.order?.platformStatus === PlatformOrderStatus.IN_CANCEL ||
           res.order?.fulfillmentStatus === FulfillmentStatus.CANCELLED_RESTOCKED;
 
+        const isReturned =
+          !!res.isReturned ||
+          res.order?.platformStatus === PlatformOrderStatus.TO_RETURN ||
+          res.order?.platformStatus === PlatformOrderStatus.RETURN_REFUND ||
+          res.order?.fulfillmentStatus === FulfillmentStatus.RETURN_RECEIVED ||
+          res.order?.fulfillmentStatus === FulfillmentStatus.PARTIALLY_RETURN_RECEIVED;
+
         if (isCancelled) {
           cancelledCount++;
           if (res.autoRestocked) {
             cancelledRestockedCount++;
           }
+        } else if (isReturned) {
+          returnedCount++;
         } else if (res.result === ScanResult.VERIFIED) {
           verifiedCount++;
         } else if (res.result === ScanResult.ALREADY_VERIFIED) {
@@ -1111,9 +1186,10 @@ export class FulfillmentService {
 
         results.push({
           code: cleanCode,
-          result: isCancelled ? ScanResult.INVALID_ORDER_STATUS : res.result,
+          result: (isCancelled || isReturned) ? ScanResult.INVALID_ORDER_STATUS : res.result,
           message: res.message,
           isCancelled,
+          isReturned,
           wasDispatched: !!res.wasDispatched,
           autoRestocked: !!res.autoRestocked,
           restockedItemsCount: res.restockedItemsCount || 0,
@@ -1143,6 +1219,7 @@ export class FulfillmentService {
       notFoundCount,
       cancelledCount,
       cancelledRestockedCount,
+      returnedCount,
       failedCount,
       items: results,
     };

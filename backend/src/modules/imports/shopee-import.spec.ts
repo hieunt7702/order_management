@@ -93,6 +93,23 @@ describe('Scenarios 3, 4, 6, 7, 8, 20: Shopee Import Engine & Integrity Tests', 
       // Multi-column return extraction from raw row
       expect(ShopeeAdapter.normalizePlatformStatus('Đang giao', { 'Return Code': 'RET_20261024_01' })).toBe(PlatformOrderStatus.TO_RETURN);
       expect(ShopeeAdapter.normalizePlatformStatus('Đang giao', { 'Trạng thái Trả hàng/Hoàn tiền': 'Đã hoàn tiền' })).toBe(PlatformOrderStatus.RETURN_REFUND);
+
+      // Vietnamese variations for preparing to deliver / ready to ship
+      expect(ShopeeAdapter.normalizePlatformStatus('Đang chuẩn bị hàng')).toBe(PlatformOrderStatus.READY_TO_SHIP);
+      expect(ShopeeAdapter.normalizePlatformStatus('Đang chuẩn bị giao')).toBe(PlatformOrderStatus.READY_TO_SHIP);
+      expect(ShopeeAdapter.normalizePlatformStatus('Chuẩn bị giao')).toBe(PlatformOrderStatus.READY_TO_SHIP);
+      expect(ShopeeAdapter.normalizePlatformStatus('Chờ lấy hàng')).toBe(PlatformOrderStatus.READY_TO_SHIP);
+
+      // Shopee default exports with negative phrases must NEVER be marked as cancelled or returned!
+      expect(ShopeeAdapter.normalizePlatformStatus('Chờ giao hàng', {
+        'Trạng thái Trả hàng/Hoàn tiền': 'Không có yêu cầu Trả hàng/Hoàn tiền',
+        'Lý do hủy': 'Không có lý do hủy',
+      })).toBe(PlatformOrderStatus.READY_TO_SHIP);
+
+      expect(ShopeeAdapter.normalizePlatformStatus('Đang chuẩn bị giao', {
+        'Trạng thái Trả hàng/Hoàn tiền': 'Chưa có yêu cầu Trả hàng/Hoàn tiền',
+        'Lý do hủy': '-',
+      })).toBe(PlatformOrderStatus.READY_TO_SHIP);
     });
   });
 

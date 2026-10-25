@@ -347,11 +347,7 @@ export class ImportsService {
               // Physical handover already verified at local warehouse
               newFulfillmentStatus = FulfillmentStatus.DISPATCHED;
             } else {
-              if (
-                newPlatformStatus === PlatformOrderStatus.CANCELLED ||
-                newPlatformStatus === PlatformOrderStatus.TO_RETURN ||
-                newPlatformStatus === PlatformOrderStatus.RETURN_REFUND
-              ) {
+              if (newPlatformStatus === PlatformOrderStatus.CANCELLED) {
                 // If order was reserved, release stock back to available
                 if (existingOrder.fulfillmentStatus === FulfillmentStatus.RESERVED) {
                   const itemsToRelease = existingOrder.orderItems
@@ -372,6 +368,37 @@ export class ImportsService {
                   }
                 }
                 newFulfillmentStatus = FulfillmentStatus.CANCELLED_RESTOCKED;
+              } else if (
+                newPlatformStatus === PlatformOrderStatus.TO_RETURN ||
+                newPlatformStatus === PlatformOrderStatus.RETURN_REFUND
+              ) {
+                // Return / refund order: if it was reserved, release stock back to available
+                if (existingOrder.fulfillmentStatus === FulfillmentStatus.RESERVED) {
+                  const itemsToRelease = existingOrder.orderItems
+                    .filter((oi) => oi.variantId)
+                    .map((oi) => ({
+                      variantId: oi.variantId!,
+                      quantity: oi.quantity,
+                    }));
+                  if (itemsToRelease.length > 0 && warehouseId) {
+                    await this.inventoryService.releaseStockForOrder(
+                      tx,
+                      tenantId,
+                      warehouseId,
+                      itemsToRelease,
+                      existingOrder.id,
+                      userId,
+                    );
+                  }
+                }
+                // Do NOT mark as CANCELLED_RESTOCKED! Keep existing status if already in fulfillment/return flow, else PENDING_PROCESSING
+                if (
+                  existingOrder.fulfillmentStatus !== FulfillmentStatus.DISPATCHED &&
+                  existingOrder.fulfillmentStatus !== FulfillmentStatus.RETURN_RECEIVED &&
+                  existingOrder.fulfillmentStatus !== FulfillmentStatus.PARTIALLY_RETURN_RECEIVED
+                ) {
+                  newFulfillmentStatus = FulfillmentStatus.PENDING_PROCESSING;
+                }
               } else if (newPlatformStatus === PlatformOrderStatus.COMPLETED) {
                 // Historical order marked completed
                 if (existingOrder.fulfillmentStatus === FulfillmentStatus.RESERVED) {

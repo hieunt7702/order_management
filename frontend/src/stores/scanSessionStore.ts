@@ -17,6 +17,7 @@ export interface SessionItem {
   isVirtual?: boolean;
   isRealGoods?: boolean;
   isCancelled?: boolean;
+  isReturned?: boolean;
   wasDispatched?: boolean;
   autoRestocked?: boolean;
 }
@@ -38,6 +39,7 @@ export interface ScanSession {
     notFound: number;
     cancelled: number;
     cancelledRestocked: number;
+    returned?: number;
     failed: number;
   };
 }
@@ -68,11 +70,12 @@ const calculateStats = (items: SessionItem[]) => {
   return {
     total: items.length,
     verified: items.filter((i) => i.status === 'VERIFIED').length,
-    alreadyVerified: items.filter((i) => i.status === 'ALREADY_VERIFIED' && !i.isCancelled).length,
-    notFound: items.filter((i) => i.status === 'NOT_FOUND' && !i.isCancelled).length,
+    alreadyVerified: items.filter((i) => i.status === 'ALREADY_VERIFIED' && !i.isCancelled && !i.isReturned).length,
+    notFound: items.filter((i) => i.status === 'NOT_FOUND' && !i.isCancelled && !i.isReturned).length,
     cancelled: items.filter((i) => i.isCancelled).length,
     cancelledRestocked: items.filter((i) => i.isCancelled && i.autoRestocked).length,
-    failed: items.filter((i) => i.status === 'ERROR' && !i.isCancelled).length,
+    returned: items.filter((i) => i.isReturned).length,
+    failed: items.filter((i) => i.status === 'ERROR' && !i.isCancelled && !i.isReturned).length,
   };
 };
 
@@ -339,14 +342,19 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
 
         const isCancelled =
           !!backendResult.isCancelled ||
-          backendResult.result === 'INVALID_ORDER_STATUS' ||
-          backendResult.message?.toLowerCase().includes('hủy');
+          (backendResult.message?.toLowerCase().includes('hủy') ?? false);
+
+        const isReturned =
+          !!backendResult.isReturned ||
+          (backendResult.message?.toLowerCase().includes('trả hàng') ?? false) ||
+          (backendResult.message?.toLowerCase().includes('hoàn tiền') ?? false) ||
+          (backendResult.message?.toLowerCase().includes('hoàn hàng') ?? false);
 
         const wasDispatched = !!backendResult.wasDispatched;
         const autoRestocked = !!backendResult.autoRestocked;
 
         let status: SessionItem['status'] = 'PENDING';
-        if (isCancelled) status = 'ERROR';
+        if (isCancelled || isReturned) status = 'ERROR';
         else if (backendResult.result === 'VERIFIED') status = 'VERIFIED';
         else if (backendResult.result === 'ALREADY_VERIFIED') status = 'ALREADY_VERIFIED';
         else if (backendResult.result === 'NOT_FOUND') status = 'NOT_FOUND';
@@ -356,6 +364,7 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           ...item,
           status,
           isCancelled,
+          isReturned,
           wasDispatched,
           autoRestocked,
           orderId: backendResult.orderId,
@@ -366,6 +375,8 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           packageId: backendResult.packageId,
           message: isCancelled
             ? (backendResult.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho')
+            : isReturned
+            ? (backendResult.message || 'Đơn hàng có yêu cầu Trả hàng / Hoàn tiền trên sàn Shopee, không thể xuất kho')
             : backendResult.result === 'NOT_FOUND'
             ? 'Không có thông tin mã vận đơn trong hệ thống'
             : backendResult.message,
@@ -473,12 +484,18 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
       let finalStatus: SessionItem['status'] = 'ERROR';
       let finalMessage = 'Lỗi đối soát';
       let isCancelled = false;
+      let isReturned = false;
 
       if (backendItem) {
         isCancelled =
           !!backendItem.isCancelled ||
-          backendItem.result === 'INVALID_ORDER_STATUS' ||
-          backendItem.message?.toLowerCase().includes('hủy');
+          (backendItem.message?.toLowerCase().includes('hủy') ?? false);
+
+        isReturned =
+          !!backendItem.isReturned ||
+          (backendItem.message?.toLowerCase().includes('trả hàng') ?? false) ||
+          (backendItem.message?.toLowerCase().includes('hoàn tiền') ?? false) ||
+          (backendItem.message?.toLowerCase().includes('hoàn hàng') ?? false);
 
         const wasDispatched = !!backendItem.wasDispatched;
         const autoRestocked = !!backendItem.autoRestocked;
@@ -487,6 +504,10 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           finalStatus = 'ERROR';
           finalMessage =
             backendItem.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho';
+        } else if (isReturned) {
+          finalStatus = 'ERROR';
+          finalMessage =
+            backendItem.message || 'Đơn hàng có yêu cầu Trả hàng / Hoàn tiền trên sàn Shopee, không thể xuất kho';
         } else if (backendItem.result === 'VERIFIED') {
           finalStatus = 'VERIFIED';
           finalMessage = backendItem.message || 'Xác nhận xuất kho thành công';
@@ -506,6 +527,7 @@ export const useScanSessionStore = create<ScanSessionState>((set, get) => ({
           status: finalStatus,
           message: finalMessage,
           isCancelled,
+          isReturned,
           wasDispatched,
           autoRestocked,
           orderId: backendItem.orderId,

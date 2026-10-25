@@ -170,6 +170,8 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
         ? item.wasDispatched
           ? 'Đã xuất trước (ĐÃ HỦY)'
           : 'Đơn đã hủy'
+        : item.isReturned
+        ? 'Đơn hoàn hàng'
         : item.status === 'VERIFIED'
         ? 'Thành công'
         : item.status === 'ALREADY_VERIFIED'
@@ -576,6 +578,8 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
                               ? item.wasDispatched
                                 ? 'bg-rose-600 text-white border-rose-700 font-bold shadow-xs'
                                 : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 font-bold'
+                              : item.isReturned
+                              ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30 font-bold'
                               : item.status === 'VERIFIED'
                               ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
                               : item.status === 'ALREADY_VERIFIED'
@@ -589,6 +593,8 @@ export const SessionsHistoryModal: React.FC<SessionsHistoryModalProps> = ({
                             ? item.wasDispatched
                               ? 'Đã xuất (Đã hủy)'
                               : 'Đơn đã hủy'
+                            : item.isReturned
+                            ? 'Đơn hoàn hàng'
                             : item.status === 'VERIFIED'
                             ? 'Thành công'
                             : item.status === 'ALREADY_VERIFIED'

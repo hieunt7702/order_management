@@ -74,7 +74,46 @@ export class ShopeeAdapter {
   ): PlatformOrderStatus {
     if (!rawStatus && !row) return PlatformOrderStatus.READY_TO_SHIP;
 
-    // 0. Extract any extra return indicators from row
+    // 0. Helper to check if a signal represents negative / empty / non-actionable state
+    const isNegativeOrEmpty = (val: string): boolean => {
+      const c = val.trim().toLowerCase();
+      if (!c || c === '-' || c === 'n/a' || c === 'none' || c === 'null' || c === 'undefined' || c === '0' || c === 'false') {
+        return true;
+      }
+      if (
+        c === 'không' ||
+        c === 'khong' ||
+        c === 'không có' ||
+        c === 'khong co' ||
+        c === 'chưa' ||
+        c === 'chua' ||
+        c === 'chưa có' ||
+        c === 'chua co' ||
+        c === 'bình thường' ||
+        c === 'binh thuong'
+      ) {
+        return true;
+      }
+      if (
+        c.startsWith('không có') ||
+        c.startsWith('khong co') ||
+        c.startsWith('chưa có') ||
+        c.startsWith('chua co') ||
+        c.startsWith('không ') ||
+        c.startsWith('khong ') ||
+        c.startsWith('chưa ') ||
+        c.startsWith('chua ') ||
+        c.includes('không có yêu cầu') ||
+        c.includes('chưa có yêu cầu') ||
+        c.includes('không có lý do') ||
+        c.includes('chưa có lý do') ||
+        c.includes('không có khiếu nại')
+      ) {
+        return true;
+      }
+      return false;
+    };
+
     let hasReturnCode = false;
     let extraSignals = '';
     if (row && typeof row === 'object') {
@@ -88,9 +127,12 @@ export class ShopeeAdapter {
       ];
       for (const k of returnCodeKeys) {
         const val = row[k];
-        if (val !== undefined && val !== null && String(val).trim()) {
-          hasReturnCode = true;
-          extraSignals += ' return ' + String(val).trim().toLowerCase();
+        if (val !== undefined && val !== null) {
+          const cleanVal = String(val).trim();
+          if (!isNegativeOrEmpty(cleanVal)) {
+            hasReturnCode = true;
+            extraSignals += ' return ' + cleanVal.toLowerCase();
+          }
         }
       }
 
@@ -111,8 +153,11 @@ export class ShopeeAdapter {
       ];
       for (const k of candidateKeys) {
         const val = row[k];
-        if (val !== undefined && val !== null && String(val).trim()) {
-          extraSignals += ' ' + String(val).trim().toLowerCase();
+        if (val !== undefined && val !== null) {
+          const cleanVal = String(val).trim();
+          if (!isNegativeOrEmpty(cleanVal)) {
+            extraSignals += ' ' + cleanVal.toLowerCase();
+          }
         }
       }
     }
@@ -164,8 +209,7 @@ export class ShopeeAdapter {
         s.includes('đang trả') ||
         s.includes('khiếu nại') ||
         s.includes('returning') ||
-        s.includes('returned') ||
-        s.includes('return')
+        s.includes('returned')
       ) {
         return PlatformOrderStatus.TO_RETURN;
       }
@@ -193,15 +237,21 @@ export class ShopeeAdapter {
       return PlatformOrderStatus.TO_CONFIRM_RECEIVE;
     }
 
-    // 4. Shipping / In transit (including standard "Đã giao cho ĐVVC" when not a return)
+    // 4. Ready to ship / Preparing to ship / Chuẩn bị giao hàng
+    // Check this before "Shipping" to avoid false matches on "chuẩn bị giao"
     if (
-      s.includes('đang giao') ||
-      s.includes('shipped') ||
-      s.includes('in_transit') ||
-      s.includes('đã giao cho đvvc') ||
-      s.includes('đã giao cho đơn vị vận chuyển')
+      s.includes('chờ giao hàng') ||
+      s.includes('chờ lấy hàng') ||
+      s.includes('đang chuẩn bị hàng') ||
+      s.includes('đang chuẩn bị giao') ||
+      s.includes('chuẩn bị giao') ||
+      s.includes('chuẩn bị hàng') ||
+      s.includes('chờ giao') ||
+      s.includes('ready to ship') ||
+      s.includes('ready_to_ship') ||
+      s.includes('chờ xử lý')
     ) {
-      return PlatformOrderStatus.SHIPPED;
+      return PlatformOrderStatus.READY_TO_SHIP;
     }
 
     // 5. Cancelled
@@ -219,15 +269,15 @@ export class ShopeeAdapter {
       return PlatformOrderStatus.RETRY_SHIP;
     }
 
-    // 8. Ready to ship
+    // 8. Shipping / In transit (including standard "Đã giao cho ĐVVC" when not a return)
     if (
-      s.includes('chờ giao hàng') ||
-      s.includes('chờ lấy hàng') ||
-      s.includes('ready to ship') ||
-      s.includes('ready_to_ship') ||
-      s.includes('chờ xử lý')
+      s.includes('đang giao') ||
+      s.includes('shipped') ||
+      s.includes('in_transit') ||
+      s.includes('đã giao cho đvvc') ||
+      s.includes('đã giao cho đơn vị vận chuyển')
     ) {
-      return PlatformOrderStatus.READY_TO_SHIP;
+      return PlatformOrderStatus.SHIPPED;
     }
 
     // 9. Unpaid

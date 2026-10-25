@@ -129,7 +129,7 @@ export const ScanOrdersPage: React.FC = () => {
     code: string;
     isDuplicate: boolean;
     timestamp: string;
-    status?: 'PENDING' | 'VERIFIED' | 'ALREADY_VERIFIED' | 'NOT_FOUND' | 'CANCELLED' | 'ERROR';
+    status?: 'PENDING' | 'VERIFIED' | 'ALREADY_VERIFIED' | 'NOT_FOUND' | 'CANCELLED' | 'RETURNED' | 'ERROR';
     wasDispatched?: boolean;
     autoRestocked?: boolean;
     message?: string;
@@ -811,6 +811,23 @@ export const ScanOrdersPage: React.FC = () => {
           shopName: item.shopName,
           carrierName: item.carrierName,
         });
+      } else if (item.isReturned) {
+        // CẢNH BÁO ĐẶC BIỆT: ĐƠN HÀNG CÓ YÊU CẦU TRẢ HÀNG / HOÀN TIỀN
+        if (soundEnabled) playCancelledAlarm();
+        setScanFlash('error');
+        setTimeout(() => setScanFlash(null), 1200);
+
+        setLastScannedFeedback({
+          code: cleanCode,
+          isDuplicate: false,
+          timestamp,
+          status: 'RETURNED',
+          wasDispatched: item.wasDispatched,
+          autoRestocked: false,
+          message: item.message || 'Đơn hàng có yêu cầu TRẢ HÀNG / HOÀN TIỀN trên sàn Shopee! Tuyệt đối giữ lại kiện hàng!',
+          shopName: item.shopName,
+          carrierName: item.carrierName,
+        });
       } else if (item.status === 'NOT_FOUND') {
         // CẢNH BÁO: KHÔNG CÓ THÔNG TIN MÃ VẬN ĐƠN
         if (soundEnabled) playErrorSound();
@@ -1057,6 +1074,8 @@ export const ScanOrdersPage: React.FC = () => {
         ? s.wasDispatched
           ? 'Đã xuất trước (ĐÃ HỦY)'
           : 'Đơn đã hủy'
+        : s.isReturned
+        ? 'Đơn hoàn hàng'
         : s.status === 'VERIFIED'
         ? 'Thành công'
         : s.status === 'ALREADY_VERIFIED'
@@ -1088,6 +1107,7 @@ export const ScanOrdersPage: React.FC = () => {
   const pendingItemsCount = (activeSession?.items || []).filter((i) => i.status === 'PENDING').length;
   const verifiedItemsCount = (activeSession?.items || []).filter((i) => i.status === 'VERIFIED').length;
   const cancelledItemsCount = (activeSession?.items || []).filter((i) => i.isCancelled).length;
+  const returnedItemsCount = (activeSession?.items || []).filter((i) => i.isReturned).length;
   const notFoundItemsCount = (activeSession?.items || []).filter((i) => i.status === 'NOT_FOUND').length;
   const displayedItems = activeSession?.items || [];
 
@@ -1616,6 +1636,8 @@ export const ScanOrdersPage: React.FC = () => {
           <div className={`p-2.5 rounded border shadow-xs flex items-center gap-2.5 transition-colors ${
             lastScannedFeedback?.status === 'CANCELLED'
               ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-800 dark:text-rose-200 ring-1 ring-rose-500/30'
+              : lastScannedFeedback?.status === 'RETURNED'
+              ? 'bg-purple-50 dark:bg-purple-950/40 border-purple-500 text-purple-800 dark:text-purple-200 ring-1 ring-purple-500/30'
               : lastScannedFeedback?.status === 'NOT_FOUND'
               ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-500/50 text-amber-800 dark:text-amber-200'
               : 'bg-white dark:bg-[#161a23] border-gray-200 dark:border-gray-800'
@@ -1626,6 +1648,8 @@ export const ScanOrdersPage: React.FC = () => {
                   ? 'bg-amber-400'
                   : lastScannedFeedback?.status === 'CANCELLED'
                   ? 'bg-rose-500 animate-ping'
+                  : lastScannedFeedback?.status === 'RETURNED'
+                  ? 'bg-purple-500 animate-ping'
                   : lastScannedFeedback?.status === 'NOT_FOUND'
                   ? 'bg-amber-500'
                   : lastScannedFeedback?.status === 'VERIFIED'
@@ -1650,6 +1674,13 @@ export const ScanOrdersPage: React.FC = () => {
                         : lastScannedFeedback.wasDispatched
                         ? `🚨 CẢNH BÁO: ĐÃ XUẤT TRƯỚC NHƯNG ĐÃ BỊ HỦY • ${lastScannedFeedback.code}`
                         : `🚨 CẢNH BÁO ĐƠN HỦY: Mã ${lastScannedFeedback.code}`}
+                    </span>
+                  </span>
+                ) : lastScannedFeedback?.status === 'RETURNED' ? (
+                  <span className="text-purple-600 dark:text-purple-400 font-bold flex items-center gap-1.5">
+                    <AlertTriangle size={14} className="shrink-0 animate-bounce" />
+                    <span>
+                      {`🚨 CẢNH BÁO ĐƠN HOÀN / TRẢ HÀNG: Mã ${lastScannedFeedback.code}`}
                     </span>
                   </span>
                 ) : lastScannedFeedback?.status === 'NOT_FOUND' ? (
@@ -1685,6 +1716,8 @@ export const ScanOrdersPage: React.FC = () => {
                   ? 'Máy quét phần cứng và camera đang tạm khóa. Không có mã nào được thêm vào phiên.'
                   : lastScannedFeedback?.status === 'CANCELLED'
                   ? (lastScannedFeedback.message || 'Đơn hàng đã bị hủy trên sàn Shopee! Hệ thống đã tự động hủy xác nhận đi đơn và hoàn tồn kho!')
+                  : lastScannedFeedback?.status === 'RETURNED'
+                  ? (lastScannedFeedback.message || 'Đơn hàng có yêu cầu Trả hàng / Hoàn tiền trên sàn Shopee! Tuyệt đối giữ lại kiện hàng!')
                   : lastScannedFeedback?.status === 'NOT_FOUND'
                   ? 'Mã vận đơn này chưa có trong hệ thống hoặc chưa được đồng bộ từ sàn.'
                   : lastScannedFeedback?.status === 'VERIFIED'
@@ -1838,6 +1871,14 @@ export const ScanOrdersPage: React.FC = () => {
                                       ? 'ĐÃ XUẤT (ĐÃ HỦY)'
                                       : 'ĐƠN ĐÃ HỦY'}
                                   </span>
+                                </span>
+                              ) : item.isReturned ? (
+                                <span
+                                  className="px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap border shrink-0 flex items-center gap-1 animate-pulse bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30"
+                                  title="Đơn hàng có yêu cầu Trả hàng / Hoàn tiền trên sàn Shopee! Tuyệt đối giữ lại kiện hàng!"
+                                >
+                                  <AlertTriangle size={11} className="shrink-0" />
+                                  <span>ĐƠN HOÀN HÀNG</span>
                                 </span>
                               ) : (
                                 <span
@@ -2069,6 +2110,14 @@ export const ScanOrdersPage: React.FC = () => {
                                       : 'ĐƠN ĐÃ HỦY'}
                                   </span>
                                 </span>
+                              ) : item.isReturned ? (
+                                <span
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border animate-pulse bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30"
+                                  title="Đơn hàng có yêu cầu Trả hàng / Hoàn tiền trên sàn Shopee! Tuyệt đối giữ lại kiện hàng!"
+                                >
+                                  <AlertTriangle size={11} className="shrink-0" />
+                                  <span>ĐƠN HOÀN • GIỮ KIỆN</span>
+                                </span>
                               ) : (
                                 <span
                                   className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${
@@ -2100,6 +2149,10 @@ export const ScanOrdersPage: React.FC = () => {
                                 {item.isCancelled ? (
                                   <span className="text-rose-600 dark:text-rose-400 font-semibold">
                                     {item.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho!'}
+                                  </span>
+                                ) : item.isReturned ? (
+                                  <span className="text-purple-600 dark:text-purple-400 font-semibold">
+                                    {item.message || 'Đơn hàng có yêu cầu Trả hàng / Hoàn tiền trên sàn Shopee, không thể xuất kho!'}
                                   </span>
                                 ) : item.status === 'NOT_FOUND' ? (
                                   <span className="text-amber-600 dark:text-amber-400 font-medium">

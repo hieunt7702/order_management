@@ -409,6 +409,84 @@ describe('Scenarios 9, 10, 11, 12, 13: Fulfillment Scanning & Dispatch Verificat
         'user-1',
       );
     });
+
+    it('Đơn hàng đang chuẩn bị giao (READY_TO_SHIP) quét xuất kho thành công, KHÔNG được báo đơn hủy', async () => {
+      const mockPkg = {
+        id: 'pkg-ready-to-ship',
+        packageCode: 'PKG-READY',
+        trackingCode: 'SPX-PREPARING-123',
+        status: PackageStatus.READY,
+        order: {
+          id: 'ord-ready',
+          externalOrderId: 'ORD-READY-123',
+          trackingCode: 'SPX-PREPARING-123',
+          platformStatus: PlatformOrderStatus.READY_TO_SHIP,
+          fulfillmentStatus: FulfillmentStatus.PENDING_PROCESSING,
+          shopId: 'shop-1',
+          shop: { defaultWarehouseId: 'wh-1' },
+          packages: [{ id: 'pkg-ready-to-ship', status: PackageStatus.READY }],
+          orderItems: [{ id: 'oi-ready', variantId: 'var-1', quantity: 1 }],
+        },
+        packageItems: [
+          {
+            quantity: 1,
+            orderItem: { variantId: 'var-1' },
+          },
+        ],
+      };
+
+      mockPrisma.package.findMany.mockResolvedValue([mockPkg]);
+      mockPrisma.package.updateMany.mockResolvedValue({ count: 1 });
+      mockPrisma.package.count.mockResolvedValue(0);
+
+      const res = await fulfillmentService.verifyDispatch('tenant-1', 'user-1', {
+        code: 'SPX-PREPARING-123',
+        warehouseId: 'wh-1',
+      });
+
+      expect(res.result).toBe(ScanResult.VERIFIED);
+      expect((res as any).isCancelled).toBeUndefined();
+      expect(mockInventoryService.dispatchStockForPackage).toHaveBeenCalled();
+    });
+
+    it('Đơn hàng có yêu cầu TRẢ HÀNG / HOÀN TIỀN (TO_RETURN / RETURN_REFUND) phải báo đơn hoàn và chặn xuất kho', async () => {
+      const mockPkg = {
+        id: 'pkg-to-return',
+        packageCode: 'PKG-RETURN',
+        trackingCode: 'SPX-RETURN-456',
+        status: PackageStatus.READY,
+        order: {
+          id: 'ord-return',
+          externalOrderId: 'ORD-RETURN-456',
+          trackingCode: 'SPX-RETURN-456',
+          platformStatus: PlatformOrderStatus.TO_RETURN,
+          fulfillmentStatus: FulfillmentStatus.PENDING_PROCESSING,
+          shopId: 'shop-1',
+          shop: { defaultWarehouseId: 'wh-1' },
+          packages: [{ id: 'pkg-to-return', status: PackageStatus.READY }],
+          orderItems: [{ id: 'oi-return', variantId: 'var-1', quantity: 1 }],
+        },
+        packageItems: [
+          {
+            quantity: 1,
+            orderItem: { variantId: 'var-1' },
+          },
+        ],
+      };
+
+      mockPrisma.package.findMany.mockResolvedValue([mockPkg]);
+
+      const res = await fulfillmentService.verifyDispatch('tenant-1', 'user-1', {
+        code: 'SPX-RETURN-456',
+        warehouseId: 'wh-1',
+      });
+
+      expect(res.result).toBe(ScanResult.INVALID_ORDER_STATUS);
+      expect((res as any).isReturned).toBe(true);
+      expect((res as any).isCancelled).toBe(false);
+      expect(res.message).toContain('Trả hàng / Hoàn tiền');
+      expect(mockInventoryService.dispatchStockForPackage).not.toHaveBeenCalled();
+    });
   });
 });
 
