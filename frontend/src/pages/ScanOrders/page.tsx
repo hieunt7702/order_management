@@ -31,6 +31,14 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import {
+  MultiFormatReader,
+  DecodeHintType,
+  BarcodeFormat,
+  BinaryBitmap,
+  HybridBinarizer,
+  HTMLCanvasElementLuminanceSource,
+} from '@zxing/library';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useScanSessionStore, SessionItem } from '../../stores/scanSessionStore';
 import { playSuccessSound, playErrorSound, playWarningSound, playCancelledAlarm } from '../../utils/sound';
@@ -140,6 +148,15 @@ export const ScanOrdersPage: React.FC = () => {
   const lastScanTimeRef = useRef<number>(0);
   const lastDuplicateScanRef = useRef<{ code: string; time: number }>({ code: '', time: 0 });
 
+  // Direct high-resolution barcode scanner engine (Full sensor 1080p density)
+  const scanLoopRef = useRef<number | null>(null);
+  const isScanningFrameRef = useRef<boolean>(false);
+  const nativeDetectorRef = useRef<any>(null);
+  const zxingReaderRef = useRef<MultiFormatReader | null>(null);
+  const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const handleIncomingBarcodeRef = useRef<((text: string) => void) | null>(null);
+  const [manualInputCode, setManualInputCode] = useState<string>('');
+
   useEffect(() => {
     isLiveVerifyRef.current = isLiveVerify;
   }, [isLiveVerify]);
@@ -230,6 +247,186 @@ export const ScanOrdersPage: React.FC = () => {
     applyZoom(nextZoom);
   };
 
+  // Helper to calculate precise central horizontal crop coordinates based on video stream geometry
+  const getScanCropCoordinates = (videoEl: HTMLVideoElement) => {
+    const vw = videoEl.videoWidth;
+    const vh = videoEl.videoHeight;
+    if (!vw || !vh) return { cropX: 0, cropY: 0, cropW: vw, cropH: vh };
+
+    // Landscape stream
+    if (vw >= vh) {
+      const cropW = Math.round(vw * 0.94);
+      const cropH = Math.round(vh * 0.55);
+      const cropX = Math.round((vw - cropW) / 2);
+      const cropY = Math.round((vh - cropH) / 2);
+      return { cropX, cropY, cropW, cropH };
+    }
+
+    // Portrait stream (e.g. mobile 1080x1920)
+    // Mobile viewport with object-fit: cover inside standard container (~1.5 aspect ratio)
+    const containerAspect = 390 / 260;
+    const videoAspect = vw / vh;
+
+    let visibleVideoH = vh;
+    let visibleVideoW = vw;
+
+    if (videoAspect < containerAspect) {
+      visibleVideoH = vw / containerAspect;
+    } else {
+      visibleVideoW = vh * containerAspect;
+    }
+
+    const visibleCenterY = vh / 2;
+    const visibleCenterX = vw / 2;
+
+    const cropW = Math.round(Math.min(vw, visibleVideoW * 0.94));
+    const cropH = Math.round(Math.min(vh, visibleVideoH * 0.65));
+    const cropX = Math.max(0, Math.round(visibleCenterX - cropW / 2));
+    const cropY = Math.max(0, Math.round(visibleCenterY - cropH / 2));
+
+    return { cropX, cropY, cropW, cropH };
+  };
+
+  // Safe Native BarcodeDetector initialization (filters out unsupported formats on iOS / Chrome)
+  const initNativeBarcodeDetector = async () => {
+    if (typeof (window as any).BarcodeDetector === 'undefined') {
+      return null;
+    }
+    try {
+      let desiredFormats = ['code_128', 'code_39', 'ean_13', 'ean_8', 'qr_code', 'upc_a', 'upc_e', 'itf'];
+      if (typeof (window as any).BarcodeDetector.getSupportedFormats === 'function') {
+        const supported = await (window as any).BarcodeDetector.getSupportedFormats();
+        if (Array.isArray(supported) && supported.length > 0) {
+          desiredFormats = desiredFormats.filter((fmt) => supported.includes(fmt));
+        }
+      }
+      if (desiredFormats.length === 0) return null;
+      return new (window as any).BarcodeDetector({ formats: desiredFormats });
+    } catch (e) {
+      console.warn('Native BarcodeDetector not available:', e);
+      return null;
+    }
+  };
+
+  const getZXingReader = () => {
+    if (!zxingReaderRef.current) {
+      const hints = new Map<DecodeHintType, any>();
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+        BarcodeFormat.CODE_128,
+        BarcodeFormat.CODE_39,
+        BarcodeFormat.EAN_13,
+        BarcodeFormat.EAN_8,
+        BarcodeFormat.QR_CODE,
+        BarcodeFormat.ITF,
+        BarcodeFormat.UPC_A,
+        BarcodeFormat.UPC_E,
+      ]);
+      hints.set(DecodeHintType.TRY_HARDER, true);
+      const reader = new MultiFormatReader();
+      reader.setHints(hints);
+      zxingReaderRef.current = reader;
+    }
+    return zxingReaderRef.current;
+  };
+
+  const startEnhancedScanningLoop = async () => {
+    stopEnhancedScanningLoop();
+
+    nativeDetectorRef.current = await initNativeBarcodeDetector();
+    const zxing = getZXingReader();
+
+    const runScanCycle = async () => {
+      if (!isCameraRunningRef.current) return;
+
+      if (!isPausedRef.current && !isScanningFrameRef.current) {
+        const videoEl = document.querySelector('#barcode-camera-reader video') as HTMLVideoElement;
+        if (
+          videoEl &&
+          videoEl.readyState >= 2 &&
+          !videoEl.paused &&
+          !videoEl.ended &&
+          videoEl.videoWidth > 0 &&
+          videoEl.videoHeight > 0
+        ) {
+          isScanningFrameRef.current = true;
+          try {
+            let detectedText: string | null = null;
+
+            // Tier 1: Hardware-accelerated native BarcodeDetector directly on full-res <video>
+            if (nativeDetectorRef.current) {
+              try {
+                const barcodes = await nativeDetectorRef.current.detect(videoEl);
+                if (barcodes && barcodes.length > 0) {
+                  const match = barcodes.find((b: any) => Boolean(b.rawValue));
+                  if (match && match.rawValue) {
+                    detectedText = match.rawValue;
+                  }
+                }
+              } catch {
+                // Continue to ZXing on transient frame error
+              }
+            }
+
+            // Tier 2: High-Resolution Sensor Crop with ZXing (Full 1080p pixel density with TRY_HARDER)
+            if (!detectedText && zxing) {
+              const { cropX, cropY, cropW, cropH } = getScanCropCoordinates(videoEl);
+              if (cropW > 0 && cropH > 0) {
+                if (!offscreenCanvasRef.current) {
+                  offscreenCanvasRef.current = document.createElement('canvas');
+                }
+                const canvas = offscreenCanvasRef.current;
+
+                if (canvas.width !== cropW || canvas.height !== cropH) {
+                  canvas.width = cropW;
+                  canvas.height = cropH;
+                }
+
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                if (ctx) {
+                  ctx.drawImage(videoEl, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+                  try {
+                    const luminanceSource = new HTMLCanvasElementLuminanceSource(canvas);
+                    const binaryBitmap = new BinaryBitmap(new HybridBinarizer(luminanceSource));
+                    const result = zxing.decode(binaryBitmap);
+                    if (result && result.getText()) {
+                      detectedText = result.getText();
+                    }
+                  } catch {
+                    // Normal when frame does not contain a recognizable barcode
+                  }
+                }
+              }
+            }
+
+            if (detectedText && !isPausedRef.current) {
+              if (handleIncomingBarcodeRef.current) {
+                handleIncomingBarcodeRef.current(detectedText);
+              }
+            }
+          } catch {
+            // Transient frame error
+          } finally {
+            isScanningFrameRef.current = false;
+          }
+        }
+      }
+
+      if (isCameraRunningRef.current) {
+        scanLoopRef.current = window.setTimeout(runScanCycle, 50);
+      }
+    };
+
+    scanLoopRef.current = window.setTimeout(runScanCycle, 100);
+  };
+
+  const stopEnhancedScanningLoop = () => {
+    if (scanLoopRef.current) {
+      clearTimeout(scanLoopRef.current);
+      scanLoopRef.current = null;
+    }
+    isScanningFrameRef.current = false;
+  };
+
   const startCamera = async () => {
     if (isStartingRef.current) return;
     isStartingRef.current = true;
@@ -249,33 +446,36 @@ export const ScanOrdersPage: React.FC = () => {
         return;
       }
 
-      // Enable native BarcodeDetector API for instant recognition of Code 128 / SPX barcodes
+      // Configure Html5Qrcode with robust format set
       const html5QrCode = new Html5Qrcode('barcode-camera-reader', {
         formatsToSupport: [
           Html5QrcodeSupportedFormats.CODE_128,
           Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.CODE_93,
-          Html5QrcodeSupportedFormats.CODABAR,
-          Html5QrcodeSupportedFormats.ITF,
           Html5QrcodeSupportedFormats.QR_CODE,
           Html5QrcodeSupportedFormats.EAN_13,
           Html5QrcodeSupportedFormats.EAN_8,
           Html5QrcodeSupportedFormats.UPC_A,
           Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.ITF,
         ],
         verbose: false,
         experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true,
+          useBarCodeDetectorIfSupported: false, // We run full-resolution native BarcodeDetector directly on <video>
         },
       });
       scannerRef.current = html5QrCode;
 
+      // Full-HD video constraints for crystal-sharp scanning of dense 24+ character Code 128 barcodes
       const config = {
         fps: 25,
+        videoConstraints: {
+          deviceId: selectedCameraId ? { exact: selectedCameraId } : undefined,
+          facingMode: selectedCameraId ? undefined : (facingMode || 'environment'),
+          width: { min: 640, ideal: 1920, max: 3840 },
+          height: { min: 480, ideal: 1080, max: 2160 },
+        },
       };
 
-      // Camera parameter: Use flexible constraints without rigid min/max
-      // which fail with OverconstrainedError on many standard PC webcams
       const cameraParam: any = selectedCameraId
         ? { deviceId: { exact: selectedCameraId } }
         : { facingMode: facingMode || 'environment' };
@@ -285,23 +485,31 @@ export const ScanOrdersPage: React.FC = () => {
           cameraParam,
           config,
           (decodedText) => {
-            if (!isPausedRef.current) {
-              handleIncomingBarcode(decodedText);
+            if (!isPausedRef.current && handleIncomingBarcodeRef.current) {
+              handleIncomingBarcodeRef.current(decodedText);
             }
           },
           () => {},
         );
       } catch (firstErr: any) {
         console.warn('Initial camera start attempt failed, attempting fallback:', firstErr);
-        // Fallback 1: Direct device ID string or facingMode
-        const fallbackConfig: any = selectedCameraId || { facingMode: 'environment' };
+        // Fallback 1: Direct device ID string or facingMode with standard HD
+        const fallbackConfig: any = {
+          fps: 20,
+          videoConstraints: {
+            deviceId: selectedCameraId ? { exact: selectedCameraId } : undefined,
+            facingMode: selectedCameraId ? undefined : 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        };
         try {
           await html5QrCode.start(
+            selectedCameraId || { facingMode: 'environment' },
             fallbackConfig,
-            config,
             (decodedText) => {
-              if (!isPausedRef.current) {
-                handleIncomingBarcode(decodedText);
+              if (!isPausedRef.current && handleIncomingBarcodeRef.current) {
+                handleIncomingBarcodeRef.current(decodedText);
               }
             },
             () => {},
@@ -311,10 +519,10 @@ export const ScanOrdersPage: React.FC = () => {
           console.warn('Fallback 1 failed, trying fallback 2 (user camera):', secondErr);
           await html5QrCode.start(
             { facingMode: 'user' },
-            config,
+            { fps: 20 },
             (decodedText) => {
-              if (!isPausedRef.current) {
-                handleIncomingBarcode(decodedText);
+              if (!isPausedRef.current && handleIncomingBarcodeRef.current) {
+                handleIncomingBarcodeRef.current(decodedText);
               }
             },
             () => {},
@@ -326,6 +534,9 @@ export const ScanOrdersPage: React.FC = () => {
       setIsCameraPaused(false);
       isPausedRef.current = false;
       isCameraRunningRef.current = true;
+
+      // Start high-resolution parallel scan loop (native BarcodeDetector + Full-res ZXing)
+      startEnhancedScanningLoop();
 
       // Apply initial 1x zoom (full field of view, no cropping)
       setTimeout(() => {
@@ -385,6 +596,7 @@ export const ScanOrdersPage: React.FC = () => {
   };
 
   const stopCamera = async () => {
+    stopEnhancedScanningLoop();
     if (isStoppingRef.current) return;
     isStoppingRef.current = true;
     try {
@@ -670,6 +882,10 @@ export const ScanOrdersPage: React.FC = () => {
       });
     }
   };
+
+  useEffect(() => {
+    handleIncomingBarcodeRef.current = handleIncomingBarcode;
+  }, [handleIncomingBarcode]);
 
   // Background hardware USB / Bluetooth barcode scanner listener
   useEffect(() => {
@@ -1203,22 +1419,22 @@ export const ScanOrdersPage: React.FC = () => {
 
               {/* Center Target Box (Wider horizontal frame optimized for SPX/Shopee 1D Barcodes) */}
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
-                <div className="relative w-[90%] max-w-[400px] h-[135px] sm:h-[155px]">
+                <div className="relative w-[94%] max-w-[460px] h-[135px] sm:h-[155px]">
                   {/* Laser beam */}
                   {!isCameraPaused && (
                     <div className="laser-sweep-beam-active absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-[#3b82f6] to-transparent shadow-[0_0_12px_#3b82f6]" />
                   )}
 
                   {/* 4 Glowing Corner Angles */}
-                  <div className="absolute top-0 left-0 w-7 h-7 border-t-[3.5px] border-l-[3.5px] border-[#3b82f6] rounded-tl shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
-                  <div className="absolute top-0 right-0 w-7 h-7 border-t-[3.5px] border-r-[3.5px] border-[#3b82f6] rounded-tr shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
-                  <div className="absolute bottom-0 left-0 w-7 h-7 border-b-[3.5px] border-l-[3.5px] border-[#3b82f6] rounded-bl shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
-                  <div className="absolute bottom-0 right-0 w-7 h-7 border-b-[3.5px] border-r-[3.5px] border-[#3b82f6] rounded-br shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-[3.5px] border-l-[3.5px] border-[#3b82f6] rounded-tl shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+                  <div className="absolute top-0 right-0 w-8 h-8 border-t-[3.5px] border-r-[3.5px] border-[#3b82f6] rounded-tr shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-[3.5px] border-l-[3.5px] border-[#3b82f6] rounded-bl shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-[3.5px] border-r-[3.5px] border-[#3b82f6] rounded-br shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
 
                   {/* Centered Instruction Pill */}
                   <div className="absolute -bottom-7 inset-x-0 flex justify-center">
-                    <span className="px-3 py-1 rounded-full bg-black/80 backdrop-blur-md text-[11px] font-medium text-white shadow-md border border-white/10">
-                      {isCameraPaused ? 'Quét đang tạm dừng' : 'Đưa mã vận đơn / mã SPX vào khung'}
+                    <span className="px-3 py-1 rounded-full bg-black/80 backdrop-blur-md text-[11px] font-medium text-white shadow-md border border-white/10 whitespace-nowrap">
+                      {isCameraPaused ? 'Quét đang tạm dừng' : 'Đưa mã vận đơn / mã SPX vào khung (giữ cách 15-25cm)'}
                     </span>
                   </div>
                 </div>
@@ -1361,6 +1577,39 @@ export const ScanOrdersPage: React.FC = () => {
                 <span>{isCameraPaused ? 'Tiếp tục' : 'Tạm dừng'}</span>
               </button>
             </div>
+
+            {/* Quick manual / paste input bar */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const code = manualInputCode.trim();
+                if (code) {
+                  if (handleIncomingBarcodeRef.current) {
+                    handleIncomingBarcodeRef.current(code);
+                  }
+                  setManualInputCode('');
+                }
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#0e1118] border-t border-gray-800"
+            >
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={manualInputCode}
+                  onChange={(e) => setManualInputCode(e.target.value)}
+                  placeholder="Dán hoặc nhập tay mã vận đơn (SHOPEE..., SPX...)"
+                  className="w-full h-8 pl-8 pr-2.5 text-xs bg-[#161a23] border border-gray-700/80 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-mono"
+                />
+                <ScanLine size={13} className="absolute left-2.5 top-2.5 text-gray-400" />
+              </div>
+              <button
+                type="submit"
+                disabled={!manualInputCode.trim()}
+                className="h-8 px-3 rounded bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0 shadow-xs"
+              >
+                Nhận mã
+              </button>
+            </form>
           </div>
 
           {/* 5. LIVE STATUS BANNER */}
