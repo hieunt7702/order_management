@@ -95,11 +95,9 @@ export const ScanOrdersPage: React.FC = () => {
     setIsLiveVerify(enabled);
     localStorage.setItem('shopee_scan_live_verify', enabled ? 'true' : 'false');
     if (enabled) {
-      toast.success(
-        'Đã BẬT đối soát trực tiếp: Hệ thống sẽ kiểm tra ngay đơn hủy & mã vận đơn không tồn tại sau mỗi lần quét.',
-      );
+      toast.success('Đã bật xác minh đơn hàng trực tiếp');
     } else {
-      toast.info('Đã TẮT đối soát trực tiếp: Chế độ gom mã vào phiên, đối soát sau khi bấm gửi.');
+      toast.info('Đã tắt xác minh đơn hàng');
     }
   };
 
@@ -804,10 +802,10 @@ export const ScanOrdersPage: React.FC = () => {
           wasDispatched: item.wasDispatched,
           autoRestocked: item.autoRestocked,
           message: item.autoRestocked
-            ? (item.message || 'Đơn hàng ĐÃ BỊ HỦY trên sàn Shopee! Hệ thống đã tự động hủy xác nhận đi đơn và hoàn tồn kho cho sản phẩm.')
+            ? 'Đơn đã hủy trên sàn, tự động hoàn kho.'
             : item.wasDispatched
-            ? (item.message || 'Đơn hàng ĐÃ XUẤT TRƯỚC NHƯNG ĐÃ BỊ HỦY trên sàn Shopee! Tuyệt đối giữ lại kiện hàng!')
-            : (item.message || 'Đơn hàng đã bị hủy trên sàn Shopee, không thể xuất kho!'),
+            ? 'Đã xuất trước nhưng đã bị hủy. Giữ lại kiện!'
+            : 'Đơn đã bị hủy trên sàn, giữ lại kiện hàng!',
           shopName: item.shopName,
           carrierName: item.carrierName,
         });
@@ -824,7 +822,7 @@ export const ScanOrdersPage: React.FC = () => {
           status: 'RETURNED',
           wasDispatched: item.wasDispatched,
           autoRestocked: false,
-          message: item.message || 'Đơn hàng có yêu cầu TRẢ HÀNG / HOÀN TIỀN trên sàn Shopee! Tuyệt đối giữ lại kiện hàng!',
+          message: 'Đơn có yêu cầu Trả hàng / Hoàn tiền. Giữ lại kiện!',
           shopName: item.shopName,
           carrierName: item.carrierName,
         });
@@ -839,7 +837,7 @@ export const ScanOrdersPage: React.FC = () => {
           isDuplicate: false,
           timestamp,
           status: 'NOT_FOUND',
-          message: 'Không tìm thấy thông tin mã vận đơn trong hệ thống!',
+          message: 'Chưa có thông tin mã vận đơn trong hệ thống.',
         });
       } else if (item.status === 'ALREADY_VERIFIED') {
         // ĐƠN ĐÃ XUẤT TRƯỚC
@@ -852,7 +850,7 @@ export const ScanOrdersPage: React.FC = () => {
           isDuplicate: true,
           timestamp,
           status: 'ALREADY_VERIFIED',
-          message: item.message || 'Kiện hàng này đã được xác nhận xuất kho trước đó',
+          message: 'Kiện hàng này đã xuất kho trước đó.',
           shopName: item.shopName,
           carrierName: item.carrierName,
         });
@@ -867,7 +865,7 @@ export const ScanOrdersPage: React.FC = () => {
           isDuplicate: false,
           timestamp,
           status: 'VERIFIED',
-          message: item.message || 'Xác nhận xuất kho thành công',
+          message: 'Xác nhận xuất kho thành công.',
           shopName: item.shopName,
           carrierName: item.carrierName,
         });
@@ -882,7 +880,7 @@ export const ScanOrdersPage: React.FC = () => {
           isDuplicate: false,
           timestamp,
           status: 'ERROR',
-          message: item.message || 'Lỗi đối soát đơn hàng',
+          message: item.message || 'Lỗi đối soát đơn hàng.',
         });
       }
     } catch (err: any) {
@@ -1355,7 +1353,7 @@ export const ScanOrdersPage: React.FC = () => {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white leading-tight">
-                    Đối soát trực tiếp khi quét
+                    Xác minh trực tiếp với đơn hàng
                   </span>
                   {isLiveVerify ? (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
@@ -1364,14 +1362,14 @@ export const ScanOrdersPage: React.FC = () => {
                     </span>
                   ) : (
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
-                      Mặc định: TẮT
+                      TẮT
                     </span>
                   )}
                 </div>
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-tight truncate">
                   {isLiveVerify
-                    ? 'Kiểm tra ngay đơn hủy & mã vận đơn không tồn tại sau mỗi lần quét'
-                    : 'Chỉ gom mã vào phiên, chưa đối soát ngay (bấm [Gửi đối soát] để kiểm tra hàng loạt)'}
+                    ? 'Kiểm tra đơn hủy & xuất kho ngay sau mỗi lần quét'
+                    : 'Gom mã vào phiên, đối soát sau khi bấm gửi'}
                 </p>
               </div>
             </div>
@@ -1660,73 +1658,73 @@ export const ScanOrdersPage: React.FC = () => {
               }`}
             />
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-semibold text-gray-900 dark:text-white">
+              <div className="text-xs font-semibold text-gray-900 dark:text-white truncate">
                 {isCameraPaused ? (
                   <span className="text-amber-500 dark:text-amber-400">
-                    Đang tạm dừng quét barcode (Bấm &apos;Tiếp tục&apos; để nhận mã)
+                    Đang tạm dừng quét barcode
                   </span>
                 ) : lastScannedFeedback?.status === 'CANCELLED' ? (
-                  <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1.5">
-                    <AlertTriangle size={14} className="shrink-0 animate-bounce" />
-                    <span>
+                  <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1.5 truncate">
+                    <AlertTriangle size={13} className="shrink-0" />
+                    <span className="truncate">
                       {lastScannedFeedback.autoRestocked
-                        ? `🚨 ĐƠN HÀNG ĐÃ HỦY: ĐÃ TỰ ĐỘNG HOÀN KHO • ${lastScannedFeedback.code}`
+                        ? `🚨 ĐƠN HỦY (ĐÃ HOÀN KHO) • ${lastScannedFeedback.code}`
                         : lastScannedFeedback.wasDispatched
-                        ? `🚨 CẢNH BÁO: ĐÃ XUẤT TRƯỚC NHƯNG ĐÃ BỊ HỦY • ${lastScannedFeedback.code}`
-                        : `🚨 CẢNH BÁO ĐƠN HỦY: Mã ${lastScannedFeedback.code}`}
+                        ? `🚨 ĐÃ XUẤT (BỊ HỦY SÀN) • ${lastScannedFeedback.code}`
+                        : `🚨 ĐƠN HỦY (GIỮ KIỆN) • ${lastScannedFeedback.code}`}
                     </span>
                   </span>
                 ) : lastScannedFeedback?.status === 'RETURNED' ? (
-                  <span className="text-purple-600 dark:text-purple-400 font-bold flex items-center gap-1.5">
-                    <AlertTriangle size={14} className="shrink-0 animate-bounce" />
-                    <span>
-                      {`🚨 CẢNH BÁO ĐƠN HOÀN / TRẢ HÀNG: Mã ${lastScannedFeedback.code}`}
+                  <span className="text-purple-600 dark:text-purple-400 font-bold flex items-center gap-1.5 truncate">
+                    <AlertTriangle size={13} className="shrink-0" />
+                    <span className="truncate">
+                      {`🚨 ĐƠN HOÀN (GIỮ KIỆN) • ${lastScannedFeedback.code}`}
                     </span>
                   </span>
                 ) : lastScannedFeedback?.status === 'NOT_FOUND' ? (
-                  <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1.5">
-                    <AlertTriangle size={14} className="shrink-0" />
-                    <span>⚠️ KHÔNG CÓ TT MÃ VẬN ĐƠN: Mã {lastScannedFeedback.code}</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1.5 truncate">
+                    <AlertTriangle size={13} className="shrink-0" />
+                    <span className="truncate">⚠️ KHÔNG TÌM THẤY ĐƠN • {lastScannedFeedback.code}</span>
                   </span>
                 ) : lastScannedFeedback?.status === 'VERIFIED' ? (
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
-                    <CheckCircle2 size={14} className="shrink-0" />
-                    <span>✅ ĐỐI SOÁT THÀNH CÔNG (ĐÃ XUẤT KHO) • {lastScannedFeedback.code}</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5 truncate">
+                    <CheckCircle2 size={13} className="shrink-0" />
+                    <span className="truncate">✅ XUẤT KHO THÀNH CÔNG • {lastScannedFeedback.code}</span>
                   </span>
                 ) : lastScannedFeedback?.status === 'ALREADY_VERIFIED' ? (
-                  <span className="text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1.5">
-                    <span>ĐÃ XUẤT KHO TRƯỚC ĐÓ • {lastScannedFeedback.code}</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1.5 truncate">
+                    <span className="truncate">⚠️ ĐÃ XUẤT KHO TRƯỚC ĐÓ • {lastScannedFeedback.code}</span>
                   </span>
                 ) : lastScannedFeedback ? (
                   lastScannedFeedback.isDuplicate ? (
-                    <span className="text-amber-500 dark:text-amber-400">
-                      Mã đã có trong phiên (Trùng lặp) • {lastScannedFeedback.code}
+                    <span className="text-amber-500 dark:text-amber-400 truncate">
+                      Mã đã có trong phiên (Trùng) • {lastScannedFeedback.code}
                     </span>
                   ) : (
-                    <span className="text-emerald-600 dark:text-emerald-400">
-                      Đã thêm mã vào phiên (Chờ đối soát) • {lastScannedFeedback.code}
+                    <span className="text-emerald-600 dark:text-emerald-400 truncate">
+                      Đã thêm vào phiên • {lastScannedFeedback.code}
                     </span>
                   )
                 ) : (
-                  'Sẵn sàng nhận mã tiếp theo'
+                  <span className="truncate">Sẵn sàng nhận mã quét</span>
                 )}
               </div>
               <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">
                 {isCameraPaused
-                  ? 'Máy quét phần cứng và camera đang tạm khóa. Không có mã nào được thêm vào phiên.'
+                  ? 'Máy quét và camera đang tạm dừng.'
                   : lastScannedFeedback?.status === 'CANCELLED'
-                  ? (lastScannedFeedback.message || 'Đơn hàng đã bị hủy trên sàn Shopee! Hệ thống đã tự động hủy xác nhận đi đơn và hoàn tồn kho!')
+                  ? (lastScannedFeedback.message || 'Đơn đã bị hủy trên sàn. Tuyệt đối giữ lại kiện!')
                   : lastScannedFeedback?.status === 'RETURNED'
-                  ? (lastScannedFeedback.message || 'Đơn hàng có yêu cầu Trả hàng / Hoàn tiền trên sàn Shopee! Tuyệt đối giữ lại kiện hàng!')
+                  ? (lastScannedFeedback.message || 'Có yêu cầu Trả hàng / Hoàn tiền. Giữ lại kiện!')
                   : lastScannedFeedback?.status === 'NOT_FOUND'
-                  ? 'Mã vận đơn này chưa có trong hệ thống hoặc chưa được đồng bộ từ sàn.'
+                  ? 'Mã vận đơn chưa có trong hệ thống hoặc chưa đồng bộ.'
                   : lastScannedFeedback?.status === 'VERIFIED'
-                  ? `Đã cập nhật xuất kho thành công${lastScannedFeedback.shopName ? ` • Shop: ${lastScannedFeedback.shopName}` : ''}${lastScannedFeedback.carrierName ? ` • ĐVVC: ${lastScannedFeedback.carrierName}` : ''}`
+                  ? `${lastScannedFeedback.shopName ? `Shop: ${lastScannedFeedback.shopName}` : 'Đã xuất kho'}${lastScannedFeedback.carrierName ? ` • ${lastScannedFeedback.carrierName}` : ''}${lastScannedFeedback.timestamp ? ` • ${lastScannedFeedback.timestamp}` : ''}`
                   : lastScannedFeedback
-                  ? `Quét lúc ${lastScannedFeedback.timestamp} • Sẵn sàng quét mã tiếp theo.`
+                  ? `Quét lúc ${lastScannedFeedback.timestamp} • Sẵn sàng quét tiếp.`
                   : isLiveVerify
-                  ? 'Đang bật đối soát trực tiếp. Mỗi mã quét sẽ được kiểm tra và xuất kho ngay lập tức.'
-                  : 'Chế độ gom mã (Mặc định). Bấm [Gửi đối soát] sau khi hoàn thành phiên quét.'}
+                  ? 'Xác minh đơn hàng: Kiểm tra đơn hủy & xuất kho tức thì.'
+                  : 'Chế độ gom mã: Bấm [Gửi đối soát] sau khi hoàn thành.'}
               </div>
             </div>
           </div>
