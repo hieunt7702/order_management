@@ -1506,13 +1506,15 @@ export class OrdersService {
       throw new BadRequestException('Đơn hàng chưa ở trạng thái xuất kho / đã quét');
     }
 
-    const warehouseId = order.shop?.defaultWarehouseId;
     const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
+    const isPlatformCancelled =
+      order.platformStatus === PlatformOrderStatus.CANCELLED ||
+      order.platformStatus === PlatformOrderStatus.IN_CANCEL;
 
     return this.prisma.$transaction(async (tx) => {
-      // Revert package status
+      // Revert package status (chỉ các kiện đang DISPATCHED)
       await tx.package.updateMany({
-        where: { orderId: order.id },
+        where: { orderId: order.id, status: PackageStatus.DISPATCHED },
         data: {
           status: PackageStatus.READY,
           verifiedAt: null,
@@ -1520,57 +1522,34 @@ export class OrdersService {
         },
       });
 
-      // Restore stock if real goods were dispatched
-      if (!isVirtualNoStock && warehouseId) {
-        const itemsToRestore = (order.orderItems || [])
-          .filter((oi) => !!oi.variantId)
-          .map((oi) => ({
-            variantId: oi.variantId!,
-            quantity: oi.quantity,
-          }));
-
-        for (const item of itemsToRestore) {
-          await tx.inventoryBalance.update({
-            where: {
-              tenantId_warehouseId_variantId: {
-                tenantId,
-                warehouseId,
-                variantId: item.variantId,
-              },
-            },
-            data: {
-              onHand: { increment: item.quantity },
-              reserved: { increment: item.quantity },
-            },
-          });
-
-          await tx.inventoryLedger.create({
-            data: {
-              tenantId,
-              warehouseId,
-              variantId: item.variantId,
-              movementType: InventoryMovementType.ADJUST,
-              deltaOnHand: item.quantity,
-              deltaReserved: item.quantity,
-              referenceType: 'MANUAL_DISPATCH_REVERSAL',
-              referenceId: order.id,
-              voucherCode: order.externalOrderId || order.internalOrderCode,
-              performerName: 'Staff',
-              performedByUserId: userId,
-              note: `Hoàn tác xuất kho đơn ${order.externalOrderId || order.internalOrderCode}${
-                dto?.reason ? `: ${dto.reason}` : ''
-              }`,
-            },
-          });
-        }
+      // Restore stock if real goods were dispatched.
+      // Hoàn đúng số lượng & đúng KHO đã bị trừ theo sổ cái (kho lúc quét có thể khác kho mặc định của Shop),
+      // chỉ cộng onHand, không tăng reserved.
+      let restoredQuantity = 0;
+      if (!isVirtualNoStock) {
+        const orderCode = order.externalOrderId || order.internalOrderCode;
+        const restored = await this.inventoryService.restoreDispatchedStock(tx, tenantId, {
+          orderId: order.id,
+          packageIds: (order.packages || []).map((p) => p.id),
+          userId,
+          referenceType: 'MANUAL_DISPATCH_REVERSAL',
+          referenceId: order.id,
+          voucherCode: orderCode,
+          performerName: 'Staff',
+          note: `Hoàn tác xuất kho đơn ${orderCode}${dto?.reason ? `: ${dto.reason}` : ''}`,
+        });
+        restoredQuantity = restored.restoredQuantity;
       }
 
       // Revert Order status
+      // Đơn đã hủy trên sàn: không đưa về RESERVED (không còn giữ hàng) mà đánh dấu CANCELLED_RESTOCKED
       const updatedOrder = await tx.order.update({
         where: { id: order.id },
         data: {
           verificationStatus: VerificationStatus.NOT_VERIFIED,
-          fulfillmentStatus: FulfillmentStatus.RESERVED,
+          fulfillmentStatus: isPlatformCancelled
+            ? FulfillmentStatus.CANCELLED_RESTOCKED
+            : FulfillmentStatus.RESERVED,
         },
         include: {
           shop: true,
@@ -1589,6 +1568,7 @@ export class OrdersService {
           externalOrderId: order.externalOrderId,
           reason: dto?.reason,
           restoredStock: !isVirtualNoStock,
+          restoredQuantity,
         },
       });
 

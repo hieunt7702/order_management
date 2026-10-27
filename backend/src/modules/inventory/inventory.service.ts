@@ -954,6 +954,131 @@ export class InventoryService {
     }
   }
 
+  /**
+   * HOÀN TÁC XUẤT KHO (bù trừ chính xác theo sổ cái):
+   * - Tính số lượng đã thực sự bị trừ khỏi onHand cho các kiện của đơn (DISPATCH trừ đi các lần hoàn/hoàn tác trước đó),
+   *   theo ĐÚNG kho đã xuất (không phụ thuộc kho mặc định của Shop) và ĐÚNG biến thể đã xuất.
+   * - Chỉ cộng lại onHand. KHÔNG tăng `reserved` (dispatch chỉ giảm reserved có kẹp về 0 nên không thể "trả" lại reserved;
+   *   tăng reserved khiến tồn khả dụng = onHand - reserved không đổi => tồn kho vẫn âm sau khi hoàn tác).
+   * - Ghi bút toán ADJUST bù trừ vào InventoryLedger trong cùng transaction.
+   */
+  async restoreDispatchedStock(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    params: {
+      orderId: string;
+      packageIds: string[];
+      userId?: string;
+      referenceType: string;
+      referenceId: string;
+      voucherCode?: string;
+      performerName?: string;
+      note: string;
+    },
+  ): Promise<{ restoredLines: number; restoredQuantity: number }> {
+    const { orderId, packageIds } = params;
+
+    const ledgerWhereOr: Prisma.InventoryLedgerWhereInput[] = [
+      { referenceType: 'MANUAL_DISPATCH_REVERSAL', referenceId: orderId },
+    ];
+    if (packageIds.length > 0) {
+      ledgerWhereOr.push({
+        movementType: InventoryMovementType.DISPATCH,
+        referenceType: 'PACKAGE',
+        referenceId: { in: packageIds },
+      });
+      ledgerWhereOr.push({
+        referenceType: { in: ['SCAN_REVERSAL', 'SCAN_CANCELLED_RESTOCK'] },
+        referenceId: { in: packageIds },
+      });
+    }
+
+    const entries = await tx.inventoryLedger.findMany({
+      where: { tenantId, OR: ledgerWhereOr },
+      select: { warehouseId: true, variantId: true, deltaOnHand: true },
+    });
+
+    // Net onHand đã bị trừ theo từng (kho, biến thể)
+    const netDeducted = new Map<string, { warehouseId: string; variantId: string; quantity: number }>();
+    for (const e of entries) {
+      const key = `${e.warehouseId}|${e.variantId}`;
+      const cur = netDeducted.get(key) || { warehouseId: e.warehouseId, variantId: e.variantId, quantity: 0 };
+      cur.quantity += -e.deltaOnHand;
+      netDeducted.set(key, cur);
+    }
+
+    // Khóa theo thứ tự xác định để tránh deadlock
+    const lines = [...netDeducted.values()]
+      .filter((l) => l.quantity > 0)
+      .sort((a, b) => `${a.warehouseId}|${a.variantId}`.localeCompare(`${b.warehouseId}|${b.variantId}`));
+
+    let performerName = params.performerName;
+    if (!performerName && params.userId && (tx as any).user?.findUnique) {
+      const user = await (tx as any).user
+        .findUnique({ where: { id: params.userId }, select: { name: true, email: true } })
+        .catch(() => null);
+      performerName = user?.name || user?.email;
+    }
+    performerName = performerName || 'HieuNT';
+
+    let restoredQuantity = 0;
+    for (const line of lines) {
+      const balance = await tx.inventoryBalance.findUnique({
+        where: {
+          tenantId_warehouseId_variantId: {
+            tenantId,
+            warehouseId: line.warehouseId,
+            variantId: line.variantId,
+          },
+        },
+      });
+
+      const beforeOnHand = balance?.onHand ?? 0;
+      const afterOnHand = beforeOnHand + line.quantity;
+
+      if (balance) {
+        await tx.inventoryBalance.update({
+          where: { id: balance.id },
+          data: { onHand: { increment: line.quantity } },
+        });
+      } else {
+        await tx.inventoryBalance.create({
+          data: {
+            tenantId,
+            warehouseId: line.warehouseId,
+            variantId: line.variantId,
+            onHand: line.quantity,
+            reserved: 0,
+          },
+        });
+      }
+
+      await tx.inventoryLedger.create({
+        data: {
+          tenantId,
+          warehouseId: line.warehouseId,
+          variantId: line.variantId,
+          movementType: InventoryMovementType.ADJUST,
+          deltaOnHand: line.quantity,
+          deltaReserved: 0,
+          referenceType: params.referenceType,
+          referenceId: params.referenceId,
+          voucherCode: params.voucherCode,
+          performerName,
+          beforeOnHand,
+          afterOnHand,
+          performedByUserId: params.userId,
+          note: params.note,
+        },
+      });
+
+      restoredQuantity += line.quantity;
+    }
+
+    return { restoredLines: lines.length, restoredQuantity };
+  }
+
+
   // RETURN RECEIPT (ONLY RESTOCKS WHEN PHYSICALLY RECEIVED AT WAREHOUSE)
   async receiveReturnedStock(
     tx: Prisma.TransactionClient,

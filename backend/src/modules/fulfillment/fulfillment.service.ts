@@ -926,17 +926,9 @@ export class FulfillmentService {
     }
 
     const order = pkg.order;
-    const warehouseId = order.shop.defaultWarehouseId;
-    if (!warehouseId) {
-      throw new BadRequestException('Shop chưa được cấu hình Kho');
-    }
-
-    const itemsToRestore = pkg.packageItems
-      .filter((pi: any) => !!pi.orderItem.variantId)
-      .map((pi: any) => ({
-        variantId: pi.orderItem.variantId,
-        quantity: pi.quantity,
-      }));
+    const isPlatformCancelled =
+      order.platformStatus === PlatformOrderStatus.CANCELLED ||
+      order.platformStatus === PlatformOrderStatus.IN_CANCEL;
 
     return this.prisma.$transaction(async (tx) => {
       // Revert package status
@@ -949,44 +941,23 @@ export class FulfillmentService {
         },
       });
 
-      // Restore stock: increment onHand and reserved, write compensatory ledger (Chỉ hoàn tác kho nếu hàng thật đã xuất)
+      // Restore stock theo sổ cái: đúng kho & đúng số lượng đã bị trừ khi quét xuất (kho quét có thể khác kho mặc định của Shop).
+      // Chỉ cộng onHand, KHÔNG tăng reserved (Chỉ hoàn tác kho nếu hàng thật đã xuất)
       const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
       if (!isVirtualNoStock) {
-        for (const item of itemsToRestore) {
-          await tx.inventoryBalance.update({
-            where: {
-              tenantId_warehouseId_variantId: {
-                tenantId,
-                warehouseId,
-                variantId: item.variantId,
-              },
-            },
-            data: {
-              onHand: { increment: item.quantity },
-              reserved: { increment: item.quantity },
-            },
-          });
+        const orderCode = order?.externalOrderId || order?.internalOrderCode;
+        const packageCode = pkg.packageCode || pkg.trackingCode;
 
-          const orderCode = order?.externalOrderId || order?.internalOrderCode;
-          const packageCode = pkg.packageCode || pkg.trackingCode;
-
-          await tx.inventoryLedger.create({
-            data: {
-              tenantId,
-              warehouseId,
-              variantId: item.variantId,
-              movementType: InventoryMovementType.ADJUST,
-              deltaOnHand: item.quantity,
-              deltaReserved: item.quantity,
-              referenceType: 'SCAN_REVERSAL',
-              referenceId: pkg.id,
-              voucherCode: orderCode || packageCode,
-              performerName: 'HieuNT',
-              performedByUserId: userId,
-              note: `Hoàn tác quét xuất kiện ${packageCode}${orderCode ? ` cho đơn ${orderCode}` : ''}: ${dto.reason}`,
-            },
-          });
-        }
+        await this.inventoryService.restoreDispatchedStock(tx, tenantId, {
+          orderId: order.id,
+          packageIds: [pkg.id],
+          userId,
+          referenceType: 'SCAN_REVERSAL',
+          referenceId: pkg.id,
+          voucherCode: orderCode || packageCode || undefined,
+          performerName: 'HieuNT',
+          note: `Hoàn tác quét xuất kiện ${packageCode}${orderCode ? ` cho đơn ${orderCode}` : ''}: ${dto.reason}`,
+        });
       }
 
       // Re-evaluate order verification status
@@ -1006,7 +977,9 @@ export class FulfillmentService {
         where: { id: order.id },
         data: {
           verificationStatus: newVerificationStatus,
-          fulfillmentStatus: FulfillmentStatus.RESERVED,
+          fulfillmentStatus: isPlatformCancelled
+            ? FulfillmentStatus.CANCELLED_RESTOCKED
+            : FulfillmentStatus.RESERVED,
           note: `${order.note || ''} [Hoàn tác quét kiện ${pkg.packageCode}: ${dto.reason}]`,
         },
       });
