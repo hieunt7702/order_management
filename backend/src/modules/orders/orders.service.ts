@@ -1315,13 +1315,27 @@ export class OrdersService {
         }
       }
 
-      // Items to dispatch
+      // Items to dispatch - Phân giải số lượng xuất kho thực tế theo hệ số multiplier chuẩn xác nhất
+      const shopMappings = await tx.listingMapping.findMany({
+        where: { tenantId, shopId: order.shopId },
+      });
+
       const itemsToDispatch = (order.orderItems || [])
         .filter((oi) => !!oi.variantId)
-        .map((oi) => ({
-          variantId: oi.variantId!,
-          quantity: oi.quantity,
-        }));
+        .map((oi) => {
+          const matchedMapping = shopMappings.find(
+            (m) =>
+              m.variantId === oi.variantId ||
+              (m.sellerSku && oi.externalSku && m.sellerSku.toLowerCase() === oi.externalSku.toLowerCase()),
+          );
+          const multiplier = Math.max(1, matchedMapping?.multiplier || oi.packMultiplier || 1);
+          const rawQty = Math.max(1, oi.rawQuantity || 1);
+          const computedQty = rawQty * multiplier;
+          return {
+            variantId: oi.variantId!,
+            quantity: Math.max(oi.quantity, computedQty),
+          };
+        });
 
       const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
 

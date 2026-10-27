@@ -145,4 +145,19 @@ export class InventoryController {
   ) {
     return this.inventoryService.reconcileBalances(tenantId, warehouseId);
   }
+
+  @Post('heal-multiplier-discrepancies')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Tự động chữa lành các bút toán xuất kho bị lệch hệ số multiplier và tính lại tồn kho lũy kế' })
+  async healMultiplierDiscrepancies(
+    @CurrentTenantId() tenantId: string,
+    @Body() body?: { variantId?: string; warehouseId?: string },
+  ) {
+    if (body?.variantId) {
+      await this.inventoryService.healVariantDispatchedLedgerEntries(tenantId, body.variantId, body.warehouseId);
+    } else {
+      await this.inventoryService.healAllDispatchedLedgerEntries(tenantId);
+    }
+    return { success: true, message: 'Đã hoàn tất đối soát và chữa lành số lượng xuất kho cùng chuỗi tồn kho lũy kế' };
+  }
 }

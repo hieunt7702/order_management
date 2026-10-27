@@ -131,6 +131,9 @@ export class InventoryService {
       throw new NotFoundException('Không tìm thấy biến thể sản phẩm');
     }
 
+    // Tự động đối soát và sửa các bút toán xuất kho nếu hệ số SKU (multiplier) đã được cập nhật sau khi xuất
+    await this.healVariantDispatchedLedgerEntries(tenantId, variantId, warehouseId);
+
     const where: any = {
       tenantId,
       variantId,
@@ -220,6 +223,11 @@ export class InventoryService {
     const page = Math.max(1, Number(filter.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(filter.limit) || 50));
     const skip = (page - 1) * limit;
+
+    // Tự động đối soát và sửa các bút toán xuất kho nếu hệ số SKU (multiplier) đã được cập nhật sau khi xuất
+    if (filter.variantId) {
+      await this.healVariantDispatchedLedgerEntries(tenantId, filter.variantId, filter.warehouseId);
+    }
 
     const where: any = {
       tenantId,
@@ -1216,5 +1224,328 @@ export class InventoryService {
       discrepancyCount: discrepancies.length,
       items: report,
     };
+  }
+
+  /**
+   * Tính toán lại chuỗi tồn kho lũy kế (beforeOnHand -> afterOnHand)
+   * cho một biến thể tại kho, và đồng bộ số tồn cuối cùng vào InventoryBalance.
+   */
+  async recalculateLedgerRunningBalances(
+    tenantId: string,
+    warehouseId: string,
+    variantId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const db = tx || this.prisma;
+    const entries = await db.inventoryLedger.findMany({
+      where: { tenantId, warehouseId, variantId },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+
+    let runningOnHand = 0;
+    for (const entry of entries) {
+      const beforeOnHand = runningOnHand;
+      runningOnHand += (entry.deltaOnHand || 0);
+      const afterOnHand = runningOnHand;
+
+      if (entry.beforeOnHand !== beforeOnHand || entry.afterOnHand !== afterOnHand) {
+        await db.inventoryLedger.update({
+          where: { id: entry.id },
+          data: { beforeOnHand, afterOnHand },
+        });
+      }
+    }
+
+    // Đồng bộ số tồn thực tế cuối cùng vào InventoryBalance
+    await db.inventoryBalance.upsert({
+      where: {
+        tenantId_warehouseId_variantId: {
+          tenantId,
+          warehouseId,
+          variantId,
+        },
+      },
+      update: {
+        onHand: runningOnHand,
+      },
+      create: {
+        tenantId,
+        warehouseId,
+        variantId,
+        onHand: runningOnHand,
+        reserved: 0,
+      },
+    });
+
+    return { runningOnHand, entriesCount: entries.length };
+  }
+
+  /**
+   * Đồng bộ lại số lượng xuất kho trong Sổ cái khi người dùng sửa hệ số multiplier của SKU
+   */
+  async syncDispatchedOrderLedger(
+    tenantId: string,
+    orderId: string,
+    warehouseId: string,
+    variantId: string,
+    newQuantity: number,
+    multiplier: number,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const db = tx || this.prisma;
+    const packages = await db.package.findMany({
+      where: { orderId },
+      select: { id: true, packageCode: true, trackingCode: true },
+    });
+    const pkgIds = packages.map((p) => p.id);
+
+    const order = await db.order.findUnique({
+      where: { id: orderId },
+      select: { externalOrderId: true, internalOrderCode: true, trackingCode: true },
+    });
+
+    const vouchers = [
+      order?.externalOrderId,
+      order?.internalOrderCode,
+      order?.trackingCode,
+      ...packages.map((p) => p.packageCode),
+      ...packages.map((p) => p.trackingCode),
+    ].filter(Boolean) as string[];
+
+    const dispatchEntries = await db.inventoryLedger.findMany({
+      where: {
+        tenantId,
+        variantId,
+        movementType: InventoryMovementType.DISPATCH,
+        OR: [
+          ...(pkgIds.length > 0 ? [{ referenceId: { in: pkgIds } }] : []),
+          { referenceId: orderId },
+          ...(vouchers.length > 0 ? [{ voucherCode: { in: vouchers } }] : []),
+          ...(order?.externalOrderId ? [{ note: { contains: order.externalOrderId } }] : []),
+        ],
+      },
+    });
+
+    if (dispatchEntries.length > 0) {
+      for (const entry of dispatchEntries) {
+        if (Math.abs(entry.deltaOnHand) !== newQuantity) {
+          await db.inventoryLedger.update({
+            where: { id: entry.id },
+            data: {
+              deltaOnHand: -newQuantity,
+              deltaReserved: -newQuantity,
+              note: entry.note ? `${entry.note} (Cập nhật hệ số x${multiplier})` : `Xuất kho thực tế x${multiplier}`,
+            },
+          });
+        }
+      }
+      await this.recalculateLedgerRunningBalances(tenantId, warehouseId, variantId, tx);
+    }
+  }
+
+  /**
+   * Tự động quét và chữa các bút toán xuất kho DISPATCH của biến thể bị ghi nhận thiếu do hệ số mapping ban đầu sai (VD: x1 thay vì x10)
+   */
+  async healVariantDispatchedLedgerEntries(
+    tenantId: string,
+    variantId: string,
+    warehouseId?: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const db = tx || this.prisma;
+    try {
+      // 1. Lấy danh sách mapping của biến thể này
+      const mappings = await db.listingMapping.findMany({
+        where: { tenantId, variantId },
+      });
+
+      if (!mappings || mappings.length === 0) return;
+
+      const maxMultiplier = Math.max(...mappings.map((m) => m.multiplier || 1), 1);
+      if (maxMultiplier <= 1) return;
+
+      // 2. Tìm tất cả các bút toán DISPATCH của biến thể
+      const dispatchEntries = await db.inventoryLedger.findMany({
+        where: {
+          tenantId,
+          variantId,
+          movementType: InventoryMovementType.DISPATCH,
+          ...(warehouseId ? { warehouseId } : {}),
+          deltaOnHand: { lt: 0 },
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (dispatchEntries.length === 0) return;
+
+      const affectedWarehouses = new Set<string>();
+
+      for (const entry of dispatchEntries) {
+        let order: any = null;
+
+        // 2a. Tìm qua referenceId (PACKAGE)
+        if (entry.referenceType === 'PACKAGE' && entry.referenceId) {
+          const pkg = await db.package.findUnique({
+            where: { id: entry.referenceId },
+            include: {
+              order: { include: { orderItems: true } },
+              packageItems: { include: { orderItem: true } },
+            },
+          });
+          order = pkg?.order;
+        }
+
+        // 2b. Tìm qua referenceId (ORDER)
+        if (!order && (entry.referenceType === 'ORDER' || !entry.referenceType) && entry.referenceId) {
+          order = await db.order.findUnique({
+            where: { id: entry.referenceId },
+            include: { orderItems: true },
+          }).catch(() => null);
+        }
+
+        // 2c. Tìm qua voucherCode
+        if (!order && entry.voucherCode) {
+          order = await db.order.findFirst({
+            where: {
+              tenantId,
+              OR: [
+                { externalOrderId: entry.voucherCode },
+                { internalOrderCode: entry.voucherCode },
+                { trackingCode: entry.voucherCode },
+              ],
+            },
+            include: { orderItems: true },
+          });
+
+          if (!order) {
+            const pkg = await db.package.findFirst({
+              where: {
+                tenantId,
+                OR: [
+                  { packageCode: entry.voucherCode },
+                  { trackingCode: entry.voucherCode },
+                ],
+              },
+              include: { order: { include: { orderItems: true } } },
+            });
+            order = pkg?.order;
+          }
+        }
+
+        // 2d. Tìm qua trích xuất mã đơn từ note nếu voucherCode không khớp
+        if (!order && entry.note) {
+          const matchedOrderCode = entry.note.match(/26\d{10,}[A-Za-z0-9]*/);
+          if (matchedOrderCode && matchedOrderCode[0]) {
+            order = await db.order.findFirst({
+              where: {
+                tenantId,
+                OR: [
+                  { externalOrderId: matchedOrderCode[0] },
+                  { internalOrderCode: matchedOrderCode[0] },
+                ],
+              },
+              include: { orderItems: true },
+            });
+          }
+        }
+
+        if (!order || !order.orderItems) continue;
+
+        // Tìm item trong đơn khớp với variant này
+        const matchingItem =
+          order.orderItems.find((oi: any) => oi.variantId === variantId) ||
+          order.orderItems.find((oi: any) => {
+            const oiSku = (oi.externalSku || '').trim().toLowerCase();
+            return mappings.some((m) => {
+              const mSku = (m.sellerSku || '').trim().toLowerCase();
+              return mSku && oiSku && (mSku === oiSku || mSku.includes(oiSku) || oiSku.includes(mSku));
+            });
+          });
+
+        if (!matchingItem) continue;
+
+        const matchedMapping =
+          mappings.find((m) => m.shopId === order.shopId) ||
+          mappings.find(
+            (m) =>
+              m.sellerSku &&
+              matchingItem.externalSku &&
+              (m.sellerSku.toLowerCase() === matchingItem.externalSku.toLowerCase() ||
+                m.sellerSku.toLowerCase().endsWith('_' + matchingItem.externalSku.toLowerCase()) ||
+                matchingItem.externalSku.toLowerCase().endsWith('_' + m.sellerSku.toLowerCase())),
+          ) ||
+          mappings[0];
+
+        const multiplier = Math.max(1, matchedMapping?.multiplier || matchingItem.packMultiplier || maxMultiplier);
+        if (multiplier <= 1) continue;
+
+        const rawQty = Math.max(
+          1,
+          matchingItem.rawQuantity ||
+            (matchingItem.quantity && matchingItem.packMultiplier && matchingItem.packMultiplier > 1
+              ? Math.round(matchingItem.quantity / matchingItem.packMultiplier)
+              : 1),
+        );
+        const correctQty = rawQty * multiplier;
+
+        if (correctQty > 1 && Math.abs(entry.deltaOnHand) !== correctQty) {
+          await db.inventoryLedger.update({
+            where: { id: entry.id },
+            data: {
+              deltaOnHand: -correctQty,
+              deltaReserved: -correctQty,
+              note: entry.note ? `${entry.note} (Khớp hệ số x${multiplier})` : `Xuất kho thực tế x${multiplier}`,
+            },
+          });
+
+          if (matchingItem.quantity !== correctQty || matchingItem.packMultiplier !== multiplier) {
+            await db.orderItem.update({
+              where: { id: matchingItem.id },
+              data: {
+                variantId,
+                quantity: correctQty,
+                packMultiplier: multiplier,
+                rawQuantity: rawQty,
+              },
+            });
+
+            await db.packageItem.updateMany({
+              where: { orderItemId: matchingItem.id, tenantId },
+              data: { quantity: correctQty },
+            });
+          }
+
+          affectedWarehouses.add(entry.warehouseId);
+        }
+      }
+
+      for (const whId of affectedWarehouses) {
+        await this.recalculateLedgerRunningBalances(tenantId, whId, variantId, tx);
+      }
+    } catch (err) {
+      this.logger.error('Error in healVariantDispatchedLedgerEntries:', err);
+    }
+  }
+
+  /**
+   * Chữa tất cả các biến thể có mapping multiplier > 1 trên toàn workspace
+   */
+  async healAllDispatchedLedgerEntries(tenantId?: string) {
+    try {
+      const mappingsWithMultiplier = await this.prisma.listingMapping.findMany({
+        where: {
+          ...(tenantId ? { tenantId } : {}),
+          multiplier: { gt: 1 },
+        },
+        select: { tenantId: true, variantId: true },
+        distinct: ['tenantId', 'variantId'],
+      });
+
+      for (const m of mappingsWithMultiplier) {
+        await this.healVariantDispatchedLedgerEntries(m.tenantId, m.variantId);
+      }
+    } catch (err) {
+      this.logger.error('Error in healAllDispatchedLedgerEntries:', err);
+    }
   }
 }

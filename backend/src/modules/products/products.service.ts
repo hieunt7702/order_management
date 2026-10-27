@@ -715,6 +715,7 @@ export class ProductsService implements OnModuleInit {
 
   private getMappingMatchScore(
     item: {
+      variantId?: string | null;
       externalProductId?: string | null;
       externalVariationId?: string | null;
       externalSku?: string | null;
@@ -722,6 +723,7 @@ export class ProductsService implements OnModuleInit {
       variationName?: string | null;
     },
     mapping: {
+      variantId?: string | null;
       sellerSku: string;
       productName?: string | null;
       variationName?: string | null;
@@ -730,6 +732,11 @@ export class ProductsService implements OnModuleInit {
     },
   ): number {
     const norm = (s?: string | null) => (s || '').trim().toLowerCase();
+
+    // 0. Khớp trực tiếp theo biến thể nội bộ đã liên kết trước đó
+    if (item.variantId && mapping.variantId && item.variantId === mapping.variantId) {
+      return 60;
+    }
 
     // 1. Khớp theo External Product ID & Variation ID (Shopee Item ID / Variation ID)
     if (
@@ -780,6 +787,11 @@ export class ProductsService implements OnModuleInit {
       return 30;
     }
 
+    // 4b. Khớp chứa tiền tố / hậu tố SKU (VD: SP001_x10 chứa SP001)
+    if (mapSku && itemSku && (mapSku.includes(itemSku) || itemSku.includes(mapSku))) {
+      return 25;
+    }
+
     // 5. Khớp theo Tên sản phẩm + Tên phân loại hàng
     const mapProd = norm(mapping.productName);
     const itemProd = norm(item.productName);
@@ -820,6 +832,7 @@ export class ProductsService implements OnModuleInit {
 
       for (const order of orders) {
         let orderModified = false;
+        const isDispatched = order.fulfillmentStatus === FulfillmentStatus.DISPATCHED;
         const wasReservedOrPacked =
           (order.fulfillmentStatus === FulfillmentStatus.RESERVED ||
             order.fulfillmentStatus === FulfillmentStatus.PACKED) &&
@@ -827,6 +840,7 @@ export class ProductsService implements OnModuleInit {
           order.platformStatus !== PlatformOrderStatus.IN_CANCEL;
         const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
         const oldItemsToRelease: Array<{ variantId: string; quantity: number }> = [];
+        const dispatchedItemsToSync: Array<{ variantId: string; quantity: number; multiplier: number }> = [];
 
         for (const item of order.orderItems) {
           const matchScore = this.getMappingMatchScore(item, mapping);
@@ -861,6 +875,14 @@ export class ProductsService implements OnModuleInit {
                 });
               }
 
+              if (isDispatched && !isVirtualNoStock) {
+                dispatchedItemsToSync.push({
+                  variantId: variant.id,
+                  quantity: finalQty,
+                  multiplier,
+                });
+              }
+
               await this.prisma.orderItem.update({
                 where: { id: item.id },
                 data: {
@@ -887,8 +909,23 @@ export class ProductsService implements OnModuleInit {
         }
 
         if (orderModified) {
+          const warehouseId = order.shop?.defaultWarehouseId;
+
+          // Cập nhật Sổ cái tồn kho cho các đơn đã xuất kho thực tế (DISPATCHED)
+          if (isDispatched && !isVirtualNoStock && warehouseId && dispatchedItemsToSync.length > 0) {
+            for (const dItem of dispatchedItemsToSync) {
+              await this.inventoryService.syncDispatchedOrderLedger(
+                tenantId,
+                order.id,
+                warehouseId,
+                dItem.variantId,
+                dItem.quantity,
+                dItem.multiplier,
+              );
+            }
+          }
+
           await this.prisma.$transaction(async (tx) => {
-            const warehouseId = order.shop?.defaultWarehouseId;
             if (wasReservedOrPacked && warehouseId && !isVirtualNoStock && oldItemsToRelease.length > 0) {
               await this.inventoryService.releaseStockForOrder(
                 tx,
@@ -932,6 +969,10 @@ export class ProductsService implements OnModuleInit {
           updatedOrdersCount++;
         }
       }
+
+      // Tự động đối soát và chuẩn hóa chuỗi số dư tồn kho DISPATCH cho biến thể này
+      const defaultWhId = orders.find((o) => !!o.shop?.defaultWarehouseId)?.shop?.defaultWarehouseId || undefined;
+      await this.inventoryService.healVariantDispatchedLedgerEntries(tenantId, variant.id, defaultWhId);
 
       this.logger.log(
         `[syncOrderItemsForMapping] Updated ${updatedItemsCount} items across ${updatedOrdersCount} orders for shop ${shopId}`,
@@ -995,6 +1036,7 @@ export class ProductsService implements OnModuleInit {
         if (!shopMappings || shopMappings.length === 0) continue;
 
         let orderModified = false;
+        const isDispatched = order.fulfillmentStatus === FulfillmentStatus.DISPATCHED;
         const wasReservedOrPacked =
           (order.fulfillmentStatus === FulfillmentStatus.RESERVED ||
             order.fulfillmentStatus === FulfillmentStatus.PACKED) &&
@@ -1002,6 +1044,7 @@ export class ProductsService implements OnModuleInit {
           order.platformStatus !== PlatformOrderStatus.IN_CANCEL;
         const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
         const oldItemsToRelease: Array<{ variantId: string; quantity: number }> = [];
+        const dispatchedItemsToSync: Array<{ variantId: string; quantity: number; multiplier: number }> = [];
 
         for (const item of order.orderItems) {
           let bestMapping: any = null;
@@ -1047,6 +1090,14 @@ export class ProductsService implements OnModuleInit {
                 });
               }
 
+              if (isDispatched && !isVirtualNoStock) {
+                dispatchedItemsToSync.push({
+                  variantId: variant.id,
+                  quantity: finalQty,
+                  multiplier,
+                });
+              }
+
               await this.prisma.orderItem.update({
                 where: { id: item.id },
                 data: {
@@ -1073,8 +1124,23 @@ export class ProductsService implements OnModuleInit {
         }
 
         if (orderModified) {
+          const warehouseId = order.shop?.defaultWarehouseId;
+
+          // Cập nhật Sổ cái tồn kho cho các đơn đã xuất kho thực tế (DISPATCHED)
+          if (isDispatched && !isVirtualNoStock && warehouseId && dispatchedItemsToSync.length > 0) {
+            for (const dItem of dispatchedItemsToSync) {
+              await this.inventoryService.syncDispatchedOrderLedger(
+                order.tenantId,
+                order.id,
+                warehouseId,
+                dItem.variantId,
+                dItem.quantity,
+                dItem.multiplier,
+              );
+            }
+          }
+
           await this.prisma.$transaction(async (tx) => {
-            const warehouseId = order.shop?.defaultWarehouseId;
             if (wasReservedOrPacked && warehouseId && !isVirtualNoStock && oldItemsToRelease.length > 0) {
               await this.inventoryService.releaseStockForOrder(
                 tx,
@@ -1118,6 +1184,9 @@ export class ProductsService implements OnModuleInit {
           totalUpdatedOrders++;
         }
       }
+
+      // Chữa lành và đồng bộ lại sổ cái các đơn đã xuất kho trên toàn workspace
+      await this.inventoryService.healAllDispatchedLedgerEntries(tenantId);
 
       this.logger.log(
         `[syncAllOrderItemsWithMappings] Completed. Updated ${totalUpdatedItems} items across ${totalUpdatedOrders} orders.`,

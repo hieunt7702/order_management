@@ -708,12 +708,29 @@ export class FulfillmentService {
       };
     }
 
-    // Items to dispatch
+    // Items to dispatch - Phân giải số lượng xuất kho thực tế theo hệ số multiplier chuẩn xác nhất
+    const shopMappings = await this.prisma.listingMapping.findMany({
+      where: { tenantId, shopId: order.shopId },
+    });
+
+    const resolveEffectiveQuantity = (item: any) => {
+      const oi = item.orderItem || item;
+      const matchedMapping = shopMappings.find(
+        (m) =>
+          (oi.variantId && m.variantId === oi.variantId) ||
+          (m.sellerSku && oi.externalSku && m.sellerSku.toLowerCase() === oi.externalSku.toLowerCase()),
+      );
+      const multiplier = Math.max(1, matchedMapping?.multiplier || oi.packMultiplier || 1);
+      const rawQty = Math.max(1, oi.rawQuantity || 1);
+      const computedQty = rawQty * multiplier;
+      return Math.max(item.quantity || 1, computedQty);
+    };
+
     let itemsToDispatch = (targetPackage.packageItems || [])
       .filter((pi: any) => !!pi.orderItem?.variantId)
       .map((pi: any) => ({
         variantId: pi.orderItem.variantId,
-        quantity: pi.quantity,
+        quantity: resolveEffectiveQuantity(pi),
       }));
 
     if (itemsToDispatch.length === 0 && order.orderItems && order.orderItems.length > 0) {
@@ -721,7 +738,7 @@ export class FulfillmentService {
         .filter((oi: any) => !!oi.variantId)
         .map((oi: any) => ({
           variantId: oi.variantId,
-          quantity: oi.quantity,
+          quantity: resolveEffectiveQuantity(oi),
         }));
     }
 
