@@ -19,6 +19,7 @@ import {
   FulfillmentStatus,
   VerificationStatus,
   PackageStatus,
+  Prisma,
 } from '@prisma/client';
 
 @Injectable()
@@ -318,27 +319,54 @@ export class ImportsService {
             const newPlatformStatus = parsed.platformStatus;
             let newFulfillmentStatus = existingOrder.fulfillmentStatus;
 
-            // Update unmapped orderItems if new mapping is available now
+            // Update orderItems if mapping is available (sync cả unmapped lẫn đã map nếu multiplier/variant thay đổi)
+            let existingOrderCogsTotal = 0;
             for (const oi of existingOrder.orderItems) {
-              if (!oi.variantId) {
-                const matched = findMatchedMapping(oi);
-                if (matched?.variant) {
-                  const multiplier = matched.multiplier || oi.packMultiplier || 1;
-                  const rawQty = oi.rawQuantity || 1;
-                  const finalQty = Math.max(1, rawQty * multiplier);
+              const matched = findMatchedMapping(oi);
+              if (matched?.variant) {
+                const multiplier = matched.multiplier || 1;
+                let rawQty = oi.rawQuantity;
+                if (!rawQty || rawQty < 1) {
+                  if (oi.packMultiplier && oi.packMultiplier > 1 && oi.quantity > 0) {
+                    rawQty = Math.max(1, Math.round(oi.quantity / oi.packMultiplier));
+                  } else {
+                    rawQty = oi.quantity && oi.quantity > 0 ? oi.quantity : 1;
+                  }
+                }
+                const finalQty = Math.max(1, rawQty * multiplier);
+                const itemCogs = Number(matched.variant.costPrice || 0) * finalQty;
 
+                const hasChanged =
+                  !oi.variantId ||
+                  oi.variantId !== matched.variant.id ||
+                  oi.packMultiplier !== multiplier ||
+                  oi.quantity !== finalQty ||
+                  oi.rawQuantity !== rawQty;
+
+                if (hasChanged) {
                   await tx.orderItem.update({
                     where: { id: oi.id },
                     data: {
                       variantId: matched.variant.id,
+                      rawQuantity: rawQty,
                       packMultiplier: multiplier,
                       quantity: finalQty,
-                      itemCogs: Number(matched.variant.costPrice) * finalQty,
+                      itemCogs,
                     },
                   });
+                  await tx.packageItem.updateMany({
+                    where: { orderItemId: oi.id, tenantId },
+                    data: { quantity: finalQty },
+                  });
                   oi.variantId = matched.variant.id;
+                  oi.rawQuantity = rawQty;
+                  oi.packMultiplier = multiplier;
                   oi.quantity = finalQty;
+                  oi.itemCogs = new Prisma.Decimal(itemCogs);
                 }
+                existingOrderCogsTotal += itemCogs;
+              } else {
+                existingOrderCogsTotal += Number(oi.itemCogs || 0);
               }
             }
 
@@ -490,6 +518,7 @@ export class ImportsService {
                 recipientAddress: parsed.recipientAddress ?? existingOrder.recipientAddress,
                 totalAmount: parsed.totalAmount || existingOrder.totalAmount,
                 shippingFee: parsed.shippingFee || existingOrder.shippingFee,
+                cogsTotal: existingOrderCogsTotal,
                 note: updatedNote,
               },
             });

@@ -548,6 +548,7 @@ export const ShopsPage: React.FC = () => {
               setItemsPerPage={setLimit}
             />
           </div>
+          <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
         </div>
       ) : (
         /* Unified SystemTable */

@@ -812,7 +812,7 @@ export const ImportedFilesPage: React.FC = () => {
           </div>
 
           {/* Mobile Card View (md:hidden) */}
-          <div className="md:hidden flex-1 overflow-y-auto space-y-2.5 pb-20">
+          <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5 pb-8">
             {isLoading ? (
               <div className="py-8 text-center text-xs text-gray-400 font-normal">
                 <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
@@ -914,6 +914,7 @@ export const ImportedFilesPage: React.FC = () => {
                 className="border-t-0"
               />
             </div>
+            <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
           </div>
         </div>
 

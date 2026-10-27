@@ -191,6 +191,7 @@ export const ProductsPage: React.FC = () => {
 
   const [isMapModalOpen, setIsMapModalOpen] = useState<boolean>(false);
   const [selectedMappingTarget, setSelectedMappingTarget] = useState<any>(null);
+  const [isSyncingOrderMappings, setIsSyncingOrderMappings] = useState<boolean>(false);
   const variantFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Form states
@@ -949,6 +950,23 @@ export const ProductsPage: React.FC = () => {
     }
   };
 
+  const handleSyncOrderMappings = async () => {
+    setIsSyncingOrderMappings(true);
+    try {
+      const targetShopId =
+        mappingShopFilter || (selectedShopId !== 'ALL' ? selectedShopId : undefined);
+      const res: any = await productsApi.syncOrderMappings({ shopId: targetShopId });
+      toast.success(
+        'Đồng bộ đơn hàng thành công!',
+        res?.message || `Đã cập nhật ${res?.updatedItemsCount || 0} sản phẩm trong ${res?.updatedOrdersCount || 0} đơn hàng.`
+      );
+    } catch (err: any) {
+      toast.error('Lỗi đồng bộ đơn hàng', err.message);
+    } finally {
+      setIsSyncingOrderMappings(false);
+    }
+  };
+
   const handleDeleteMapping = async (mappingId: string) => {
     const ok = await confirmModal({
       title: 'Hủy liên kết SKU',
@@ -1513,7 +1531,7 @@ export const ProductsPage: React.FC = () => {
                 </div>
 
                 {/* Mobile Card View (md:hidden) */}
-                <div className="md:hidden flex-1 overflow-y-auto space-y-2.5 pb-20">
+                <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5 pb-8">
                   {isLoadingProducts ? (
                     <div className="py-8 text-center text-xs text-gray-400 font-normal">
                       <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
@@ -1711,6 +1729,7 @@ export const ProductsPage: React.FC = () => {
                       className="border-t-0"
                     />
                   </div>
+                  <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
                 </div>
               </>
             );
@@ -1781,6 +1800,17 @@ export const ProductsPage: React.FC = () => {
 
               {/* View Mode Toggle & Bulk Action */}
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSyncOrderMappings}
+                  disabled={isSyncingOrderMappings}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#181b22] hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded border border-gray-200 dark:border-gray-700 transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+                  title="Đồng bộ lại SKU mapping và hệ số đóng gói (x10) vào toàn bộ đơn hàng chưa gửi"
+                >
+                  <RefreshCw size={13} className={isSyncingOrderMappings ? 'animate-spin text-[#5865f2]' : 'text-gray-500'} />
+                  <span>{isSyncingOrderMappings ? 'Đang đồng bộ đơn...' : 'Đồng bộ đơn hàng'}</span>
+                </button>
+
                 {selectedListingIds.length > 0 && (
                   <button
                     onClick={handleOpenBulkMapModal}
@@ -2049,7 +2079,7 @@ export const ProductsPage: React.FC = () => {
                 </div>
 
                 {/* Mobile Card View (md:hidden) */}
-                <div className="md:hidden flex-1 overflow-y-auto space-y-2.5 pb-20">
+                <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5 pb-8">
                   {isLoadingMappings ? (
                     <div className="py-8 text-center text-xs text-gray-400 font-normal">
                       <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
@@ -2186,6 +2216,7 @@ export const ProductsPage: React.FC = () => {
                       className="border-t-0"
                     />
                   </div>
+                  <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
                 </div>
               </>
             );
@@ -2463,6 +2494,7 @@ export const ProductsPage: React.FC = () => {
                     </div>
                   );
                 })()}
+                <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
               </div>
             )}
           </div>

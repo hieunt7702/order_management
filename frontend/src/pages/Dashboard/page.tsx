@@ -1350,7 +1350,7 @@ export const DashboardPage: React.FC = () => {
               ) : hasSystemProducts ? (
                 <>
                   {/* Mobile Card List View (sm:hidden) */}
-                  <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/60 max-h-[600px] overflow-y-auto">
+                  <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-800/60">
                     {sorted.map((item: any, idx: number) => {
                       const isOutOfStock = (item.onHand || 0) <= 0;
                       const isLowStock = !isOutOfStock && (item.onHand || 0) <= 10;
@@ -1653,6 +1653,7 @@ export const DashboardPage: React.FC = () => {
         );
       })()}
       </div>
+      <div className="h-6 sm:hidden shrink-0" aria-hidden="true" />
     </div>
   );
 };

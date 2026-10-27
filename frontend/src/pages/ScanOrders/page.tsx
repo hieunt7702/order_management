@@ -1136,7 +1136,7 @@ export const ScanOrdersPage: React.FC = () => {
       className={`w-full ${
         isFocusMode
           ? 'fixed inset-0 z-50 bg-[#0c0e14] p-3 sm:p-5 overflow-y-auto max-w-none'
-          : 'max-w-xl lg:max-w-none mx-auto pb-16'
+          : 'max-w-xl lg:max-w-none mx-auto pb-4 lg:pb-0'
       } flex flex-col space-y-3 lg:space-y-4 animate-in fade-in duration-300`}
     >
       {/* 1. TOP HEADER NAVIGATION */}
@@ -1805,7 +1805,7 @@ export const ScanOrdersPage: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-0.5 custom-scrollbar">
+                <div className="space-y-1.5 min-h-fit">
                   {displayedItems.map((item, index) => {
                     const isVerified = item.status === 'VERIFIED';
                     const isAlreadyVerified = item.status === 'ALREADY_VERIFIED';
@@ -1956,6 +1956,43 @@ export const ScanOrdersPage: React.FC = () => {
                   })}
                 </div>
               )}
+
+              {/* Bottom duplicate action buttons for long list on mobile */}
+              {displayedItems.length > 3 && (
+                <div className="flex items-center gap-2 pt-1 pb-1">
+                  <button
+                    type="button"
+                    onClick={handleExportCurrentSession}
+                    disabled={!activeSession || activeSession.items.length === 0}
+                    className="h-9 px-3.5 rounded bg-white dark:bg-[#161a23] hover:bg-gray-50 dark:hover:bg-[#1c2230] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 active:scale-95 shrink-0 shadow-xs"
+                    title="Tải danh sách mã quét CSV"
+                  >
+                    <Download size={14} className="text-[#2563eb] dark:text-blue-400" />
+                    <span>Tải xuống</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSubmitBatch}
+                    disabled={!activeSession || activeSession.items.length === 0 || isVerifyingBatch}
+                    className="flex-1 h-9 px-4 rounded bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50 active:scale-[0.98]"
+                  >
+                    {isVerifyingBatch ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin" />
+                        <span>Đang gửi đối soát...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud size={15} />
+                        <span>Gửi đối soát ({activeSession?.items.length || 0})</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              <div className="h-6 lg:hidden shrink-0" aria-hidden="true" />
             </div>
           </div>
 

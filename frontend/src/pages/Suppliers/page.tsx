@@ -709,7 +709,7 @@ export const SuppliersPage: React.FC = () => {
       </div>
 
       {/* 5. Mobile Cards View */}
-      <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-3">
+      <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-3 pb-8">
         {isLoading ? (
           <div className="py-8 text-center text-xs text-gray-400 font-normal">
             Đang tải danh sách nhà cung cấp...
@@ -862,6 +862,7 @@ export const SuppliersPage: React.FC = () => {
             />
           </div>
         )}
+        <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
       </div>
 
       {/* MODAL 1: CREATE SUPPLIER */}

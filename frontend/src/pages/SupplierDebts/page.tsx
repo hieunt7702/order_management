@@ -692,7 +692,7 @@ export const SupplierDebtsPage: React.FC = () => {
             <span className="hidden sm:inline truncate">Công Nợ & Thanh Toán Nhà Cung Cấp</span>
           </h1>
           <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate hidden sm:block">
-            Số dư cuối kỳ = Nợ đầu kỳ + Phát sinh phải trả − Giảm trừ trả hàng − Tiền đã trả + Tiền NCC hoàn lại
+            Số dư cuối kỳ = Nợ đầu kỳ + Phát sinh mua hàng + Nợ vay NCC − Giảm trừ trả hàng − Tiền đã trả + Tiền NCC hoàn lại
           </p>
         </div>
 
@@ -1844,6 +1844,26 @@ export const SupplierDebtsPage: React.FC = () => {
                       typeBadgeClass = 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200/80 dark:border-blue-900/50';
                       borderLeftClass = 'border-l-blue-500';
                       TypeIcon = Receipt;
+                    } else if (tx.type === 'LOAN_BORROW') {
+                      typeLabel = 'Vay vốn NCC';
+                      typeBadgeClass = 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200/80 dark:border-purple-900/50';
+                      borderLeftClass = 'border-l-purple-500';
+                      TypeIcon = Landmark;
+                    } else if (tx.type === 'LOAN_REPAY') {
+                      typeLabel = 'Trả nợ vay';
+                      typeBadgeClass = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-900/50';
+                      borderLeftClass = 'border-l-emerald-500';
+                      TypeIcon = CreditCard;
+                    } else if (tx.type === 'LOAN_LEND') {
+                      typeLabel = 'Cho NCC vay';
+                      typeBadgeClass = 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200/80 dark:border-blue-900/50';
+                      borderLeftClass = 'border-l-blue-500';
+                      TypeIcon = Landmark;
+                    } else if (tx.type === 'LOAN_COLLECT') {
+                      typeLabel = 'Thu nợ vay';
+                      typeBadgeClass = 'bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300 border-teal-200/80 dark:border-teal-900/50';
+                      borderLeftClass = 'border-l-teal-500';
+                      TypeIcon = DollarSign;
                     }
 
                     const debtBefore =

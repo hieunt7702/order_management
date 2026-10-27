@@ -1254,7 +1254,7 @@ export const CashflowPage: React.FC = () => {
           </div>
 
           {/* Mobile Transactions Card View */}
-          <div className="md:hidden flex-1 overflow-y-auto space-y-2 pb-16 max-w-full overflow-x-hidden">
+          <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5 pb-8 max-w-full overflow-x-hidden">
             {txLoading ? (
               <div className="py-8 text-center text-xs text-gray-400">Đang tải phiếu thu chi...</div>
             ) : transactions.length === 0 ? (
@@ -1417,6 +1417,7 @@ export const CashflowPage: React.FC = () => {
                 />
               </div>
             )}
+            <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
           </div>
         </div>
       )}
@@ -1674,7 +1675,7 @@ export const CashflowPage: React.FC = () => {
           </div>
 
           {/* Mobile Reconciliation Card View */}
-          <div className="md:hidden flex-1 overflow-y-auto space-y-2 pb-16">
+          <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5 pb-8">
             {reconLoading ? (
               <div className="py-8 text-center text-xs text-gray-400">Đang tải đối soát sàn...</div>
             ) : reconItems.length === 0 ? (
@@ -1789,6 +1790,7 @@ export const CashflowPage: React.FC = () => {
                 />
               </div>
             )}
+            <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
           </div>
         </div>
       )}
@@ -2241,7 +2243,7 @@ export const CashflowPage: React.FC = () => {
             </div>
 
             {/* Mobile Card View */}
-            <div className="md:hidden space-y-2.5 p-3 pb-20">
+            <div className="md:hidden space-y-2.5 p-3 pb-8">
               {categories.map((cat, index) => (
                 <div
                   key={cat.id}
@@ -2332,6 +2334,7 @@ export const CashflowPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+              <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
             </div>
           </div>
         </div>

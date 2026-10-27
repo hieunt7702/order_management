@@ -29,6 +29,11 @@ export const productsApi = {
   createMapping: (data: any) => api.post('/products/mappings', data),
   bulkMapping: (data: any) => api.post('/products/mappings/bulk', data),
   deleteMapping: (id: string) => api.delete(`/products/mappings/${id}`),
+  syncOrderMappings: (data?: { shopId?: string }) =>
+    api.post<{ success: boolean; updatedOrdersCount: number; updatedItemsCount: number; message: string }>(
+      '/products/mappings/sync-orders',
+      data || {},
+    ),
   findAllVariants: (params: ProductQueryParams = {}) =>
     api.get(`/products/variants${buildQuery(params)}`),
 };

@@ -32,7 +32,18 @@ export interface SupplierItem {
 
 export interface StatementTransaction {
   date: string;
-  type: 'OPENING' | 'RECEIPT' | 'PAYMENT' | 'RETURN' | 'REFUND' | 'TRANSFER_OUT' | 'TRANSFER_IN';
+  type:
+    | 'OPENING'
+    | 'RECEIPT'
+    | 'PAYMENT'
+    | 'RETURN'
+    | 'REFUND'
+    | 'TRANSFER_OUT'
+    | 'TRANSFER_IN'
+    | 'LOAN_BORROW'
+    | 'LOAN_REPAY'
+    | 'LOAN_LEND'
+    | 'LOAN_COLLECT';
   code: string;
   description: string;
   increaseDebt: number;

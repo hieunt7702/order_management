@@ -30,6 +30,7 @@ import {
 } from '../../services/supplierLoansApi';
 import { SupplierItem } from '../../services/suppliersApi';
 import { Modal, ModalBody, ModalFooter, ModalButton } from '../ui/Modal';
+import { confirmModal } from '../ui/ConfirmModal';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
 import { CurrencyInput } from '../ui/CurrencyInput';
@@ -220,6 +221,60 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
   const handleOpenDetail = (loan: SupplierLoanModel) => {
     setSelectedLoanDetail(loan);
     setIsDetailModalOpen(true);
+  };
+
+  const handleUndoLoan = async (loan: SupplierLoanModel) => {
+    const isBorrow = loan.type === 'BORROWED_FROM_SUPPLIER';
+    const hasRepayments = (loan.repayments && loan.repayments.length > 0) || Number(loan.repaidAmount) > 0;
+
+    const isConfirmed = await confirmModal({
+      title: isBorrow ? 'Hoàn tác khoản vay NCC' : 'Hoàn tác khoản cho NCC vay',
+      message: `Bạn có chắc chắn muốn hoàn tác ${isBorrow ? 'khoản vay' : 'khoản cho vay'} "${loan.loanCode}" (${formatCurrency(loan.amount)}đ)?`,
+      description: (
+        <div className="space-y-1.5 text-xs text-left">
+          <div>
+            {isBorrow ? (
+              <span>
+                • Số tiền <strong>{formatCurrency(loan.amount)}đ</strong> sẽ được trừ khỏi sổ quỹ / tài khoản nhận tiền ban đầu.
+              </span>
+            ) : (
+              <span>
+                • Số tiền <strong>{formatCurrency(loan.amount)}đ</strong> sẽ được hoàn trả lại vào sổ quỹ / tài khoản giải ngân ban đầu.
+              </span>
+            )}
+          </div>
+          <div>
+            • Dư nợ công nợ của nhà cung cấp <strong>{loan.supplier?.name}</strong> sẽ được giảm trừ và khôi phục về trạng thái trước khi vay.
+          </div>
+          {hasRepayments && (
+            <div className="text-amber-600 dark:text-amber-400 font-medium">
+              ⚠️ Khoản vay này đã có đợt thanh toán trả nợ. Hệ thống sẽ hoàn tác và khôi phục cả các giao dịch trả nợ liên quan.
+            </div>
+          )}
+        </div>
+      ),
+      confirmText: 'Xác nhận hoàn tác',
+      cancelText: 'Giữ lại',
+      variant: 'destructive',
+    });
+
+    if (!isConfirmed) return;
+
+    try {
+      await supplierLoansApi.delete(loan.id);
+      toast.success(
+        isBorrow
+          ? 'Đã hoàn tác và hủy khoản vay nợ NCC thành công!'
+          : 'Đã hoàn tác và hủy khoản cho NCC vay thành công!',
+      );
+      if (isDetailModalOpen) {
+        setIsDetailModalOpen(false);
+      }
+      loadLoans();
+      onRefreshData?.();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err?.message || 'Có lỗi xảy ra khi hoàn tác khoản vay');
+    }
   };
 
   return (
@@ -457,6 +512,14 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
                             <span>{isBorrow ? 'Trả nợ' : 'Thu nợ'}</span>
                           </button>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => handleUndoLoan(loan)}
+                          className="w-7 h-7 rounded flex items-center justify-center text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                          title="Hoàn tác khoản vay (nếu ghi nhầm)"
+                        >
+                          <RotateCcw size={13} />
+                        </button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button
@@ -483,6 +546,14 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
                                 <span>Xem VietQR chuyển khoản</span>
                               </DropdownMenuItem>
                             )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleUndoLoan(loan)}
+                              className="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                            >
+                              <RotateCcw size={14} className="text-rose-500 shrink-0" />
+                              <span>Hoàn tác khoản vay</span>
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -572,6 +643,15 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
                 <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-100 dark:border-gray-800" onClick={(e) => e.stopPropagation()}>
                   <span>{loan.loanDate ? new Date(loan.loanDate).toLocaleDateString('vi-VN') : ''}</span>
                   <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleUndoLoan(loan)}
+                      className="px-2 py-1 text-xs rounded border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 font-medium cursor-pointer flex items-center gap-1 active:scale-95 transition-all"
+                      title="Hoàn tác khoản vay (nếu ghi nhầm)"
+                    >
+                      <RotateCcw size={11} />
+                      <span>Hoàn tác</span>
+                    </button>
                     {!isSettled && (
                       <button
                         type="button"
@@ -609,6 +689,14 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
                             <span>Xem VietQR chuyển khoản</span>
                           </DropdownMenuItem>
                         )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleUndoLoan(loan)}
+                          className="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20"
+                        >
+                          <RotateCcw size={14} className="text-rose-500 shrink-0" />
+                          <span>Hoàn tác khoản vay</span>
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -933,7 +1021,17 @@ export const SupplierLoansTab: React.FC<SupplierLoansTabProps> = ({
             </div>
           </div>
         </ModalBody>
-        <ModalFooter>
+        <ModalFooter className="flex items-center justify-between w-full">
+          {selectedLoanDetail && (
+            <ModalButton
+              type="button"
+              variant="danger"
+              onClick={() => handleUndoLoan(selectedLoanDetail)}
+            >
+              <RotateCcw size={14} />
+              <span>Hoàn tác khoản vay này</span>
+            </ModalButton>
+          )}
           <ModalButton variant="outline" onClick={() => setIsDetailModalOpen(false)}>
             Đóng
           </ModalButton>

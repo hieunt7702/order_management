@@ -91,6 +91,16 @@ export class ProductsController {
     return this.productsService.bulkListingMapping(tenantId, dto);
   }
 
+  @Post('mappings/sync-orders')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Đồng bộ lại SKU mapping và hệ số đóng gói (multiplier) vào các đơn hàng' })
+  async syncOrdersWithMappings(
+    @CurrentTenantId() tenantId: string,
+    @Body() body?: { shopId?: string },
+  ) {
+    return this.productsService.syncAllOrderItemsWithMappings(tenantId, body?.shopId);
+  }
+
   @Delete('mappings/:id')
   @Roles(MembershipRole.OWNER, MembershipRole.ADMIN)
   @ApiOperation({ summary: 'Xóa liên kết mapping SKU sàn' })

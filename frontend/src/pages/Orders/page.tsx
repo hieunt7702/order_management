@@ -1723,6 +1723,7 @@ export const OrdersPage: React.FC = () => {
             className="border-t-0"
           />
         </div>
+        <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
       </div>
 
       {/* Order Detail Drawer */}

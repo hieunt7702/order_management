@@ -488,4 +488,179 @@ export class SupplierLoansService {
 
     return loan;
   }
+
+  async delete(tenantId: string, id: string, userId?: string) {
+    const loan = await this.prisma.supplierLoan.findFirst({
+      where: { id, tenantId },
+      include: {
+        repayments: true,
+        supplier: true,
+      },
+    });
+
+    if (!loan) {
+      throw new NotFoundException('Không tìm thấy khoản vay');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Hoàn tác số dư dòng tiền và xóa CashTransaction của các đợt trả nợ liên quan
+      for (const rep of loan.repayments) {
+        const repTx = await tx.cashTransaction.findFirst({
+          where: {
+            tenantId,
+            relatedEntityType: 'SUPPLIER_LOAN_REPAYMENT',
+            relatedEntityId: rep.id,
+          },
+        });
+
+        if (repTx) {
+          if (repTx.fromAccountId) {
+            await tx.cashAccount.update({
+              where: { id: repTx.fromAccountId },
+              data: { currentBalance: { increment: repTx.amount } },
+            });
+          }
+          if (repTx.toAccountId) {
+            await tx.cashAccount.update({
+              where: { id: repTx.toAccountId },
+              data: { currentBalance: { decrement: repTx.amount } },
+            });
+          }
+          await tx.cashTransaction.delete({ where: { id: repTx.id } });
+        }
+      }
+
+      // Xóa các đợt trả nợ
+      await tx.supplierLoanRepayment.deleteMany({
+        where: { loanId: id, tenantId },
+      });
+
+      // 2. Hoàn tác số dư dòng tiền và xóa CashTransaction ban đầu của khoản vay
+      const loanTx = await tx.cashTransaction.findFirst({
+        where: {
+          tenantId,
+          relatedEntityType: 'SUPPLIER_LOAN',
+          relatedEntityId: id,
+        },
+      });
+
+      if (loanTx) {
+        if (loanTx.fromAccountId) {
+          await tx.cashAccount.update({
+            where: { id: loanTx.fromAccountId },
+            data: { currentBalance: { increment: loanTx.amount } },
+          });
+        }
+        if (loanTx.toAccountId) {
+          await tx.cashAccount.update({
+            where: { id: loanTx.toAccountId },
+            data: { currentBalance: { decrement: loanTx.amount } },
+          });
+        }
+        await tx.cashTransaction.delete({ where: { id: loanTx.id } });
+      }
+
+      // 3. Xóa bản ghi khoản vay
+      await tx.supplierLoan.delete({
+        where: { id },
+      });
+
+      // 4. Audit Log
+      await this.auditService.log({
+        tenantId,
+        userId: userId || 'SYSTEM',
+        action: 'SUPPLIER_LOAN_CANCELLED',
+        entityType: 'SupplierLoan',
+        entityId: id,
+        oldValues: {
+          loanCode: loan.loanCode,
+          type: loan.type,
+          supplierId: loan.supplierId,
+          supplierName: loan.supplier?.name,
+          amount: Number(loan.amount),
+          repaidAmount: Number(loan.repaidAmount),
+          remainingAmount: Number(loan.remainingAmount),
+          loanDate: loan.loanDate,
+        },
+      });
+    });
+
+    return { success: true, message: 'Đã hoàn tác và hủy khoản vay thành công' };
+  }
+
+  async deleteRepayment(tenantId: string, repaymentId: string, userId?: string) {
+    const repayment = await this.prisma.supplierLoanRepayment.findFirst({
+      where: { id: repaymentId, tenantId },
+      include: { loan: true },
+    });
+
+    if (!repayment) {
+      throw new NotFoundException('Không tìm thấy đợt trả nợ');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Revert CashTransaction
+      const repTx = await tx.cashTransaction.findFirst({
+        where: {
+          tenantId,
+          relatedEntityType: 'SUPPLIER_LOAN_REPAYMENT',
+          relatedEntityId: repaymentId,
+        },
+      });
+
+      if (repTx) {
+        if (repTx.fromAccountId) {
+          await tx.cashAccount.update({
+            where: { id: repTx.fromAccountId },
+            data: { currentBalance: { increment: repTx.amount } },
+          });
+        }
+        if (repTx.toAccountId) {
+          await tx.cashAccount.update({
+            where: { id: repTx.toAccountId },
+            data: { currentBalance: { decrement: repTx.amount } },
+          });
+        }
+        await tx.cashTransaction.delete({ where: { id: repTx.id } });
+      }
+
+      // 2. Khôi phục remainingAmount và repaidAmount của loan
+      const newRepaidTotal = Prisma.Decimal.sub(repayment.loan.repaidAmount, repayment.amount);
+      const newRemaining = Prisma.Decimal.add(repayment.loan.remainingAmount, repayment.amount);
+      const newStatus =
+        Number(newRepaidTotal) <= 0
+          ? SupplierLoanStatus.ACTIVE
+          : SupplierLoanStatus.PARTIALLY_REPAID;
+
+      await tx.supplierLoan.update({
+        where: { id: repayment.loanId },
+        data: {
+          repaidAmount: newRepaidTotal,
+          remainingAmount: newRemaining,
+          status: newStatus,
+        },
+      });
+
+      // 3. Xóa repayment
+      await tx.supplierLoanRepayment.delete({
+        where: { id: repaymentId },
+      });
+
+      // 4. Audit Log
+      await this.auditService.log({
+        tenantId,
+        userId: userId || 'SYSTEM',
+        action: 'SUPPLIER_LOAN_REPAYMENT_CANCELLED',
+        entityType: 'SupplierLoanRepayment',
+        entityId: repaymentId,
+        oldValues: {
+          repaymentCode: repayment.repaymentCode,
+          amount: Number(repayment.amount),
+          loanId: repayment.loanId,
+        },
+      });
+    });
+
+    return { success: true, message: 'Đã hoàn tác đợt trả nợ thành công' };
+  }
 }

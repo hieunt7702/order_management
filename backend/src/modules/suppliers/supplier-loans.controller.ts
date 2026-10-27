@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Param,
   Query,
@@ -84,5 +85,27 @@ export class SupplierLoansController {
     @Body() dto: CreateSupplierLoanRepaymentDto,
   ) {
     return this.loansService.repay(tenantId, user.id, dto);
+  }
+
+  @Delete(':id')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Hoàn tác / Hủy một khoản vay vốn với NCC' })
+  async delete(
+    @CurrentTenantId() tenantId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.loansService.delete(tenantId, id, user.id);
+  }
+
+  @Delete('repayments/:repaymentId')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Hoàn tác một đợt trả nợ vay' })
+  async deleteRepayment(
+    @CurrentTenantId() tenantId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('repaymentId') repaymentId: string,
+  ) {
+    return this.loansService.deleteRepayment(tenantId, repaymentId, user.id);
   }
 }

@@ -380,8 +380,13 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                     <p className="font-semibold text-gray-900 dark:text-white">
                       {formatCurrency(item.discountedPrice || item.originalPrice)} đ
                     </p>
-                    <span className="inline-block mt-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/30 px-2 py-0.5 rounded border border-indigo-200/50 dark:border-indigo-900/40">
-                      SL: {item.quantity} {item.variant?.unit || item.unit || 'cái'}
+                    <span className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/30 px-2 py-0.5 rounded border border-indigo-200/50 dark:border-indigo-900/40">
+                      <span>SL: {item.quantity} {item.variant?.unit || item.unit || 'cái'}</span>
+                      {item.packMultiplier && item.packMultiplier > 1 && (
+                        <span className="text-[11px] font-normal text-indigo-500/90 dark:text-indigo-300/80">
+                          ({item.rawQuantity || Math.round(item.quantity / item.packMultiplier)} × {item.packMultiplier})
+                        </span>
+                      )}
                     </span>
                   </div>
                 </div>

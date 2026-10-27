@@ -458,7 +458,7 @@ export const SettlementsPage: React.FC = () => {
       </div>
 
       {/* Settlements Mobile Card View */}
-      <div className="md:hidden flex-1 overflow-y-auto space-y-2 pb-16">
+      <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5 pb-8">
         {isLoading ? (
           <div className="py-8 text-center text-xs text-gray-400">Đang tải đối soát...</div>
         ) : paginatedSettlements.length === 0 ? (
@@ -568,6 +568,7 @@ export const SettlementsPage: React.FC = () => {
             />
           </div>
         )}
+        <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
       </div>
 
       {/* RECORD PAYOUT MODAL */}

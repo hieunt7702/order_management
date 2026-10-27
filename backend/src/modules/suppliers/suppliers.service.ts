@@ -239,18 +239,6 @@ export class SuppliersService {
         0,
       );
 
-      // Công thức chuẩn kế toán:
-      // Số dư cuối kỳ = Nợ đầu kỳ + Phát sinh phải trả - Giảm trừ công nợ - Tiền đã trả + Tiền NCC hoàn lại
-      //                 + Tiền chuyển sang NCC khác (giảm tiền cọc/đã trả của A) - Tiền nhận từ NCC khác (tăng tiền đã trả của B)
-      const closingDebt =
-        openingDebt + totalPurchases - totalReturns - totalPaid + totalRefunded
-        + totalTransferredOut - totalTransferredIn;
-
-      // Tiền ứng trước / cọc do NCC giữ:
-      // Chỉ khi số dư cuối kỳ âm (closingDebt < 0) thì NCC mới đang thực sự giữ tiền cọc/ứng của shop.
-      // Nếu closingDebt >= 0 thì shop vẫn đang nợ NCC tiền (hoặc cân bằng), tiền trả là trả nợ chứ không phải cọc giữ lại.
-      const advanceAmountHeld = closingDebt < 0 ? Math.abs(closingDebt) : 0;
-
       // Tính toán nợ vay tiền và mượn sản phẩm
       let totalLoanDebt = 0; // Shop vay NCC còn nợ
       let totalLoanReceivable = 0; // Shop cho NCC vay
@@ -260,6 +248,20 @@ export class SuppliersService {
           else if (l.type === 'LENT_TO_SUPPLIER') totalLoanReceivable += Number(l.remainingAmount);
         }
       }
+
+      // Công thức chuẩn kế toán:
+      // Số dư cuối kỳ = Nợ đầu kỳ + Phát sinh phải trả - Giảm trừ công nợ - Tiền đã trả + Tiền NCC hoàn lại
+      //                 + Tiền chuyển sang NCC khác (giảm tiền cọc/đã trả của A) - Tiền nhận từ NCC khác (tăng tiền đã trả của B)
+      //                 + Nợ vay vốn NCC còn phải trả - Khoản cho NCC vay vốn còn phải thu
+      const closingDebt =
+        openingDebt + totalPurchases - totalReturns - totalPaid + totalRefunded
+        + totalTransferredOut - totalTransferredIn
+        + totalLoanDebt - totalLoanReceivable;
+
+      // Tiền ứng trước / cọc do NCC giữ:
+      // Chỉ khi số dư cuối kỳ âm (closingDebt < 0) thì NCC mới đang thực sự giữ tiền cọc/ứng của shop.
+      // Nếu closingDebt >= 0 thì shop vẫn đang nợ NCC tiền (hoặc cân bằng), tiền trả là trả nợ chứ không phải cọc giữ lại.
+      const advanceAmountHeld = closingDebt < 0 ? Math.abs(closingDebt) : 0;
 
       let totalBorrowedProducts = 0; // Số lượng SP đang mượn từ NCC
       let totalLentProducts = 0; // Số lượng SP cho NCC mượn
@@ -338,6 +340,15 @@ export class SuppliersService {
             fromSupplier: { select: { id: true, code: true, name: true } },
           },
         },
+        loans: {
+          select: {
+            id: true,
+            type: true,
+            amount: true,
+            remainingAmount: true,
+            status: true,
+          },
+        },
       },
     });
 
@@ -379,9 +390,20 @@ export class SuppliersService {
       0,
     );
 
+    // Tính toán nợ vay tiền và cho vay
+    let totalLoanDebt = 0; // Shop vay NCC còn nợ
+    let totalLoanReceivable = 0; // Shop cho NCC vay
+    for (const l of (s as any).loans || []) {
+      if (l.status !== 'CANCELLED') {
+        if (l.type === 'BORROWED_FROM_SUPPLIER') totalLoanDebt += Number(l.remainingAmount);
+        else if (l.type === 'LENT_TO_SUPPLIER') totalLoanReceivable += Number(l.remainingAmount);
+      }
+    }
+
     const closingDebt =
       openingDebt + totalPurchases - totalReturns - totalPaid + totalRefunded
-      + totalTransferredOut - totalTransferredIn;
+      + totalTransferredOut - totalTransferredIn
+      + totalLoanDebt - totalLoanReceivable;
 
     const advanceAmountHeld = closingDebt < 0 ? Math.abs(closingDebt) : 0;
 
@@ -394,6 +416,8 @@ export class SuppliersService {
       totalRefunded,
       totalTransferredOut,
       totalTransferredIn,
+      totalLoanDebt,
+      totalLoanReceivable,
       advanceAmountHeld,
       totalReceiptsRemaining,
       closingDebt,
@@ -409,10 +433,21 @@ export class SuppliersService {
   ) {
     const supplier = await this.findOne(tenantId, supplierId);
 
-    // Gộp tất cả giao dịch: Phiếu nhập (+), Phiếu chi (-), Trả hàng (-), Hoàn tiền (+), Chuyển NCC (+), Nhận từ NCC (-)
+    // Gộp tất cả giao dịch: Phiếu nhập (+), Phiếu chi (-), Trả hàng (-), Hoàn tiền (+), Chuyển NCC (+), Nhận từ NCC (-), Vay vốn (+), Trả nợ (-)
     const events: Array<{
       date: Date;
-      type: 'OPENING' | 'RECEIPT' | 'PAYMENT' | 'RETURN' | 'REFUND' | 'TRANSFER_OUT' | 'TRANSFER_IN';
+      type:
+        | 'OPENING'
+        | 'RECEIPT'
+        | 'PAYMENT'
+        | 'RETURN'
+        | 'REFUND'
+        | 'TRANSFER_OUT'
+        | 'TRANSFER_IN'
+        | 'LOAN_BORROW'
+        | 'LOAN_REPAY'
+        | 'LOAN_LEND'
+        | 'LOAN_COLLECT';
       code: string;
       description: string;
       increaseDebt: number; // Phát sinh nợ (+)
@@ -522,6 +557,49 @@ export class SuppliersService {
       });
     });
 
+    // Các khoản vay vốn & cho vay với NCC
+    const loans = await this.prisma.supplierLoan.findMany({
+      where: { tenantId, supplierId, status: { not: 'CANCELLED' } },
+      include: {
+        repayments: {
+          orderBy: { repaymentDate: 'asc' },
+        },
+      },
+      orderBy: { loanDate: 'asc' },
+    });
+
+    loans.forEach((loan) => {
+      const isBorrow = loan.type === 'BORROWED_FROM_SUPPLIER';
+      events.push({
+        date: loan.loanDate,
+        type: isBorrow ? 'LOAN_BORROW' : 'LOAN_LEND',
+        code: loan.loanCode,
+        description: isBorrow
+          ? `Vay vốn từ NCC theo HĐ ${loan.loanCode}${loan.note ? ' - ' + loan.note : ''}`
+          : `Cho NCC vay vốn theo HĐ ${loan.loanCode}${loan.note ? ' - ' + loan.note : ''}`,
+        increaseDebt: isBorrow ? Number(loan.amount || 0) : 0,
+        decreaseDebt: isBorrow ? 0 : Number(loan.amount || 0),
+        fundSource: loan.paymentMethod,
+        referenceId: loan.id,
+      });
+
+      (loan.repayments || []).forEach((rep) => {
+        events.push({
+          date: rep.repaymentDate,
+          type: isBorrow ? 'LOAN_REPAY' : 'LOAN_COLLECT',
+          code: rep.repaymentCode,
+          description: isBorrow
+            ? `Trả nợ vay cho NCC theo HĐ ${loan.loanCode} (${rep.payerName ? rep.payerName + ' chi' : ''})${rep.note ? ' - ' + rep.note : ''}`
+            : `Thu hồi nợ vay từ NCC theo HĐ ${loan.loanCode}${rep.note ? ' - ' + rep.note : ''}`,
+          increaseDebt: isBorrow ? 0 : Number(rep.amount || 0),
+          decreaseDebt: isBorrow ? Number(rep.amount || 0) : 0,
+          payerOrCreator: rep.payerName || undefined,
+          fundSource: rep.paymentMethod,
+          referenceId: rep.id,
+        });
+      });
+    });
+
     // Sắp xếp theo ngày tăng dần và tính số dư luỹ kế
     events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -621,6 +699,31 @@ export class SuppliersService {
         calculatedDueStatus,
         overdueDays,
       };
+    });
+
+    // Thêm các khoản vay vốn từ NCC sắp đến hạn hoặc quá hạn
+    const activeBorrowLoans = await this.prisma.supplierLoan.findMany({
+      where: {
+        tenantId,
+        type: 'BORROWED_FROM_SUPPLIER',
+        status: { in: ['ACTIVE', 'PARTIALLY_REPAID'] },
+        remainingAmount: { gt: 0 },
+      },
+      include: {
+        supplier: { select: { id: true, name: true, code: true } },
+      },
+    });
+
+    activeBorrowLoans.forEach((l) => {
+      const remaining = Number(l.remainingAmount || 0);
+      if (l.dueDate) {
+        const dueDate = new Date(l.dueDate);
+        if (dueDate < now) {
+          overduePayable += remaining;
+        } else if (dueDate <= sevenDaysLater) {
+          dueSoonPayable += remaining;
+        }
+      }
     });
 
     // Thống kê người thanh toán & các khoản cần hoàn trả chi hộ

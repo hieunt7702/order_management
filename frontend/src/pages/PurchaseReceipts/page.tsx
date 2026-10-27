@@ -1151,7 +1151,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
       </div>
 
       {/* Mobile Card View */}
-      <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5 max-w-full overflow-x-hidden">
+      <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5 pb-8 max-w-full overflow-x-hidden">
         {isLoading ? (
           <div className="py-8 text-center text-xs text-gray-400 font-normal">
             <RefreshCw className="w-5 h-5 mx-auto animate-spin text-[#5865f2] mb-2" />
@@ -1378,6 +1378,7 @@ export const PurchaseReceiptsPage: React.FC = () => {
             className="border-t-0"
           />
         </div>
+        <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
       </div>
 
       {/* MODAL 1: TẠO PHIẾU NHẬP MỚI */}

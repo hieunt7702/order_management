@@ -569,7 +569,7 @@ export const AuditPage: React.FC = () => {
       </div>
 
       {/* Mobile Audit Card List View */}
-      <div className="md:hidden flex-1 overflow-y-auto space-y-2 pb-16">
+      <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-2.5 pb-8">
         {isLoading ? (
           <div className="py-8 text-center text-xs text-gray-400">Đang tải nhật ký kiểm toán...</div>
         ) : filteredLogs.length === 0 ? (
@@ -646,6 +646,7 @@ export const AuditPage: React.FC = () => {
             />
           </div>
         )}
+        <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
       </div>
 
       {/* MODAL: VIEW AUDIT METADATA */}

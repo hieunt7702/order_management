@@ -3,6 +3,8 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  OnModuleInit,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import {
@@ -13,13 +15,28 @@ import {
   BulkListingMappingDto,
   UpdateVariantDto,
 } from './dto/product.dto';
-import { Platform, FulfillmentStatus, ProductStatus } from '@prisma/client';
+import { Platform, FulfillmentStatus, ProductStatus, Prisma, PlatformOrderStatus } from '@prisma/client';
 import { ShopeeAdapter } from '../imports/adapters/shopee.adapter';
+import { InventoryService } from '../inventory/inventory.service';
 
 
 @Injectable()
-export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+export class ProductsService implements OnModuleInit {
+  private readonly logger = new Logger(ProductsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly inventoryService: InventoryService,
+  ) {}
+
+  async onModuleInit() {
+    // Tự động đồng bộ các đơn hàng hiện có với listing mapping khi khởi động server
+    setTimeout(() => {
+      this.syncAllOrderItemsWithMappings().catch((err) => {
+        this.logger.error('Startup syncAllOrderItemsWithMappings error:', err);
+      });
+    }, 3000);
+  }
 
   async findAll(tenantId: string, page = 1, limit = 50, search?: string) {
     const skip = (page - 1) * limit;
@@ -654,8 +671,8 @@ export class ProductsService {
       });
     }
 
-    // Auto-sync unmapped OrderItems for this shop
-    await this.syncUnmappedOrderItems(tenantId, dto.shopId, mapping, variant);
+    // Auto-sync OrderItems for this shop and mapping (sync cả biến thể mới, multiplier x10, số lượng và tồn kho)
+    await this.syncOrderItemsForMapping(tenantId, dto.shopId, mapping, variant);
 
     return mapping;
   }
@@ -696,79 +713,430 @@ export class ProductsService {
     });
   }
 
-  private async syncUnmappedOrderItems(
+  private getMappingMatchScore(
+    item: {
+      externalProductId?: string | null;
+      externalVariationId?: string | null;
+      externalSku?: string | null;
+      productName: string;
+      variationName?: string | null;
+    },
+    mapping: {
+      sellerSku: string;
+      productName?: string | null;
+      variationName?: string | null;
+      externalProductId?: string | null;
+      externalVariationId?: string | null;
+    },
+  ): number {
+    const norm = (s?: string | null) => (s || '').trim().toLowerCase();
+
+    // 1. Khớp theo External Product ID & Variation ID (Shopee Item ID / Variation ID)
+    if (
+      mapping.externalProductId &&
+      item.externalProductId &&
+      norm(mapping.externalProductId) === norm(item.externalProductId)
+    ) {
+      if (
+        mapping.externalVariationId &&
+        item.externalVariationId &&
+        norm(mapping.externalVariationId) === norm(item.externalVariationId)
+      ) {
+        return 50;
+      }
+      if (!mapping.externalVariationId) {
+        return 45;
+      }
+    }
+
+    // 2. Khớp tuyệt đối theo sellerSku / externalSku
+    const mapSku = norm(mapping.sellerSku);
+    const itemSku = norm(item.externalSku);
+    if (mapSku && itemSku && mapSku === itemSku) {
+      return 40;
+    }
+
+    // 3. Khớp theo Canonical SKU có externalSku
+    const itemCanonical = norm(
+      ShopeeAdapter.generateCanonicalSku(
+        item.productName,
+        item.variationName || undefined,
+        item.externalSku || undefined,
+      ),
+    );
+    if (mapSku && itemCanonical && mapSku === itemCanonical) {
+      return 35;
+    }
+
+    // 4. Khớp theo Canonical SKU không có externalSku
+    const itemCanonicalNoSku = norm(
+      ShopeeAdapter.generateCanonicalSku(
+        item.productName,
+        item.variationName || undefined,
+        undefined,
+      ),
+    );
+    if (mapSku && itemCanonicalNoSku && mapSku === itemCanonicalNoSku) {
+      return 30;
+    }
+
+    // 5. Khớp theo Tên sản phẩm + Tên phân loại hàng
+    const mapProd = norm(mapping.productName);
+    const itemProd = norm(item.productName);
+    if (mapProd && itemProd && mapProd === itemProd) {
+      const mapVar = norm(mapping.variationName);
+      const itemVar = norm(item.variationName);
+      if (mapVar && itemVar && mapVar === itemVar) {
+        return 20;
+      }
+      if (!mapVar) {
+        return 10;
+      }
+    }
+
+    return 0;
+  }
+
+  async syncOrderItemsForMapping(
     tenantId: string,
     shopId: string,
     mapping: any,
     variant: any,
   ) {
     try {
-      const unmappedItems = await this.prisma.orderItem.findMany({
+      const orders = await this.prisma.order.findMany({
         where: {
           tenantId,
-          variantId: null,
-          order: { shopId },
+          shopId,
+          platformStatus: { not: PlatformOrderStatus.CANCELLED },
+          fulfillmentStatus: {
+            notIn: [
+              FulfillmentStatus.DISPATCHED,
+              FulfillmentStatus.RETURN_RECEIVED,
+              FulfillmentStatus.PARTIALLY_RETURN_RECEIVED,
+            ],
+          },
         },
-        include: { order: true },
+        include: {
+          orderItems: true,
+          shop: { select: { id: true, defaultWarehouseId: true } },
+        },
       });
 
-      const affectedOrderIds = new Set<string>();
+      let updatedOrdersCount = 0;
+      let updatedItemsCount = 0;
 
-      for (const item of unmappedItems) {
-        let isMatch = false;
-        const itemCanonical = ShopeeAdapter.generateCanonicalSku(
-          item.productName,
-          item.variationName || undefined,
-          item.externalSku || undefined,
-        );
+      for (const order of orders) {
+        let orderModified = false;
+        const wasReservedOrPacked =
+          order.fulfillmentStatus === FulfillmentStatus.RESERVED ||
+          order.fulfillmentStatus === FulfillmentStatus.PACKED;
+        const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
+        const oldItemsToRelease: Array<{ variantId: string; quantity: number }> = [];
 
-        if (
-          (item.externalSku && item.externalSku.toLowerCase() === mapping.sellerSku.toLowerCase()) ||
-          (itemCanonical && itemCanonical.toLowerCase() === mapping.sellerSku.toLowerCase())
-        ) {
-          isMatch = true;
-        } else if (
-          mapping.productName &&
-          item.productName.trim().toLowerCase() === mapping.productName.trim().toLowerCase()
-        ) {
-          if (
-            !mapping.variationName ||
-            (item.variationName &&
-              item.variationName.trim().toLowerCase() === mapping.variationName.trim().toLowerCase())
-          ) {
-            isMatch = true;
+        for (const item of order.orderItems) {
+          const matchScore = this.getMappingMatchScore(item, mapping);
+          if (matchScore > 0) {
+            let rawQty = item.rawQuantity;
+            if (!rawQty || rawQty < 1) {
+              if (item.packMultiplier && item.packMultiplier > 1 && item.quantity > 0) {
+                rawQty = Math.max(1, Math.round(item.quantity / item.packMultiplier));
+              } else {
+                rawQty = item.quantity && item.quantity > 0 ? item.quantity : 1;
+              }
+            }
+            const multiplier = Math.max(1, mapping.multiplier || 1);
+            const finalQty = Math.max(1, rawQty * multiplier);
+            const itemCogs = Number(variant.costPrice || 0) * finalQty;
+
+            const hasChanged =
+              item.variantId !== variant.id ||
+              item.packMultiplier !== multiplier ||
+              item.quantity !== finalQty ||
+              item.rawQuantity !== rawQty ||
+              Number(item.itemCogs) !== itemCogs;
+
+            if (hasChanged) {
+              orderModified = true;
+              updatedItemsCount++;
+
+              if (wasReservedOrPacked && item.variantId) {
+                oldItemsToRelease.push({
+                  variantId: item.variantId,
+                  quantity: item.quantity,
+                });
+              }
+
+              await this.prisma.orderItem.update({
+                where: { id: item.id },
+                data: {
+                  variantId: variant.id,
+                  rawQuantity: rawQty,
+                  packMultiplier: multiplier,
+                  quantity: finalQty,
+                  itemCogs,
+                },
+              });
+
+              await this.prisma.packageItem.updateMany({
+                where: { orderItemId: item.id, tenantId },
+                data: { quantity: finalQty },
+              });
+
+              item.variantId = variant.id;
+              item.rawQuantity = rawQty;
+              item.packMultiplier = multiplier;
+              item.quantity = finalQty;
+              item.itemCogs = new Prisma.Decimal(itemCogs);
+            }
           }
         }
 
-        if (isMatch) {
-          const rawQty = item.rawQuantity || 1;
-          const finalQty = Math.max(1, rawQty * mapping.multiplier);
-          await this.prisma.orderItem.update({
-            where: { id: item.id },
-            data: {
-              variantId: variant.id,
-              packMultiplier: mapping.multiplier,
-              quantity: finalQty,
-              itemCogs: Number(variant.costPrice) * finalQty,
-            },
+        if (orderModified) {
+          await this.prisma.$transaction(async (tx) => {
+            const warehouseId = order.shop?.defaultWarehouseId;
+            if (wasReservedOrPacked && warehouseId && !isVirtualNoStock && oldItemsToRelease.length > 0) {
+              await this.inventoryService.releaseStockForOrder(
+                tx,
+                tenantId,
+                warehouseId,
+                oldItemsToRelease,
+                order.id,
+                'SYSTEM_MAPPING_UPDATE',
+                order.externalOrderId || order.internalOrderCode,
+              );
+            }
+
+            const totalCogs = order.orderItems.reduce(
+              (sum, oi) => sum + Number(oi.itemCogs || 0),
+              0,
+            );
+
+            let newFulfillmentStatus: FulfillmentStatus | undefined;
+            if (wasReservedOrPacked) {
+              newFulfillmentStatus = FulfillmentStatus.PENDING_PROCESSING;
+            } else if (order.fulfillmentStatus === FulfillmentStatus.UNMAPPED) {
+              const allMapped = order.orderItems.every((oi) => !!oi.variantId);
+              if (allMapped) {
+                newFulfillmentStatus = FulfillmentStatus.PENDING_PROCESSING;
+              }
+            }
+
+            await tx.order.update({
+              where: { id: order.id },
+              data: {
+                cogsTotal: totalCogs,
+                ...(newFulfillmentStatus ? { fulfillmentStatus: newFulfillmentStatus } : {}),
+              },
+            });
           });
-          affectedOrderIds.add(item.orderId);
+
+          updatedOrdersCount++;
         }
       }
 
-      for (const orderId of affectedOrderIds) {
-        const remainingUnmapped = await this.prisma.orderItem.count({
-          where: { orderId, variantId: null },
-        });
-        if (remainingUnmapped === 0) {
-          await this.prisma.order.update({
-            where: { id: orderId },
-            data: { fulfillmentStatus: FulfillmentStatus.PENDING_PROCESSING },
+      this.logger.log(
+        `[syncOrderItemsForMapping] Updated ${updatedItemsCount} items across ${updatedOrdersCount} orders for shop ${shopId}`,
+      );
+      return { success: true, updatedOrdersCount, updatedItemsCount };
+    } catch (err) {
+      this.logger.error('Failed to sync order items for mapping:', err);
+      return { success: false, error: (err as any)?.message };
+    }
+  }
+
+  async syncAllOrderItemsWithMappings(tenantId?: string, shopId?: string) {
+    try {
+      this.logger.log(
+        `[syncAllOrderItemsWithMappings] Starting sync for tenant: ${tenantId || 'ALL'}, shop: ${shopId || 'ALL'}`,
+      );
+
+      const whereMapping: any = {};
+      if (tenantId) whereMapping.tenantId = tenantId;
+      if (shopId) whereMapping.shopId = shopId;
+
+      const mappings = await this.prisma.listingMapping.findMany({
+        where: whereMapping,
+        include: { variant: true },
+      });
+
+      if (!mappings || mappings.length === 0) {
+        return {
+          success: true,
+          updatedOrdersCount: 0,
+          updatedItemsCount: 0,
+          message: 'Không có listing mapping nào',
+        };
+      }
+
+      // Group mappings theo shopId
+      const mappingsByShop = new Map<string, typeof mappings>();
+      for (const m of mappings) {
+        const list = mappingsByShop.get(m.shopId) || [];
+        list.push(m);
+        mappingsByShop.set(m.shopId, list);
+      }
+
+      const whereOrder: any = {
+        platformStatus: { not: PlatformOrderStatus.CANCELLED },
+        fulfillmentStatus: {
+          notIn: [
+            FulfillmentStatus.DISPATCHED,
+            FulfillmentStatus.RETURN_RECEIVED,
+            FulfillmentStatus.PARTIALLY_RETURN_RECEIVED,
+          ],
+        },
+      };
+      if (tenantId) whereOrder.tenantId = tenantId;
+      if (shopId) whereOrder.shopId = shopId;
+
+      const orders = await this.prisma.order.findMany({
+        where: whereOrder,
+        include: {
+          orderItems: true,
+          shop: { select: { id: true, defaultWarehouseId: true } },
+        },
+      });
+
+      let totalUpdatedOrders = 0;
+      let totalUpdatedItems = 0;
+
+      for (const order of orders) {
+        const shopMappings = mappingsByShop.get(order.shopId);
+        if (!shopMappings || shopMappings.length === 0) continue;
+
+        let orderModified = false;
+        const wasReservedOrPacked =
+          order.fulfillmentStatus === FulfillmentStatus.RESERVED ||
+          order.fulfillmentStatus === FulfillmentStatus.PACKED;
+        const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
+        const oldItemsToRelease: Array<{ variantId: string; quantity: number }> = [];
+
+        for (const item of order.orderItems) {
+          let bestMapping: any = null;
+          let highestScore = 0;
+
+          for (const m of shopMappings) {
+            const score = this.getMappingMatchScore(item, m);
+            if (score > highestScore) {
+              highestScore = score;
+              bestMapping = m;
+            }
+          }
+
+          if (bestMapping && bestMapping.variant) {
+            const variant = bestMapping.variant;
+            let rawQty = item.rawQuantity;
+            if (!rawQty || rawQty < 1) {
+              if (item.packMultiplier && item.packMultiplier > 1 && item.quantity > 0) {
+                rawQty = Math.max(1, Math.round(item.quantity / item.packMultiplier));
+              } else {
+                rawQty = item.quantity && item.quantity > 0 ? item.quantity : 1;
+              }
+            }
+            const multiplier = Math.max(1, bestMapping.multiplier || 1);
+            const finalQty = Math.max(1, rawQty * multiplier);
+            const itemCogs = Number(variant.costPrice || 0) * finalQty;
+
+            const hasChanged =
+              item.variantId !== variant.id ||
+              item.packMultiplier !== multiplier ||
+              item.quantity !== finalQty ||
+              item.rawQuantity !== rawQty ||
+              Number(item.itemCogs) !== itemCogs;
+
+            if (hasChanged) {
+              orderModified = true;
+              totalUpdatedItems++;
+
+              if (wasReservedOrPacked && item.variantId) {
+                oldItemsToRelease.push({
+                  variantId: item.variantId,
+                  quantity: item.quantity,
+                });
+              }
+
+              await this.prisma.orderItem.update({
+                where: { id: item.id },
+                data: {
+                  variantId: variant.id,
+                  rawQuantity: rawQty,
+                  packMultiplier: multiplier,
+                  quantity: finalQty,
+                  itemCogs,
+                },
+              });
+
+              await this.prisma.packageItem.updateMany({
+                where: { orderItemId: item.id, tenantId: order.tenantId },
+                data: { quantity: finalQty },
+              });
+
+              item.variantId = variant.id;
+              item.rawQuantity = rawQty;
+              item.packMultiplier = multiplier;
+              item.quantity = finalQty;
+              item.itemCogs = new Prisma.Decimal(itemCogs);
+            }
+          }
+        }
+
+        if (orderModified) {
+          await this.prisma.$transaction(async (tx) => {
+            const warehouseId = order.shop?.defaultWarehouseId;
+            if (wasReservedOrPacked && warehouseId && !isVirtualNoStock && oldItemsToRelease.length > 0) {
+              await this.inventoryService.releaseStockForOrder(
+                tx,
+                order.tenantId,
+                warehouseId,
+                oldItemsToRelease,
+                order.id,
+                'SYSTEM_MAPPING_UPDATE',
+                order.externalOrderId || order.internalOrderCode,
+              );
+            }
+
+            const totalCogs = order.orderItems.reduce(
+              (sum, oi) => sum + Number(oi.itemCogs || 0),
+              0,
+            );
+
+            let newFulfillmentStatus: FulfillmentStatus | undefined;
+            if (wasReservedOrPacked) {
+              newFulfillmentStatus = FulfillmentStatus.PENDING_PROCESSING;
+            } else if (order.fulfillmentStatus === FulfillmentStatus.UNMAPPED) {
+              const allMapped = order.orderItems.every((oi) => !!oi.variantId);
+              if (allMapped) {
+                newFulfillmentStatus = FulfillmentStatus.PENDING_PROCESSING;
+              }
+            }
+
+            await tx.order.update({
+              where: { id: order.id },
+              data: {
+                cogsTotal: totalCogs,
+                ...(newFulfillmentStatus ? { fulfillmentStatus: newFulfillmentStatus } : {}),
+              },
+            });
           });
+
+          totalUpdatedOrders++;
         }
       }
+
+      this.logger.log(
+        `[syncAllOrderItemsWithMappings] Completed. Updated ${totalUpdatedItems} items across ${totalUpdatedOrders} orders.`,
+      );
+
+      return {
+        success: true,
+        updatedOrdersCount: totalUpdatedOrders,
+        updatedItemsCount: totalUpdatedItems,
+        message: `Đã cập nhật ${totalUpdatedItems} sản phẩm trong ${totalUpdatedOrders} đơn hàng.`,
+      };
     } catch (err) {
-      console.error('Failed to sync unmapped order items:', err);
+      this.logger.error('Failed to sync all order items with mappings:', err);
+      return { success: false, error: (err as any)?.message };
     }
   }
 

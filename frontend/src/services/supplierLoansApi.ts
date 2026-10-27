@@ -115,4 +115,12 @@ export const supplierLoansApi = {
   repay: async (payload: CreateSupplierLoanRepaymentPayload): Promise<SupplierLoanRepaymentModel> => {
     return api.post<SupplierLoanRepaymentModel>('/supplier-loans/repay', payload);
   },
+
+  delete: async (id: string): Promise<{ success: boolean; message: string }> => {
+    return api.delete<{ success: boolean; message: string }>(`/supplier-loans/${id}`);
+  },
+
+  deleteRepayment: async (repaymentId: string): Promise<{ success: boolean; message: string }> => {
+    return api.delete<{ success: boolean; message: string }>(`/supplier-loans/repayments/${repaymentId}`);
+  },
 };

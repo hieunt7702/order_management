@@ -75,7 +75,7 @@ export const OrderReportsPage: React.FC = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [limit] = useState<number>(20);
+  const [limit, setLimit] = useState<number>(20);
 
   // Data & loading state
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -860,7 +860,7 @@ export const OrderReportsPage: React.FC = () => {
       </div>
 
       {/* Mobile Card View */}
-      <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-3">
+      <div className="md:hidden flex-1 flex flex-col min-h-fit space-y-3 pb-8">
         {isLoading ? (
           <div className="py-8 text-center text-xs text-gray-400 font-normal">
             Đang tải dữ liệu đối soát...
@@ -1024,6 +1024,7 @@ export const OrderReportsPage: React.FC = () => {
             className="border-t-0"
           />
         </div>
+        <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
       </div>
 
       {/* Drilldown Modal: Product Reconciliation Detail */}
