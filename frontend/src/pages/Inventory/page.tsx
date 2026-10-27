@@ -23,6 +23,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { TransferToSupplierModal } from '../../components/inventory/TransferToSupplierModal';
+import { ProductLedgerModal, ProductLedgerTarget } from '../../components/inventory/ProductLedgerModal';
 import { inventoryApi } from '../../services/inventoryApi';
 import { productsApi } from '../../services/productsApi';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
@@ -99,6 +100,8 @@ export const InventoryPage: React.FC = () => {
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState<boolean>(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState<boolean>(false);
   const [transferInitialVariantId, setTransferInitialVariantId] = useState<string | undefined>(undefined);
+  const [isLedgerModalOpen, setIsLedgerModalOpen] = useState<boolean>(false);
+  const [ledgerModalTarget, setLedgerModalTarget] = useState<ProductLedgerTarget | null>(null);
 
   // Products & Variants list for dropdown selection
   const [allVariants, setAllVariants] = useState<any[]>([]);
@@ -312,6 +315,22 @@ export const InventoryPage: React.FC = () => {
       quantity: 1,
     }));
     setIsAdjustModalOpen(true);
+  };
+
+  const handleOpenProductLedger = (b: any) => {
+    const vObj = b.variant || allVariants.find((v) => v.id === b.variantId);
+    const wObj = b.warehouse || warehouses.find((w) => w.id === b.warehouseId);
+    setLedgerModalTarget({
+      variantId: b.variantId,
+      sku: b.sku || vObj?.sku || b.variantId,
+      productName: b.productName || vObj?.productName || vObj?.product?.name || '--',
+      variantName: b.variantName || vObj?.name,
+      warehouseId: b.warehouseId,
+      warehouseName: b.warehouseName || wObj?.name || b.warehouseId,
+      onHand: b.onHand,
+      listingMappingsCount: vObj?.listingMappings?.length,
+    });
+    setIsLedgerModalOpen(true);
   };
 
   const selectedAdjustBalance = balances.find(
@@ -619,13 +638,19 @@ export const InventoryPage: React.FC = () => {
                         const stt = (balancePage - 1) * balanceLimit + index + 1;
 
                         return (
-                          <SystemTr key={b.id || `${b.warehouseId}_${b.variantId}`}>
+                          <SystemTr
+                            key={b.id || `${b.warehouseId}_${b.variantId}`}
+                            className="cursor-pointer hover:bg-gray-50/80 dark:hover:bg-[#1a1e28]/80 transition-colors group"
+                            onClick={() => handleOpenProductLedger(b)}
+                            title="Nhấn để xem chi tiết lịch sử biến động kho của sản phẩm này"
+                          >
                             <SystemTd align="center" className="text-center font-medium text-gray-500 dark:text-gray-400 text-xs">
                               {stt}
                             </SystemTd>
                             <SystemTd>
-                              <div className="font-mono font-bold text-[#5865f2]">
-                                {sku}
+                              <div className="font-mono font-bold text-[#5865f2] group-hover:underline flex items-center gap-1.5">
+                                <span>{sku}</span>
+                                <History size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-[#5865f2] shrink-0" />
                               </div>
                               {variantName && variantName !== sku && (
                                 <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
@@ -646,7 +671,7 @@ export const InventoryPage: React.FC = () => {
                               )}
                             </SystemTd>
                             <SystemTd>
-                              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                              <span className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-[#5865f2] transition-colors">
                                 {productName}
                               </span>
                             </SystemTd>
@@ -696,6 +721,11 @@ export const InventoryPage: React.FC = () => {
                                     </button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleOpenProductLedger(b)}>
+                                      <History className="w-4 h-4 text-[#5865f2]" />
+                                      <span className="font-medium text-[#5865f2]">Xem biến động kho</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => openReceiveForVariant(b.variantId)}>
                                       <ArrowDownLeft className="w-4 h-4 text-emerald-500" />
                                       <span>Nhập thêm hàng</span>
@@ -756,13 +786,18 @@ export const InventoryPage: React.FC = () => {
                         key={b.id || `${b.warehouseId}_${b.variantId}`}
                         className="p-3.5 rounded bg-white dark:bg-[#14151a] border border-gray-200 dark:border-gray-800 space-y-2.5 shadow-xs"
                       >
-                        {/* Card Header: SKU & Status Badge */}
-                        <div className="flex items-start justify-between gap-2">
+                        {/* Card Header: SKU & Status Badge (Click to open ledger) */}
+                        <div
+                          className="flex items-start justify-between gap-2 cursor-pointer group"
+                          onClick={() => handleOpenProductLedger(b)}
+                          title="Nhấn để xem biến động kho sản phẩm này"
+                        >
                           <div className="min-w-0 flex-1">
-                            <div className="font-mono font-bold text-xs text-[#5865f2] dark:text-[#7b85f5] truncate">
-                              {sku}
+                            <div className="font-mono font-bold text-xs text-[#5865f2] dark:text-[#7b85f5] truncate flex items-center gap-1">
+                              <span>{sku}</span>
+                              <History size={11} className="opacity-70 group-hover:opacity-100 transition-opacity" />
                             </div>
-                            <div className="font-medium text-xs text-gray-900 dark:text-white line-clamp-1 mt-0.5">
+                            <div className="font-medium text-xs text-gray-900 dark:text-white line-clamp-1 mt-0.5 group-hover:text-[#5865f2] transition-colors">
                               {productName}
                             </div>
                             {variantName && variantName !== sku && (
@@ -803,7 +838,11 @@ export const InventoryPage: React.FC = () => {
                         </div>
 
                         {/* Metric: Tồn kho thực tế */}
-                        <div className="flex items-center justify-between p-2 rounded bg-gray-50 dark:bg-[#1a1e28] border border-gray-100 dark:border-gray-800/60">
+                        <div
+                          className="flex items-center justify-between p-2 rounded bg-gray-50 dark:bg-[#1a1e28] border border-gray-100 dark:border-gray-800/60 cursor-pointer hover:border-[#5865f2]/40 transition-colors"
+                          onClick={() => handleOpenProductLedger(b)}
+                          title="Nhấn để xem biến động kho"
+                        >
                           <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Tồn kho thực tế:</span>
                           <span className={`font-mono font-bold text-sm ${onHand < 0 ? 'text-rose-600 dark:text-rose-400' : onHand === 0 ? 'text-gray-400' : 'text-gray-900 dark:text-white'}`}>
                             {onHand.toLocaleString('vi-VN')}
@@ -811,11 +850,20 @@ export const InventoryPage: React.FC = () => {
                         </div>
 
                         {/* Quick Actions */}
-                        <div className="flex items-center justify-end gap-2 pt-1 border-t border-gray-100 dark:border-gray-800/80">
+                        <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-gray-100 dark:border-gray-800/80 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenProductLedger(b)}
+                            className="px-2 py-1 text-xs rounded border border-[#5865f2]/30 text-[#5865f2] dark:text-[#7b85f5] hover:bg-[#5865f2]/10 flex items-center gap-1 font-medium cursor-pointer"
+                            title="Xem lịch sử biến động kho"
+                          >
+                            <History size={12} className="text-[#5865f2]" />
+                            <span>Biến động</span>
+                          </button>
                           <button
                             type="button"
                             onClick={() => openReceiveForVariant(b.variantId)}
-                            className="px-2.5 py-1 text-xs rounded border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1 font-medium cursor-pointer"
+                            className="px-2 py-1 text-xs rounded border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1 font-medium cursor-pointer"
                           >
                             <ArrowDownLeft size={12} className="text-emerald-500" />
                             <span>Nhập thêm</span>
@@ -826,7 +874,7 @@ export const InventoryPage: React.FC = () => {
                               setTransferInitialVariantId(b.variantId);
                               setIsTransferModalOpen(true);
                             }}
-                            className="px-2.5 py-1 text-xs rounded border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 flex items-center gap-1 font-medium cursor-pointer"
+                            className="px-2 py-1 text-xs rounded border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 flex items-center gap-1 font-medium cursor-pointer"
                           >
                             <Truck size={12} className="text-indigo-500" />
                             <span>Chuyển NCC</span>
@@ -834,10 +882,10 @@ export const InventoryPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => openAdjustForVariant(b.variantId)}
-                            className="px-2.5 py-1 text-xs rounded bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1 font-medium cursor-pointer shadow-xs active:scale-95 transition-all"
+                            className="px-2 py-1 text-xs rounded bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1 font-medium cursor-pointer shadow-xs active:scale-95 transition-all"
                           >
                             <Sliders size={12} />
-                            <span>Kiểm kê tồn</span>
+                            <span>Kiểm kê</span>
                           </button>
                         </div>
                       </div>
@@ -1916,6 +1964,33 @@ export const InventoryPage: React.FC = () => {
         initialVariantId={transferInitialVariantId}
         warehouses={warehouses}
         allVariants={allVariants}
+      />
+
+      {/* Product Ledger Modal (Xem biến động sản phẩm theo từng sản phẩm) */}
+      <ProductLedgerModal
+        isOpen={isLedgerModalOpen}
+        onClose={() => {
+          setIsLedgerModalOpen(false);
+          setLedgerModalTarget(null);
+        }}
+        target={ledgerModalTarget}
+        warehouses={warehouses}
+        onOpenReceive={(variantId, warehouseId) => {
+          handleOpenReceiveModal(variantId);
+          if (warehouseId) {
+            setReceiveForm((prev) => ({ ...prev, warehouseId }));
+          }
+        }}
+        onOpenAdjust={(variantId, warehouseId) => {
+          setAdjustForm((prev) => ({
+            ...prev,
+            variantId,
+            warehouseId: warehouseId || prev.warehouseId,
+            adjustType: 'INCREASE',
+            quantity: 1,
+          }));
+          setIsAdjustModalOpen(true);
+        }}
       />
     </div>
   );

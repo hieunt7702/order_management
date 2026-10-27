@@ -159,15 +159,18 @@ export interface SystemTrProps {
   children?: ReactNode;
   className?: string;
   onClick?: (e: MouseEvent<HTMLTableRowElement>) => void;
+  title?: string;
 }
 
 export const SystemTr: React.FC<SystemTrProps> = ({
   children,
   className = '',
   onClick,
+  title,
 }) => (
   <tr
     onClick={onClick}
+    title={title}
     className={cn(
       'border-b border-gray-100 dark:border-gray-800/80 hover:bg-gray-50/70 dark:hover:bg-[#1e212b]/60 transition-colors',
       onClick ? 'cursor-pointer' : '',
