@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { DashboardFilterDto, PurchaseReportFilterDto, OrderReconciliationReportFilterDto } from './dto/report.dto';
 import { PlatformOrderStatus, VerificationStatus, ProductStatus, Prisma } from '@prisma/client';
+import { ShopeeAdapter } from '../imports/adapters/shopee.adapter';
 
 export interface ProductImportTransaction {
   receiptId: string;
@@ -31,6 +32,101 @@ export interface ProductImportTransaction {
 @Injectable()
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private findMatchedListingMapping(
+    oi: {
+      productName?: string | null;
+      variationName?: string | null;
+      externalSku?: string | null;
+      externalProductId?: string | null;
+      externalVariationId?: string | null;
+      order?: { shopId?: string | null; shop?: { id?: string | null } | null } | null;
+      shopId?: string | null;
+    },
+    listingMappings: Array<{
+      shopId: string;
+      sellerSku: string;
+      variantId: string;
+      productName?: string | null;
+      variationName?: string | null;
+      externalProductId?: string | null;
+      externalVariationId?: string | null;
+      multiplier?: number;
+    }>,
+  ) {
+    const norm = (s?: string | null) => (s || '').trim().toLowerCase();
+    const oiProd = norm(oi.productName);
+    const oiVar = norm(oi.variationName);
+    const oiSku = norm(oi.externalSku);
+    const oiExtProd = norm(oi.externalProductId);
+    const oiExtVar = norm(oi.externalVariationId);
+    const shopId = oi.order?.shopId || oi.order?.shop?.id || oi.shopId;
+
+    let bestMapping: any = null;
+    let highestScore = 0;
+
+    for (const m of listingMappings) {
+      if (m.shopId && shopId && m.shopId !== shopId) continue;
+
+      let score = 0;
+      const mExtProd = norm(m.externalProductId);
+      const mExtVar = norm(m.externalVariationId);
+      const mSku = norm(m.sellerSku);
+      const mProd = norm(m.productName);
+      const mVar = norm(m.variationName);
+
+      // 1. External Product ID & Variation ID
+      if (mExtProd && oiExtProd && mExtProd === oiExtProd) {
+        if (mExtVar && oiExtVar && mExtVar === oiExtVar) {
+          score = 50;
+        } else if (!mExtVar) {
+          score = 45;
+        }
+      }
+
+      // 2. Exact sellerSku / externalSku
+      if (score === 0 && mSku && oiSku && mSku === oiSku) {
+        score = 40;
+      }
+
+      // 3. Canonical SKU with externalSku
+      if (score === 0 && mSku && (oiProd || oiSku)) {
+        const canonicalWithSku = norm(
+          ShopeeAdapter.generateCanonicalSku(oi.productName || '', oi.variationName || undefined, oi.externalSku || undefined),
+        );
+        if (mSku === canonicalWithSku) {
+          score = 35;
+        }
+      }
+
+      // 4. Canonical SKU without externalSku
+      if (score === 0 && mSku && oiProd) {
+        const canonicalNoSku = norm(
+          ShopeeAdapter.generateCanonicalSku(oi.productName || '', oi.variationName || undefined, undefined),
+        );
+        if (mSku === canonicalNoSku) {
+          score = 30;
+        }
+      }
+
+      // 5. Product name + variation name
+      if (score === 0 && mProd && oiProd && mProd === oiProd) {
+        if (mVar && oiVar && mVar === oiVar) {
+          score = 20;
+        } else if (!mVar) {
+          score = 10;
+        }
+      }
+
+      if (score > highestScore) {
+        highestScore = score;
+        bestMapping = m;
+        if (score >= 50) break;
+      }
+    }
+
+    return bestMapping;
+  }
 
   async getDashboardSummary(
     tenantId: string,
@@ -352,44 +448,47 @@ export class ReportsService {
           order: whereOrder,
         },
         select: {
+          id: true,
           variantId: true,
           externalSku: true,
+          externalProductId: true,
+          externalVariationId: true,
+          productName: true,
+          variationName: true,
           quantity: true,
           rawQuantity: true,
+          packMultiplier: true,
           discountedPrice: true,
           originalPrice: true,
           order: { select: { shopId: true } },
         },
       });
 
-      const unmappedOrderItems = orderItems.filter((oi) => !oi.variantId && oi.externalSku);
-      const listingMap = new Map<string, string>();
-      if (unmappedOrderItems.length > 0 && this.prisma.listingMapping) {
-        const mappings = await this.prisma.listingMapping.findMany({
-          where: { tenantId, status: 'ACTIVE' },
-          select: { shopId: true, sellerSku: true, variantId: true },
-        });
-        mappings.forEach((m) => {
-          listingMap.set(`${m.shopId}:${m.sellerSku.toLowerCase()}`, m.variantId);
-          listingMap.set(m.sellerSku.toLowerCase(), m.variantId);
-        });
-      }
+      const listingMappings = await this.prisma.listingMapping.findMany({
+        where: { tenantId, status: 'ACTIVE' },
+        select: {
+          shopId: true,
+          sellerSku: true,
+          variantId: true,
+          productName: true,
+          variationName: true,
+          externalProductId: true,
+          externalVariationId: true,
+          multiplier: true,
+        },
+      });
 
       const soldMap = new Map<string, { soldQty: number; exportedAmount: number }>();
       for (const oi of orderItems) {
-        let vId = oi.variantId;
-        if (!vId && oi.externalSku) {
-          vId =
-            listingMap.get(`${oi.order.shopId}:${oi.externalSku.toLowerCase()}`) ||
-            listingMap.get(oi.externalSku.toLowerCase()) ||
-            null;
-        }
+        const matched = this.findMatchedListingMapping(oi, listingMappings);
+        const vId = matched?.variantId || oi.variantId;
         if (vId) {
           const cur = soldMap.get(vId) || { soldQty: 0, exportedAmount: 0 };
-          const qty = oi.quantity || 1;
-          const rawQty = oi.rawQuantity || qty;
+          const multiplier = Math.max(1, matched?.multiplier || oi.packMultiplier || 1);
+          const rawQty = oi.rawQuantity && oi.rawQuantity > 0 ? oi.rawQuantity : Math.max(1, Math.round((oi.quantity || 1) / (oi.packMultiplier || 1)));
+          const finalQty = rawQty * multiplier;
           const price = Number(oi.discountedPrice || oi.originalPrice || 0);
-          cur.soldQty += qty;
+          cur.soldQty += finalQty;
           cur.exportedAmount += price * rawQty;
           soldMap.set(vId, cur);
         }
@@ -1777,19 +1876,42 @@ export class ReportsService {
 
     const shopOrdersMap = new Map(shopOrderGroups.map((g) => [g.shopId, g]));
 
+    const listingMappings = await this.prisma.listingMapping.findMany({
+      where: {
+        tenantId,
+        status: 'ACTIVE',
+      },
+      select: {
+        shopId: true,
+        sellerSku: true,
+        variantId: true,
+        productName: true,
+        variationName: true,
+        externalProductId: true,
+        externalVariationId: true,
+        multiplier: true,
+      },
+    });
+
     const orderItems = await this.prisma.orderItem.findMany({
       where: {
         tenantId,
-        variantId: { not: null },
         order: orderWhere,
       },
       select: {
+        id: true,
         variantId: true,
         quantity: true,
         rawQuantity: true,
+        packMultiplier: true,
         discountedPrice: true,
         originalPrice: true,
         orderId: true,
+        externalSku: true,
+        externalProductId: true,
+        externalVariationId: true,
+        productName: true,
+        variationName: true,
         order: { select: { shopId: true } },
       },
     });
@@ -1799,16 +1921,20 @@ export class ReportsService {
     let totalScopeExportedAmount = 0;
 
     orderItems.forEach((oi) => {
-      if (oi.variantId) {
-        const cur = orderMap.get(oi.variantId) || { quantity: 0, ordersCount: 0, totalAmount: 0, orderIds: new Set<string>() };
-        const qty = oi.quantity || 1;
+      const matched = this.findMatchedListingMapping(oi, listingMappings);
+      const effectiveVariantId = matched?.variantId || oi.variantId;
+      if (effectiveVariantId) {
+        const cur = orderMap.get(effectiveVariantId) || { quantity: 0, ordersCount: 0, totalAmount: 0, orderIds: new Set<string>() };
+        const multiplier = Math.max(1, matched?.multiplier || oi.packMultiplier || 1);
+        const rawQty = oi.rawQuantity && oi.rawQuantity > 0 ? oi.rawQuantity : Math.max(1, Math.round((oi.quantity || 1) / (oi.packMultiplier || 1)));
+        const finalQty = rawQty * multiplier;
         const price = Number(oi.discountedPrice || oi.originalPrice || 0);
-        const itemAmount = price * (oi.rawQuantity || qty);
+        const itemAmount = price * rawQty;
 
-        cur.quantity += qty;
+        cur.quantity += finalQty;
         cur.totalAmount += itemAmount;
         cur.orderIds.add(oi.orderId);
-        orderMap.set(oi.variantId, cur);
+        orderMap.set(effectiveVariantId, cur);
 
         allScopeOrderIds.add(oi.orderId);
         totalScopeExportedAmount += itemAmount;
@@ -1873,64 +1999,6 @@ export class ReportsService {
       });
     });
 
-    // Handle any unmapped order items with null variantId via listing mappings
-    const unmappedOrderItems = await this.prisma.orderItem.findMany({
-      where: {
-        tenantId,
-        variantId: null,
-        order: orderWhere,
-        externalSku: { not: null },
-      },
-      select: {
-        externalSku: true,
-        quantity: true,
-        rawQuantity: true,
-        discountedPrice: true,
-        originalPrice: true,
-        orderId: true,
-        order: { select: { shopId: true } },
-      },
-    });
-
-    if (unmappedOrderItems.length > 0) {
-      const listingMappings = await this.prisma.listingMapping.findMany({
-        where: {
-          tenantId,
-          status: 'ACTIVE',
-        },
-        select: {
-          shopId: true,
-          sellerSku: true,
-          variantId: true,
-        },
-      });
-
-      const lmMap = new Map<string, string>();
-      listingMappings.forEach((lm) => {
-        lmMap.set(`${lm.shopId}:${lm.sellerSku.toLowerCase()}`, lm.variantId);
-        lmMap.set(lm.sellerSku.toLowerCase(), lm.variantId);
-      });
-
-      for (const uoi of unmappedOrderItems) {
-        if (!uoi.externalSku) continue;
-        const key = `${uoi.order.shopId}:${uoi.externalSku.toLowerCase()}`;
-        const matchedVariantId = lmMap.get(key) || lmMap.get(uoi.externalSku.toLowerCase());
-        if (matchedVariantId) {
-          const cur = orderMap.get(matchedVariantId) || { quantity: 0, ordersCount: 0, totalAmount: 0, orderIds: new Set<string>() };
-          const qty = uoi.quantity || 1;
-          const price = Number(uoi.discountedPrice || uoi.originalPrice || 0);
-          const itemAmount = price * (uoi.rawQuantity || qty);
-
-          cur.quantity += qty;
-          cur.totalAmount += itemAmount;
-          cur.orderIds.add(uoi.orderId);
-          orderMap.set(matchedVariantId, cur);
-
-          allScopeOrderIds.add(uoi.orderId);
-          totalScopeExportedAmount += itemAmount;
-        }
-      }
-    }
 
     // 3. Query all System Product Variants for the tenant
     const search = filter.search?.trim();
@@ -2410,16 +2478,30 @@ export class ReportsService {
       }
     }
 
-    const orderItems = await this.prisma.orderItem.findMany({
+    const listingMappings = await this.prisma.listingMapping.findMany({
+      where: { tenantId, status: 'ACTIVE' },
+      select: {
+        shopId: true,
+        sellerSku: true,
+        variantId: true,
+        productName: true,
+        variationName: true,
+        externalProductId: true,
+        externalVariationId: true,
+        multiplier: true,
+      },
+    });
+
+    const candidateOrderItems = await this.prisma.orderItem.findMany({
       where: {
         tenantId,
-        variantId,
         order: orderWhere,
       },
       include: {
         order: {
           select: {
             id: true,
+            shopId: true,
             internalOrderCode: true,
             externalOrderId: true,
             trackingCode: true,
@@ -2435,8 +2517,26 @@ export class ReportsService {
       orderBy: {
         order: { orderDate: 'desc' },
       },
-      take: 100,
+      take: 500,
     });
+
+    const orderItems = candidateOrderItems
+      .filter((oi) => {
+        const matched = this.findMatchedListingMapping(oi, listingMappings);
+        const effectiveVariantId = matched?.variantId || oi.variantId;
+        return effectiveVariantId === variantId;
+      })
+      .map((oi) => {
+        const matched = this.findMatchedListingMapping(oi, listingMappings);
+        const multiplier = Math.max(1, matched?.multiplier || oi.packMultiplier || 1);
+        const rawQty = oi.rawQuantity && oi.rawQuantity > 0 ? oi.rawQuantity : Math.max(1, Math.round((oi.quantity || 1) / (oi.packMultiplier || 1)));
+        const finalQty = rawQty * multiplier;
+        return {
+          ...oi,
+          quantity: finalQty,
+        };
+      })
+      .slice(0, 100);
 
     // Inbound receipts
     const receiptWhere: Prisma.PurchaseReceiptWhereInput = {

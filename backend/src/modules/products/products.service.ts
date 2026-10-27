@@ -808,14 +808,6 @@ export class ProductsService implements OnModuleInit {
         where: {
           tenantId,
           shopId,
-          platformStatus: { not: PlatformOrderStatus.CANCELLED },
-          fulfillmentStatus: {
-            notIn: [
-              FulfillmentStatus.DISPATCHED,
-              FulfillmentStatus.RETURN_RECEIVED,
-              FulfillmentStatus.PARTIALLY_RETURN_RECEIVED,
-            ],
-          },
         },
         include: {
           orderItems: true,
@@ -829,8 +821,10 @@ export class ProductsService implements OnModuleInit {
       for (const order of orders) {
         let orderModified = false;
         const wasReservedOrPacked =
-          order.fulfillmentStatus === FulfillmentStatus.RESERVED ||
-          order.fulfillmentStatus === FulfillmentStatus.PACKED;
+          (order.fulfillmentStatus === FulfillmentStatus.RESERVED ||
+            order.fulfillmentStatus === FulfillmentStatus.PACKED) &&
+          order.platformStatus !== PlatformOrderStatus.CANCELLED &&
+          order.platformStatus !== PlatformOrderStatus.IN_CANCEL;
         const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
         const oldItemsToRelease: Array<{ variantId: string; quantity: number }> = [];
 
@@ -917,7 +911,11 @@ export class ProductsService implements OnModuleInit {
               newFulfillmentStatus = FulfillmentStatus.PENDING_PROCESSING;
             } else if (order.fulfillmentStatus === FulfillmentStatus.UNMAPPED) {
               const allMapped = order.orderItems.every((oi) => !!oi.variantId);
-              if (allMapped) {
+              if (
+                allMapped &&
+                order.platformStatus !== PlatformOrderStatus.CANCELLED &&
+                order.platformStatus !== PlatformOrderStatus.IN_CANCEL
+              ) {
                 newFulfillmentStatus = FulfillmentStatus.PENDING_PROCESSING;
               }
             }
@@ -977,18 +975,9 @@ export class ProductsService implements OnModuleInit {
         mappingsByShop.set(m.shopId, list);
       }
 
-      const whereOrder: any = {
-        platformStatus: { not: PlatformOrderStatus.CANCELLED },
-        fulfillmentStatus: {
-          notIn: [
-            FulfillmentStatus.DISPATCHED,
-            FulfillmentStatus.RETURN_RECEIVED,
-            FulfillmentStatus.PARTIALLY_RETURN_RECEIVED,
-          ],
-        },
-      };
+      const whereOrder: any = {};
       if (tenantId) whereOrder.tenantId = tenantId;
-      if (shopId) whereOrder.shopId = shopId;
+      if (shopId && shopId !== 'ALL') whereOrder.shopId = shopId;
 
       const orders = await this.prisma.order.findMany({
         where: whereOrder,
@@ -1007,8 +996,10 @@ export class ProductsService implements OnModuleInit {
 
         let orderModified = false;
         const wasReservedOrPacked =
-          order.fulfillmentStatus === FulfillmentStatus.RESERVED ||
-          order.fulfillmentStatus === FulfillmentStatus.PACKED;
+          (order.fulfillmentStatus === FulfillmentStatus.RESERVED ||
+            order.fulfillmentStatus === FulfillmentStatus.PACKED) &&
+          order.platformStatus !== PlatformOrderStatus.CANCELLED &&
+          order.platformStatus !== PlatformOrderStatus.IN_CANCEL;
         const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
         const oldItemsToRelease: Array<{ variantId: string; quantity: number }> = [];
 
@@ -1106,7 +1097,11 @@ export class ProductsService implements OnModuleInit {
               newFulfillmentStatus = FulfillmentStatus.PENDING_PROCESSING;
             } else if (order.fulfillmentStatus === FulfillmentStatus.UNMAPPED) {
               const allMapped = order.orderItems.every((oi) => !!oi.variantId);
-              if (allMapped) {
+              if (
+                allMapped &&
+                order.platformStatus !== PlatformOrderStatus.CANCELLED &&
+                order.platformStatus !== PlatformOrderStatus.IN_CANCEL
+              ) {
                 newFulfillmentStatus = FulfillmentStatus.PENDING_PROCESSING;
               }
             }
