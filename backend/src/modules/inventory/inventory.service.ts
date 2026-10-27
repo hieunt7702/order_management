@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { ReceiveStockDto, AdjustStockDto } from './dto/inventory.dto';
-import { InventoryMovementType, Prisma } from '@prisma/client';
+import { InventoryMovementType, Prisma, PlatformOrderStatus, FulfillmentStatus } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 
 export interface StockReservationItem {
@@ -133,6 +133,8 @@ export class InventoryService {
 
     // Tự động đối soát và sửa các bút toán xuất kho nếu hệ số SKU (multiplier) đã được cập nhật sau khi xuất
     await this.healVariantDispatchedLedgerEntries(tenantId, variantId, warehouseId);
+    // Tự động đối soát và chữa lành các đơn hủy đã hoàn tác xuất kho nhưng chưa ghi nhận hoàn hàng
+    await this.healCancelledOrdersRestock(tenantId, variantId, warehouseId);
 
     const where: any = {
       tenantId,
@@ -227,6 +229,7 @@ export class InventoryService {
     // Tự động đối soát và sửa các bút toán xuất kho nếu hệ số SKU (multiplier) đã được cập nhật sau khi xuất
     if (filter.variantId) {
       await this.healVariantDispatchedLedgerEntries(tenantId, filter.variantId, filter.warehouseId);
+      await this.healCancelledOrdersRestock(tenantId, filter.variantId, filter.warehouseId);
     }
 
     const where: any = {
@@ -963,12 +966,11 @@ export class InventoryService {
   }
 
   /**
-   * HOÀN TÁC XUẤT KHO (bù trừ chính xác theo sổ cái):
-   * - Tính số lượng đã thực sự bị trừ khỏi onHand cho các kiện của đơn (DISPATCH trừ đi các lần hoàn/hoàn tác trước đó),
-   *   theo ĐÚNG kho đã xuất (không phụ thuộc kho mặc định của Shop) và ĐÚNG biến thể đã xuất.
-   * - Chỉ cộng lại onHand. KHÔNG tăng `reserved` (dispatch chỉ giảm reserved có kẹp về 0 nên không thể "trả" lại reserved;
-   *   tăng reserved khiến tồn khả dụng = onHand - reserved không đổi => tồn kho vẫn âm sau khi hoàn tác).
-   * - Ghi bút toán ADJUST bù trừ vào InventoryLedger trong cùng transaction.
+   * HOÀN TÁC XUẤT KHO (bù trừ chính xác theo sổ cái và đơn hàng):
+   * - Xác định số lượng đã thực sự bị trừ khỏi onHand cho đơn (qua DISPATCH và các lần hoàn trước),
+   *   theo ĐÚNG kho đã xuất và ĐÚNG biến thể đã xuất. Nếu không có bút toán cũ, tự động lấy theo orderItems của đơn.
+   * - Ghi nhận bút toán RETURN_RECEIVE (Khách hoàn / Hoàn tác xuất kho) để sổ cái và báo cáo thể hiện rõ ràng.
+   * - Tự động tính toán lại chuỗi tồn kho lũy kế (beforeOnHand -> afterOnHand) và đồng bộ InventoryBalance.
    */
   async restoreDispatchedStock(
     tx: Prisma.TransactionClient,
@@ -986,39 +988,94 @@ export class InventoryService {
   ): Promise<{ restoredLines: number; restoredQuantity: number }> {
     const { orderId, packageIds } = params;
 
+    const order = await (tx as any).order.findUnique({
+      where: { id: orderId },
+      include: {
+        packages: { select: { id: true, packageCode: true, trackingCode: true } },
+        orderItems: { include: { variant: true } },
+        shop: true,
+      },
+    });
+
+    const allPackageIds = Array.from(
+      new Set([...(packageIds || []), ...(order?.packages || []).map((p: any) => p.id)].filter(Boolean)),
+    );
+
+    const vouchers = Array.from(
+      new Set(
+        [
+          params.voucherCode,
+          order?.externalOrderId,
+          order?.internalOrderCode,
+          order?.trackingCode,
+          ...(order?.packages || []).map((p: any) => p.packageCode),
+          ...(order?.packages || []).map((p: any) => p.trackingCode),
+        ].filter(Boolean),
+      ),
+    ) as string[];
+
+    const resolvedVoucher =
+      order?.externalOrderId || order?.internalOrderCode || params.voucherCode || vouchers[0] || orderId;
+
+    // Tìm tất cả các bút toán DISPATCH và REVERSAL/RETURN liên quan đến đơn này
     const ledgerWhereOr: Prisma.InventoryLedgerWhereInput[] = [
+      { referenceId: orderId },
       { referenceType: 'MANUAL_DISPATCH_REVERSAL', referenceId: orderId },
+      { referenceType: 'CANCELLED_ORDER_RESTOCK', referenceId: orderId },
+      { referenceType: 'SCAN_REVERSAL' },
+      { referenceType: 'SCAN_CANCELLED_RESTOCK' },
     ];
-    if (packageIds.length > 0) {
-      ledgerWhereOr.push({
-        movementType: InventoryMovementType.DISPATCH,
-        referenceType: 'PACKAGE',
-        referenceId: { in: packageIds },
-      });
-      ledgerWhereOr.push({
-        referenceType: { in: ['SCAN_REVERSAL', 'SCAN_CANCELLED_RESTOCK'] },
-        referenceId: { in: packageIds },
-      });
+    if (allPackageIds.length > 0) {
+      ledgerWhereOr.push({ referenceId: { in: allPackageIds } });
+    }
+    if (vouchers.length > 0) {
+      ledgerWhereOr.push({ voucherCode: { in: vouchers } });
+    }
+    if (order?.externalOrderId) {
+      ledgerWhereOr.push({ note: { contains: order.externalOrderId } });
     }
 
     const entries = await tx.inventoryLedger.findMany({
       where: { tenantId, OR: ledgerWhereOr },
-      select: { warehouseId: true, variantId: true, deltaOnHand: true },
+      select: { warehouseId: true, variantId: true, deltaOnHand: true, movementType: true, referenceType: true },
     });
 
     // Net onHand đã bị trừ theo từng (kho, biến thể)
     const netDeducted = new Map<string, { warehouseId: string; variantId: string; quantity: number }>();
     for (const e of entries) {
+      if (e.deltaOnHand === 0) continue;
       const key = `${e.warehouseId}|${e.variantId}`;
       const cur = netDeducted.get(key) || { warehouseId: e.warehouseId, variantId: e.variantId, quantity: 0 };
+      // deltaOnHand của DISPATCH là âm (-10) => -e.deltaOnHand là dương (+10)
+      // deltaOnHand của RETURN_RECEIVE/REVERSAL là dương (+10) => -e.deltaOnHand là âm (-10)
       cur.quantity += -e.deltaOnHand;
       netDeducted.set(key, cur);
     }
 
+    // Nếu không tìm thấy bút toán cũ nhưng đơn có orderItems, tự động phục hồi theo orderItems
+    let lines = [...netDeducted.values()].filter((l) => l.quantity > 0);
+    if (lines.length === 0 && order?.orderItems && order.orderItems.length > 0) {
+      const targetWarehouseId =
+        order.shop?.defaultWarehouseId ||
+        (await (tx as any).warehouse.findFirst({ where: { tenantId }, select: { id: true } }))?.id;
+
+      if (targetWarehouseId) {
+        for (const oi of order.orderItems) {
+          if (!oi.variantId) continue;
+          const rawQty = Math.max(1, oi.rawQuantity || 1);
+          const multiplier = Math.max(1, oi.packMultiplier || 1);
+          const qty = oi.quantity > 0 ? oi.quantity : rawQty * multiplier;
+          lines.push({
+            warehouseId: targetWarehouseId,
+            variantId: oi.variantId,
+            quantity: qty,
+          });
+        }
+      }
+    }
+
     // Khóa theo thứ tự xác định để tránh deadlock
-    const lines = [...netDeducted.values()]
-      .filter((l) => l.quantity > 0)
-      .sort((a, b) => `${a.warehouseId}|${a.variantId}`.localeCompare(`${b.warehouseId}|${b.variantId}`));
+    lines.sort((a, b) => `${a.warehouseId}|${a.variantId}`.localeCompare(`${b.warehouseId}|${b.variantId}`));
 
     let performerName = params.performerName;
     if (!performerName && params.userId && (tx as any).user?.findUnique) {
@@ -1027,11 +1084,11 @@ export class InventoryService {
         .catch(() => null);
       performerName = user?.name || user?.email;
     }
-    performerName = performerName || 'HieuNT';
+    performerName = performerName || 'Quản Trị Viên Hệ Thống';
 
     let restoredQuantity = 0;
     for (const line of lines) {
-      const balance = await tx.inventoryBalance.findUnique({
+      const balance = await tx.inventoryBalance.upsert({
         where: {
           tenantId_warehouseId_variantId: {
             tenantId,
@@ -1039,46 +1096,43 @@ export class InventoryService {
             variantId: line.variantId,
           },
         },
+        update: {
+          onHand: { increment: line.quantity },
+        },
+        create: {
+          tenantId,
+          warehouseId: line.warehouseId,
+          variantId: line.variantId,
+          onHand: line.quantity,
+          reserved: 0,
+        },
       });
 
-      const beforeOnHand = balance?.onHand ?? 0;
-      const afterOnHand = beforeOnHand + line.quantity;
-
-      if (balance) {
-        await tx.inventoryBalance.update({
-          where: { id: balance.id },
-          data: { onHand: { increment: line.quantity } },
-        });
-      } else {
-        await tx.inventoryBalance.create({
-          data: {
-            tenantId,
-            warehouseId: line.warehouseId,
-            variantId: line.variantId,
-            onHand: line.quantity,
-            reserved: 0,
-          },
-        });
-      }
+      const noteText =
+        params.note ||
+        `Hoàn trả hàng về kho do đơn hủy: ${resolvedVoucher}`;
 
       await tx.inventoryLedger.create({
         data: {
           tenantId,
           warehouseId: line.warehouseId,
           variantId: line.variantId,
-          movementType: InventoryMovementType.ADJUST,
+          movementType: InventoryMovementType.RETURN_RECEIVE,
           deltaOnHand: line.quantity,
           deltaReserved: 0,
-          referenceType: params.referenceType,
-          referenceId: params.referenceId,
-          voucherCode: params.voucherCode,
+          referenceType: params.referenceType || 'MANUAL_DISPATCH_REVERSAL',
+          referenceId: params.referenceId || orderId,
+          voucherCode: resolvedVoucher,
           performerName,
-          beforeOnHand,
-          afterOnHand,
+          beforeOnHand: balance.onHand - line.quantity,
+          afterOnHand: balance.onHand,
           performedByUserId: params.userId,
-          note: params.note,
+          note: noteText,
         },
       });
+
+      // Recalculate running balances for this variant in this warehouse
+      await this.recalculateLedgerRunningBalances(tenantId, line.warehouseId, line.variantId, tx);
 
       restoredQuantity += line.quantity;
     }
@@ -1544,8 +1598,153 @@ export class InventoryService {
       for (const m of mappingsWithMultiplier) {
         await this.healVariantDispatchedLedgerEntries(m.tenantId, m.variantId);
       }
+      await this.healCancelledOrdersRestock(tenantId);
     } catch (err) {
       this.logger.error('Error in healAllDispatchedLedgerEntries:', err);
+    }
+  }
+
+  /**
+   * Tự động quét và chữa lành các đơn hàng bị hủy / hoàn tác xuất kho mà chưa được ghi nhận hoàn hàng (+onHand / RETURN_RECEIVE)
+   */
+  async healCancelledOrdersRestock(
+    tenantId?: string,
+    variantId?: string,
+    warehouseId?: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const db = tx || this.prisma;
+    try {
+      const cancelledOrders = await db.order.findMany({
+        where: {
+          ...(tenantId ? { tenantId } : {}),
+          OR: [
+            { platformStatus: { in: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL] } },
+            { fulfillmentStatus: FulfillmentStatus.CANCELLED_RESTOCKED },
+          ],
+          NOT: {
+            AND: [{ isVirtual: true }, { isRealGoods: false }],
+          },
+          ...(variantId ? { orderItems: { some: { variantId } } } : {}),
+        },
+        include: {
+          packages: true,
+          orderItems: { include: { variant: true } },
+          shop: true,
+        },
+      });
+
+      for (const order of cancelledOrders) {
+        const orderPackageIds = order.packages.map((p) => p.id);
+        const vouchers = Array.from(
+          new Set(
+            [
+              order.externalOrderId,
+              order.internalOrderCode,
+              order.trackingCode,
+              ...order.packages.map((p) => p.packageCode),
+              ...order.packages.map((p) => p.trackingCode),
+            ].filter(Boolean),
+          ),
+        ) as string[];
+
+        // Kiểm tra xem đơn này có bút toán DISPATCH không
+        const dispatchEntries = await db.inventoryLedger.findMany({
+          where: {
+            tenantId: order.tenantId,
+            movementType: InventoryMovementType.DISPATCH,
+            ...(variantId ? { variantId } : {}),
+            ...(warehouseId ? { warehouseId } : {}),
+            OR: [
+              ...(orderPackageIds.length > 0 ? [{ referenceId: { in: orderPackageIds } }] : []),
+              { referenceId: order.id },
+              ...(vouchers.length > 0 ? [{ voucherCode: { in: vouchers } }] : []),
+              ...(order.externalOrderId ? [{ note: { contains: order.externalOrderId } }] : []),
+            ],
+          },
+        });
+
+        if (dispatchEntries.length === 0) continue;
+
+        // Kiểm tra xem đã có bút toán hoàn lại (RETURN_RECEIVE hoặc reversal) chưa
+        const returnEntries = await db.inventoryLedger.findMany({
+          where: {
+            tenantId: order.tenantId,
+            movementType: { in: [InventoryMovementType.RETURN_RECEIVE, InventoryMovementType.ADJUST] },
+            ...(variantId ? { variantId } : {}),
+            ...(warehouseId ? { warehouseId } : {}),
+            deltaOnHand: { gt: 0 },
+            OR: [
+              ...(orderPackageIds.length > 0 ? [{ referenceId: { in: orderPackageIds } }] : []),
+              { referenceId: order.id },
+              ...(vouchers.length > 0 ? [{ voucherCode: { in: vouchers } }] : []),
+              ...(order.externalOrderId ? [{ note: { contains: order.externalOrderId } }] : []),
+            ],
+          },
+        });
+
+        const netDeducted = new Map<string, { warehouseId: string; variantId: string; quantity: number }>();
+        for (const de of dispatchEntries) {
+          const key = `${de.warehouseId}|${de.variantId}`;
+          const cur = netDeducted.get(key) || { warehouseId: de.warehouseId, variantId: de.variantId, quantity: 0 };
+          cur.quantity += Math.abs(de.deltaOnHand);
+          netDeducted.set(key, cur);
+        }
+
+        for (const re of returnEntries) {
+          const key = `${re.warehouseId}|${re.variantId}`;
+          const cur = netDeducted.get(key);
+          if (cur) {
+            cur.quantity -= re.deltaOnHand;
+          }
+        }
+
+        const linesToRestore = [...netDeducted.values()].filter((l) => l.quantity > 0);
+        if (linesToRestore.length > 0) {
+          const orderCode = order.externalOrderId || order.internalOrderCode || order.id;
+          for (const line of linesToRestore) {
+            const balance = await db.inventoryBalance.upsert({
+              where: {
+                tenantId_warehouseId_variantId: {
+                  tenantId: order.tenantId,
+                  warehouseId: line.warehouseId,
+                  variantId: line.variantId,
+                },
+              },
+              update: { onHand: { increment: line.quantity } },
+              create: {
+                tenantId: order.tenantId,
+                warehouseId: line.warehouseId,
+                variantId: line.variantId,
+                onHand: line.quantity,
+                reserved: 0,
+              },
+            });
+
+            await db.inventoryLedger.create({
+              data: {
+                tenantId: order.tenantId,
+                warehouseId: line.warehouseId,
+                variantId: line.variantId,
+                movementType: InventoryMovementType.RETURN_RECEIVE,
+                deltaOnHand: line.quantity,
+                deltaReserved: 0,
+                referenceType: 'CANCELLED_ORDER_RESTOCK',
+                referenceId: order.id,
+                voucherCode: orderCode,
+                performerName: 'Quản Trị Viên Hệ Thống',
+                beforeOnHand: balance.onHand - line.quantity,
+                afterOnHand: balance.onHand,
+                note: `Hoàn trả hàng về kho do đơn hàng bị hủy: ${orderCode}`,
+              },
+            });
+
+            await this.recalculateLedgerRunningBalances(order.tenantId, line.warehouseId, line.variantId, tx);
+          }
+        }
+      }
+    } catch (err) {
+      this.logger.error('Error in healCancelledOrdersRestock:', err);
     }
   }
 }

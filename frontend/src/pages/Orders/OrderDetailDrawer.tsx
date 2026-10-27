@@ -567,7 +567,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
           </div>
 
           {/* Dispatch / Scanned Action Button */}
-          {order.fulfillmentStatus === 'DISPATCHED' || order.verificationStatus === 'VERIFIED' ? (
+          {order.fulfillmentStatus === 'DISPATCHED' || order.verificationStatus === 'VERIFIED' || order.fulfillmentStatus === 'CANCELLED_RESTOCKED' ? (
             <button
               onClick={handleReverseDispatched}
               disabled={isLoadingAction}

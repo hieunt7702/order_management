@@ -1513,7 +1513,7 @@ export const OrdersPage: React.FC = () => {
                               <Eye size={14} className="text-gray-400" />
                               <span>Xem chi tiết</span>
                             </DropdownMenuItem>
-                            {o.verificationStatus === 'VERIFIED' || o.fulfillmentStatus === 'DISPATCHED' ? (
+                            {o.verificationStatus === 'VERIFIED' || o.fulfillmentStatus === 'DISPATCHED' || o.fulfillmentStatus === 'CANCELLED_RESTOCKED' ? (
                               <DropdownMenuItem
                                 onClick={() => handleReverseDispatched(o)}
                               >
@@ -1639,7 +1639,7 @@ export const OrdersPage: React.FC = () => {
                           <Eye size={14} className="text-gray-400" />
                           <span>Xem chi tiết</span>
                         </DropdownMenuItem>
-                        {o.verificationStatus === 'VERIFIED' || o.fulfillmentStatus === 'DISPATCHED' ? (
+                        {o.verificationStatus === 'VERIFIED' || o.fulfillmentStatus === 'DISPATCHED' || o.fulfillmentStatus === 'CANCELLED_RESTOCKED' ? (
                           <DropdownMenuItem onClick={() => handleReverseDispatched(o)}>
                             <RotateCcw size={14} className="text-amber-500" />
                             <span>Hoàn tác xuất kho</span>

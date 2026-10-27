@@ -1513,11 +1513,15 @@ export class OrdersService {
       throw new NotFoundException('Không tìm thấy đơn hàng');
     }
 
-    if (
-      order.fulfillmentStatus !== FulfillmentStatus.DISPATCHED &&
-      order.verificationStatus !== VerificationStatus.VERIFIED
-    ) {
-      throw new BadRequestException('Đơn hàng chưa ở trạng thái xuất kho / đã quét');
+    const canReverse =
+      order.fulfillmentStatus === FulfillmentStatus.DISPATCHED ||
+      order.verificationStatus === VerificationStatus.VERIFIED ||
+      order.fulfillmentStatus === FulfillmentStatus.CANCELLED_RESTOCKED ||
+      order.platformStatus === PlatformOrderStatus.CANCELLED ||
+      order.platformStatus === PlatformOrderStatus.IN_CANCEL;
+
+    if (!canReverse) {
+      throw new BadRequestException('Đơn hàng chưa ở trạng thái xuất kho hoặc đã hủy cần hoàn tác');
     }
 
     const isVirtualNoStock = order.isVirtual && !order.isRealGoods;
@@ -1549,8 +1553,8 @@ export class OrdersService {
           referenceType: 'MANUAL_DISPATCH_REVERSAL',
           referenceId: order.id,
           voucherCode: orderCode,
-          performerName: 'Staff',
-          note: `Hoàn tác xuất kho đơn ${orderCode}${dto?.reason ? `: ${dto.reason}` : ''}`,
+          performerName: 'Quản Trị Viên Hệ Thống',
+          note: `Hoàn trả hàng về kho do đơn hủy: ${orderCode}${dto?.reason ? ` (${dto.reason})` : ''}`,
         });
         restoredQuantity = restored.restoredQuantity;
       }
@@ -1588,7 +1592,9 @@ export class OrdersService {
 
       return {
         success: true,
-        message: 'Đã hoàn tác xuất kho đơn hàng thành công',
+        message: restoredQuantity > 0
+          ? `Đã hoàn tác xuất kho và ghi nhận hoàn hàng về kho (+${restoredQuantity} sản phẩm)`
+          : 'Đã hoàn tác xuất kho đơn hàng thành công',
         order: updatedOrder,
       };
     });

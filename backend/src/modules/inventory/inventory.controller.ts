@@ -155,8 +155,10 @@ export class InventoryController {
   ) {
     if (body?.variantId) {
       await this.inventoryService.healVariantDispatchedLedgerEntries(tenantId, body.variantId, body.warehouseId);
+      await this.inventoryService.healCancelledOrdersRestock(tenantId, body.variantId, body.warehouseId);
     } else {
       await this.inventoryService.healAllDispatchedLedgerEntries(tenantId);
+      await this.inventoryService.healCancelledOrdersRestock(tenantId);
     }
     return { success: true, message: 'Đã hoàn tất đối soát và chữa lành số lượng xuất kho cùng chuỗi tồn kho lũy kế' };
   }
