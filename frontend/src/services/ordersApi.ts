@@ -46,5 +46,9 @@ export const ordersApi = {
     api.post(`/orders/${id}/reverse-dispatch`, data || {}),
   getProcurementDemand: (params: { shopId?: string; warehouseId?: string; onlyShortage?: boolean } = {}) =>
     api.get(`/orders/procurement-demand${buildQuery(params)}`).then((r) => r.data),
+  updateFinancials: (id: string, data: { customRevenue?: number | null; codAmount?: number | null; totalAmount?: number; note?: string }) =>
+    api.patch(`/orders/${id}/financials`, data),
+  batchUpdateFinancials: (data: { orders: Array<{ id: string; customRevenue?: number | null; codAmount?: number | null }> }) =>
+    api.patch('/orders/batch-financials', data),
 };
 

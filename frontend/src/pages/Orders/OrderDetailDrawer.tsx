@@ -17,6 +17,7 @@ import {
   ArrowUpRight,
   CheckCircle2,
   Sparkles,
+  CircleDollarSign,
 } from 'lucide-react';
 import { formatCurrency } from '../../utils';
 import { ordersApi } from '../../services/ordersApi';
@@ -61,12 +62,45 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   const [virtualIsVirtual, setVirtualIsVirtual] = useState<boolean>(false);
   const [virtualIsRealGoods, setVirtualIsRealGoods] = useState<boolean>(false);
 
+  // Financials & Manual Revenue override
+  const [customRevenueInput, setCustomRevenueInput] = useState<string>('');
+  const [codAmountInput, setCodAmountInput] = useState<string>('');
+  const [isSavingFinancials, setIsSavingFinancials] = useState<boolean>(false);
+  const [financialsSuccessMsg, setFinancialsSuccessMsg] = useState<string | null>(null);
+
   useEffect(() => {
     if (order) {
       setVirtualIsVirtual(!!order.isVirtual);
       setVirtualIsRealGoods(!!order.isRealGoods);
+      setCustomRevenueInput(
+        order.customRevenue !== null && order.customRevenue !== undefined
+          ? String(order.customRevenue)
+          : String(order.totalAmount || 0)
+      );
+      setCodAmountInput(String(order.codAmount || 0));
     }
   }, [order]);
+
+  const handleSaveFinancials = async () => {
+    setIsSavingFinancials(true);
+    setFinancialsSuccessMsg(null);
+    setActionError(null);
+    try {
+      const revNum = parseFloat(customRevenueInput.replace(/,/g, ''));
+      const codNum = parseFloat(codAmountInput.replace(/,/g, ''));
+      await ordersApi.updateFinancials(order.id, {
+        customRevenue: isNaN(revNum) ? null : revNum,
+        codAmount: isNaN(codNum) ? 0 : codNum,
+      });
+      setFinancialsSuccessMsg('Đã lưu thông tin doanh thu & tiền COD đối soát!');
+      setTimeout(() => setFinancialsSuccessMsg(null), 3000);
+      onRefresh();
+    } catch (err: any) {
+      setActionError(err.message || 'Lỗi lưu thông tin tài chính');
+    } finally {
+      setIsSavingFinancials(false);
+    }
+  };
 
   const handleSaveVirtual = async () => {
     setIsLoadingAction(true);
@@ -378,19 +412,162 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
 
                   <div className="text-right flex-shrink-0">
                     <p className="font-semibold text-gray-900 dark:text-white">
-                      {formatCurrency(item.discountedPrice || item.originalPrice)} đ
+                      {formatCurrency((item.rawQuantity && item.rawQuantity > 0 ? item.rawQuantity : 1) * Number(item.discountedPrice || item.originalPrice || 0))} đ
                     </p>
+                    <div className="text-[11px] text-gray-400">
+                      Đơn giá: {formatCurrency(item.discountedPrice || item.originalPrice)} đ
+                    </div>
                     <span className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/30 px-2 py-0.5 rounded border border-indigo-200/50 dark:border-indigo-900/40">
-                      <span>SL: {item.quantity} {item.variant?.unit || item.unit || 'cái'}</span>
+                      <span>SL mua: {item.rawQuantity || 1}</span>
                       {item.packMultiplier && item.packMultiplier > 1 && (
                         <span className="text-[11px] font-normal text-indigo-500/90 dark:text-indigo-300/80">
-                          ({item.rawQuantity || Math.round(item.quantity / item.packMultiplier)} × {item.packMultiplier})
+                          (={item.quantity} {item.variant?.unit || 'sp kho'})
                         </span>
                       )}
                     </span>
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Financials & Reconciliation Section */}
+          <div className="space-y-3 p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-[#14151a]">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                <CircleDollarSign size={15} className="text-emerald-500" />
+                <span>Tài chính đơn hàng & Đối soát</span>
+              </h3>
+              {order.isVirtual && (
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                  Đơn ảo (Buff)
+                </span>
+              )}
+            </div>
+
+            {financialsSuccessMsg && (
+              <div className="p-2.5 rounded bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
+                <CheckCircle2 size={14} className="shrink-0" />
+                <span>{financialsSuccessMsg}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-2.5 rounded bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60">
+                <span className="text-gray-500 block text-[11px]">Tiền bán sản phẩm</span>
+                <span className="font-mono font-bold text-sm text-gray-900 dark:text-white mt-0.5 block">
+                  {formatCurrency((order.orderItems || []).reduce((sum: number, it: any) => {
+                    const rq = it.rawQuantity && it.rawQuantity > 0 ? it.rawQuantity : 1;
+                    return sum + (rq * Number(it.discountedPrice || it.originalPrice || 0));
+                  }, 0))} đ
+                </span>
+                <span className="text-[10px] text-gray-400 mt-0.5 block">Tổng giá trị hàng niêm yết</span>
+              </div>
+
+              <div className="p-2.5 rounded bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60">
+                <span className="text-gray-500 block text-[11px]">Đã thanh toán / Quyết toán</span>
+                <span className="font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+                  {order.reconciliation?.settledPayout !== undefined && order.reconciliation?.settledPayout !== null
+                    ? `${formatCurrency(order.reconciliation.settledPayout)} đ`
+                    : order.reconciliation?.buyerPaidAmount !== undefined && order.reconciliation?.buyerPaidAmount !== null
+                    ? `${formatCurrency(order.reconciliation.buyerPaidAmount)} đ`
+                    : `${formatCurrency(order.totalAmount)} đ`}
+                </span>
+                <span className="text-[10px] text-gray-400 mt-0.5 block">
+                  {order.reconciliation?.settledPayout ? 'Đã quyết toán về ví' : 'Tiền người mua thanh toán'}
+                </span>
+              </div>
+            </div>
+
+            {/* Editable Fields for Reconciliation */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-gray-200/80 dark:border-gray-700/60">
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Doanh thu đơn hàng (Nhập tay đối chiếu):
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={customRevenueInput}
+                    onChange={(e) => setCustomRevenueInput(e.target.value)}
+                    placeholder={String(order.totalAmount || 0)}
+                    className="w-full h-8 px-2.5 pr-8 rounded text-xs font-mono font-semibold bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#5865f2] focus:border-[#5865f2]"
+                  />
+                  <span className="absolute right-2.5 top-2 text-[10px] text-gray-400 font-mono">đ</span>
+                </div>
+                <span className="text-[10px] text-gray-400 mt-0.5 block">
+                  Gốc Shopee: {formatCurrency(order.totalAmount)} đ
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  Tiền COD trả shipper (Đơn ảo / Thu hộ):
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={codAmountInput}
+                    onChange={(e) => setCodAmountInput(e.target.value)}
+                    placeholder="0"
+                    className="w-full h-8 px-2.5 pr-8 rounded text-xs font-mono font-semibold bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-amber-600 dark:text-amber-400 focus:ring-1 focus:ring-[#5865f2] focus:border-[#5865f2]"
+                  />
+                  <span className="absolute right-2.5 top-2 text-[10px] text-gray-400 font-mono">đ</span>
+                </div>
+                <span className="text-[10px] text-gray-400 mt-0.5 block">
+                  Tiền COD người bán phải trả cho shipper
+                </span>
+              </div>
+            </div>
+
+            {/* Virtual Order Net Formula Banner */}
+            {order.isVirtual ? (
+              <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/80 text-xs text-purple-900 dark:text-purple-200 space-y-1">
+                <div className="flex items-center justify-between font-bold">
+                  <span>Lợi nhuận ròng đơn ảo:</span>
+                  <span className="font-mono text-sm text-purple-700 dark:text-purple-300 font-bold">
+                    {formatCurrency(
+                      (parseFloat(customRevenueInput) || Number(order.totalAmount || 0)) -
+                      (parseFloat(codAmountInput) || 0)
+                    )} đ
+                  </span>
+                </div>
+                <p className="text-[11px] text-purple-600 dark:text-purple-400 leading-normal">
+                  = Doanh thu đơn hàng ({formatCurrency(parseFloat(customRevenueInput) || Number(order.totalAmount || 0))} đ) - Tiền COD trả shipper ({formatCurrency(parseFloat(codAmountInput) || 0)} đ).
+                </p>
+              </div>
+            ) : (
+              <div className="p-2.5 rounded bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900/40 text-xs text-blue-900 dark:text-blue-200 flex items-center justify-between">
+                <span>Lợi nhuận gộp ước tính (Doanh thu - Giá vốn):</span>
+                <span className="font-mono font-bold text-blue-700 dark:text-blue-300">
+                  {formatCurrency(
+                    (parseFloat(customRevenueInput) || Number(order.totalAmount || 0)) -
+                    Number(order.cogsTotal || 0)
+                  )} đ
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomRevenueInput(String(order.totalAmount || 0));
+                  setCodAmountInput('0');
+                }}
+                className="px-2.5 py-1 text-xs rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 cursor-pointer"
+              >
+                Đặt lại gốc
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveFinancials}
+                disabled={isSavingFinancials}
+                className="px-3.5 py-1 text-xs font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <CheckCircle2 size={13} />
+                <span>{isSavingFinancials ? 'Đang lưu...' : 'Lưu Doanh thu & COD'}</span>
+              </button>
             </div>
           </div>
 

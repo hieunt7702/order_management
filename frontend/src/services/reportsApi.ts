@@ -287,6 +287,10 @@ export const reportsApi = {
   getOrderReconciliationTransactions: async (variantId: string, params: any = {}): Promise<OrderReconciliationTransactionsData> => {
     return api.get(`/reports/order-reconciliation/${variantId}/transactions${buildQuery(params)}`);
   },
+
+  getShopOrdersReport: async (params: any = {}): Promise<ShopOrdersReportData> => {
+    return api.get(`/reports/order-reconciliation/shop-orders${buildQuery(params)}`);
+  },
 };
 
 export interface OrderReconciliationItem {
@@ -347,7 +351,14 @@ export interface OrderReconciliationSummary {
     shopName: string;
     shopCode: string;
     ordersCount: number;
+    realOrdersCount?: number;
+    virtualOrdersCount?: number;
+    totalRevenue?: number;
+    virtualRevenue?: number;
+    virtualCodAmount?: number;
+    virtualProfit?: number;
     totalExportedAmount: number;
+    netProfit?: number;
     exportedQuantity?: number;
   }>;
 }
@@ -361,6 +372,70 @@ export interface OrderReconciliationReportData {
     totalItems: number;
     totalPages: number;
   };
+}
+
+export interface ShopOrderItem {
+  id: string;
+  internalOrderCode: string;
+  externalOrderId: string;
+  trackingCode?: string;
+  orderDate?: string;
+  platformStatus: string;
+  fulfillmentStatus: string;
+  verificationStatus: string;
+  shopId: string;
+  shopName: string;
+  shopCode: string;
+  recipientName?: string;
+  recipientPhone?: string;
+  isVirtual: boolean;
+  isRealGoods: boolean;
+  totalAmount: number;
+  customRevenue: number | null;
+  effectiveRevenue: number;
+  codAmount: number;
+  productsSellingTotal: number;
+  cogsTotal: number;
+  calculatedProfit: number;
+  settledPayout: number | null;
+  buyerPaidAmount: number | null;
+  reconciliationStatus: string;
+  items: Array<{
+    id: string;
+    productName: string;
+    variationName?: string;
+    sku: string;
+    rawQuantity: number;
+    packMultiplier: number;
+    quantity: number;
+    unitPrice: number;
+    subtotal: number;
+    itemCogs: number;
+  }>;
+}
+
+export interface ShopOrdersReportData {
+  summary: {
+    totalOrders: number;
+    realOrdersCount: number;
+    virtualOrdersCount: number;
+    totalProductsSelling: number;
+    totalRevenue: number;
+    totalCod: number;
+    virtualRevenue: number;
+    virtualCodAmount: number;
+    virtualProfit: number;
+    realRevenue: number;
+    realProfit: number;
+    totalProfit: number;
+  };
+  pagination: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+  };
+  orders: ShopOrderItem[];
 }
 
 export interface OrderReconciliationTransactionsData {
@@ -402,9 +477,18 @@ export interface OrderReconciliationTransactionsData {
     verificationStatus: string;
     recipientName?: string;
     shopName: string;
+    rawQuantity?: number;
+    packMultiplier?: number;
     quantity: number;
     originalPrice: number;
     discountedPrice: number;
+    unitPrice?: number;
+    itemAmount?: number;
+    isVirtual?: boolean;
+    isRealGoods?: boolean;
+    codAmount?: number;
+    customRevenue?: number | null;
+    totalAmount?: number;
   }>;
   receipts: Array<{
     id: string;

@@ -26,6 +26,7 @@ import {
   Copy,
   Search,
   FileSpreadsheet,
+  CircleDollarSign,
 } from 'lucide-react';
 import { ordersApi } from '../../services/ordersApi';
 import { productsApi } from '../../services/productsApi';
@@ -142,6 +143,43 @@ export const OrdersPage: React.FC = () => {
     isRealGoods: false,
   });
   const [isUpdatingVirtual, setIsUpdatingVirtual] = useState<boolean>(false);
+
+  // Financials & Manual Revenue State
+  const [financialModalOrder, setFinancialModalOrder] = useState<any | null>(null);
+  const [editRevenue, setEditRevenue] = useState<string>('');
+  const [editCod, setEditCod] = useState<string>('');
+  const [isUpdatingFinancials, setIsUpdatingFinancials] = useState<boolean>(false);
+
+  const handleOpenEditFinancials = (order: any) => {
+    setFinancialModalOrder(order);
+    setEditRevenue(
+      order.customRevenue !== null && order.customRevenue !== undefined
+        ? String(order.customRevenue)
+        : String(order.totalAmount || 0)
+    );
+    setEditCod(String(order.codAmount || 0));
+  };
+
+  const handleSaveOrderFinancials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!financialModalOrder) return;
+    setIsUpdatingFinancials(true);
+    try {
+      const rev = parseFloat(editRevenue.replace(/,/g, ''));
+      const cod = parseFloat(editCod.replace(/,/g, ''));
+      await ordersApi.updateFinancials(financialModalOrder.id, {
+        customRevenue: isNaN(rev) ? null : rev,
+        codAmount: isNaN(cod) ? 0 : cod,
+      });
+      toast.success('Cập nhật thành công', 'Đã lưu doanh thu đối chiếu và tiền COD');
+      setFinancialModalOrder(null);
+      loadOrders();
+    } catch (err: any) {
+      toast.error('Lỗi cập nhật', err?.message || 'Không thể lưu doanh thu');
+    } finally {
+      setIsUpdatingFinancials(false);
+    }
+  };
 
   // Manual Dispatch State
   const [isBulkDispatchModalOpen, setIsBulkDispatchModalOpen] = useState<boolean>(false);
@@ -1375,23 +1413,25 @@ export const OrdersPage: React.FC = () => {
               </div>
             </SystemTh>
             <SystemTh className="w-14 text-center" align="center">STT</SystemTh>
-            <SystemTh className="w-56">Mã đơn / Shop</SystemTh>
-            <SystemTh className="w-32">Ngày đặt</SystemTh>
-            <SystemTh className="w-48">Khách hàng</SystemTh>
-            <SystemTh className="w-32 text-center">Sản phẩm / SL</SystemTh>
-            <SystemTh className="w-36 text-right">Tổng tiền</SystemTh>
-            <SystemTh className="w-40 text-center">Trạng thái sàn</SystemTh>
+            <SystemTh className="w-52">Mã đơn / Shop</SystemTh>
+            <SystemTh className="w-28">Ngày đặt</SystemTh>
+            <SystemTh className="w-36">Khách hàng</SystemTh>
+            <SystemTh className="w-28 text-center">Sản phẩm / SL</SystemTh>
+            <SystemTh className="w-28 text-right">Tiền COD</SystemTh>
+            <SystemTh className="w-32 text-right">Đã thanh toán</SystemTh>
+            <SystemTh className="w-36 text-right">Doanh thu</SystemTh>
+            <SystemTh className="w-36 text-center">Trạng thái sàn</SystemTh>
             <SystemTh className="w-24 text-center">Kho / Quét</SystemTh>
             <SystemTh className="w-20 text-center">Thao tác</SystemTh>
           </SystemThead>
           <SystemTbody>
             {isLoading ? (
-              <SystemTableSkeleton cols={10} rows={7} />
+              <SystemTableSkeleton cols={12} rows={7} />
             ) : orders.length === 0 ? (
               <SystemTableEmpty
                 title="Không có đơn hàng nào"
                 description="Không tìm thấy đơn hàng nào phù hợp với điều kiện tìm kiếm hoặc bộ lọc hiện tại."
-                colSpan={10}
+                colSpan={12}
               />
             ) : (
               orders.map((o, index) => {
@@ -1476,8 +1516,59 @@ export const OrdersPage: React.FC = () => {
                       </div>
                     </SystemTd>
 
-                    <SystemTd className="text-right font-medium text-xs text-gray-900 dark:text-white">
-                      {formatCurrency(o.totalAmount)} đ
+                    <SystemTd className="text-right font-mono text-xs">
+                      {Number(o.codAmount || 0) > 0 ? (
+                        <span className="text-amber-600 dark:text-amber-400 font-bold" title="Tiền COD phải trả shipper / thu hộ">
+                          {formatCurrency(o.codAmount)} đ
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">0 đ</span>
+                      )}
+                    </SystemTd>
+
+                    <SystemTd className="text-right font-mono text-xs">
+                      {o.reconciliation?.settledPayout !== undefined && o.reconciliation?.settledPayout !== null ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold" title="Sàn Shopee đã quyết toán thực nhận">
+                          {formatCurrency(o.reconciliation.settledPayout)} đ
+                        </span>
+                      ) : o.reconciliation?.buyerPaidAmount !== undefined && o.reconciliation?.buyerPaidAmount !== null ? (
+                        <span className="text-blue-600 dark:text-blue-400 font-medium" title="Tiền người mua thanh toán">
+                          {formatCurrency(o.reconciliation.buyerPaidAmount)} đ
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 font-normal" title="Tổng tiền đơn">
+                          {formatCurrency(o.totalAmount)} đ
+                        </span>
+                      )}
+                    </SystemTd>
+
+                    <SystemTd className="text-right text-xs">
+                      <div className="flex flex-col items-end gap-0.5">
+                        <div className="flex items-center gap-1 font-mono font-bold text-gray-900 dark:text-white">
+                          <span>{formatCurrency(o.customRevenue !== null && o.customRevenue !== undefined ? o.customRevenue : o.totalAmount)} đ</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenEditFinancials(o);
+                            }}
+                            className="text-gray-400 hover:text-[#5865f2] p-0.5 rounded cursor-pointer"
+                            title="Sửa doanh thu đối chiếu & COD"
+                          >
+                            <Edit2 size={11} />
+                          </button>
+                        </div>
+                        {o.customRevenue !== null && o.customRevenue !== undefined && (
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-1 rounded">
+                            Nhập tay
+                          </span>
+                        )}
+                        {o.isVirtual && (
+                          <span className="text-[10px] text-purple-600 dark:text-purple-400 font-mono">
+                            Lời: {formatCurrency((o.customRevenue !== null && o.customRevenue !== undefined ? Number(o.customRevenue) : Number(o.totalAmount || 0)) - Number(o.codAmount || 0))}đ
+                          </span>
+                        )}
+                      </div>
                     </SystemTd>
 
                     <SystemTd className="text-center">
@@ -1535,6 +1626,12 @@ export const OrdersPage: React.FC = () => {
                             >
                               <Sparkles size={14} className="text-purple-600 dark:text-purple-400" />
                               <span>Cấu hình đơn ảo</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleOpenEditFinancials(o)}
+                            >
+                              <CircleDollarSign size={14} className="text-emerald-500" />
+                              <span>Sửa doanh thu & COD</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleOpenReturnModal(o)}
@@ -3128,6 +3225,96 @@ export const OrdersPage: React.FC = () => {
                     <span className="hidden sm:inline">Xác nhận báo đơn đang hoàn</span>
                   </>
                 )}
+              </ModalButton>
+            </ModalFooter>
+          </form>
+        </Modal>
+      )}
+
+      {/* Order Financials & Manual Revenue Modal */}
+      {financialModalOrder && (
+        <Modal
+          isOpen={!!financialModalOrder}
+          onClose={() => setFinancialModalOrder(null)}
+          title={`Đối soát Doanh thu & COD đơn: ${financialModalOrder.externalOrderId}`}
+          size="md"
+        >
+          <form onSubmit={handleSaveOrderFinancials}>
+            <ModalBody className="space-y-4">
+              <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded border border-indigo-200 dark:border-indigo-900/50 text-xs text-indigo-900 dark:text-indigo-200 flex items-start gap-2.5">
+                <CircleDollarSign size={16} className="text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="font-semibold">Nhập tay doanh thu để đối chiếu thực tế</div>
+                  <div className="text-indigo-700 dark:text-indigo-300 text-[11px]">
+                    Cho phép cập nhật số tiền doanh thu thực nhận và tiền COD trả cho shipper để hệ thống tính toán chính xác lợi nhuận và đối chiếu với sàn.
+                  </div>
+                </div>
+              </div>
+
+              {financialModalOrder.isVirtual && (
+                <div className="p-2.5 rounded bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-xs text-purple-900 dark:text-purple-300">
+                  <span className="font-bold block">Đơn hàng ảo (Seeding / Buff đơn):</span>
+                  <span className="text-[11px] block mt-0.5">
+                    Lợi nhuận đơn ảo = Doanh thu ({formatCurrency(parseFloat(editRevenue) || Number(financialModalOrder.totalAmount || 0))} đ) - Tiền COD trả shipper ({formatCurrency(parseFloat(editCod) || 0)} đ) = <strong>{formatCurrency((parseFloat(editRevenue) || Number(financialModalOrder.totalAmount || 0)) - (parseFloat(editCod) || 0))} đ</strong>
+                  </span>
+                </div>
+              )}
+
+              <div className="space-y-3 text-xs">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Doanh thu đơn hàng (Nhập tay đối chiếu):
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={editRevenue}
+                      onChange={(e) => setEditRevenue(e.target.value)}
+                      placeholder={String(financialModalOrder.totalAmount || 0)}
+                      className="w-full h-9 px-3 pr-8 rounded text-xs font-mono font-bold bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-[#5865f2] focus:border-[#5865f2]"
+                    />
+                    <span className="absolute right-3 top-2.5 text-xs text-gray-400 font-mono">đ</span>
+                  </div>
+                  <span className="text-[11px] text-gray-400 mt-1 block">
+                    Gốc Shopee: {formatCurrency(financialModalOrder.totalAmount)} đ
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Tiền COD phải trả shipper (hoặc thu hộ):
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={editCod}
+                      onChange={(e) => setEditCod(e.target.value)}
+                      placeholder="0"
+                      className="w-full h-9 px-3 pr-8 rounded text-xs font-mono font-bold bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-amber-600 dark:text-amber-400 focus:ring-1 focus:ring-[#5865f2] focus:border-[#5865f2]"
+                    />
+                    <span className="absolute right-3 top-2.5 text-xs text-gray-400 font-mono">đ</span>
+                  </div>
+                  <span className="text-[11px] text-gray-400 mt-1 block">
+                    Tiền COD người bán phải trả shipper (trừ thẳng vào tiền đơn ảo)
+                  </span>
+                </div>
+              </div>
+            </ModalBody>
+            <ModalFooter className="flex items-center justify-end gap-2">
+              <ModalButton
+                type="button"
+                variant="secondary"
+                onClick={() => setFinancialModalOrder(null)}
+                disabled={isUpdatingFinancials}
+              >
+                Hủy
+              </ModalButton>
+              <ModalButton
+                type="submit"
+                variant="primary"
+                disabled={isUpdatingFinancials}
+              >
+                {isUpdatingFinancials ? 'Đang lưu...' : 'Lưu doanh thu & COD'}
               </ModalButton>
             </ModalFooter>
           </form>

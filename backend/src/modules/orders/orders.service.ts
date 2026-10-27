@@ -20,6 +20,8 @@ import {
   BulkMarkDispatchedDto,
   ReverseDispatchedDto,
   ProcurementDemandQueryDto,
+  UpdateOrderFinancialsDto,
+  BatchUpdateOrderFinancialsDto,
 } from './dto/order.dto';
 import {
   PlatformOrderStatus,
@@ -167,6 +169,15 @@ export class OrdersService {
               verifiedAt: true,
             },
           },
+          reconciliation: {
+            select: {
+              settledPayout: true,
+              buyerPaidAmount: true,
+              estimatedPayout: true,
+              payoutDate: true,
+              reconciliationStatus: true,
+            },
+          },
         },
         orderBy: { orderDate: 'desc' },
         skip,
@@ -310,6 +321,7 @@ export class OrdersService {
           orderBy: { createdAt: 'desc' },
         },
         settlements: true,
+        reconciliation: true,
         orderReturns: {
           include: {
             items: { include: { variant: true } },
@@ -1803,6 +1815,116 @@ export class OrdersService {
     return {
       summary,
       items: filteredItems,
+    };
+  }
+
+  async updateOrderFinancials(
+    tenantId: string,
+    id: string,
+    dto: UpdateOrderFinancialsDto,
+    userId?: string,
+  ) {
+    const order = await this.prisma.order.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy đơn hàng trong Workspace');
+    }
+
+    const data: Prisma.OrderUpdateInput = {};
+    if (dto.customRevenue !== undefined) {
+      data.customRevenue = dto.customRevenue !== null ? dto.customRevenue : null;
+    }
+    if (dto.codAmount !== undefined) {
+      data.codAmount = dto.codAmount !== null ? dto.codAmount : 0;
+    }
+    if (dto.totalAmount !== undefined && dto.totalAmount !== null) {
+      data.totalAmount = dto.totalAmount;
+    }
+    if (dto.note !== undefined) {
+      data.note = dto.note;
+    }
+
+    const updated = await this.prisma.order.update({
+      where: { id },
+      data,
+      include: {
+        shop: { select: { id: true, code: true, name: true } },
+        reconciliation: true,
+      },
+    });
+
+    if (userId) {
+      await this.auditService.log({
+        tenantId,
+        userId,
+        action: 'UPDATE_ORDER_FINANCIALS',
+        entityType: 'Order',
+        entityId: order.id,
+        oldValues: {
+          customRevenue: order.customRevenue,
+          codAmount: order.codAmount,
+          totalAmount: order.totalAmount,
+        },
+        newValues: {
+          customRevenue: updated.customRevenue,
+          codAmount: updated.codAmount,
+          totalAmount: updated.totalAmount,
+        },
+      });
+    }
+
+    return updated;
+  }
+
+  async batchUpdateOrderFinancials(
+    tenantId: string,
+    dto: BatchUpdateOrderFinancialsDto,
+    userId?: string,
+  ) {
+    if (!dto.orders || dto.orders.length === 0) {
+      throw new BadRequestException('Danh sách đơn hàng cần cập nhật không được rỗng');
+    }
+
+    const results = [];
+    for (const item of dto.orders) {
+      const order = await this.prisma.order.findFirst({
+        where: { id: item.id, tenantId },
+      });
+      if (order) {
+        const data: Prisma.OrderUpdateInput = {};
+        if (item.customRevenue !== undefined) {
+          data.customRevenue = item.customRevenue !== null ? item.customRevenue : null;
+        }
+        if (item.codAmount !== undefined) {
+          data.codAmount = item.codAmount !== null ? item.codAmount : 0;
+        }
+        const updated = await this.prisma.order.update({
+          where: { id: item.id },
+          data,
+        });
+        results.push(updated);
+      }
+    }
+
+    if (userId && results.length > 0) {
+      await this.auditService.log({
+        tenantId,
+        userId,
+        action: 'BATCH_UPDATE_ORDER_FINANCIALS',
+        entityType: 'Order',
+        entityId: 'BATCH',
+        newValues: {
+          count: results.length,
+          orders: dto.orders,
+        },
+      });
+    }
+
+    return {
+      message: `Đã cập nhật doanh thu và COD cho ${results.length} đơn hàng`,
+      count: results.length,
     };
   }
 }

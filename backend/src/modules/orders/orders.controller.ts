@@ -25,6 +25,8 @@ import {
   BulkMarkDispatchedDto,
   ReverseDispatchedDto,
   ProcurementDemandQueryDto,
+  UpdateOrderFinancialsDto,
+  BatchUpdateOrderFinancialsDto,
 } from './dto/order.dto';
 
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -247,5 +249,28 @@ export class OrdersController {
     @Body() dto: ReverseDispatchedDto,
   ) {
     return this.ordersService.reverseDispatched(tenantId, id, user.id, dto);
+  }
+
+  @Patch('batch-financials')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Cập nhật doanh thu và tiền COD hàng loạt để đối chiếu' })
+  async batchUpdateOrderFinancials(
+    @CurrentTenantId() tenantId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: BatchUpdateOrderFinancialsDto,
+  ) {
+    return this.ordersService.batchUpdateOrderFinancials(tenantId, dto, user.id);
+  }
+
+  @Patch(':id/financials')
+  @Roles(MembershipRole.OWNER, MembershipRole.ADMIN, MembershipRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Cập nhật doanh thu và tiền COD đơn hàng (nhập tay đối chiếu)' })
+  async updateOrderFinancials(
+    @CurrentTenantId() tenantId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateOrderFinancialsDto,
+  ) {
+    return this.ordersService.updateOrderFinancials(tenantId, id, dto, user.id);
   }
 }

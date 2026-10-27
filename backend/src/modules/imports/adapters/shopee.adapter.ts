@@ -28,6 +28,7 @@ export interface RawShopeeRow {
   serviceFee?: number;
   transactionFee?: number;
   shippingFee?: number;
+  codAmount?: number;
   raw: Record<string, any>;
   rowNumber: number;
 }
@@ -47,6 +48,7 @@ export interface ParsedShopeeOrder {
   recipientAddress?: string;
   totalAmount: number;
   shippingFee: number;
+  codAmount: number;
   packageCode?: string;
   items: {
     externalSku: string;
@@ -375,6 +377,19 @@ export class ShopeeAdapter {
     const discountedPrice = this.parseNumber(row['Giá ưu đãi'] || row['Gia ưu đãi'] || row['discounted_price'] || originalPrice);
     const totalPaid = this.parseNumber(row['Tổng số tiền Người mua thanh toán'] || row['total_amount']);
 
+    const fixedFee = this.parseNumber(row['Phí cố định']);
+    const serviceFee = this.parseNumber(row['Phí Dịch Vụ']);
+    const transactionFee = this.parseNumber(row['Phí xử lý giao dịch']);
+    const shippingFee = this.parseNumber(row['Phí vận chuyển (dự kiến)'] || row['Phí vận chuyển']);
+    const codAmount = this.parseNumber(
+      row['Tổng tiền thu hộ (COD)'] ||
+      row['Tiền thu hộ COD'] ||
+      row['Tiền COD'] ||
+      row['Số tiền COD'] ||
+      row['cod_amount'] ||
+      row['COD']
+    );
+
     return {
       orderCode,
       packageCode,
@@ -399,10 +414,11 @@ export class ShopeeAdapter {
       recipientName: row['Tên Người nhận'] || row['recipient_name'] ? String(row['Tên Người nhận'] || row['recipient_name']).trim() : undefined,
       recipientPhone: row['Số điện thoại'] || row['recipient_phone'] ? String(row['Số điện thoại'] || row['recipient_phone']).trim() : undefined,
       recipientAddress: row['Địa chỉ nhận hàng'] || row['recipient_address'] ? String(row['Địa chỉ nhận hàng'] || row['recipient_address']).trim() : undefined,
-      fixedFee: this.parseNumber(row['Phí cố định']),
-      serviceFee: this.parseNumber(row['Phí Dịch Vụ']),
-      transactionFee: this.parseNumber(row['Phí xử lý giao dịch']),
-      shippingFee: this.parseNumber(row['Phí vận chuyển (dự kiến)'] || row['Phí vận chuyển']),
+      fixedFee,
+      serviceFee,
+      transactionFee,
+      shippingFee,
+      codAmount,
       raw: row,
       rowNumber,
     };
@@ -432,6 +448,7 @@ export class ShopeeAdapter {
           recipientAddress: r.recipientAddress,
           totalAmount: r.totalPaidByBuyer || 0,
           shippingFee: r.shippingFee || 0,
+          codAmount: r.codAmount || 0,
           items: [],
           fees: {
             fixedFee: r.fixedFee || 0,

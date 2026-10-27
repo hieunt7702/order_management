@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "codAmount" DECIMAL(15, 2) DEFAULT 0;
+ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "customRevenue" DECIMAL(15, 2);

@@ -379,3 +379,49 @@ export class ProcurementDemandQueryDto {
   onlyShortage?: boolean;
 }
 
+export class UpdateOrderFinancialsDto {
+  @ApiPropertyOptional({ description: 'Doanh thu đơn hàng (nhập tay để đối chiếu)' })
+  @IsOptional()
+  @IsNumber()
+  customRevenue?: number | null;
+
+  @ApiPropertyOptional({ description: 'Tiền COD phải trả shipper hoặc thu hộ' })
+  @IsOptional()
+  @IsNumber()
+  codAmount?: number | null;
+
+  @ApiPropertyOptional({ description: 'Tổng tiền đơn hàng trên sàn' })
+  @IsOptional()
+  @IsNumber()
+  totalAmount?: number | null;
+
+  @ApiPropertyOptional({ description: 'Ghi chú tài chính / đối soát' })
+  @IsOptional()
+  @IsString()
+  note?: string;
+}
+
+export class BatchOrderItemFinancialDto {
+  @ApiProperty({ description: 'ID đơn hàng' })
+  @IsString()
+  id!: string;
+
+  @ApiPropertyOptional({ description: 'Doanh thu đơn hàng (nhập tay)' })
+  @IsOptional()
+  @IsNumber()
+  customRevenue?: number | null;
+
+  @ApiPropertyOptional({ description: 'Tiền COD phải trả shipper' })
+  @IsOptional()
+  @IsNumber()
+  codAmount?: number | null;
+}
+
+export class BatchUpdateOrderFinancialsDto {
+  @ApiProperty({ description: 'Danh sách đơn hàng cập nhật doanh thu / COD', type: [BatchOrderItemFinancialDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BatchOrderItemFinancialDto)
+  orders!: BatchOrderItemFinancialDto[];
+}
+

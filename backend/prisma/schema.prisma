@@ -457,6 +457,8 @@ model Order {
   discountAmount Decimal  @default(0) @db.Decimal(15, 2)
   sellerVoucher  Decimal  @default(0) @db.Decimal(15, 2)
   cogsTotal      Decimal  @default(0) @db.Decimal(15, 2)
+  codAmount      Decimal? @default(0) @db.Decimal(15, 2)
+  customRevenue  Decimal? @db.Decimal(15, 2)
   note           String?
   rawPlatformData Json?
 

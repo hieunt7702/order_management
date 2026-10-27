@@ -77,6 +77,26 @@ export class ReportsController {
     return this.reportsService.getOrderReconciliationReport(tenantId, allowedShopIds, filter);
   }
 
+  @Get('order-reconciliation/shop-orders')
+  @Roles(
+    MembershipRole.OWNER,
+    MembershipRole.ADMIN,
+    MembershipRole.ACCOUNTANT,
+    MembershipRole.WAREHOUSE,
+    MembershipRole.VIEWER,
+  )
+  @ApiOperation({
+    summary: 'Báo cáo đối soát danh sách đơn hàng theo cửa hàng (gồm 38 đơn, đơn ảo, tiền COD, doanh thu nhập tay)',
+  })
+  async getShopOrdersReport(
+    @CurrentTenantId() tenantId: string,
+    @Req() req: Request,
+    @Query() filter: OrderReconciliationReportFilterDto,
+  ) {
+    const allowedShopIds = (req as any).allowedShopIds;
+    return this.reportsService.getShopOrdersReport(tenantId, allowedShopIds, filter);
+  }
+
   @Get('order-reconciliation/:variantId/transactions')
   @Roles(
     MembershipRole.OWNER,

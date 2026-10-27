@@ -27,6 +27,10 @@ import {
   BarChart3,
   Percent,
   CircleDollarSign,
+  Save,
+  Eye,
+  Sparkles,
+  Info,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
@@ -35,7 +39,12 @@ import {
   OrderReconciliationItem,
   OrderReconciliationSummary,
   OrderReconciliationTransactionsData,
+  ShopOrdersReportData,
+  ShopOrderItem,
 } from '../../services/reportsApi';
+import { ordersApi } from '../../services/ordersApi';
+import { OrderDetailDrawer } from '../Orders/OrderDetailDrawer';
+import { formatCurrency } from '../../utils';
 import { SystemDatePicker } from '../../components/ui/SystemDatePicker';
 import { Select } from '../../components/ui/Select';
 import {
@@ -106,7 +115,26 @@ export const OrderReportsPage: React.FC = () => {
     'ORDERS' | 'RECEIPTS' | 'PURCHASE_RETURNS' | 'ORDER_RETURNS' | 'WAREHOUSES'
   >('ORDERS');
 
-  // Load report data
+  // Active View Switcher: 'SHOP_ORDERS' | 'SKU_RECONCILIATION'
+  const [activeReportView, setActiveReportView] = useState<'SHOP_ORDERS' | 'SKU_RECONCILIATION'>('SHOP_ORDERS');
+
+  // Shop Orders Report State
+  const [shopOrdersData, setShopOrdersData] = useState<ShopOrdersReportData | null>(null);
+  const [isLoadingShopOrders, setIsLoadingShopOrders] = useState<boolean>(true);
+  const [shopOrdersPage, setShopOrdersPage] = useState<number>(1);
+  const [shopOrdersLimit, setShopOrdersLimit] = useState<number>(50);
+  const [shopVirtualFilter, setShopVirtualFilter] = useState<'ALL' | 'VIRTUAL_ONLY' | 'REAL_ONLY'>('ALL');
+  const [shopOrderSearch, setShopOrderSearch] = useState<string>('');
+
+  // Inline Edits for Financials: { [orderId]: { customRevenue: string; codAmount: string; isDirty: boolean } }
+  const [pendingEdits, setPendingEdits] = useState<Record<string, { customRevenue: string; codAmount: string; isDirty: boolean }>>({});
+  const [isSavingBatch, setIsSavingBatch] = useState<boolean>(false);
+
+  // Drawer for order detail
+  const [selectedOrderForDrawer, setSelectedOrderForDrawer] = useState<any | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+
+  // Load report data (SKU level)
   const loadReportData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -135,9 +163,196 @@ export const OrderReportsPage: React.FC = () => {
     }
   }, [selectedShopId, selectedWarehouseId, selectedStatus, startDate, endDate, searchTerm, currentPage, limit]);
 
+  // Load shop orders report (Shop level with all 38 orders, virtual orders, COD, custom revenue)
+  const loadShopOrdersData = useCallback(async () => {
+    setIsLoadingShopOrders(true);
+    try {
+      const res = await reportsApi.getShopOrdersReport({
+        shopId: selectedShopId && selectedShopId !== 'ALL' ? selectedShopId : undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        search: shopOrderSearch.trim() || undefined,
+        page: shopOrdersPage,
+        limit: shopOrdersLimit,
+      });
+      if (res) {
+        setShopOrdersData(res);
+        // Initialize pending edits
+        const initialEdits: Record<string, { customRevenue: string; codAmount: string; isDirty: boolean }> = {};
+        (res.orders || []).forEach((o) => {
+          initialEdits[o.id] = {
+            customRevenue: o.customRevenue !== null && o.customRevenue !== undefined ? String(o.customRevenue) : String(o.totalAmount || 0),
+            codAmount: String(o.codAmount || 0),
+            isDirty: false,
+          };
+        });
+        setPendingEdits(initialEdits);
+      }
+    } catch (err: any) {
+      console.error('Error loading shop orders report:', err);
+      toast.error('Lỗi tải báo cáo đơn hàng shop', err?.message || 'Không thể kết nối máy chủ');
+    } finally {
+      setIsLoadingShopOrders(false);
+    }
+  }, [selectedShopId, startDate, endDate, shopOrderSearch, shopOrdersPage, shopOrdersLimit]);
+
   useEffect(() => {
-    loadReportData();
-  }, [loadReportData]);
+    if (activeReportView === 'SKU_RECONCILIATION') {
+      loadReportData();
+    }
+  }, [activeReportView, loadReportData]);
+
+  useEffect(() => {
+    if (activeReportView === 'SHOP_ORDERS') {
+      loadShopOrdersData();
+    }
+  }, [activeReportView, loadShopOrdersData]);
+
+  // Filter shop orders client side by virtual / real
+  const filteredShopOrders = useMemo(() => {
+    if (!shopOrdersData?.orders) return [];
+    let list = shopOrdersData.orders;
+    if (shopVirtualFilter === 'VIRTUAL_ONLY') {
+      list = list.filter((o) => o.isVirtual);
+    } else if (shopVirtualFilter === 'REAL_ONLY') {
+      list = list.filter((o) => !o.isVirtual);
+    }
+    return list;
+  }, [shopOrdersData?.orders, shopVirtualFilter]);
+
+  // Count dirty edits
+  const dirtyCount = useMemo(() => {
+    return Object.values(pendingEdits).filter((e) => e.isDirty).length;
+  }, [pendingEdits]);
+
+  // Batch save financial changes
+  const handleSaveBatchFinancials = async () => {
+    const dirtyEntries = Object.entries(pendingEdits).filter(([_, val]) => val.isDirty);
+    if (dirtyEntries.length === 0) {
+      toast.info('Không có thay đổi nào cần lưu');
+      return;
+    }
+
+    setIsSavingBatch(true);
+    try {
+      const payload = dirtyEntries.map(([orderId, val]) => {
+        const rev = parseFloat(String(val.customRevenue).replace(/,/g, ''));
+        const cod = parseFloat(String(val.codAmount).replace(/,/g, ''));
+        return {
+          id: orderId,
+          customRevenue: isNaN(rev) ? null : rev,
+          codAmount: isNaN(cod) ? 0 : cod,
+        };
+      });
+
+      await ordersApi.batchUpdateFinancials({ orders: payload });
+      toast.success('Lưu thành công', `Đã cập nhật doanh thu & COD cho ${payload.length} đơn hàng`);
+      await loadShopOrdersData();
+    } catch (err: any) {
+      console.error('Error saving batch financials:', err);
+      toast.error('Lỗi cập nhật doanh thu', err?.message || 'Không thể lưu thay đổi');
+    } finally {
+      setIsSavingBatch(false);
+    }
+  };
+
+  // Single save financial change
+  const handleSaveSingleOrderFinancials = async (orderId: string) => {
+    const edit = pendingEdits[orderId];
+    if (!edit) return;
+
+    try {
+      const rev = parseFloat(String(edit.customRevenue).replace(/,/g, ''));
+      const cod = parseFloat(String(edit.codAmount).replace(/,/g, ''));
+      await ordersApi.updateFinancials(orderId, {
+        customRevenue: isNaN(rev) ? null : rev,
+        codAmount: isNaN(cod) ? 0 : cod,
+      });
+      toast.success('Lưu thành công', 'Đã lưu doanh thu và COD đơn hàng');
+      setPendingEdits((prev) => ({
+        ...prev,
+        [orderId]: { ...prev[orderId], isDirty: false },
+      }));
+      await loadShopOrdersData();
+    } catch (err: any) {
+      toast.error('Lỗi lưu', err?.message);
+    }
+  };
+
+  // Open full OrderDetailDrawer
+  const handleOpenOrderDetail = async (orderId: string) => {
+    try {
+      const fullOrder = await ordersApi.findOne(orderId);
+      setSelectedOrderForDrawer(fullOrder);
+      setIsDrawerOpen(true);
+    } catch (err: any) {
+      toast.error('Lỗi tải chi tiết đơn hàng', err?.message);
+    }
+  };
+
+  // Export shop orders to Excel
+  const handleExportShopOrdersExcel = async () => {
+    try {
+      toast.info('Đang chuẩn bị file Excel báo cáo đơn hàng shop...');
+      const fullRes = await reportsApi.getShopOrdersReport({
+        shopId: selectedShopId && selectedShopId !== 'ALL' ? selectedShopId : undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        search: shopOrderSearch.trim() || undefined,
+        page: 1,
+        limit: 1000,
+      });
+
+      const orderList = fullRes?.orders || shopOrdersData?.orders || [];
+      if (!orderList.length) {
+        toast.warning('Không có dữ liệu đơn hàng để xuất');
+        return;
+      }
+
+      const rows = orderList.map((o, idx) => {
+        const edit = pendingEdits[o.id];
+        const effectiveRev = edit && edit.isDirty ? parseFloat(edit.customRevenue) || o.effectiveRevenue : o.effectiveRevenue;
+        const cod = edit && edit.isDirty ? parseFloat(edit.codAmount) || o.codAmount : o.codAmount;
+        const profit = o.isVirtual ? effectiveRev - cod : effectiveRev - o.cogsTotal;
+
+        return {
+          'STT': idx + 1,
+          'Mã đơn hàng Shopee': o.externalOrderId,
+          'Mã đơn nội bộ': o.internalOrderCode,
+          'Cửa hàng (Shop)': o.shopName,
+          'Ngày đặt hàng': o.orderDate ? new Date(o.orderDate).toLocaleString('vi-VN') : '',
+          'Người nhận': o.recipientName || '',
+          'SĐT người nhận': o.recipientPhone || '',
+          'Mã vận đơn': o.trackingCode || '',
+          'Loại đơn hàng': o.isVirtual ? 'Đơn ảo (Buff)' : 'Đơn thường',
+          'Trừ kho vật lý?': o.isRealGoods ? 'Có xuất hàng thật' : 'Không trừ kho',
+          'Trạng thái sàn': o.platformStatus,
+          'Trạng thái kho': o.verificationStatus === 'VERIFIED' ? 'Đã xuất kho' : 'Chưa quét kho',
+          'Tiền bán sản phẩm (VNĐ)': o.productsSellingTotal,
+          'Tiền COD shipper (VNĐ)': cod,
+          'Tiền sàn quyết toán (VNĐ)': o.settledPayout || 0,
+          'Tiền người mua trả (VNĐ)': o.buyerPaidAmount || 0,
+          'Doanh thu đơn hàng (VNĐ)': effectiveRev,
+          'Doanh thu nhập tay?': o.customRevenue !== null ? 'Có (Nhập tay)' : 'Tự động từ sàn',
+          'Lợi nhuận đối chiếu (VNĐ)': profit,
+          'Công thức tính': o.isVirtual ? 'Lợi nhuận = Doanh thu - Tiền COD trả shipper' : 'Lợi nhuận = Doanh thu - Giá vốn hàng xuất',
+          'Chi tiết mặt hàng': o.items.map((it) => `${it.productName} (SKU: ${it.sku}, SL: ${it.rawQuantity}, Đơn giá: ${it.unitPrice.toLocaleString('vi-VN')}đ)`).join('; '),
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'BaoCaoDonHangShop');
+
+      const shopTag = isFilteringSpecificShop ? `_${currentShop?.code || 'Shop'}` : '_TatCaShop';
+      const fileName = `Bao_Cao_Don_Hang_Shop${shopTag}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+      toast.success('Xuất file Excel thành công!');
+    } catch (err: any) {
+      console.error('Error exporting shop orders Excel:', err);
+      toast.error('Lỗi xuất file Excel', err?.message);
+    }
+  };
 
   // Handle Quick Date Presets
   const handleDatePresetChange = (preset: string) => {
@@ -317,7 +532,7 @@ export const OrderReportsPage: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleExportExcel}
+            onClick={activeReportView === 'SHOP_ORDERS' ? handleExportShopOrdersExcel : handleExportExcel}
             className="flex items-center gap-1.5 h-8 text-xs font-medium text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
           >
             <Download size={13} />
@@ -328,19 +543,843 @@ export const OrderReportsPage: React.FC = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={loadReportData}
-            disabled={isLoading}
+            onClick={activeReportView === 'SHOP_ORDERS' ? loadShopOrdersData : loadReportData}
+            disabled={activeReportView === 'SHOP_ORDERS' ? isLoadingShopOrders : isLoading}
             className="flex items-center gap-1.5 h-8 text-xs font-medium text-gray-700 dark:text-gray-300"
           >
-            <RotateCcw size={13} className={isLoading ? 'animate-spin' : ''} />
+            <RotateCcw size={13} className={(activeReportView === 'SHOP_ORDERS' ? isLoadingShopOrders : isLoading) ? 'animate-spin' : ''} />
             <span className="hidden sm:inline">Làm mới</span>
           </Button>
         </div>
       </div>
 
-      {/* 4 Summary KPI Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 shrink-0">
-        <SystemMetricPairCard
+      {/* View Switcher Tabs */}
+      <div className="flex items-center gap-1.5 p-1 bg-gray-100/80 dark:bg-[#14151a] rounded-lg border border-gray-200/80 dark:border-gray-800 w-fit shrink-0">
+        <button
+          type="button"
+          onClick={() => setActiveReportView('SHOP_ORDERS')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+            activeReportView === 'SHOP_ORDERS'
+              ? 'bg-white dark:bg-[#1f2230] text-[#5865f2] dark:text-indigo-400 shadow-xs border border-gray-200/70 dark:border-gray-700/80'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          <Store size={14} className={activeReportView === 'SHOP_ORDERS' ? 'text-[#5865f2]' : 'text-gray-400'} />
+          <span>Báo cáo đơn hàng theo Cửa hàng</span>
+          {shopOrdersData?.summary.totalOrders !== undefined && (
+            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-indigo-50 dark:bg-indigo-950/60 text-[#5865f2] dark:text-indigo-300">
+              {shopOrdersData.summary.totalOrders} đơn
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveReportView('SKU_RECONCILIATION')}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+            activeReportView === 'SKU_RECONCILIATION'
+              ? 'bg-white dark:bg-[#1f2230] text-[#5865f2] dark:text-indigo-400 shadow-xs border border-gray-200/70 dark:border-gray-700/80'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          <Boxes size={14} className={activeReportView === 'SKU_RECONCILIATION' ? 'text-[#5865f2]' : 'text-gray-400'} />
+          <span>Đối soát Sản phẩm & Tồn kho (Nhập - Xuất - Tồn)</span>
+          {summary.totalVariants !== undefined && (
+            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+              {summary.totalVariants} SKU
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* ------------------- VIEW 1: SHOP ORDERS REPORT ------------------- */}
+      {activeReportView === 'SHOP_ORDERS' && (
+        <>
+          {/* 4 Summary KPI Metric Cards for Shop Orders */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 shrink-0">
+            <SystemMetricPairCard
+              leftItem={{
+                title: isFilteringSpecificShop ? `Tổng đơn hàng: ${currentShop?.name}` : 'Tổng đơn hàng (Tất cả shop)',
+                value: `${(shopOrdersData?.summary.totalOrders || 0).toLocaleString('vi-VN')} đơn`,
+                subtitle: `Thật: ${shopOrdersData?.summary.realOrdersCount || 0} • Ảo (Buff): ${shopOrdersData?.summary.virtualOrdersCount || 0}`,
+                icon: ShoppingBag,
+                colorScheme: 'indigo',
+              }}
+              rightItem={{
+                title: 'Tiền bán sản phẩm',
+                value: `${(shopOrdersData?.summary.totalProductsSelling || 0).toLocaleString('vi-VN')} đ`,
+                subtitle: `Đơn giá × SL mua (chuẩn sàn)`,
+                icon: CircleDollarSign,
+                colorScheme: 'green',
+              }}
+            />
+
+            <SystemMetricPairCard
+              leftItem={{
+                title: 'Tiền COD trả shipper',
+                value: `${(shopOrdersData?.summary.virtualCodAmount || shopOrdersData?.summary.totalCod || 0).toLocaleString('vi-VN')} đ`,
+                subtitle: `Phải trả shipper đơn ảo/COD`,
+                icon: Truck,
+                colorScheme: 'orange',
+              }}
+              rightItem={{
+                title: 'Lợi nhuận ròng đơn ảo',
+                value: `${(shopOrdersData?.summary.virtualProfit || 0).toLocaleString('vi-VN')} đ`,
+                subtitle: `= Doanh thu ảo - Tiền COD shipper`,
+                icon: CheckCircle2,
+                colorScheme: 'purple',
+              }}
+            />
+
+            <SystemMetricPairCard
+              leftItem={{
+                title: 'Doanh thu đơn hàng',
+                value: `${(shopOrdersData?.summary.totalRevenue || 0).toLocaleString('vi-VN')} đ`,
+                subtitle: `Gồm cả doanh thu nhập tay đối chiếu`,
+                icon: TrendingUp,
+                colorScheme: 'green',
+              }}
+              rightItem={{
+                title: 'Tổng lợi nhuận đối chiếu',
+                value: `${(shopOrdersData?.summary.totalProfit || 0).toLocaleString('vi-VN')} đ`,
+                subtitle: `Đơn thật (Lãi - Vốn) + Đơn ảo (Lãi - COD)`,
+                icon: CircleDollarSign,
+                colorScheme: 'green',
+              }}
+            />
+
+            <SystemMetricPairCard
+              leftItem={{
+                title: 'Đơn ảo (Buff đơn)',
+                value: `${(shopOrdersData?.summary.virtualOrdersCount || 0).toLocaleString('vi-VN')} đơn`,
+                subtitle: `Doanh thu: ${(shopOrdersData?.summary.virtualRevenue || 0).toLocaleString('vi-VN')} đ`,
+                icon: Sparkles,
+                colorScheme: 'purple',
+              }}
+              rightItem={{
+                title: 'Đơn hàng thật',
+                value: `${(shopOrdersData?.summary.realOrdersCount || 0).toLocaleString('vi-VN')} đơn`,
+                subtitle: `Doanh thu: ${(shopOrdersData?.summary.realRevenue || 0).toLocaleString('vi-VN')} đ`,
+                icon: PackageCheck,
+                colorScheme: 'indigo',
+              }}
+            />
+          </div>
+
+          {/* Shop Orders Quick Filter Bar */}
+          {summary.shopsSummary && summary.shopsSummary.length > 0 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 px-1 bg-gray-50/70 dark:bg-[#14151a] rounded-lg border border-gray-200/80 dark:border-gray-800 shrink-0">
+              <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 shrink-0 flex items-center gap-1 mr-1">
+                <Store size={13} className="text-[#5865f2]" />
+                <span>Xem đơn theo shop:</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedShopId('ALL');
+                  setShopOrdersPage(1);
+                }}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs transition-all cursor-pointer border shrink-0 ${
+                  selectedShopId === 'ALL'
+                    ? 'bg-[#5865f2] text-white border-[#5865f2] font-semibold shadow-xs'
+                    : 'bg-white dark:bg-[#1a1b23] border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#202430]'
+                }`}
+              >
+                <Store size={12} />
+                <span>Tất cả Shop</span>
+                <span className={`font-mono text-[11px] font-bold ${selectedShopId === 'ALL' ? 'text-indigo-100' : 'text-[#5865f2]'}`}>
+                  {summary.shopsSummary.reduce((sum, s) => sum + s.ordersCount, 0)} đơn
+                </span>
+              </button>
+
+              {summary.shopsSummary.map((s) => {
+                const isSelected = selectedShopId === s.shopId;
+                return (
+                  <button
+                    key={s.shopId}
+                    type="button"
+                    onClick={() => {
+                      setSelectedShopId(s.shopId);
+                      setShopOrdersPage(1);
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs whitespace-nowrap transition-all cursor-pointer border shrink-0 ${
+                      isSelected
+                        ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-xs'
+                        : 'bg-white dark:bg-[#1a1b23] border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#202430]'
+                    }`}
+                  >
+                    <Store size={12} className={isSelected ? 'text-white' : 'text-gray-400'} />
+                    <span>{s.shopName}:</span>
+                    <span className={`font-mono font-bold ${isSelected ? 'text-emerald-100' : 'text-gray-800 dark:text-gray-200'}`}>
+                      {s.ordersCount} đơn
+                    </span>
+                    {s.virtualOrdersCount > 0 && (
+                      <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${isSelected ? 'bg-purple-900/60 text-purple-200' : 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300'}`}>
+                        {s.virtualOrdersCount} ảo
+                      </span>
+                    )}
+                    {s.virtualProfit !== undefined && s.virtualProfit !== 0 && (
+                      <span className={`text-[10px] font-mono ${isSelected ? 'text-emerald-200' : 'text-purple-600 dark:text-purple-400'}`}>
+                        (Lãi ảo: {s.virtualProfit.toLocaleString('vi-VN')}đ)
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Shop Orders Filter Toolbar */}
+          <SystemFilter className="p-2 sm:p-2.5 flex-col gap-2 shrink-0">
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 w-full">
+              {[
+                { id: 'ALL', label: 'Tất cả thời gian' },
+                { id: 'TODAY', label: 'Hôm nay' },
+                { id: 'YESTERDAY', label: 'Hôm qua' },
+                { id: 'LAST_7_DAYS', label: '7 ngày qua' },
+                { id: 'THIS_MONTH', label: 'Tháng này' },
+                { id: 'LAST_MONTH', label: 'Tháng trước' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => handleDatePresetChange(tab.id)}
+                  className={`px-2.5 py-1 rounded text-xs whitespace-nowrap transition-colors cursor-pointer border-0 shrink-0 ${
+                    datePreset === tab.id
+                      ? 'bg-[#5865f2] text-white font-medium shadow-xs'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1a1b23] font-normal'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full">
+              <div className="col-span-2 sm:w-[220px]">
+                <SystemDatePicker
+                  startDate={startDate}
+                  endDate={endDate}
+                  onChange={(start, end) => {
+                    setStartDate(start || '');
+                    setEndDate(end || '');
+                    setDatePreset(start || end ? 'CUSTOM' : 'ALL');
+                    setShopOrdersPage(1);
+                  }}
+                  size="sm"
+                  className="w-full"
+                  placeholder="Khoảng ngày đối soát..."
+                />
+              </div>
+
+              <div className="col-span-1 sm:w-48">
+                <Select
+                  value={selectedShopId || 'ALL'}
+                  onChange={(val) => {
+                    setSelectedShopId(String(val));
+                    setShopOrdersPage(1);
+                  }}
+                  options={[
+                    { value: 'ALL', label: 'Tất cả Shop', icon: Store },
+                    ...shops.map((s) => ({
+                      value: s.id,
+                      label: s.name,
+                      icon: Store,
+                    })),
+                  ]}
+                  placeholder="Chọn shop..."
+                  icon={Store}
+                  size="sm"
+                  className="w-full font-medium"
+                  menuWidth="w-56"
+                />
+              </div>
+
+              <div className="col-span-1 sm:w-44">
+                <Select
+                  value={shopVirtualFilter}
+                  onChange={(val) => {
+                    setShopVirtualFilter(val as any);
+                  }}
+                  options={[
+                    { value: 'ALL', label: 'Tất cả loại đơn' },
+                    { value: 'VIRTUAL_ONLY', label: 'Chỉ đơn ảo (Buff)' },
+                    { value: 'REAL_ONLY', label: 'Chỉ đơn thật' },
+                  ]}
+                  size="sm"
+                  className="w-full font-medium"
+                  menuWidth="w-48"
+                />
+              </div>
+
+              <div className="col-span-2 sm:flex-1 sm:min-w-[180px]">
+                <SystemFilterSearch
+                  value={shopOrderSearch}
+                  onChange={(e) => {
+                    setShopOrderSearch(e.target.value);
+                    setShopOrdersPage(1);
+                  }}
+                  placeholder="Tìm theo mã đơn Shopee, MVD, khách hàng..."
+                  className="w-full"
+                />
+              </div>
+
+              {(selectedShopId !== 'ALL' ||
+                shopVirtualFilter !== 'ALL' ||
+                datePreset !== 'ALL' ||
+                startDate ||
+                endDate ||
+                shopOrderSearch) && (
+                <div className="col-span-2 sm:col-span-1 sm:ml-auto">
+                  <SystemFilterReset
+                    onClick={() => {
+                      setSelectedShopId('ALL');
+                      setShopVirtualFilter('ALL');
+                      setDatePreset('ALL');
+                      setStartDate('');
+                      setEndDate('');
+                      setShopOrderSearch('');
+                      setShopOrdersPage(1);
+                    }}
+                    label="Xóa lọc"
+                  />
+                </div>
+              )}
+            </div>
+          </SystemFilter>
+
+          {/* Floating Batch Save Banner */}
+          {dirtyCount > 0 && (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-indigo-900/90 via-purple-900/90 to-gray-900/95 text-white shadow-xl backdrop-blur-md border border-indigo-500/40 animate-in fade-in slide-in-from-top-2 duration-200 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/30 flex items-center justify-center shrink-0">
+                  <Sparkles size={16} className="text-indigo-300" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">
+                    Đang có {dirtyCount} đơn hàng được sửa doanh thu / COD đối chiếu
+                  </p>
+                  <p className="text-[11px] text-indigo-200">
+                    Nhấn Lưu toàn bộ để cập nhật vào hệ thống và đối chiếu tức thì
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => loadShopOrdersData()}
+                  className="h-8 text-xs text-gray-300 hover:text-white hover:bg-white/10"
+                >
+                  Hủy thay đổi
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  disabled={isSavingBatch}
+                  onClick={handleSaveBatchFinancials}
+                  className="h-8 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white flex items-center gap-1.5 shadow-md"
+                >
+                  <Save size={14} className={isSavingBatch ? 'animate-spin' : ''} />
+                  <span>{isSavingBatch ? 'Đang lưu...' : `Lưu toàn bộ (${dirtyCount})`}</span>
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Desktop Table View for Shop Orders */}
+          <div className="hidden md:flex flex-1 flex-col min-h-0 overflow-hidden">
+            <SystemTableWrapper
+              tableClassName="w-full text-left border-collapse table-fixed min-w-[1300px]"
+              pagination={
+                <SystemPagination
+                  currentPage={shopOrdersPage}
+                  totalPages={shopOrdersData?.pagination?.totalPages || 1}
+                  totalItems={shopOrdersData?.pagination?.totalItems || 0}
+                  itemsPerPage={shopOrdersLimit}
+                  onPageChange={(p) => setShopOrdersPage(p)}
+                  onLimitChange={(l) => {
+                    setShopOrdersLimit(l);
+                    setShopOrdersPage(1);
+                  }}
+                />
+              }
+            >
+              <colgroup>
+                <col style={{ width: '42px' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '11%' }} />
+                <col style={{ width: '11%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '13%' }} />
+                <col style={{ width: '70px' }} />
+              </colgroup>
+              <SystemThead>
+                <SystemTr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50/75 dark:bg-[#1a1b23]/50">
+                  <SystemTh align="center" className="text-center">STT</SystemTh>
+                  <SystemTh align="left">Mã đơn / Cửa hàng</SystemTh>
+                  <SystemTh align="left">Khách hàng / Vận đơn</SystemTh>
+                  <SystemTh align="center" className="text-center">Loại đơn & Trạng thái</SystemTh>
+                  <SystemTh align="right" className="text-right">Tiền bán SP (Sàn)</SystemTh>
+                  <SystemTh align="right" className="text-right">Tiền COD shipper</SystemTh>
+                  <SystemTh align="right" className="text-right">Quyết toán sàn</SystemTh>
+                  <SystemTh align="right" className="text-right">Doanh thu đối chiếu</SystemTh>
+                  <SystemTh align="right" className="text-right">Lợi nhuận đối chiếu</SystemTh>
+                  <SystemTh align="center" className="text-center">Thao tác</SystemTh>
+                </SystemTr>
+              </SystemThead>
+
+              <SystemTbody>
+                {isLoadingShopOrders ? (
+                  <SystemTableSkeleton rows={8} cols={10} />
+                ) : filteredShopOrders.length === 0 ? (
+                  <SystemTableEmpty
+                    colSpan={10}
+                    title="Không có đơn hàng nào khớp bộ lọc"
+                    description="Hãy thử đổi shop, khoảng ngày hoặc xóa từ khóa tìm kiếm."
+                  />
+                ) : (
+                  filteredShopOrders.map((order, idx) => {
+                    const edit = pendingEdits[order.id] || {
+                      customRevenue: order.customRevenue !== null ? String(order.customRevenue) : String(order.totalAmount || 0),
+                      codAmount: String(order.codAmount || 0),
+                      isDirty: false,
+                    };
+                    const isDirty = edit.isDirty;
+                    const parsedRev = parseFloat(String(edit.customRevenue).replace(/,/g, ''));
+                    const parsedCod = parseFloat(String(edit.codAmount).replace(/,/g, ''));
+                    const effectiveRev = !isNaN(parsedRev) ? parsedRev : order.effectiveRevenue;
+                    const cod = !isNaN(parsedCod) ? parsedCod : order.codAmount;
+                    const profit = order.isVirtual ? effectiveRev - cod : effectiveRev - order.cogsTotal;
+
+                    return (
+                      <SystemTr
+                        key={order.id}
+                        className={`hover:bg-gray-50/70 dark:hover:bg-[#1a1b23]/60 transition-colors ${
+                          isDirty ? 'bg-amber-50/30 dark:bg-amber-950/20' : ''
+                        }`}
+                      >
+                        {/* STT */}
+                        <SystemTd align="center" className="text-center text-xs text-gray-500 font-mono">
+                          {(shopOrdersPage - 1) * shopOrdersLimit + idx + 1}
+                        </SystemTd>
+
+                        {/* Order Code & Shop */}
+                        <SystemTd align="left">
+                          <div className="flex flex-col min-w-0 py-1">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenOrderDetail(order.id)}
+                              className="text-xs font-bold text-gray-900 dark:text-white hover:text-[#5865f2] dark:hover:text-indigo-400 truncate text-left flex items-center gap-1 group"
+                              title="Click để xem chi tiết đơn"
+                            >
+                              <span className="truncate">{order.externalOrderId || order.internalOrderCode}</span>
+                              <ExternalLink size={11} className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-[#5865f2]" />
+                            </button>
+                            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 flex-wrap">
+                              <span className="inline-flex items-center gap-1 text-gray-600 dark:text-gray-300 font-medium">
+                                <Store size={10} className="text-gray-400" />
+                                {order.shopName}
+                              </span>
+                              <span>•</span>
+                              <span>{order.orderDate ? new Date(order.orderDate).toLocaleDateString('vi-VN') : ''}</span>
+                            </div>
+                          </div>
+                        </SystemTd>
+
+                        {/* Customer & Tracking */}
+                        <SystemTd align="left">
+                          <div className="flex flex-col min-w-0 py-1">
+                            <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate" title={order.recipientName || 'Khách hàng'}>
+                              {order.recipientName || 'Khách lẻ'}
+                            </span>
+                            <span className="font-mono text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5" title={order.trackingCode || ''}>
+                              MVD: {order.trackingCode || 'Chưa có'}
+                            </span>
+                          </div>
+                        </SystemTd>
+
+                        {/* Order Type & Status */}
+                        <SystemTd align="center">
+                          <div className="flex flex-col items-center gap-1 py-1">
+                            {order.isVirtual ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                <Sparkles size={10} />
+                                <span>Đơn ảo (Buff)</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                                Đơn thường
+                              </span>
+                            )}
+                            <div className="flex items-center gap-1 text-[10px]">
+                              <span className="px-1.5 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/50 text-[#5865f2] dark:text-indigo-300 font-medium">
+                                {order.platformStatus}
+                              </span>
+                              {order.verificationStatus === 'VERIFIED' ? (
+                                <span className="px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 font-medium">
+                                  Đã xuất kho
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        </SystemTd>
+
+                        {/* Product Selling Total with Breakdown */}
+                        <SystemTd align="right">
+                          <div className="flex flex-col items-end group relative py-1">
+                            <span className="font-mono text-xs font-bold text-gray-900 dark:text-white">
+                              {order.productsSellingTotal.toLocaleString('vi-VN')} đ
+                            </span>
+                            <span className="text-[10px] text-gray-400">
+                              {order.items.reduce((s, it) => s + it.rawQuantity, 0)} sp ({order.items.length} dòng)
+                            </span>
+                            {/* Hover tooltip showing breakdown: rawQty x unitPrice = subtotal */}
+                            <div className="hidden group-hover:block absolute right-0 top-full z-30 w-72 p-2.5 bg-gray-900 text-white text-[11px] rounded-lg shadow-xl border border-gray-700 pointer-events-none mt-1">
+                              <div className="font-semibold text-gray-300 border-b border-gray-700 pb-1 mb-1.5 flex items-center justify-between">
+                                <span>Chi tiết tiền bán sản phẩm:</span>
+                                <span className="text-[10px] text-indigo-300">Đơn giá × SL mua</span>
+                              </div>
+                              <div className="space-y-1 max-h-40 overflow-y-auto">
+                                {order.items.map((it, i) => (
+                                  <div key={i} className="flex justify-between items-center py-0.5 text-[10px]">
+                                    <span className="truncate pr-2 font-mono text-gray-300">
+                                      {it.sku || it.productName}: {it.rawQuantity} × {it.unitPrice.toLocaleString('vi-VN')}đ
+                                    </span>
+                                    <span className="font-mono font-bold shrink-0 text-emerald-400">
+                                      {it.subtotal.toLocaleString('vi-VN')}đ
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </SystemTd>
+
+                        {/* Tiền COD shipper (Direct inline edit) */}
+                        <SystemTd align="right">
+                          <div className="flex flex-col items-end gap-0.5 py-1">
+                            <div className="relative w-28">
+                              <input
+                                type="number"
+                                value={edit.codAmount}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setPendingEdits((prev) => ({
+                                    ...prev,
+                                    [order.id]: {
+                                      ...prev[order.id],
+                                      codAmount: val,
+                                      isDirty: true,
+                                    },
+                                  }));
+                                }}
+                                className="w-full text-right px-2 py-1 text-xs font-mono font-medium rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1b23] text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#5865f2]"
+                                placeholder="0"
+                              />
+                            </div>
+                            {order.isVirtual ? (
+                              <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium">
+                                Trả shipper
+                              </span>
+                            ) : null}
+                          </div>
+                        </SystemTd>
+
+                        {/* Settled / Paid Payout */}
+                        <SystemTd align="right">
+                          <div className="flex flex-col items-end py-1">
+                            {order.settledPayout !== null ? (
+                              <>
+                                <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                  {order.settledPayout.toLocaleString('vi-VN')} đ
+                                </span>
+                                <span className="text-[10px] text-gray-400">Sàn quyết toán</span>
+                              </>
+                            ) : order.buyerPaidAmount !== null && order.buyerPaidAmount > 0 ? (
+                              <>
+                                <span className="font-mono text-xs font-medium text-gray-700 dark:text-gray-300">
+                                  {order.buyerPaidAmount.toLocaleString('vi-VN')} đ
+                                </span>
+                                <span className="text-[10px] text-gray-400">Người mua trả</span>
+                              </>
+                            ) : (
+                              <span className="text-xs text-gray-400 font-mono">-</span>
+                            )}
+                          </div>
+                        </SystemTd>
+
+                        {/* Custom Revenue (Nhập tay đối chiếu) */}
+                        <SystemTd align="right">
+                          <div className="flex flex-col items-end gap-0.5 py-1">
+                            <div className="relative w-28">
+                              <input
+                                type="number"
+                                value={edit.customRevenue}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setPendingEdits((prev) => ({
+                                    ...prev,
+                                    [order.id]: {
+                                      ...prev[order.id],
+                                      customRevenue: val,
+                                      isDirty: true,
+                                    },
+                                  }));
+                                }}
+                                className={`w-full text-right px-2 py-1 text-xs font-mono font-medium rounded border focus:outline-none focus:ring-1 focus:ring-[#5865f2] ${
+                                  order.customRevenue !== null
+                                    ? 'border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300'
+                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1b23] text-gray-900 dark:text-white'
+                                }`}
+                                placeholder="0"
+                              />
+                            </div>
+                            {order.customRevenue !== null ? (
+                              <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1 rounded">
+                                Nhập tay
+                              </span>
+                            ) : (
+                              <span className="text-[9px] text-gray-400">Từ sàn</span>
+                            )}
+                          </div>
+                        </SystemTd>
+
+                        {/* Calculated Profit */}
+                        <SystemTd align="right">
+                          <div className="flex flex-col items-end py-1">
+                            {order.isVirtual ? (
+                              <>
+                                <span className="font-mono text-xs font-bold text-purple-600 dark:text-purple-400">
+                                  {(effectiveRev - cod).toLocaleString('vi-VN')} đ
+                                </span>
+                                <span
+                                  className="text-[9px] text-purple-500/80 font-mono cursor-help"
+                                  title={`Lợi nhuận đơn ảo = Doanh thu (${effectiveRev.toLocaleString('vi-VN')}đ) - Tiền COD (${cod.toLocaleString('vi-VN')}đ)`}
+                                >
+                                  = Doanh thu - COD
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span className={`font-mono text-xs font-bold ${profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                  {profit.toLocaleString('vi-VN')} đ
+                                </span>
+                                <span className="text-[9px] text-gray-400 font-mono">
+                                  = Doanh thu - Vốn
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </SystemTd>
+
+                        {/* Action buttons */}
+                        <SystemTd align="center">
+                          <div className="flex items-center justify-center gap-1">
+                            {isDirty && (
+                              <button
+                                type="button"
+                                onClick={() => handleSaveSingleOrderFinancials(order.id)}
+                                className="p-1 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition-colors"
+                                title="Lưu doanh thu & COD đơn này"
+                              >
+                                <Save size={13} />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenOrderDetail(order.id)}
+                              className="p-1 rounded hover:bg-gray-100 dark:hover:bg-[#1a1b23] text-gray-600 dark:text-gray-400 hover:text-[#5865f2] transition-colors"
+                              title="Xem chi tiết đơn hàng"
+                            >
+                              <Eye size={13} />
+                            </button>
+                          </div>
+                        </SystemTd>
+                      </SystemTr>
+                    );
+                  })
+                )}
+              </SystemTbody>
+            </SystemTableWrapper>
+          </div>
+
+          {/* Mobile Cards View for Shop Orders */}
+          <div className="flex flex-col md:hidden space-y-2.5 overflow-y-auto pb-4">
+            {isLoadingShopOrders ? (
+              <div className="py-12 text-center text-xs text-gray-500 animate-pulse">
+                Đang tải danh sách đơn hàng shop...
+              </div>
+            ) : filteredShopOrders.length === 0 ? (
+              <SystemTableEmpty
+                colSpan={1}
+                title="Không tìm thấy đơn hàng"
+                description="Hãy thử đổi bộ lọc shop hoặc từ khóa tìm kiếm."
+              />
+            ) : (
+              filteredShopOrders.map((order, idx) => {
+                const edit = pendingEdits[order.id] || {
+                  customRevenue: order.customRevenue !== null ? String(order.customRevenue) : String(order.totalAmount || 0),
+                  codAmount: String(order.codAmount || 0),
+                  isDirty: false,
+                };
+                const isDirty = edit.isDirty;
+                const parsedRev = parseFloat(String(edit.customRevenue).replace(/,/g, ''));
+                const parsedCod = parseFloat(String(edit.codAmount).replace(/,/g, ''));
+                const effectiveRev = !isNaN(parsedRev) ? parsedRev : order.effectiveRevenue;
+                const cod = !isNaN(parsedCod) ? parsedCod : order.codAmount;
+                const profit = order.isVirtual ? effectiveRev - cod : effectiveRev - order.cogsTotal;
+
+                return (
+                  <div
+                    key={order.id}
+                    className={`p-3 rounded-lg border bg-white dark:bg-[#14151a] shadow-xs space-y-2.5 transition-all ${
+                      isDirty ? 'border-amber-300 dark:border-amber-700/60' : 'border-gray-200 dark:border-gray-800'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono text-xs font-bold text-gray-900 dark:text-white">
+                            {order.externalOrderId || order.internalOrderCode}
+                          </span>
+                          {order.isVirtual ? (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300">
+                              Đơn ảo
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                              Đơn thường
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5">
+                          <span>{order.shopName}</span>
+                          <span>•</span>
+                          <span>{order.orderDate ? new Date(order.orderDate).toLocaleDateString('vi-VN') : ''}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        {isDirty && (
+                          <button
+                            type="button"
+                            onClick={() => handleSaveSingleOrderFinancials(order.id)}
+                            className="px-2 py-1 rounded bg-emerald-500 text-white text-[11px] font-bold flex items-center gap-1"
+                          >
+                            <Save size={12} />
+                            <span>Lưu</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenOrderDetail(order.id)}
+                          className="p-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                        >
+                          <Eye size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-gray-800 text-xs">
+                      <div>
+                        <span className="text-[10px] text-gray-400 block">Tiền bán SP (Sàn)</span>
+                        <span className="font-mono font-bold text-gray-900 dark:text-white">
+                          {order.productsSellingTotal.toLocaleString('vi-VN')} đ
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 block">Quyết toán sàn</span>
+                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          {order.settledPayout !== null ? `${order.settledPayout.toLocaleString('vi-VN')} đ` : '-'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-[10px] text-gray-400 block mb-0.5">Tiền COD shipper:</span>
+                        <input
+                          type="number"
+                          value={edit.codAmount}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setPendingEdits((prev) => ({
+                              ...prev,
+                              [order.id]: {
+                                ...prev[order.id],
+                                codAmount: val,
+                                isDirty: true,
+                              },
+                            }));
+                          }}
+                          className="w-full text-right px-2 py-1 text-xs font-mono rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1b23] text-gray-900 dark:text-white"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400 block mb-0.5">Doanh thu đối chiếu:</span>
+                        <input
+                          type="number"
+                          value={edit.customRevenue}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setPendingEdits((prev) => ({
+                              ...prev,
+                              [order.id]: {
+                                ...prev[order.id],
+                                customRevenue: val,
+                                isDirty: true,
+                              },
+                            }));
+                          }}
+                          className="w-full text-right px-2 py-1 text-xs font-mono rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1b23] text-gray-900 dark:text-white"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-800 text-xs">
+                      <span className="text-[11px] text-gray-500">
+                        {order.isVirtual ? 'Lợi nhuận đơn ảo (Doanh thu - COD):' : 'Lợi nhuận đơn thật (Doanh thu - Vốn):'}
+                      </span>
+                      <span className={`font-mono font-bold ${order.isVirtual ? 'text-purple-600 dark:text-purple-400' : profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        {profit.toLocaleString('vi-VN')} đ
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            {/* Mobile Pagination */}
+            <div className="rounded-[4px] border border-gray-200/60 dark:border-white/[0.08] overflow-hidden bg-white dark:bg-[#14151a] shadow-none mt-2 shrink-0">
+              <SystemPagination
+                currentPage={shopOrdersPage}
+                totalPages={shopOrdersData?.pagination?.totalPages || 1}
+                totalItems={shopOrdersData?.pagination?.totalItems || 0}
+                itemsPerPage={shopOrdersLimit}
+                onPageChange={(p) => setShopOrdersPage(p)}
+                onLimitChange={(l) => {
+                  setShopOrdersLimit(l);
+                  setShopOrdersPage(1);
+                }}
+                className="border-t-0"
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ------------------- VIEW 2: SKU RECONCILIATION REPORT ------------------- */}
+      {activeReportView === 'SKU_RECONCILIATION' && (
+        <>
+          {/* 4 Summary KPI Metric Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 shrink-0">
+            <SystemMetricPairCard
           leftItem={{
             title: 'Sản phẩm thực nhập kho',
             value: `${summary.totalImportedQuantity.toLocaleString('vi-VN')}`,
@@ -1034,6 +2073,8 @@ export const OrderReportsPage: React.FC = () => {
         </div>
         <div className="h-6 md:hidden shrink-0" aria-hidden="true" />
       </div>
+      </>
+      )}
 
       {/* Drilldown Modal: Product Reconciliation Detail */}
       {selectedVariantId && (
@@ -1270,12 +2311,20 @@ export const OrderReportsPage: React.FC = () => {
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                               {detailData.orders.map((o) => {
-                                const unitPrice = o.discountedPrice || detailData.variant.sellingPrice || 0;
-                                const subtotal = o.quantity * unitPrice;
+                                const rawQty = o.rawQuantity && o.rawQuantity > 0 ? o.rawQuantity : 1;
+                                const unitPrice = Number(o.discountedPrice || o.unitPrice || detailData.variant.sellingPrice || 0);
+                                const subtotal = o.itemAmount !== undefined && o.itemAmount > 0 ? o.itemAmount : (rawQty * unitPrice);
                                 return (
                                   <tr key={o.id} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
                                     <td className="p-2.5 font-mono font-bold text-gray-900 dark:text-white">
-                                      {o.internalOrderCode || o.externalOrderId}
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span>{o.internalOrderCode || o.externalOrderId}</span>
+                                        {o.isVirtual && (
+                                          <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                            Đơn ảo
+                                          </span>
+                                        )}
+                                      </div>
                                     </td>
                                     <td className="p-2.5 font-mono text-gray-600 dark:text-gray-400">
                                       {o.trackingCode || '—'}
@@ -1287,7 +2336,12 @@ export const OrderReportsPage: React.FC = () => {
                                       {o.orderDate ? new Date(o.orderDate).toLocaleDateString('vi-VN') : '—'}
                                     </td>
                                     <td className="p-2.5 text-center font-mono font-bold text-[#5865f2] dark:text-indigo-400">
-                                      {o.quantity}
+                                      <span>{rawQty}</span>
+                                      {o.packMultiplier && o.packMultiplier > 1 && (
+                                        <span className="block text-[10px] font-normal text-gray-400">
+                                          (= {o.quantity} sp kho)
+                                        </span>
+                                      )}
                                     </td>
                                     <td className="p-2.5 text-right font-mono text-gray-700 dark:text-gray-300">
                                       {unitPrice.toLocaleString('vi-VN')}đ
@@ -1320,59 +2374,69 @@ export const OrderReportsPage: React.FC = () => {
 
                         {/* Mobile Card View */}
                         <div className="sm:hidden space-y-2">
-                          {detailData.orders.map((o) => (
-                            <div
-                              key={o.id}
-                              className="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1b23] space-y-2 shadow-xs"
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0 flex-1">
-                                  <div className="font-mono font-bold text-xs text-gray-900 dark:text-white truncate">
-                                    {o.internalOrderCode || o.externalOrderId}
+                          {detailData.orders.map((o) => {
+                            const rawQty = o.rawQuantity && o.rawQuantity > 0 ? o.rawQuantity : 1;
+                            const unitPrice = Number(o.discountedPrice || o.unitPrice || detailData.variant.sellingPrice || 0);
+                            const subtotal = o.itemAmount !== undefined && o.itemAmount > 0 ? o.itemAmount : (rawQty * unitPrice);
+                            return (
+                              <div
+                                key={o.id}
+                                className="p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1b23] space-y-2 shadow-xs"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-mono font-bold text-xs text-gray-900 dark:text-white flex items-center gap-1.5 flex-wrap">
+                                      <span>{o.internalOrderCode || o.externalOrderId}</span>
+                                      {o.isVirtual && (
+                                        <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                                          Đơn ảo
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-[11px] text-gray-500 truncate mt-0.5">
+                                      Shop: <span className="font-medium text-gray-700 dark:text-gray-300">{o.shopName}</span>
+                                    </div>
                                   </div>
-                                  <div className="text-[11px] text-gray-500 truncate mt-0.5">
-                                    Shop: <span className="font-medium text-gray-700 dark:text-gray-300">{o.shopName}</span>
-                                  </div>
-                                </div>
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 shrink-0">
-                                  {o.platformStatus}
-                                </span>
-                              </div>
-
-                              <div className="flex items-center justify-between text-xs text-gray-500 py-1 border-y border-gray-100 dark:border-gray-800/80">
-                                <span className="font-mono text-[11px] text-gray-600 dark:text-gray-400">
-                                  Vận đơn: {o.trackingCode || '—'}
-                                </span>
-                                <span className="text-[11px]">
-                                  {o.orderDate ? new Date(o.orderDate).toLocaleDateString('vi-VN') : '—'}
-                                </span>
-                              </div>
-
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-xs font-bold text-[#5865f2] dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded font-mono">
-                                    x{o.quantity}
-                                  </span>
-                                  <span className="text-xs font-mono text-gray-700 dark:text-gray-300 font-medium">
-                                    {(o.discountedPrice || detailData.variant.sellingPrice || 0).toLocaleString('vi-VN')}đ
-                                  </span>
-                                  <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                    = {(o.quantity * (o.discountedPrice || detailData.variant.sellingPrice || 0)).toLocaleString('vi-VN')}đ
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 shrink-0">
+                                    {o.platformStatus}
                                   </span>
                                 </div>
 
-                                <span
-                                  className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                                    o.fulfillmentStatus === 'DISPATCHED'
-                                      ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-                                      : 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
-                                  }`}
-                                >
-                                  {o.fulfillmentStatus === 'DISPATCHED' ? 'Đã quét xuất' : 'Chờ xuất'}
-                                </span>
+                                <div className="flex items-center justify-between text-xs text-gray-500 py-1 border-y border-gray-100 dark:border-gray-800/80">
+                                  <span className="font-mono text-[11px] text-gray-600 dark:text-gray-400">
+                                    Vận đơn: {o.trackingCode || '—'}
+                                  </span>
+                                  <span className="text-[11px]">
+                                    {o.orderDate ? new Date(o.orderDate).toLocaleDateString('vi-VN') : '—'}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-xs font-bold text-[#5865f2] dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded font-mono">
+                                      x{rawQty} {o.packMultiplier && o.packMultiplier > 1 ? `(=${o.quantity})` : ''}
+                                    </span>
+                                    <span className="text-xs font-mono text-gray-700 dark:text-gray-300 font-medium">
+                                      {unitPrice.toLocaleString('vi-VN')}đ
+                                    </span>
+                                    <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                      = {subtotal.toLocaleString('vi-VN')}đ
+                                    </span>
+                                  </div>
+
+                                  <span
+                                    className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                                      o.fulfillmentStatus === 'DISPATCHED'
+                                        ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                                        : 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
+                                    }`}
+                                  >
+                                    {o.fulfillmentStatus === 'DISPATCHED' ? 'Đã quét xuất' : 'Chờ xuất'}
+                                  </span>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </>
                     )}
@@ -1839,6 +2903,24 @@ export const OrderReportsPage: React.FC = () => {
             )}
           </ModalBody>
         </Modal>
+      )}
+
+      {/* Order Detail Drawer */}
+      {selectedOrderForDrawer && (
+        <OrderDetailDrawer
+          order={selectedOrderForDrawer}
+          isOpen={isDrawerOpen}
+          onClose={() => {
+            setIsDrawerOpen(false);
+            setSelectedOrderForDrawer(null);
+          }}
+          onRefresh={() => {
+            loadShopOrdersData();
+            if (activeReportView === 'SKU_RECONCILIATION') {
+              loadReportData();
+            }
+          }}
+        />
       )}
     </div>
   );

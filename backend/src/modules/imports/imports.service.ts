@@ -619,6 +619,7 @@ export class ImportsService {
                 trackingCode: parsed.trackingCode,
                 totalAmount: parsed.totalAmount,
                 shippingFee: parsed.shippingFee,
+                codAmount: parsed.codAmount || 0,
                 cogsTotal: totalCogs,
                 orderItems: {
                   create: orderItemsData,

@@ -1834,36 +1834,61 @@ export class ReportsService {
       }
     }
 
-    // Query authoritative order GMV and count for the current scope
-    const orderGmvAgg = await this.prisma.order.aggregate({
-      where: orderWhere,
-      _sum: { totalAmount: true },
-      _count: { id: true },
-    });
-
-    // Query shop breakdown for outbound orders within the current scope and date range
-    const shopBreakdownWhere: Prisma.OrderWhereInput = {
+    // Query authoritative order GMV and count for the current scope (bao gồm cả 38 đơn hàng: 36 đơn thật + 2 đơn ảo)
+    const allOrdersScopeWhere: Prisma.OrderWhereInput = {
       tenantId,
       platformStatus: {
         notIn: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
       },
-      NOT: {
-        AND: [{ isVirtual: true }, { isRealGoods: false }],
+    };
+    if (allowedShopIds && allowedShopIds.length > 0) {
+      if (filter.shopId && filter.shopId !== 'ALL') {
+        allOrdersScopeWhere.shopId = allowedShopIds.includes(filter.shopId)
+          ? filter.shopId
+          : '__FORBIDDEN__';
+      } else {
+        allOrdersScopeWhere.shopId = { in: allowedShopIds };
+      }
+    } else if (filter.shopId && filter.shopId !== 'ALL') {
+      allOrdersScopeWhere.shopId = filter.shopId;
+    }
+    if (start || end) {
+      allOrdersScopeWhere.orderDate = orderWhere.orderDate;
+    }
+
+    const orderGmvAgg = await this.prisma.order.aggregate({
+      where: allOrdersScopeWhere,
+      _sum: { totalAmount: true },
+      _count: { id: true },
+    });
+
+    // Query all orders across shops to calculate full shop breakdown including virtual orders & COD
+    const shopBreakdownWhere: Prisma.OrderWhereInput = {
+      tenantId,
+      platformStatus: {
+        notIn: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
       },
     };
     if (allowedShopIds && allowedShopIds.length > 0) {
       shopBreakdownWhere.shopId = { in: allowedShopIds };
     }
     if (start || end) {
-      shopBreakdownWhere.orderDate = orderWhere.orderDate;
+      shopBreakdownWhere.orderDate = allOrdersScopeWhere.orderDate;
     }
 
-    const [shopOrderGroups, tenantShops] = await Promise.all([
-      this.prisma.order.groupBy({
-        by: ['shopId'],
+    const [allTenantOrders, tenantShops] = await Promise.all([
+      this.prisma.order.findMany({
         where: shopBreakdownWhere,
-        _sum: { totalAmount: true },
-        _count: { id: true },
+        select: {
+          id: true,
+          shopId: true,
+          totalAmount: true,
+          customRevenue: true,
+          codAmount: true,
+          isVirtual: true,
+          isRealGoods: true,
+          cogsTotal: true,
+        },
       }),
       this.prisma.shop.findMany({
         where: {
@@ -1874,7 +1899,50 @@ export class ReportsService {
       }),
     ]);
 
-    const shopOrdersMap = new Map(shopOrderGroups.map((g) => [g.shopId, g]));
+    const shopOrdersAggMap = new Map<string, {
+      ordersCount: number;
+      realOrdersCount: number;
+      virtualOrdersCount: number;
+      totalRevenue: number;
+      virtualRevenue: number;
+      virtualCodAmount: number;
+      virtualProfit: number;
+      realOrdersRevenue: number;
+    }>();
+
+    for (const o of allTenantOrders) {
+      const cur = shopOrdersAggMap.get(o.shopId) || {
+        ordersCount: 0,
+        realOrdersCount: 0,
+        virtualOrdersCount: 0,
+        totalRevenue: 0,
+        virtualRevenue: 0,
+        virtualCodAmount: 0,
+        virtualProfit: 0,
+        realOrdersRevenue: 0,
+      };
+
+      const rev = o.customRevenue !== null && o.customRevenue !== undefined
+        ? Number(o.customRevenue)
+        : Number(o.totalAmount || 0);
+      const cod = Number(o.codAmount || 0);
+
+      cur.ordersCount++;
+      cur.totalRevenue += rev;
+
+      if (o.isVirtual) {
+        cur.virtualOrdersCount++;
+        cur.virtualRevenue += rev;
+        cur.virtualCodAmount += cod;
+        // Công thức tài chính đơn ảo: Doanh thu đơn hàng - Tiền COD phải trả cho shipper
+        cur.virtualProfit += (rev - cod);
+      } else {
+        cur.realOrdersCount++;
+        cur.realOrdersRevenue += rev;
+      }
+
+      shopOrdersAggMap.set(o.shopId, cur);
+    }
 
     const listingMappings = await this.prisma.listingMapping.findMany({
       where: {
@@ -2373,19 +2441,35 @@ export class ReportsService {
 
     const shopsSummary = tenantShops
       .map((s) => {
-        const g = shopOrdersMap.get(s.id);
-        const costAmount = shopExportedCostMap.get(s.id);
+        const agg = shopOrdersAggMap.get(s.id) || {
+          ordersCount: 0,
+          realOrdersCount: 0,
+          virtualOrdersCount: 0,
+          totalRevenue: 0,
+          virtualRevenue: 0,
+          virtualCodAmount: 0,
+          virtualProfit: 0,
+          realOrdersRevenue: 0,
+        };
+        const costAmount = shopExportedCostMap.get(s.id) || 0;
+        const netProfit = (agg.realOrdersRevenue - costAmount) + agg.virtualProfit;
+
         return {
           shopId: s.id,
           shopName: s.name,
           shopCode: s.code,
-          ordersCount: g?._count.id || 0,
-          totalExportedAmount: Math.round(
-            costAmount !== undefined ? costAmount : Number(g?._sum.totalAmount || 0),
-          ),
+          ordersCount: agg.ordersCount,
+          realOrdersCount: agg.realOrdersCount,
+          virtualOrdersCount: agg.virtualOrdersCount,
+          totalRevenue: Math.round(agg.totalRevenue),
+          virtualRevenue: Math.round(agg.virtualRevenue),
+          virtualCodAmount: Math.round(agg.virtualCodAmount),
+          virtualProfit: Math.round(agg.virtualProfit),
+          totalExportedAmount: Math.round(costAmount),
+          netProfit: Math.round(netProfit),
         };
       })
-      .sort((a, b) => b.totalExportedAmount - a.totalExportedAmount);
+      .sort((a, b) => b.totalRevenue - a.totalRevenue);
 
     return {
       summary: {
@@ -2449,9 +2533,6 @@ export class ReportsService {
       platformStatus: {
         notIn: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
       },
-      NOT: {
-        AND: [{ isVirtual: true }, { isRealGoods: false }],
-      },
     };
     if (allowedShopIds && allowedShopIds.length > 0) {
       if (filter.shopId && filter.shopId !== 'ALL') {
@@ -2510,6 +2591,11 @@ export class ReportsService {
             fulfillmentStatus: true,
             verificationStatus: true,
             recipientName: true,
+            isVirtual: true,
+            isRealGoods: true,
+            codAmount: true,
+            customRevenue: true,
+            totalAmount: true,
             shop: { select: { id: true, name: true, code: true } },
           },
         },
@@ -2531,9 +2617,20 @@ export class ReportsService {
         const multiplier = Math.max(1, matched?.multiplier || oi.packMultiplier || 1);
         const rawQty = oi.rawQuantity && oi.rawQuantity > 0 ? oi.rawQuantity : Math.max(1, Math.round((oi.quantity || 1) / (oi.packMultiplier || 1)));
         const finalQty = rawQty * multiplier;
+        const unitPrice = Number(oi.discountedPrice || oi.originalPrice || 0);
+        const itemAmount = rawQty * unitPrice; // Tiền bán sản phẩm trên sàn chuẩn xác!
         return {
           ...oi,
+          rawQuantity: rawQty,
+          packMultiplier: multiplier,
           quantity: finalQty,
+          unitPrice,
+          itemAmount,
+          isVirtual: oi.order?.isVirtual || false,
+          isRealGoods: oi.order?.isRealGoods || false,
+          codAmount: Number(oi.order?.codAmount || 0),
+          customRevenue: oi.order?.customRevenue !== null && oi.order?.customRevenue !== undefined ? Number(oi.order.customRevenue) : null,
+          totalAmount: Number(oi.order?.totalAmount || 0),
         };
       })
       .slice(0, 100);
@@ -2994,6 +3091,209 @@ export class ReportsService {
         damagedQuantity: ori.damagedQuantity,
         reason: ori.return.reason || ori.return.note || '',
       })),
+    };
+  }
+
+  async getShopOrdersReport(
+    tenantId: string,
+    allowedShopIds: string[] | null,
+    filter: OrderReconciliationReportFilterDto,
+  ) {
+    const start = filter.startDate || filter.fromDate;
+    const end = filter.endDate || filter.toDate;
+    const page = Math.max(1, Number(filter.page) || 1);
+    const limit = Math.max(1, Math.min(500, Number(filter.limit) || 50));
+
+    const where: Prisma.OrderWhereInput = {
+      tenantId,
+      platformStatus: {
+        notIn: [PlatformOrderStatus.CANCELLED, PlatformOrderStatus.IN_CANCEL],
+      },
+    };
+
+    if (allowedShopIds && allowedShopIds.length > 0) {
+      if (filter.shopId && filter.shopId !== 'ALL') {
+        where.shopId = allowedShopIds.includes(filter.shopId)
+          ? filter.shopId
+          : '__FORBIDDEN__';
+      } else {
+        where.shopId = { in: allowedShopIds };
+      }
+    } else if (filter.shopId && filter.shopId !== 'ALL') {
+      where.shopId = filter.shopId;
+    }
+
+    if (start || end) {
+      where.orderDate = {};
+      if (start) {
+        const s = new Date(start);
+        s.setHours(0, 0, 0, 0);
+        where.orderDate.gte = s;
+      }
+      if (end) {
+        const e = new Date(end);
+        if (end.length <= 10) e.setHours(23, 59, 59, 999);
+        where.orderDate.lte = e;
+      }
+    }
+
+    if (filter.search?.trim()) {
+      const q = filter.search.trim();
+      where.OR = [
+        { externalOrderId: { contains: q, mode: 'insensitive' } },
+        { internalOrderCode: { contains: q, mode: 'insensitive' } },
+        { trackingCode: { contains: q, mode: 'insensitive' } },
+        { recipientName: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    const [total, allOrdersInScope] = await Promise.all([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({
+        where,
+        include: {
+          shop: { select: { id: true, code: true, name: true } },
+          reconciliation: {
+            select: {
+              settledPayout: true,
+              buyerPaidAmount: true,
+              estimatedPayout: true,
+              reconciliationStatus: true,
+            },
+          },
+          orderItems: {
+            include: {
+              variant: {
+                select: { id: true, sku: true, name: true, costPrice: true, sellingPrice: true, unit: true },
+              },
+            },
+          },
+        },
+        orderBy: { orderDate: 'desc' },
+      }),
+    ]);
+
+    // Financial KPI Aggregates for all matching orders
+    let totalProductsSelling = 0;
+    let totalRevenue = 0;
+    let totalCod = 0;
+    let virtualOrdersCount = 0;
+    let virtualRevenue = 0;
+    let virtualCodAmount = 0;
+    let virtualProfit = 0;
+    let realOrdersCount = 0;
+    let realRevenue = 0;
+    let realProfit = 0;
+    let totalProfit = 0;
+
+    const formattedOrders = allOrdersInScope.map((o) => {
+      let orderProductsSellingTotal = 0;
+
+      const formattedItems = o.orderItems.map((oi) => {
+        const rawQty = oi.rawQuantity && oi.rawQuantity > 0 ? oi.rawQuantity : Math.max(1, Math.round(oi.quantity / (oi.packMultiplier || 1)));
+        const unitPrice = Number(oi.discountedPrice || oi.originalPrice || oi.variant?.sellingPrice || 0);
+        const subtotal = rawQty * unitPrice; // Tiền bán sản phẩm chuẩn xác!
+        orderProductsSellingTotal += subtotal;
+
+        return {
+          id: oi.id,
+          productName: oi.productName,
+          variationName: oi.variationName,
+          sku: oi.variant?.sku || oi.externalSku,
+          rawQuantity: rawQty,
+          packMultiplier: oi.packMultiplier || 1,
+          quantity: oi.quantity,
+          unitPrice,
+          subtotal,
+          itemCogs: Number(oi.itemCogs || 0),
+        };
+      });
+
+      const effectiveRevenue = o.customRevenue !== null && o.customRevenue !== undefined
+        ? Number(o.customRevenue)
+        : Number(o.totalAmount || 0);
+
+      const cod = Number(o.codAmount || 0);
+      const cogs = Number(o.cogsTotal || 0);
+
+      let calculatedProfit = 0;
+      if (o.isVirtual) {
+        // Đối với đơn ảo: Lấy từ tiền doanh thu đơn hàng trừ đi tiền COD tôi phải trả cho shipper
+        calculatedProfit = effectiveRevenue - cod;
+        virtualOrdersCount++;
+        virtualRevenue += effectiveRevenue;
+        virtualCodAmount += cod;
+        virtualProfit += calculatedProfit;
+      } else {
+        calculatedProfit = effectiveRevenue - cogs;
+        realOrdersCount++;
+        realRevenue += effectiveRevenue;
+        realProfit += calculatedProfit;
+      }
+
+      totalProductsSelling += orderProductsSellingTotal;
+      totalRevenue += effectiveRevenue;
+      totalCod += cod;
+      totalProfit += calculatedProfit;
+
+      return {
+        id: o.id,
+        internalOrderCode: o.internalOrderCode,
+        externalOrderId: o.externalOrderId,
+        trackingCode: o.trackingCode,
+        orderDate: o.orderDate,
+        platformStatus: o.platformStatus,
+        fulfillmentStatus: o.fulfillmentStatus,
+        verificationStatus: o.verificationStatus,
+        shopId: o.shopId,
+        shopName: o.shop.name,
+        shopCode: o.shop.code,
+        recipientName: o.recipientName,
+        recipientPhone: o.recipientPhone,
+        isVirtual: o.isVirtual,
+        isRealGoods: o.isRealGoods,
+        totalAmount: Number(o.totalAmount || 0),
+        customRevenue: o.customRevenue !== null && o.customRevenue !== undefined ? Number(o.customRevenue) : null,
+        effectiveRevenue,
+        codAmount: cod,
+        productsSellingTotal: orderProductsSellingTotal,
+        cogsTotal: cogs,
+        calculatedProfit,
+        settledPayout: o.reconciliation?.settledPayout !== undefined && o.reconciliation?.settledPayout !== null
+          ? Number(o.reconciliation.settledPayout)
+          : null,
+        buyerPaidAmount: o.reconciliation?.buyerPaidAmount !== undefined && o.reconciliation?.buyerPaidAmount !== null
+          ? Number(o.reconciliation.buyerPaidAmount)
+          : null,
+        reconciliationStatus: o.reconciliation?.reconciliationStatus || 'NO_DATA',
+        items: formattedItems,
+      };
+    });
+
+    const paginatedOrders = formattedOrders.slice((page - 1) * limit, page * limit);
+
+    return {
+      summary: {
+        totalOrders: total,
+        realOrdersCount,
+        virtualOrdersCount,
+        totalProductsSelling: Math.round(totalProductsSelling),
+        totalRevenue: Math.round(totalRevenue),
+        totalCod: Math.round(totalCod),
+        virtualRevenue: Math.round(virtualRevenue),
+        virtualCodAmount: Math.round(virtualCodAmount),
+        virtualProfit: Math.round(virtualProfit),
+        realRevenue: Math.round(realRevenue),
+        realProfit: Math.round(realProfit),
+        totalProfit: Math.round(totalProfit),
+      },
+      pagination: {
+        page,
+        limit,
+        totalItems: total,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+      orders: paginatedOrders,
     };
   }
 }
