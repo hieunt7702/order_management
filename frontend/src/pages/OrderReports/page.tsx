@@ -805,18 +805,26 @@ export const OrderReportsPage: React.FC = () => {
                           </span>
                         )}
                         {isSurplus && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 whitespace-nowrap">
-                            <AlertTriangle size={11} /> Thừa (+{item.discrepancy})
+                          <span
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 whitespace-nowrap"
+                            title={`Kho thực tế (${item.onHand}) cao hơn lý thuyết (${item.calculatedStock}) là ${item.discrepancy} cái`}
+                          >
+                            <AlertTriangle size={11} /> Lệch thừa (+{item.discrepancy})
                           </span>
                         )}
                         {isDeficit && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 whitespace-nowrap">
-                            <AlertCircle size={11} /> Thiếu ({item.discrepancy})
+                          <span
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 whitespace-nowrap"
+                            title={`Kho thực tế (${item.onHand}) thấp hơn lý thuyết (${item.calculatedStock}) là ${Math.abs(item.discrepancy)} cái`}
+                          >
+                            <AlertCircle size={11} /> Lệch thiếu ({item.discrepancy})
                           </span>
                         )}
-                        <span className="text-[10px] text-gray-400 mt-0.5 font-mono whitespace-nowrap">
-                          Lý thuyết: {item.calculatedStock}
-                        </span>
+                        <div className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400 mt-1 font-mono whitespace-nowrap">
+                          <span>Kho: <strong className="text-gray-900 dark:text-gray-200">{item.onHand}</strong></span>
+                          <span>•</span>
+                          <span>Lý thuyết: <strong className="text-gray-900 dark:text-gray-200">{item.calculatedStock}</strong></span>
+                        </div>
                       </div>
                     </SystemTd>
 
